@@ -1,0 +1,1455 @@
+import type { AuditReport, Violation, Citation } from './types'
+
+// PDF generation using pure server-side HTML template
+// This generates a professional FDA compliance report HTML that is converted to PDF
+
+interface PDFReportData {
+  report: AuditReport
+  violations: Violation[]
+  generatedAt: string
+  generatedBy: string // 'Vexim Compliance AI' or expert name
+  companyInfo: {
+    name: string
+    address: string
+    phone: string
+    email: string
+    website: string
+    certificationId: string
+  }
+}
+
+function escapeHtml(text: string): string {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function formatDate(dateStr: string): string {
+  try {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  } catch {
+    return dateStr
+  }
+}
+
+function getSeverityColor(severity: string): { bg: string; text: string; border: string } {
+  switch (severity) {
+    case 'critical':
+      return { bg: '#FEE2E2', text: '#991B1B', border: '#F87171' }
+    case 'warning':
+      return { bg: '#FEF3C7', text: '#92400E', border: '#FBBF24' }
+    case 'info':
+      return { bg: '#DBEAFE', text: '#1E40AF', border: '#60A5FA' }
+    default:
+      return { bg: '#F3F4F6', text: '#374151', border: '#D1D5DB' }
+  }
+}
+
+function getRiskColor(score: number): string {
+  if (score >= 7) return '#DC2626'
+  if (score >= 4) return '#F59E0B'
+  return '#16A34A'
+}
+
+function getRiskLabel(score: number): string {
+  if (score >= 8) return 'CRITICAL'
+  if (score >= 6) return 'HIGH'
+  if (score >= 4) return 'MEDIUM'
+  return 'LOW'
+}
+
+export function generatePDFReportHTML(data: PDFReportData): string {
+  const { report, violations, generatedAt, generatedBy, companyInfo } = data
+
+  // Separate Import Alert violations from standard violations
+  const importAlertViolations = violations.filter(v => v.source_type === 'import_alert')
+  const standardViolations = violations.filter(v => v.source_type !== 'import_alert')
+
+  const criticalCount = standardViolations.filter(v => v.severity === 'critical').length
+  const warningCount = standardViolations.filter(v => v.severity === 'warning').length
+  const infoCount = standardViolations.filter(v => v.severity === 'info').length
+  const totalCitations = standardViolations.reduce((sum, v) => sum + (v.citations?.length || 0), 0)
+
+  const riskScore = report.overall_risk_score ?? 0
+  const projectedRisk = report.projected_risk_score ?? 0
+
+  const sortedViolations = [...standardViolations].sort((a, b) => {
+    const order = { critical: 0, warning: 1, info: 2 }
+    return (order[a.severity] ?? 3) - (order[b.severity] ?? 3)
+  })
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FDA Compliance Audit Report - ${escapeHtml(report.product_name || 'Label Analysis')}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1a1a2e;
+    background: #ffffff;
+    line-height: 1.6;
+    font-size: 10pt;
+  }
+
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    padding: 0;
+    background: white;
+  }
+
+  @media print {
+    body { background: white; }
+    .page { margin: 0; padding: 0; width: 100%; box-shadow: none; }
+    .page-break { page-break-before: always; }
+    .no-break { page-break-inside: avoid; }
+  }
+
+  /* COVER PAGE */
+  .cover-page {
+    min-height: 297mm;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    color: white;
+    padding: 40mm 25mm;
+  }
+
+  .cover-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30mm;
+  }
+
+  .cover-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .cover-logo-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 20px;
+    color: white;
+  }
+
+  .cover-logo-text {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .cover-logo-sub {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 400;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .cover-badge {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 11px;
+    color: #cbd5e1;
+  }
+
+  .cover-title {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    letter-spacing: -1px;
+  }
+
+  .cover-subtitle {
+    font-size: 18px;
+    color: #94a3b8;
+    font-weight: 400;
+    margin-bottom: 40mm;
+  }
+
+  .cover-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: auto;
+  }
+
+  .cover-meta-item {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .cover-meta-label {
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+  }
+
+  .cover-meta-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+
+  .cover-footer {
+    position: absolute;
+    bottom: 25mm;
+    left: 25mm;
+    right: 25mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 9px;
+    color: #64748b;
+  }
+
+  /* CONTENT PAGES */
+  .content-page {
+    padding: 20mm 25mm;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 24px;
+  }
+
+  .page-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .page-header-logo {
+    width: 28px;
+    height: 28px;
+    background: #1e293b;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 12px;
+    color: white;
+  }
+
+  .page-header-brand {
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  .page-header-right {
+    font-size: 9px;
+    color: #94a3b8;
+    text-align: right;
+  }
+
+  .page-footer {
+    position: fixed;
+    bottom: 10mm;
+    left: 25mm;
+    right: 25mm;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    color: #94a3b8;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 8px;
+  }
+
+  /* SECTIONS */
+  .section {
+    margin-bottom: 28px;
+  }
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #3b82f6;
+    display: inline-block;
+  }
+
+  .section-number {
+    color: #3b82f6;
+    margin-right: 8px;
+  }
+
+  /* EXECUTIVE SUMMARY */
+  .exec-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .exec-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .exec-card-value {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .exec-card-label {
+    font-size: 9px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* RISK GAUGE */
+  .risk-section {
+    display: flex;
+    gap: 20px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .risk-gauge {
+    text-align: center;
+    min-width: 120px;
+  }
+
+  .risk-score-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px;
+    font-size: 28px;
+    font-weight: 800;
+    color: white;
+  }
+
+  .risk-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .risk-details {
+    flex: 1;
+  }
+
+  .risk-details h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #334155;
+  }
+
+  .risk-details p {
+    font-size: 10px;
+    color: #64748b;
+    margin-bottom: 6px;
+  }
+
+  .risk-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .risk-bar-label {
+    font-size: 9px;
+    color: #64748b;
+    min-width: 80px;
+  }
+
+  .risk-bar {
+    flex: 1;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .risk-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s;
+  }
+
+  .risk-bar-value {
+    font-size: 9px;
+    font-weight: 600;
+    min-width: 30px;
+    text-align: right;
+  }
+
+  /* VIOLATION CARDS */
+  .violation-card {
+    border: 1px solid;
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 16px;
+    page-break-inside: avoid;
+  }
+
+  .violation-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .violation-title {
+    font-size: 13px;
+    font-weight: 700;
+    flex: 1;
+  }
+
+  .severity-badge {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .violation-description {
+    font-size: 10px;
+    color: #334155;
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+
+  .violation-box {
+    background: rgba(255,255,255,0.8);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .violation-box-label {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b;
+    margin-bottom: 4px;
+  }
+
+  .violation-box-value {
+    font-size: 10px;
+    color: #1e293b;
+    line-height: 1.5;
+  }
+
+  .violation-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 9px;
+    color: #64748b;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+
+  /* CITATIONS TABLE */
+  .citations-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+    margin-top: 8px;
+  }
+
+  .citations-table th {
+    background: #f1f5f9;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #334155;
+    border-bottom: 2px solid #e2e8f0;
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .citations-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #475569;
+    vertical-align: top;
+  }
+
+  .citations-table tr:nth-child(even) td {
+    background: #fafbfc;
+  }
+
+  .relevance-bar {
+    display: inline-block;
+    width: 40px;
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    overflow: hidden;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+
+  .relevance-bar-fill {
+    height: 100%;
+    background: #3b82f6;
+    border-radius: 2px;
+  }
+
+  /* EXPERT TIPS */
+  .expert-tip {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-left: 4px solid #3b82f6;
+    border-radius: 0 8px 8px 0;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    font-size: 10px;
+    color: #1e40af;
+    line-height: 1.6;
+  }
+
+  .expert-tip-label {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #3b82f6;
+    margin-bottom: 4px;
+  }
+
+  /* PRODUCT INFO TABLE */
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+  }
+
+  .info-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 10px;
+  }
+
+  .info-table td:first-child {
+    font-weight: 600;
+    color: #64748b;
+    width: 35%;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* SIGNATURE SECTION */
+  .signature-section {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 2px solid #e2e8f0;
+  }
+
+  .signature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 16px;
+  }
+
+  .signature-box {
+    border-top: 2px solid #334155;
+    padding-top: 8px;
+  }
+
+  .signature-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  .signature-title {
+    font-size: 9px;
+    color: #64748b;
+  }
+
+  /* DISCLAIMER */
+  .disclaimer {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 8px;
+    color: #64748b;
+    line-height: 1.6;
+    margin-top: 24px;
+  }
+
+  .disclaimer-title {
+    font-size: 9px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 100px;
+    font-weight: 800;
+    color: rgba(0,0,0,0.03);
+    pointer-events: none;
+    z-index: 0;
+    white-space: nowrap;
+  }
+
+  /* Verification Badge */
+  .verification-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .verification-badge.verified {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+  }
+
+  .verification-badge.pending {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fbbf24;
+  }
+
+  /* Port of Entry Warning */
+  .port-warning {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #f59e0b;
+    border-left: 4px solid #d97706;
+    border-radius: 0 8px 8px 0;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    font-size: 10px;
+    color: #92400e;
+    line-height: 1.6;
+  }
+
+  .port-warning-label {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #b45309;
+    margin-bottom: 4px;
+  }
+
+  /* CTA Box for upsell */
+  .cta-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 2px dashed #3b82f6;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    margin: 24px 0;
+  }
+
+  .cta-box-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e40af;
+    margin-bottom: 8px;
+  }
+
+  .cta-box-text {
+    font-size: 10px;
+    color: #3b82f6;
+    margin-bottom: 12px;
+  }
+
+  .cta-box-link {
+    display: inline-block;
+    background: #3b82f6;
+    color: white;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  /* TECHNICAL CHECKS */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .tech-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 14px;
+    page-break-inside: avoid;
+  }
+
+  .tech-card-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tech-card-badge {
+    font-size: 8px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #64748b;
+  }
+
+  .tech-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 9px;
+  }
+
+  .tech-item:last-child { border-bottom: none; }
+
+  .tech-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .tech-item-type {
+    font-weight: 600;
+    color: #334155;
+    text-transform: capitalize;
+  }
+
+  .tech-item-desc {
+    color: #64748b;
+    line-height: 1.5;
+  }
+
+  .tech-item-values {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+    font-size: 8px;
+  }
+
+  /* INGREDIENT & NUTRITION BOX */
+  .data-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    font-size: 10px;
+    line-height: 1.6;
+    color: #334155;
+  }
+
+  .data-box-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #3b82f6;
+    margin-bottom: 8px;
+  }
+
+  /* COMMERCIAL SUMMARY */
+  .summary-section {
+    margin-bottom: 16px;
+  }
+
+  .summary-heading {
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 16px 0 8px;
+  }
+
+  .summary-subheading {
+    font-size: 11px;
+    font-weight: 600;
+    color: #334155;
+    margin: 12px 0 6px;
+  }
+
+  .summary-text {
+    font-size: 10px;
+    color: #475569;
+    line-height: 1.7;
+    margin-bottom: 6px;
+  }
+
+  .summary-list-item {
+    font-size: 10px;
+    color: #475569;
+    padding-left: 16px;
+    line-height: 1.6;
+    position: relative;
+  }
+
+  .summary-list-item::before {
+    content: "\\2022";
+    position: absolute;
+    left: 4px;
+    color: #94a3b8;
+  }
+
+  /* COLOR SWATCH */
+  .color-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid #d1d5db;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="page cover-page">
+  <div class="cover-header">
+    <div class="cover-logo">
+      <div class="cover-logo-icon">V</div>
+      <div>
+        <div class="cover-logo-text">VEXIM</div>
+        <div class="cover-logo-sub">Compliance AI</div>
+      </div>
+    </div>
+    <div class="cover-badge">CONFIDENTIAL</div>
+  </div>
+
+  <div class="cover-title">FDA Compliance<br/>Audit Report</div>
+  <div class="cover-subtitle">${escapeHtml(report.product_name || 'Product Label Analysis')}</div>
+
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Report ID</div>
+      <div class="cover-meta-value">${escapeHtml(report.id.slice(0, 8).toUpperCase())}</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Date Generated</div>
+      <div class="cover-meta-value">${formatDate(generatedAt)}</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Overall Result</div>
+      <div class="cover-meta-value" style="color: ${report.overall_result === 'pass' ? '#4ade80' : report.overall_result === 'fail' ? '#f87171' : '#fbbf24'}">${(report.overall_result || 'PENDING').toUpperCase()}</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cover-meta-label">Risk Score</div>
+      <div class="cover-meta-value" style="color: ${getRiskColor(riskScore)}">${riskScore.toFixed(1)} / 10</div>
+    </div>
+  </div>
+
+  <div class="cover-footer">
+    <div>${companyInfo.name} | ${companyInfo.website}</div>
+    <div>Prepared by: ${escapeHtml(generatedBy)}</div>
+  </div>
+</div>
+
+<!-- EXECUTIVE SUMMARY PAGE -->
+<div class="page content-page page-break">
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-header-logo">V</div>
+      <div class="page-header-brand">VEXIM Compliance AI</div>
+    </div>
+    <div class="page-header-right">
+      Report ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
+      ${formatDate(generatedAt)}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">01</span> Executive Summary</div>
+    
+    <div class="exec-grid">
+      <div class="exec-card">
+        <div class="exec-card-value" style="color: #DC2626">${criticalCount}</div>
+        <div class="exec-card-label">Critical Issues</div>
+      </div>
+      <div class="exec-card">
+        <div class="exec-card-value" style="color: #F59E0B">${warningCount}</div>
+        <div class="exec-card-label">Warnings</div>
+      </div>
+      <div class="exec-card">
+        <div class="exec-card-value" style="color: #3B82F6">${infoCount}</div>
+        <div class="exec-card-label">Informational</div>
+      </div>
+      <div class="exec-card">
+        <div class="exec-card-value" style="color: #6366f1">${totalCitations}</div>
+        <div class="exec-card-label">CFR Citations</div>
+      </div>
+    </div>
+
+    <!-- Risk Assessment -->
+    <div class="risk-section">
+      <div class="risk-gauge">
+        <div class="risk-score-circle" style="background: ${getRiskColor(riskScore)}">
+          ${riskScore.toFixed(1)}
+        </div>
+        <div class="risk-label" style="color: ${getRiskColor(riskScore)}">${getRiskLabel(riskScore)}</div>
+        <div style="font-size: 8px; color: #94a3b8; margin-top: 4px;">Current Risk</div>
+      </div>
+      <div class="risk-details">
+        <h4>Risk Assessment</h4>
+        <p>${report.risk_assessment || `This label has a risk score of ${riskScore.toFixed(1)}/10. ${criticalCount > 0 ? 'Critical issues must be resolved before distribution.' : 'No critical issues found, but improvements are recommended.'}`}</p>
+        
+        <div class="risk-bar-container">
+          <div class="risk-bar-label">Current Risk</div>
+          <div class="risk-bar">
+            <div class="risk-bar-fill" style="width: ${riskScore * 10}%; background: ${getRiskColor(riskScore)}"></div>
+          </div>
+          <div class="risk-bar-value" style="color: ${getRiskColor(riskScore)}">${riskScore.toFixed(1)}</div>
+        </div>
+        <div class="risk-bar-container">
+          <div class="risk-bar-label">After Fixes</div>
+          <div class="risk-bar">
+            <div class="risk-bar-fill" style="width: ${projectedRisk * 10}%; background: ${getRiskColor(projectedRisk)}"></div>
+          </div>
+          <div class="risk-bar-value" style="color: ${getRiskColor(projectedRisk)}">${projectedRisk.toFixed(1)}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Product Information -->
+  <div class="section">
+    <div class="section-title"><span class="section-number">02</span> Product Information</div>
+    <table class="info-table">
+      ${report.product_name ? `<tr><td>Product Name</td><td>${escapeHtml(report.product_name)}</td></tr>` : ''}
+      ${report.brand_name ? `<tr><td>Brand</td><td>${escapeHtml(report.brand_name)}</td></tr>` : ''}
+      ${report.product_category ? `<tr><td>Category</td><td>${escapeHtml(report.product_category)}</td></tr>` : ''}
+      ${report.product_type ? `<tr><td>Product Type</td><td>${escapeHtml(report.product_type)}</td></tr>` : ''}
+      ${report.packaging_format ? `<tr><td>Packaging Format</td><td>${escapeHtml(report.packaging_format)}</td></tr>` : ''}
+      ${report.net_content ? `<tr><td>Net Content</td><td>${report.net_content.value} ${report.net_content.unit}</td></tr>` : ''}
+      ${report.pdp_area_square_inches ? `<tr><td>PDP Area</td><td>${report.pdp_area_square_inches.toFixed(2)} sq in</td></tr>` : ''}
+      ${report.manufacturer_info?.company_name ? `<tr><td>Manufacturer</td><td>${escapeHtml(report.manufacturer_info.company_name)}</td></tr>` : ''}
+      ${report.manufacturer_info?.country_of_origin ? `<tr><td>Country of Origin</td><td>${escapeHtml(report.manufacturer_info.country_of_origin)}</td></tr>` : ''}
+      ${report.target_market ? `<tr><td>Target Market</td><td>${escapeHtml(report.target_market)}</td></tr>` : ''}
+      ${report.detected_languages && report.detected_languages.length > 0 ? `<tr><td>Detected Languages</td><td>${report.detected_languages.map((l: string) => escapeHtml(l)).join(', ')}</td></tr>` : ''}
+      <tr><td>Analysis Date</td><td>${formatDate(report.created_at)}</td></tr>
+      <tr><td>AI Confidence</td><td>${report.ocr_confidence ? Math.round(report.ocr_confidence * 100) + '%' : 'N/A'}</td></tr>
+    </table>
+  </div>
+
+  ${report.allergen_declaration ? `
+  <div class="section">
+    <div class="section-title"><span class="section-number">03</span> Allergen Declaration</div>
+    <div style="background: #FEF3C7; border: 1px solid #FBBF24; border-radius: 8px; padding: 14px; font-size: 10px; color: #92400E;">
+      <strong>Declared Allergens:</strong> ${escapeHtml(report.allergen_declaration)}
+    </div>
+  </div>` : ''}
+
+  ${report.ingredient_list ? `
+  <div class="section no-break">
+    <div class="section-title"><span class="section-number">03b</span> Ingredient List (Extracted)</div>
+    <div class="data-box">
+      <div class="data-box-label">Ingredients as detected by AI Vision</div>
+      ${escapeHtml(report.ingredient_list)}
+    </div>
+  </div>` : ''}
+
+  ${report.nutrition_facts ? `
+  <div class="section no-break">
+    <div class="section-title"><span class="section-number">03c</span> Nutrition Facts (Extracted)</div>
+    <div class="data-box">
+      <div class="data-box-label">Nutrition panel as detected by AI Vision</div>
+      <table class="info-table" style="margin: 0;">
+        ${report.nutrition_facts.servingSize ? `<tr><td>Serving Size</td><td>${escapeHtml(report.nutrition_facts.servingSize)}</td></tr>` : ''}
+        ${report.nutrition_facts.servingsPerContainer ? `<tr><td>Servings Per Container</td><td>${escapeHtml(String(report.nutrition_facts.servingsPerContainer))}</td></tr>` : ''}
+        ${report.nutrition_facts.calories !== undefined ? `<tr><td>Calories</td><td>${report.nutrition_facts.calories}</td></tr>` : ''}
+        ${report.nutrition_facts.totalFat ? `<tr><td>Total Fat</td><td>${escapeHtml(report.nutrition_facts.totalFat)}</td></tr>` : ''}
+        ${report.nutrition_facts.saturatedFat ? `<tr><td>Saturated Fat</td><td>${escapeHtml(report.nutrition_facts.saturatedFat)}</td></tr>` : ''}
+        ${report.nutrition_facts.transFat ? `<tr><td>Trans Fat</td><td>${escapeHtml(report.nutrition_facts.transFat)}</td></tr>` : ''}
+        ${report.nutrition_facts.cholesterol ? `<tr><td>Cholesterol</td><td>${escapeHtml(report.nutrition_facts.cholesterol)}</td></tr>` : ''}
+        ${report.nutrition_facts.sodium ? `<tr><td>Sodium</td><td>${escapeHtml(report.nutrition_facts.sodium)}</td></tr>` : ''}
+        ${report.nutrition_facts.totalCarbohydrate ? `<tr><td>Total Carbohydrate</td><td>${escapeHtml(report.nutrition_facts.totalCarbohydrate)}</td></tr>` : ''}
+        ${report.nutrition_facts.dietaryFiber ? `<tr><td>Dietary Fiber</td><td>${escapeHtml(report.nutrition_facts.dietaryFiber)}</td></tr>` : ''}
+        ${report.nutrition_facts.totalSugars ? `<tr><td>Total Sugars</td><td>${escapeHtml(report.nutrition_facts.totalSugars)}</td></tr>` : ''}
+        ${report.nutrition_facts.addedSugars ? `<tr><td>Added Sugars</td><td>${escapeHtml(report.nutrition_facts.addedSugars)}</td></tr>` : ''}
+        ${report.nutrition_facts.protein ? `<tr><td>Protein</td><td>${escapeHtml(report.nutrition_facts.protein)}</td></tr>` : ''}
+        ${report.nutrition_facts.vitaminD ? `<tr><td>Vitamin D</td><td>${escapeHtml(report.nutrition_facts.vitaminD)}</td></tr>` : ''}
+        ${report.nutrition_facts.calcium ? `<tr><td>Calcium</td><td>${escapeHtml(report.nutrition_facts.calcium)}</td></tr>` : ''}
+        ${report.nutrition_facts.iron ? `<tr><td>Iron</td><td>${escapeHtml(report.nutrition_facts.iron)}</td></tr>` : ''}
+        ${report.nutrition_facts.potassium ? `<tr><td>Potassium</td><td>${escapeHtml(report.nutrition_facts.potassium)}</td></tr>` : ''}
+      </table>
+    </div>
+  </div>` : ''}
+</div>
+
+<!-- FINDINGS PAGES -->
+<div class="page content-page page-break">
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-header-logo">V</div>
+      <div class="page-header-brand">VEXIM Compliance AI</div>
+    </div>
+    <div class="page-header-right">
+      Report ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
+      ${formatDate(generatedAt)}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">04</span> Detailed Findings</div>
+    
+    ${sortedViolations.length === 0 ? `
+      <div style="text-align: center; padding: 40px; color: #16a34a;">
+        <div style="font-size: 48px; margin-bottom: 12px;">&#10003;</div>
+        <div style="font-size: 16px; font-weight: 700;">No Violations Found</div>
+        <div style="font-size: 11px; color: #64748b; margin-top: 8px;">This label meets all tested FDA compliance requirements.</div>
+      </div>
+    ` : sortedViolations.map((v, i) => {
+      const colors = getSeverityColor(v.severity)
+      return `
+      <div class="violation-card no-break" style="border-color: ${colors.border}; background: ${colors.bg};">
+        <div class="violation-header">
+          <div class="violation-title" style="color: ${colors.text}">
+            ${i + 1}. ${escapeHtml(v.category)}
+          </div>
+          <span class="severity-badge" style="background: ${colors.text}; color: white;">
+            ${v.severity.toUpperCase()}
+          </span>
+        </div>
+        
+        <div class="violation-description">${escapeHtml(v.description)}</div>
+        
+        ${v.regulation_reference ? `
+        <div class="violation-box" style="border-left: 3px solid ${colors.border};">
+          <div class="violation-box-label">Legal Basis</div>
+          <div class="violation-box-value" style="font-family: monospace; color: #3b82f6;">${escapeHtml(v.regulation_reference)}</div>
+          ${v.legal_basis ? `<div class="violation-box-value" style="margin-top: 4px;">${escapeHtml(v.legal_basis)}</div>` : ''}
+        </div>` : ''}
+        
+        ${v.suggested_fix ? `
+        <div class="violation-box" style="background: rgba(34, 197, 94, 0.08); border-left: 3px solid #22c55e;">
+          <div class="violation-box-label" style="color: #16a34a;">Recommended Fix</div>
+          <div class="violation-box-value">${escapeHtml(v.suggested_fix)}</div>
+        </div>` : ''}
+
+        ${v.enforcement_context ? `
+        <div class="violation-box" style="background: rgba(239, 68, 68, 0.05); border-left: 3px solid #ef4444;">
+          <div class="violation-box-label" style="color: #dc2626;">Enforcement History</div>
+          <div class="violation-box-value">${escapeHtml(v.enforcement_context)}</div>
+        </div>` : ''}
+
+        <div class="violation-meta">
+          ${v.confidence_score !== undefined ? `<span>AI Confidence: ${Math.round(v.confidence_score * 100)}%</span>` : ''}
+          ${v.risk_score !== undefined ? `<span>Risk Score: ${v.risk_score.toFixed(1)}/10</span>` : ''}
+          ${v.enforcement_frequency ? `<span>Enforcement Frequency: ${v.enforcement_frequency}x</span>` : ''}
+          ${v.citations?.length ? `<span>Citations: ${v.citations.length}</span>` : ''}
+        </div>
+
+        ${v.citations && v.citations.length > 0 ? `
+        <table class="citations-table" style="margin-top: 12px;">
+          <thead>
+            <tr>
+              <th>CFR Section</th>
+              <th>Citation Text</th>
+              <th>Source</th>
+              <th>Relevance</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${v.citations.map((c: Citation) => `
+            <tr>
+              <td style="font-family: monospace; white-space: nowrap;">${escapeHtml(c.section)}</td>
+              <td>${escapeHtml(c.text.slice(0, 200))}${c.text.length > 200 ? '...' : ''}</td>
+              <td>${escapeHtml(c.source)}</td>
+              <td>
+                <span class="relevance-bar"><span class="relevance-bar-fill" style="width: ${Math.round(c.relevance_score * 100)}%"></span></span>
+                ${Math.round(c.relevance_score * 100)}%
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>` : ''}
+      </div>`
+    }).join('')}
+  </div>
+</div>
+
+${importAlertViolations.length > 0 ? `
+<!-- IMPORT ALERT BORDER ENFORCEMENT PAGE -->
+<div class="page content-page page-break">
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-header-logo">V</div>
+      <div class="page-header-brand">VEXIM Compliance AI</div>
+    </div>
+    <div class="page-header-right">
+      Report ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
+      ${formatDate(generatedAt)}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">05</span> Border Enforcement — FDA Import Alerts</div>
+
+    <div class="port-warning" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left-color: #dc2626; margin-bottom: 20px;">
+      <div class="port-warning-label" style="color: #dc2626;">BORDER ENFORCEMENT RISK (Layer 4 — Risk Context Only)</div>
+      The following FDA Import Alerts were matched to this product or category. Import Alerts authorize FDA to detain shipments at US ports WITHOUT physical examination (DWPE). These are risk signals — not citations — and do not replace regulatory compliance requirements. Products from firms on the Red List are subject to automatic detention at all US ports of entry.
+    </div>
+
+    ${importAlertViolations.map((ia, i) => {
+      const isEntityMatch = ia.severity === 'critical'
+      const colors = getSeverityColor(ia.severity)
+      return `
+    <div class="violation-card no-break" style="border-color: ${isEntityMatch ? '#f87171' : '#fbbf24'}; background: ${isEntityMatch ? '#FEE2E2' : '#FEF3C7'};">
+      <div class="violation-header">
+        <div class="violation-title" style="color: ${isEntityMatch ? '#991B1B' : '#92400E'}">
+          ${i + 1}. ${escapeHtml(ia.category)}
+        </div>
+        <span class="severity-badge" style="background: ${isEntityMatch ? '#DC2626' : '#F59E0B'}; color: white;">
+          ${isEntityMatch ? 'DWPE — Red List Match' : 'Category Risk'}
+        </span>
+      </div>
+      <div class="violation-description">${escapeHtml(ia.description)}</div>
+      ${ia.regulation_reference ? `
+      <div class="violation-box" style="border-left: 3px solid ${isEntityMatch ? '#f87171' : '#fbbf24'};">
+        <div class="violation-box-label">Import Alert Reference</div>
+        <div class="violation-box-value" style="font-family: monospace; color: #3b82f6;">${escapeHtml(ia.regulation_reference)}</div>
+        ${ia.import_alert_number ? `<div class="violation-box-value" style="margin-top: 4px; font-size: 9px;"><a href="https://www.accessdata.fda.gov/cms_ia/importalert_${escapeHtml(ia.import_alert_number.replace(/-/g, ''))}.html" style="color: #3b82f6;">View on FDA.gov →</a></div>` : ''}
+      </div>` : ''}
+      ${ia.suggested_fix ? `
+      <div class="violation-box" style="background: rgba(34, 197, 94, 0.08); border-left: 3px solid #22c55e;">
+        <div class="violation-box-label" style="color: #16a34a;">Remediation Steps</div>
+        <div class="violation-box-value">${escapeHtml(ia.suggested_fix)}</div>
+      </div>` : ''}
+      <div class="violation-meta">
+        <span>Match Confidence: ${ia.confidence_score !== undefined ? Math.round(ia.confidence_score * 100) + '%' : 'N/A'}</span>
+        <span style="color: #64748b; font-style: italic;">Risk context only — not a regulatory citation</span>
+      </div>
+    </div>`
+    }).join('')}
+  </div>
+</div>` : ''}
+
+${((report.geometry_violations && report.geometry_violations.length > 0) ||
+  (report.contrast_violations && report.contrast_violations.length > 0) ||
+  (report.multilanguage_issues && report.multilanguage_issues.length > 0)) ? `
+<!-- TECHNICAL CHECKS PAGE -->
+<div class="page content-page page-break">
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-header-logo">V</div>
+      <div class="page-header-brand">VEXIM Compliance AI</div>
+    </div>
+    <div class="page-header-right">
+      Report ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
+      ${formatDate(generatedAt)}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">05b</span> Visual &amp; Technical Checks</div>
+
+    <div class="tech-grid">
+      ${report.geometry_violations && report.geometry_violations.length > 0 ? `
+      <div class="tech-card">
+        <div class="tech-card-title">
+          Geometry &amp; Layout
+          <span class="tech-card-badge">${report.geometry_violations.length} issue${report.geometry_violations.length > 1 ? 's' : ''}</span>
+        </div>
+        ${report.geometry_violations.map((gv: any) => `
+        <div class="tech-item">
+          <div class="tech-item-header">
+            <span class="tech-item-type">${escapeHtml((gv.type || '').replace(/_/g, ' '))}</span>
+            <span class="severity-badge" style="background: ${getSeverityColor(gv.severity).text}; color: white; font-size: 7px; padding: 2px 6px;">${(gv.severity || '').toUpperCase()}</span>
+          </div>
+          <div class="tech-item-desc">${escapeHtml(gv.description || '')}</div>
+          ${gv.regulation ? `<div style="font-family: monospace; font-size: 8px; color: #3b82f6; margin-top: 3px;">${escapeHtml(gv.regulation)}</div>` : ''}
+          ${(gv.expected || gv.actual) ? `
+          <div class="tech-item-values">
+            ${gv.expected ? `<span style="color: #16a34a;">Required: ${escapeHtml(String(gv.expected))}</span>` : ''}
+            ${gv.actual ? `<span style="color: #dc2626;">Actual: ${escapeHtml(String(gv.actual))}</span>` : ''}
+          </div>` : ''}
+        </div>`).join('')}
+      </div>` : ''}
+
+      ${report.contrast_violations && report.contrast_violations.length > 0 ? `
+      <div class="tech-card">
+        <div class="tech-card-title">
+          Color Contrast
+          <span class="tech-card-badge">${report.contrast_violations.length} issue${report.contrast_violations.length > 1 ? 's' : ''}</span>
+        </div>
+        ${report.contrast_violations.map((cv: any) => `
+        <div class="tech-item">
+          <div class="tech-item-desc">${escapeHtml(cv.description || '')}</div>
+          ${cv.ratio !== undefined ? `
+          <div style="margin-top: 4px; font-size: 9px;">
+            Contrast ratio: <strong style="color: ${cv.ratio >= 4.5 ? '#16a34a' : cv.ratio >= 3 ? '#f59e0b' : '#dc2626'}">${cv.ratio.toFixed(2)}:1</strong>
+            <span style="color: #94a3b8;">(minimum 4.5:1)</span>
+          </div>` : ''}
+          ${cv.colors ? `
+          <div style="margin-top: 4px; font-size: 8px; display: flex; align-items: center; gap: 8px;">
+            <span><span class="color-swatch" style="background: ${cv.colors.foreground};"></span>${escapeHtml(cv.colors.foreground)}</span>
+            <span style="color: #94a3b8;">on</span>
+            <span><span class="color-swatch" style="background: ${cv.colors.background};"></span>${escapeHtml(cv.colors.background)}</span>
+          </div>` : ''}
+          ${cv.recommendation ? `<div style="margin-top: 4px; font-size: 8px; color: #16a34a;">${escapeHtml(cv.recommendation)}</div>` : ''}
+        </div>`).join('')}
+      </div>` : ''}
+    </div>
+
+    ${report.multilanguage_issues && report.multilanguage_issues.length > 0 ? `
+    <div class="tech-card" style="margin-bottom: 16px;">
+      <div class="tech-card-title">
+        Multi-Language Compliance
+        <span class="tech-card-badge">${report.multilanguage_issues.length} check${report.multilanguage_issues.length > 1 ? 's' : ''}</span>
+      </div>
+      ${report.multilanguage_issues.map((ml: any) => `
+      <div class="tech-item">
+        <div class="tech-item-desc">${escapeHtml(ml.description || '')}</div>
+        ${ml.detectedLanguages && ml.detectedLanguages.length > 0 ? `
+        <div style="margin-top: 4px; font-size: 8px;">
+          Detected: ${ml.detectedLanguages.map((l: string) => `<span style="background: #f1f5f9; padding: 1px 6px; border-radius: 3px; margin-right: 4px;">${escapeHtml(l)}</span>`).join('')}
+        </div>` : ''}
+        ${ml.missingFields && ml.missingFields.length > 0 ? `
+        <div style="margin-top: 4px; font-size: 8px; color: #dc2626;">
+          Missing translations: ${ml.missingFields.map((f: string) => escapeHtml(f)).join(', ')}
+        </div>` : ''}
+      </div>`).join('')}
+    </div>` : ''}
+  </div>
+</div>` : ''}
+
+${report.commercial_summary ? `
+<!-- COMMERCIAL SUMMARY PAGE -->
+<div class="page content-page page-break">
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-header-logo">V</div>
+      <div class="page-header-brand">VEXIM Compliance AI</div>
+    </div>
+    <div class="page-header-right">
+      Report ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
+      ${formatDate(generatedAt)}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">05c</span> Commercial Analysis Summary</div>
+    <div class="summary-section">
+      ${report.commercial_summary.split('\n').map((line: string) => {
+        if (line.startsWith('### ')) return `<div class="summary-subheading">${escapeHtml(line.replace(/^### /, '').replace(/[^a-zA-Z0-9\s.,;:!?()\-\/]/g, '').trim())}</div>`
+        if (line.startsWith('## ')) return `<div class="summary-heading">${escapeHtml(line.replace(/^## /, ''))}</div>`
+        if (line.startsWith('**') && line.endsWith('**')) return `<div class="summary-text" style="font-weight: 600;">${escapeHtml(line.replace(/\*\*/g, ''))}</div>`
+        if (line.startsWith('- ')) return `<div class="summary-list-item">${escapeHtml(line.replace(/^- /, ''))}</div>`
+        if (line.trim() === '') return ''
+        return `<div class="summary-text">${escapeHtml(line.replace(/\*\*/g, ''))}</div>`
+      }).join('')}
+    </div>
+  </div>
+</div>` : ''}
+
+<!-- EXPERT RECOMMENDATIONS & SIGNATURE PAGE -->
+<div class="page content-page page-break">
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-header-logo">V</div>
+      <div class="page-header-brand">VEXIM Compliance AI</div>
+    </div>
+    <div class="page-header-right">
+      Report ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
+      ${formatDate(generatedAt)}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">06</span> Expert Recommendations</div>
+    
+    ${report.expert_tips && report.expert_tips.length > 0 ? `
+      ${report.expert_tips.map((tip: string, idx: number) => `
+      <div class="expert-tip">
+        <div class="expert-tip-label">Recommendation ${idx + 1}</div>
+        ${escapeHtml(tip)}
+      </div>`).join('')}
+    ` : `
+      <div class="expert-tip">
+        <div class="expert-tip-label">Vexim Expert Advice</div>
+        ${criticalCount > 0 
+          ? 'This label has critical FDA compliance issues that must be resolved before distribution to the US market. Failure to comply may result in Import Alert, product detention at port, or FDA Warning Letter.'
+          : warningCount > 0
+          ? 'This label meets minimum FDA requirements but has areas for improvement. Addressing the warnings will reduce enforcement risk and improve consumer trust.'
+          : 'This label demonstrates strong FDA compliance. Continue to monitor regulatory updates and maintain current labeling standards.'
+        }
+      </div>
+    `}
+
+    ${criticalCount > 0 ? `
+    <div class="port-warning">
+      <div class="port-warning-label">Port of Entry Advisory</div>
+      Products with labeling violations are commonly detained at US ports of entry (especially Long Beach, Los Angeles and Newark). Customs and Border Protection (CBP) collaborates with FDA on import inspections. Correcting all critical issues before shipment is strongly recommended.
+    </div>` : ''}
+
+    ${report.review_notes ? `
+    <div class="expert-tip">
+      <div class="expert-tip-label">Expert Review Notes</div>
+      ${escapeHtml(report.review_notes)}
+    </div>` : ''}
+  </div>
+
+  <!-- Action Items Summary -->
+  <div class="section">
+    <div class="section-title"><span class="section-number">07</span> Action Items Summary</div>
+    <table class="citations-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Priority</th>
+          <th>Issue</th>
+          <th>Action Required</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sortedViolations.map((v, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td><span class="severity-badge" style="background: ${getSeverityColor(v.severity).text}; color: white; font-size: 7px; padding: 2px 6px;">${v.severity.toUpperCase()}</span></td>
+          <td>${escapeHtml(v.category)}</td>
+          <td>${escapeHtml(v.suggested_fix?.slice(0, 120) || 'See detailed finding')}${(v.suggested_fix?.length || 0) > 120 ? '...' : ''}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Verification Status -->
+  <div style="display: flex; justify-content: center; margin: 20px 0;">
+    ${report.status === 'verified' 
+      ? `<div class="verification-badge verified">
+          <span style="font-size: 14px;">&#10003;</span>
+          Expert Verified Report
+        </div>`
+      : `<div class="verification-badge pending">
+          <span style="font-size: 14px;">&#9888;</span>
+          Pending Expert Verification
+        </div>`
+    }
+  </div>
+
+  ${report.status !== 'verified' ? `
+  <div class="cta-box">
+    <div class="cta-box-title">Get Expert Verification</div>
+    <div class="cta-box-text">
+      Have a qualified FDA compliance expert review and verify this report.<br/>
+      Expert verification adds credibility and detailed recommendations.
+    </div>
+    <a href="https://vexim.global/pricing" class="cta-box-link">Request Expert Review</a>
+  </div>` : ''}
+
+  <!-- Signature Section -->
+  <div class="signature-section">
+    <div style="font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">Certification</div>
+    <div style="font-size: 9px; color: #64748b; margin-bottom: 16px;">
+      This report was generated by Vexim Compliance AI and ${report.status === 'verified' ? 'verified by a qualified FDA compliance expert' : 'is pending expert verification'}.
+      The findings are based on automated analysis of the submitted label against current FDA regulations (21 CFR) and enforcement precedents.
+    </div>
+    <div class="signature-grid">
+      <div class="signature-box">
+        <div class="signature-name">${escapeHtml(generatedBy)}</div>
+        <div class="signature-title">${report.status === 'verified' ? 'FDA Compliance Expert' : 'Vexim AI Analysis Engine'}</div>
+        <div class="signature-title">${formatDate(generatedAt)}</div>
+      </div>
+      <div class="signature-box">
+        <div class="signature-name">${companyInfo.name}</div>
+        <div class="signature-title">Cert. ID: ${companyInfo.certificationId}</div>
+        <div class="signature-title">${companyInfo.website}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Disclaimer -->
+  <div class="disclaimer">
+    <div class="disclaimer-title">Legal Disclaimer</div>
+    <p>
+      This report is provided for informational purposes only and does not constitute legal advice.
+      While Vexim Compliance AI uses advanced AI technology and comprehensive FDA regulation databases
+      (including 4,064+ regulations, FDA Warning Letters, FDA Recalls, and FDA Import Alerts) to identify potential
+      compliance issues, it should not be used as a substitute for consultation with a qualified
+      FDA regulatory affairs professional. Import Alert findings are risk signals only and do not constitute regulatory violations or legal citations. Vexim Global is not liable for any decisions made based
+      on this report. FDA regulations are subject to change, and it is the responsibility of the
+      label owner to ensure ongoing compliance. This report is valid as of the date of generation
+      and should be reviewed if regulations change.
+    </p>
+  </div>
+</div>
+
+<div class="watermark">VEXIM</div>
+
+</body>
+</html>`
+}

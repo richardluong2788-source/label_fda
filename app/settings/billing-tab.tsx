@@ -1,0 +1,268 @@
+'use client'
+
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { Separator } from '@/components/ui/separator'
+import { CreditCard, Calendar, TrendingUp, CheckCircle2, Clock, XCircle } from 'lucide-react'
+import Link from 'next/link'
+import { format } from 'date-fns'
+import { vi } from 'date-fns/locale'
+
+interface Plan {
+  id: string
+  name: string
+  price_vnd: number
+  reports_limit: number
+  expert_reviews_limit: number
+  features: string[]
+}
+
+interface Subscription {
+  plan_id: string
+  status: string
+  reports_used: number
+  current_period_start: string
+  current_period_end: string
+  last_payment_at: string | null
+  last_payment_amount_vnd: number | null
+  subscription_plans: Plan
+}
+
+interface Transaction {
+  id: string
+  amount_vnd: number
+  status: string
+  plan_id: string
+  created_at: string
+  vnpay_txn_ref: string | null
+  vnpay_bank_code: string | null
+}
+
+interface Props {
+  subscription: Subscription | null
+  transactions: Transaction[]
+  allPlans: Plan[]
+}
+
+const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  active:          { label: 'Đang hoạt động', variant: 'default' },
+  cancelled:       { label: 'Đã huỷ',         variant: 'destructive' },
+  expired:         { label: 'Hết hạn',         variant: 'destructive' },
+  pending_payment: { label: 'Chờ thanh toán',  variant: 'secondary' },
+}
+
+const TXN_STATUS_ICONS: Record<string, React.ReactNode> = {
+  completed: <CheckCircle2 className="h-4 w-4 text-green-600" />,
+  pending:   <Clock        className="h-4 w-4 text-yellow-500" />,
+  failed:    <XCircle      className="h-4 w-4 text-destructive" />,
+  expired:   <XCircle      className="h-4 w-4 text-muted-foreground" />,
+}
+
+export default function BillingTab({ subscription, transactions, allPlans }: Props) {
+  if (!subscription) {
+    return (
+      <Card className="p-8 text-center">
+        <p className="text-muted-foreground mb-4">Không tìm thấy thông tin gói.</p>
+        <Button asChild>
+          <Link href="/pricing">Xem bảng giá</Link>
+        </Button>
+      </Card>
+    )
+  }
+
+  const plan = subscription.subscription_plans
+  const reportsLimit = plan.reports_limit === -1 ? Infinity : plan.reports_limit
+  const usagePercent =
+    reportsLimit === Infinity ? 0 : Math.min(100, (subscription.reports_used / reportsLimit) * 100)
+
+  const periodEnd = new Date(subscription.current_period_end)
+  const daysLeft = Math.max(
+    0,
+    Math.ceil((periodEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  )
+
+  const statusInfo = STATUS_LABELS[subscription.status] ?? { label: subscription.status, variant: 'outline' as const }
+
+  // Plans to show as upgrade options (exclude current and enterprise)
+  const upgradePlans = allPlans.filter(
+    (p) => p.id !== plan.id && p.id !== 'enterprise' && p.price_vnd > plan.price_vnd
+  )
+
+  return (
+    <div className="space-y-6">
+      {/* Current plan card */}
+      <Card className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Gói hiện tại</p>
+            <h2 className="text-2xl font-bold">{plan.name}</h2>
+          </div>
+          <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+        </div>
+
+        <div className="grid sm:grid-cols-3 gap-4 mb-5">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Lượt đã dùng</p>
+              <p className="font-semibold">
+                {subscription.reports_used} /{' '}
+                {reportsLimit === Infinity ? '∞' : reportsLimit}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Gia hạn tiếp theo</p>
+              <p className="font-semibold">
+                {format(periodEnd, 'dd/MM/yyyy', { locale: vi })}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Còn lại</p>
+              <p className="font-semibold">{daysLeft} ngày</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Usage bar */}
+        {reportsLimit !== Infinity && (
+          <div className="mb-4">
+            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <span>Lượt phân tích tháng này</span>
+              <span>
+                {subscription.reports_used}/{reportsLimit} lượt
+              </span>
+            </div>
+            <Progress
+              value={usagePercent}
+              className={`h-2 ${usagePercent >= 80 ? '[&>div]:bg-destructive' : ''}`}
+            />
+            {usagePercent >= 80 && (
+              <p className="text-xs text-destructive mt-1">
+                Sắp hết quota — nâng cấp gói để tiếp tục.
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/pricing">Xem tất cả gói</Link>
+          </Button>
+          {plan.id !== 'free' && (
+            <Button
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              asChild
+            >
+              <Link href="/contact?subject=cancel">Huỷ gói</Link>
+            </Button>
+          )}
+        </div>
+      </Card>
+
+      {/* Upgrade suggestions */}
+      {upgradePlans.length > 0 && (
+        <div>
+          <h3 className="font-semibold mb-3">Nâng cấp gói</h3>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {upgradePlans.map((p) => (
+              <Card key={p.id} className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="font-semibold">{p.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {p.reports_limit === -1
+                      ? 'Không giới hạn lượt'
+                      : `${p.reports_limit} lượt / tháng`}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-sm">
+                    {p.price_vnd.toLocaleString('vi-VN')}₫
+                    <span className="text-muted-foreground font-normal">/tháng</span>
+                  </p>
+                  <Button size="sm" className="mt-2" asChild>
+                    <Link href={`/checkout?plan=${p.id}&amount=${p.price_vnd}`}>
+                      Nâng cấp
+                    </Link>
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Payment history */}
+      <div>
+        <h3 className="font-semibold mb-3">Lịch sử thanh toán</h3>
+        <Card className="divide-y divide-border">
+          {transactions.length === 0 ? (
+            <div className="p-6 text-center text-muted-foreground text-sm">
+              Chưa có giao dịch nào.
+            </div>
+          ) : (
+            transactions.map((txn) => (
+              <div
+                key={txn.id}
+                className="flex items-center justify-between px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  {TXN_STATUS_ICONS[txn.status] ?? <Clock className="h-4 w-4" />}
+                  <div>
+                    <p className="text-sm font-medium">
+                      {txn.plan_id.charAt(0).toUpperCase() + txn.plan_id.slice(1)} Plan
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(txn.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                      {txn.vnpay_bank_code ? ` · ${txn.vnpay_bank_code}` : ''}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold">
+                    {txn.amount_vnd.toLocaleString('vi-VN')}₫
+                  </p>
+                  <Badge
+                    variant={
+                      txn.status === 'completed'
+                        ? 'default'
+                        : txn.status === 'pending'
+                        ? 'secondary'
+                        : 'destructive'
+                    }
+                    className="text-xs"
+                  >
+                    {txn.status === 'completed'
+                      ? 'Thành công'
+                      : txn.status === 'pending'
+                      ? 'Đang chờ'
+                      : txn.status === 'failed'
+                      ? 'Thất bại'
+                      : 'Hết hạn'}
+                  </Badge>
+                </div>
+              </div>
+            ))
+          )}
+        </Card>
+      </div>
+
+      <Separator />
+
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <CreditCard className="h-4 w-4" />
+        <span>
+          Thanh toán qua QR ngân hàng Việt Nam (VNPay). Không lưu thông tin thẻ.
+        </span>
+      </div>
+    </div>
+  )
+}
