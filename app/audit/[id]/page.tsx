@@ -1022,9 +1022,27 @@ export default function AuditPage() {
           </Card>
         </div>
 
+        {/* ── Re-analyze notice for reports generated before domain-aware ruleset fix ── */}
+        {report.created_at && new Date(report.created_at) < new Date('2026-03-02T12:00:00Z') && (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-5 py-4 mb-2">
+            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-amber-900 text-sm mb-0.5">
+                Report này được tạo trước khi cập nhật ruleset domain-aware
+              </p>
+              <p className="text-sm text-amber-800 leading-relaxed">
+                Hệ thống đã được cập nhật để phân biệt quy định riêng cho <strong>Cosmetic</strong>,{' '}
+                <strong>Food/Supplement</strong> và <strong>OTC Drug</strong>. Một số vi phạm trong report
+                này (ví dụ: "prevent" bị flag cho sản phẩm cosmetic) có thể không còn chính xác.
+                Vui lòng chạy lại phân tích để nhận kết quả cập nhật.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ── Risk Assessment + Expert Tips ─────────────────────────────────────── */}
         {(report.overall_risk_score !== undefined || (report.expert_tips && report.expert_tips.length > 0)) && (
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <div className={`grid gap-6 mb-8 ${report.expert_tips && report.expert_tips.length > 0 ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
             {/* Risk Score Card */}
             {report.overall_risk_score !== undefined && (
               <Card className="p-6">
@@ -1033,9 +1051,10 @@ export default function AuditPage() {
                   <h2 className="font-semibold text-lg">FDA Enforcement Risk</h2>
                 </div>
 
-                {/* Risk Gauge */}
-                <div className="flex items-center gap-6 mb-5">
-                  <div className="relative flex items-center justify-center">
+                {/* Risk Gauge — flex row: gauge | stats | (projected score when full-width) */}
+                <div className="flex items-center gap-8 mb-5">
+                  {/* Circular gauge */}
+                  <div className="relative flex items-center justify-center shrink-0">
                     <svg viewBox="0 0 100 100" className="h-28 w-28 -rotate-90">
                       <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted/20" />
                       <circle
@@ -1060,10 +1079,11 @@ export default function AuditPage() {
                     </span>
                   </div>
 
+                  {/* Stats */}
                   <div className="flex-1 space-y-3">
-                    <div>
-                      <span className="text-xs text-muted-foreground">Muc do rui ro</span>
-                      <Badge className={`ml-2 ${
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-muted-foreground">Mức độ rủi ro</span>
+                      <Badge className={`${
                         report.risk_assessment === 'Critical' || report.risk_assessment === 'High'
                           ? 'bg-red-100 text-red-800 hover:bg-red-100'
                           : report.risk_assessment === 'Medium-High' || report.risk_assessment === 'Medium'
@@ -1077,32 +1097,34 @@ export default function AuditPage() {
                     {report.projected_risk_score !== undefined && report.projected_risk_score < report.overall_risk_score && (
                       <div className="flex items-center gap-2">
                         <TrendingDown className="h-4 w-4 text-green-600 shrink-0" />
-                        <div className="text-xs">
-                          <span className="text-muted-foreground">Sau khi sua loi nghiem trong: </span>
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Sau khi sửa lỗi nghiêm trọng: </span>
                           <span className="font-semibold text-green-700">{report.projected_risk_score.toFixed(1)}/10</span>
                         </div>
                       </div>
                     )}
 
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Diem risk dua tren muc do vi pham, lich su enforcement cua FDA, va Warning Letters lien quan.
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Điểm risk dựa trên mức độ vi phạm, lịch sử enforcement của FDA, và Warning Letters liên quan.
                     </p>
                   </div>
                 </div>
 
-                {/* Risk Scale Legend */}
-                <div className="flex items-center gap-1 pt-3 border-t">
-                  <div className="flex-1 h-1.5 rounded-full bg-green-400" />
-                  <div className="flex-1 h-1.5 rounded-full bg-green-300" />
-                  <div className="flex-1 h-1.5 rounded-full bg-amber-300" />
-                  <div className="flex-1 h-1.5 rounded-full bg-amber-400" />
-                  <div className="flex-1 h-1.5 rounded-full bg-red-400" />
-                  <div className="flex-1 h-1.5 rounded-full bg-red-500" />
-                </div>
-                <div className="flex justify-between mt-1">
-                  <span className="text-[10px] text-muted-foreground">Low (0)</span>
-                  <span className="text-[10px] text-muted-foreground">Medium (5)</span>
-                  <span className="text-[10px] text-muted-foreground">Critical (10)</span>
+                {/* Risk Scale Legend — full width bar */}
+                <div className="pt-4 border-t">
+                  <div className="flex items-center gap-0.5 mb-1.5">
+                    <div className="flex-1 h-2 rounded-l-full bg-green-400" />
+                    <div className="flex-1 h-2 bg-green-300" />
+                    <div className="flex-1 h-2 bg-amber-300" />
+                    <div className="flex-1 h-2 bg-amber-400" />
+                    <div className="flex-1 h-2 bg-red-400" />
+                    <div className="flex-1 h-2 rounded-r-full bg-red-500" />
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[11px] text-muted-foreground">Low (0)</span>
+                    <span className="text-[11px] text-muted-foreground">Medium (5)</span>
+                    <span className="text-[11px] text-muted-foreground">Critical (10)</span>
+                  </div>
                 </div>
               </Card>
             )}
@@ -1595,7 +1617,14 @@ export default function AuditPage() {
           (report.contrast_violations && report.contrast_violations.length > 0) ||
           (report.multilanguage_issues && report.multilanguage_issues.length > 0)
         ) && (
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className={`grid gap-4 ${(() => {
+            const count = [
+              report.geometry_violations?.length > 0,
+              report.contrast_violations?.length > 0,
+              report.multilanguage_issues?.length > 0,
+            ].filter(Boolean).length
+            return count === 1 ? 'grid-cols-1' : count === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'
+          })()}`}>
             {/* Geometry Violations */}
             {report.geometry_violations && report.geometry_violations.length > 0 && (
               <Card className="p-5">
