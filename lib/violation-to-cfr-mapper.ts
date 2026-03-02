@@ -111,26 +111,39 @@ export class ViolationToCFRMapper {
   }
 
   /**
-   * Map ingredient order violations
-   * NOTE: This is a SOFT WARNING only - cannot definitively determine order without weight data
+   * Map ingredient order violations.
+   * NOTE: This is a SOFT WARNING only — cannot definitively determine order without weight data.
+   *
+   * CFR reference is domain-dependent:
+   *   food / supplement → 21 CFR 101.4(a)(1)  (Nutrition labeling — ingredients by weight)
+   *   cosmetic          → 21 CFR 701.3(a)      (Cosmetic labeling — INCI by weight)
+   *   drug_otc          → 21 CFR 201.10(g)     (Drug labeling — inactive ingredients)
    */
   static mapIngredientOrderViolation(
     ingredients: string[],
-    regulation: KnowledgeSearchResult | null
+    regulation: KnowledgeSearchResult | null,
+    domain: ProductDomain = 'food'
   ): ViolationMapping | null {
-    // ONLY create violation if we have substantial ingredient list (3+ items)
-    // AND this is just a reminder to verify, not a definitive violation
-    if (ingredients.length >= 3) {
-      return {
-        type: 'ingredient_order',
-        severity: 'warning',
-        detectedValue: ingredients.join(', '),
-        requiredValue: 'Descending order by weight',
-        regulationSection: regulation?.regulation_id || '21 CFR 101.4(a)(1)',
-        logicCondition: 'ingredients detected - verify order matches actual weights'
-      }
+    if (ingredients.length < 3) return null
+
+    const domainCfrMap: Record<ProductDomain, string> = {
+      food:      '21 CFR 101.4(a)(1)',
+      supplement:'21 CFR 101.4(a)(1)',
+      cosmetic:  '21 CFR 701.3(a)',
+      drug_otc:  '21 CFR 201.10(g)',
+      device:    '21 CFR 801',
     }
-    return null
+
+    const regulationSection = regulation?.regulation_id || domainCfrMap[domain] || '21 CFR 101.4(a)(1)'
+
+    return {
+      type: 'ingredient_order',
+      severity: 'warning',
+      detectedValue: ingredients.join(', '),
+      requiredValue: 'Descending order by predominance (weight)',
+      regulationSection,
+      logicCondition: 'ingredients detected — verify order matches actual formulation weights'
+    }
   }
 
   /**
@@ -226,12 +239,16 @@ export class ViolationToCFRMapper {
     const exemptFields = packagingFormat ? getExemptFields(packagingFormat, domain) : []
     const minFontForFormat = packagingFormat ? getMinFontSize(packagingFormat, pdpArea, domain) : 6
 
-    // Find relevant regulations
+    // Find relevant regulations — ingredient order CFR differs by domain
     const fontSizeReg = regulations.find(r => r.regulation_id.includes('101.9') && r.content.toLowerCase().includes('font'))
     const roundingReg = regulations.find(r => r.regulation_id.includes('101.9(c)'))
     const netWeightReg = regulations.find(r => r.regulation_id.includes('101.105'))
-    const ingredientReg = regulations.find(r => r.regulation_id.includes('101.4'))
     const allergenReg = regulations.find(r => r.content.toLowerCase().includes('allergen'))
+
+    // Pick ingredient-order regulation by domain:
+    //   cosmetic  → 21 CFR 701.3  |  food/supplement → 21 CFR 101.4
+    const ingredientRegSection = domain === 'cosmetic' ? '701.3' : '101.4'
+    const ingredientReg = regulations.find(r => r.regulation_id.includes(ingredientRegSection))
 
     // Check font size for Nutrition Facts title
     // CRITICAL FIX: "Nutrition Facts" is NOT in brandName field!
@@ -302,10 +319,10 @@ export class ViolationToCFRMapper {
       if (violation) violations.push(violation)
     }
 
-    // Check ingredient order
+    // Check ingredient order — pass domain so the correct CFR section is cited
     // PACKAGING FORMAT: Skip for formats that don't require full ingredient list
     if (visionResult.ingredients.length > 0 && !exemptFields.includes('ingredient_list')) {
-      const violation = this.mapIngredientOrderViolation(visionResult.ingredients, ingredientReg || null)
+      const violation = this.mapIngredientOrderViolation(visionResult.ingredients, ingredientReg || null, domain)
       if (violation) violations.push(violation)
     }
 
