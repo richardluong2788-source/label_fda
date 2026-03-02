@@ -18,7 +18,8 @@ import { NextResponse } from 'next/server'
  * Frequency: 24h (per spec)
  */
 
-const DELAY_BETWEEN_FETCHES_MS = 1500 // Be polite to FDA servers
+const DELAY_BETWEEN_FETCHES_MS = 800  // Reduced: 404s now fail-fast, no retry needed
+const MAX_ALERTS_PER_RUN = 60         // Process at most 60 alerts per cron run to stay within 5-min limit
 
 export const maxDuration = 300 // 5 min timeout (max for hobby plan)
 
@@ -58,7 +59,7 @@ export async function GET(request: Request) {
     const supabase = createAdminClient()
 
     // Step 1: Fetch priority alerts from FDA
-    const { alerts, errors: fetchErrors } = await fetchPriorityAlerts(DELAY_BETWEEN_FETCHES_MS)
+    const { alerts, errors: fetchErrors } = await fetchPriorityAlerts(DELAY_BETWEEN_FETCHES_MS, MAX_ALERTS_PER_RUN)
 
     console.log(`[IA Cron] Fetched ${alerts.length} alerts, ${fetchErrors.length} errors`)
 

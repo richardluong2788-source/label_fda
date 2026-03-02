@@ -57,6 +57,8 @@ interface AlertIndexEntry {
   alert_number: string
   title: string
   detail_url: string
+  /** Raw href scraped from the index page <a> tag — may be relative or absolute */
+  href_from_index: string | null
   publish_date: string | null
 }
 
@@ -123,6 +125,18 @@ const SKIP_PREFIXES = new Set([
 
 // ─── Helper: Fetch with retry and exponential backoff ─────────────────────
 
+/**
+ * Custom error class to signal 404 Not Found without retrying.
+ * When FDA returns 404 for a detail page, we skip it immediately
+ * instead of burning 3 retry slots (3 × 14s ≈ 42s wasted per alert).
+ */
+class NotFoundError extends Error {
+  constructor(url: string) {
+    super(`HTTP 404: Not Found — ${url}`)
+    this.name = 'NotFoundError'
+  }
+}
+
 async function fetchWithRetry(
   url: string,
   maxRetries = 3,
@@ -144,6 +158,11 @@ async function fetchWithRetry(
       })
 
       clearTimeout(timeout)
+
+      // 404 — page does not exist, no point retrying
+      if (response.status === 404) {
+        throw new NotFoundError(url)
+      }
 
       // Handle rate limiting (429) — wait and retry
       if (response.status === 429) {
@@ -170,6 +189,9 @@ async function fetchWithRetry(
 
       return await response.text()
     } catch (err: any) {
+      // Never retry 404s — the page simply does not exist
+      if (err instanceof NotFoundError) throw err
+
       if (attempt < maxRetries) {
         // Exponential backoff: 2s, 4s, 8s
         const backoffMs = baseDelayMs * Math.pow(2, attempt)
@@ -183,6 +205,55 @@ async function fetchWithRetry(
     }
   }
   throw new Error('Unreachable')
+}
+
+/**
+ * Builds candidate detail-page URLs to try for a given alert number.
+ *
+ * FDA historically used `importalert_XXYY.html` (zero-padded 4-digit), but has
+ * also used `importalert_XYYYY.html` (no leading zero) and other variants.
+ * We generate all plausible patterns and try them in order.
+ *
+ * Examples for alert "03-05":
+ *   importalert_0305.html   ← zero-padded (old, may 404)
+ *   importalert_305.html    ← no leading zero
+ *   importalert_03_05.html  ← underscore separator
+ *
+ * Examples for alert "16-120":
+ *   importalert_16120.html
+ *   importalert_16_120.html
+ */
+function buildDetailUrlCandidates(alertNumber: string, hrefFromIndex: string | null): string[] {
+  const candidates: string[] = []
+
+  // Always try the href scraped directly from the index page first — it's the most reliable
+  if (hrefFromIndex) {
+    const resolved = hrefFromIndex.startsWith('http')
+      ? hrefFromIndex
+      : `${FDA_BASE_URL}/cms_ia/${hrefFromIndex.replace(/^\/cms_ia\//, '')}`
+    candidates.push(resolved)
+  }
+
+  // Generate pattern-based fallbacks from the alert number
+  const [prefix, suffix] = alertNumber.split('-')
+  if (prefix && suffix) {
+    const padded = `${prefix.padStart(2, '0')}${suffix.padStart(2, '0')}`         // e.g. "0305"
+    const noLead = `${parseInt(prefix, 10)}${suffix.padStart(2, '0')}`             // e.g.  "305"
+    const full   = `${prefix}${suffix}`                                             // e.g. "1620" or "16120"
+    const noLeadFull = `${parseInt(prefix, 10)}${suffix}`                           // e.g.  "620"
+
+    const uniqueSlugs = [...new Set([padded, noLead, full, noLeadFull])]
+    for (const slug of uniqueSlugs) {
+      candidates.push(`${FDA_BASE_URL}/cms_ia/importalert_${slug}.html`)
+    }
+
+    // Underscore variants
+    candidates.push(`${FDA_BASE_URL}/cms_ia/importalert_${prefix}_${suffix}.html`)
+  }
+
+  // Deduplicate while preserving order
+  const seen = new Set<string>()
+  return candidates.filter(c => { if (seen.has(c)) return false; seen.add(c); return true })
 }
 
 function sleep(ms: number): Promise<void> {
@@ -224,9 +295,12 @@ async function fetchAllAlertCodes(): Promise<AlertIndexEntry[]> {
 
     const alertNumber = alertMatch[1]
 
-    // Build full URL
+    // Preserve the raw href exactly as-is from the index (may be relative like "importalert_305.html")
+    const rawHref = href || null
+
+    // Build full URL from href for the primary detail_url
     if (href && !href.startsWith('http')) {
-      href = `${FDA_BASE_URL}/cms_ia/${href}`
+      href = href.startsWith('/') ? `${FDA_BASE_URL}${href}` : `${FDA_BASE_URL}/cms_ia/${href}`
     }
 
     // Extract publish date from last cell if available
@@ -237,7 +311,9 @@ async function fetchAllAlertCodes(): Promise<AlertIndexEntry[]> {
     entries.push({
       alert_number: alertNumber,
       title: title || `Import Alert ${alertNumber}`,
-      detail_url: href || `${FDA_BASE_URL}/cms_ia/importalert_${alertNumber.replace('-', '')}.html`,
+      // detail_url will be overridden by buildDetailUrlCandidates in scrapeAlertDetail
+      detail_url: href || '',
+      href_from_index: rawHref,
       publish_date: publishDate,
     })
   })
@@ -248,9 +324,9 @@ async function fetchAllAlertCodes(): Promise<AlertIndexEntry[]> {
       '[IA Scraper] Table parsing found 0 entries, trying link-based fallback...'
     )
     $('a[href*="importalert_"]').each((_i, el) => {
-      const href = $(el).attr('href') || ''
+      const rawHref = $(el).attr('href') || ''
       const text = $(el).text().trim()
-      const alertMatch = text.match(/(\d{2}-\d+)/) || href.match(/importalert_(\d+)/)
+      const alertMatch = text.match(/(\d{2}-\d+)/) || rawHref.match(/importalert_(\d+)/)
       if (!alertMatch) return
 
       let alertNumber = alertMatch[1]
@@ -259,14 +335,17 @@ async function fetchAllAlertCodes(): Promise<AlertIndexEntry[]> {
         alertNumber = alertNumber.slice(0, 2) + '-' + alertNumber.slice(2)
       }
 
-      const fullUrl = href.startsWith('http')
-        ? href
-        : `${FDA_BASE_URL}/cms_ia/${href}`
+      const fullUrl = rawHref.startsWith('http')
+        ? rawHref
+        : rawHref.startsWith('/')
+          ? `${FDA_BASE_URL}${rawHref}`
+          : `${FDA_BASE_URL}/cms_ia/${rawHref}`
 
       entries.push({
         alert_number: alertNumber,
         title: text || `Import Alert ${alertNumber}`,
         detail_url: fullUrl,
+        href_from_index: rawHref,
         publish_date: null,
       })
     })
@@ -311,7 +390,31 @@ function isRelevantAlert(alertNumber: string): boolean {
 async function scrapeAlertDetail(
   entry: AlertIndexEntry
 ): Promise<ImportAlertRaw> {
-  const html = await fetchWithRetry(entry.detail_url)
+  // Try all candidate URLs in order — stop at the first one that returns 200
+  const candidates = buildDetailUrlCandidates(entry.alert_number, entry.href_from_index)
+  let html: string | null = null
+  let resolvedUrl = entry.detail_url
+
+  for (const candidateUrl of candidates) {
+    try {
+      html = await fetchWithRetry(candidateUrl)
+      resolvedUrl = candidateUrl
+      break
+    } catch (err: any) {
+      if (err instanceof NotFoundError) {
+        console.warn(`[IA Scraper] 404 for ${candidateUrl}, trying next candidate...`)
+        continue
+      }
+      throw err // Re-throw non-404 errors immediately
+    }
+  }
+
+  if (!html) {
+    throw new Error(
+      `All URL candidates returned 404 for alert ${entry.alert_number}: ${candidates.join(', ')}`
+    )
+  }
+
   const $ = cheerio.load(html)
 
   // Extract title from page (may be more descriptive than index)
@@ -423,7 +526,7 @@ async function scrapeAlertDetail(
     effective_date: effectiveDate,
     last_updated_date: lastUpdatedDate,
     extracted_content: extractedContent.slice(0, 5000),
-    source_url: entry.detail_url,
+    source_url: resolvedUrl,
     country_scope: countryScope,
   }
 }
@@ -655,7 +758,8 @@ function parseUSDate(dateStr: string): string | null {
  * @param delayMs - Delay between requests to be polite to FDA servers (default 1500ms)
  */
 export async function fetchPriorityAlerts(
-  delayMs: number = 1500
+  delayMs: number = 800,
+  maxAlerts: number = 60
 ): Promise<FetchResult> {
   const alerts: ImportAlertRaw[] = []
   const errors: { alert_number: string; error: string }[] = []
@@ -674,24 +778,32 @@ export async function fetchPriorityAlerts(
       isRelevantAlert(e.alert_number)
     )
 
+    // Apply batch limit — process at most maxAlerts per run to prevent timeout
+    const batchEntries = relevantEntries.slice(0, maxAlerts)
+
     console.log(
       `[IA Scraper] Filtered to ${relevantEntries.length} industry-relevant alerts (from ${allEntries.length} total)`
     )
+    if (batchEntries.length < relevantEntries.length) {
+      console.log(
+        `[IA Scraper] Batch limited to ${batchEntries.length}/${relevantEntries.length} alerts this run`
+      )
+    }
 
     // Step 3: Scrape each alert detail page
-    for (let i = 0; i < relevantEntries.length; i++) {
-      const entry = relevantEntries[i]
+    for (let i = 0; i < batchEntries.length; i++) {
+      const entry = batchEntries[i]
 
       try {
         console.log(
-          `[IA Scraper] Processing ${i + 1}/${relevantEntries.length}: ${entry.alert_number} - ${entry.title.slice(0, 60)}...`
+          `[IA Scraper] Processing ${i + 1}/${batchEntries.length}: ${entry.alert_number} - ${entry.title.slice(0, 60)}...`
         )
 
         const alert = await scrapeAlertDetail(entry)
         alerts.push(alert)
 
         // Rate limit — be polite to FDA servers
-        if (delayMs > 0 && i < relevantEntries.length - 1) {
+        if (delayMs > 0 && i < batchEntries.length - 1) {
           await sleep(delayMs)
         }
       } catch (err: any) {
