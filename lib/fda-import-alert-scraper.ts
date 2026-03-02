@@ -208,52 +208,55 @@ async function fetchWithRetry(
 }
 
 /**
- * Builds candidate detail-page URLs to try for a given alert number.
+ * Scans FDA's sequential importalert_N.html IDs (1 to maxId) in parallel batches
+ * and builds a map of { alertNumber → detailUrl }.
  *
- * FDA historically used `importalert_XXYY.html` (zero-padded 4-digit), but has
- * also used `importalert_XYYYY.html` (no leading zero) and other variants.
- * We generate all plausible patterns and try them in order.
+ * FDA uses opaque numeric IDs (e.g. importalert_3.html = alert 03-05) that cannot
+ * be derived from the alert number — they must be discovered by fetching each ID
+ * and reading the "Import Alert XX-YY" heading from the page.
  *
- * Examples for alert "03-05":
- *   importalert_0305.html   ← zero-padded (old, may 404)
- *   importalert_305.html    ← no leading zero
- *   importalert_03_05.html  ← underscore separator
- *
- * Examples for alert "16-120":
- *   importalert_16120.html
- *   importalert_16_120.html
+ * We scan IDs in parallel batches to keep runtime acceptable.
  */
-function buildDetailUrlCandidates(alertNumber: string, hrefFromIndex: string | null): string[] {
-  const candidates: string[] = []
+async function buildAlertIdMap(
+  maxId: number = 300,
+  batchSize: number = 20
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>() // alertNumber → full URL
 
-  // Always try the href scraped directly from the index page first — it's the most reliable
-  if (hrefFromIndex) {
-    const resolved = hrefFromIndex.startsWith('http')
-      ? hrefFromIndex
-      : `${FDA_BASE_URL}/cms_ia/${hrefFromIndex.replace(/^\/cms_ia\//, '')}`
-    candidates.push(resolved)
+  console.log(`[IA Scraper] Building alert ID map by scanning IDs 1–${maxId} in batches of ${batchSize}...`)
+
+  for (let start = 1; start <= maxId; start += batchSize) {
+    const end = Math.min(start + batchSize - 1, maxId)
+    const ids = Array.from({ length: end - start + 1 }, (_, i) => start + i)
+
+    await Promise.all(
+      ids.map(async (id) => {
+        const url = `${FDA_BASE_URL}/cms_ia/importalert_${id}.html`
+        try {
+          const html = await fetchWithRetry(url, 0) // no retries for scan
+          const $ = cheerio.load(html)
+
+          // Extract alert number from the h1 / strong heading e.g. "Import Alert 03-05" or "# 03-05"
+          const heading =
+            $('h1').first().text().trim() ||
+            $('strong:contains("Import Alert")').first().text().trim()
+
+          const match = heading.match(/(\d{2,3}-\d{1,3})/)
+          if (match) {
+            const alertNumber = match[1]
+            if (!map.has(alertNumber)) {
+              map.set(alertNumber, url)
+            }
+          }
+        } catch {
+          // 404 or other error — this ID doesn't exist, silently skip
+        }
+      })
+    )
   }
 
-  // Generate pattern-based fallbacks from the alert number
-  const [prefix, suffix] = alertNumber.split('-')
-  if (prefix && suffix) {
-    const padded = `${prefix.padStart(2, '0')}${suffix.padStart(2, '0')}`         // e.g. "0305"
-    const noLead = `${parseInt(prefix, 10)}${suffix.padStart(2, '0')}`             // e.g.  "305"
-    const full   = `${prefix}${suffix}`                                             // e.g. "1620" or "16120"
-    const noLeadFull = `${parseInt(prefix, 10)}${suffix}`                           // e.g.  "620"
-
-    const uniqueSlugs = [...new Set([padded, noLead, full, noLeadFull])]
-    for (const slug of uniqueSlugs) {
-      candidates.push(`${FDA_BASE_URL}/cms_ia/importalert_${slug}.html`)
-    }
-
-    // Underscore variants
-    candidates.push(`${FDA_BASE_URL}/cms_ia/importalert_${prefix}_${suffix}.html`)
-  }
-
-  // Deduplicate while preserving order
-  const seen = new Set<string>()
-  return candidates.filter(c => { if (seen.has(c)) return false; seen.add(c); return true })
+  console.log(`[IA Scraper] ID map complete: ${map.size} alerts mapped`)
+  return map
 }
 
 function sleep(ms: number): Promise<void> {
@@ -390,31 +393,9 @@ function isRelevantAlert(alertNumber: string): boolean {
 async function scrapeAlertDetail(
   entry: AlertIndexEntry
 ): Promise<ImportAlertRaw> {
-  // Try all candidate URLs in order — stop at the first one that returns 200
-  const candidates = buildDetailUrlCandidates(entry.alert_number, entry.href_from_index)
-  let html: string | null = null
-  let resolvedUrl = entry.detail_url
-
-  for (const candidateUrl of candidates) {
-    try {
-      html = await fetchWithRetry(candidateUrl)
-      resolvedUrl = candidateUrl
-      break
-    } catch (err: any) {
-      if (err instanceof NotFoundError) {
-        console.warn(`[IA Scraper] 404 for ${candidateUrl}, trying next candidate...`)
-        continue
-      }
-      throw err // Re-throw non-404 errors immediately
-    }
-  }
-
-  if (!html) {
-    throw new Error(
-      `All URL candidates returned 404 for alert ${entry.alert_number}: ${candidates.join(', ')}`
-    )
-  }
-
+  // detail_url is already the correct mapped URL (importalert_N.html) from buildAlertIdMap
+  const html = await fetchWithRetry(entry.detail_url)
+  const resolvedUrl = entry.detail_url
   const $ = cheerio.load(html)
 
   // Extract title from page (may be more descriptive than index)
@@ -765,7 +746,12 @@ export async function fetchPriorityAlerts(
   const errors: { alert_number: string; error: string }[] = []
 
   try {
-    // Step 1: Get all alert codes from FDA index
+    // Step 1: Build alert number → URL map by scanning FDA's sequential IDs in parallel
+    // FDA uses opaque numeric IDs (importalert_3.html = alert 03-05) that can only be
+    // discovered by fetching each page — the index page has no href links.
+    const alertIdMap = await buildAlertIdMap(300, 20)
+
+    // Step 2: Get alert metadata (number, title, date) from the index page
     const allEntries = await fetchAllAlertCodes()
 
     if (allEntries.length === 0) {
@@ -773,20 +759,29 @@ export async function fetchPriorityAlerts(
       return { alerts: [], errors: [{ alert_number: 'INDEX', error: 'No alerts found on FDA index page' }] }
     }
 
-    // Step 2: Filter to relevant industry alerts
-    const relevantEntries = allEntries.filter((e) =>
-      isRelevantAlert(e.alert_number)
-    )
+    // Enrich entries with mapped URLs (skip entries with no known URL)
+    const enrichedEntries = allEntries
+      .filter((e) => isRelevantAlert(e.alert_number))
+      .map((e) => ({
+        ...e,
+        detail_url: alertIdMap.get(e.alert_number) || '',
+      }))
+      .filter((e) => {
+        if (!e.detail_url) {
+          console.warn(`[IA Scraper] No URL found for alert ${e.alert_number} — skipping`)
+        }
+        return !!e.detail_url
+      })
 
     // Apply batch limit — process at most maxAlerts per run to prevent timeout
-    const batchEntries = relevantEntries.slice(0, maxAlerts)
+    const batchEntries = enrichedEntries.slice(0, maxAlerts)
 
     console.log(
-      `[IA Scraper] Filtered to ${relevantEntries.length} industry-relevant alerts (from ${allEntries.length} total)`
+      `[IA Scraper] Filtered to ${enrichedEntries.length} industry-relevant alerts (from ${allEntries.length} total)`
     )
-    if (batchEntries.length < relevantEntries.length) {
+    if (batchEntries.length < enrichedEntries.length) {
       console.log(
-        `[IA Scraper] Batch limited to ${batchEntries.length}/${relevantEntries.length} alerts this run`
+        `[IA Scraper] Batch limited to ${batchEntries.length}/${enrichedEntries.length} alerts this run`
       )
     }
 
