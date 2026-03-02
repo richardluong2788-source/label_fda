@@ -136,10 +136,43 @@ NET QUANTITY / NET WEIGHT EXTRACTION:
 - Format: Include both imperial and metric if both present, e.g. "2 oz (56g)" or "1 pack (70g)"
 - NEVER leave netQuantity empty if you see any weight measurement on the label`
 
+/**
+ * Downloads an image from a URL and converts it to a base64 data URL.
+ * This is required because OpenAI Vision cannot reliably fetch images from
+ * Supabase Storage URLs (returns 400 "Timeout while downloading").
+ */
+async function fetchImageAsBase64(imageUrl: string): Promise<string> {
+  const response = await fetch(imageUrl, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; Vexim/1.0)',
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to download image: HTTP ${response.status} for ${imageUrl}`)
+  }
+
+  const contentType = response.headers.get('content-type') || 'image/jpeg'
+  const arrayBuffer = await response.arrayBuffer()
+  const base64 = Buffer.from(arrayBuffer).toString('base64')
+  return `data:${contentType};base64,${base64}`
+}
+
 export async function analyzeLabel(imageUrl: string, packagingFormatContext?: string): Promise<VisionAnalysisResult> {
   console.log('[v0] Analyzing label with GPT-4o Vision:', imageUrl)
   if (packagingFormatContext) {
     console.log('[v0] Packaging format context provided for AI analysis')
+  }
+
+  // Download image server-side and convert to base64 to avoid OpenAI timeout
+  // when fetching from Supabase Storage URLs directly.
+  let imageDataUrl: string
+  try {
+    imageDataUrl = await fetchImageAsBase64(imageUrl)
+    console.log('[v0] Image downloaded and converted to base64 successfully')
+  } catch (downloadErr: any) {
+    console.error('[v0] Failed to download image for Vision analysis:', downloadErr.message)
+    throw new Error(`Vision analysis failed: could not download image — ${downloadErr.message}`)
   }
 
   try {
@@ -157,8 +190,8 @@ export async function analyzeLabel(imageUrl: string, packagingFormatContext?: st
               {
                 type: 'image_url',
                 image_url: {
-                  url: imageUrl,
-                  detail: 'high', // High detail for better accuracy
+                  url: imageDataUrl, // base64 data URL — no external fetch needed by OpenAI
+                  detail: 'high',
                 },
               },
               {
