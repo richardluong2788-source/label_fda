@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { fetchPriorityAlerts } from '@/lib/fda-import-alert-scraper'
 import { NextResponse } from 'next/server'
 
@@ -25,12 +26,31 @@ export async function GET(request: Request) {
   const startTime = Date.now()
 
   try {
-    // Verify cron secret (MANDATORY — blocks requests when CRON_SECRET is unset)
+    // Verify auth: accept either CRON_SECRET (Vercel scheduler) or admin session (manual trigger)
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
 
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const isCronAuth = cronSecret && authHeader === `Bearer ${cronSecret}`
+
+    if (!isCronAuth) {
+      // Fall back to Supabase admin session check
+      const supabaseUser = await createClient()
+      const { data: { user }, error: userError } = await supabaseUser.auth.getUser()
+
+      if (userError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+
+      const { data: adminUser } = await supabaseUser
+        .from('admin_users')
+        .select('role')
+        .eq('user_id', user.id)
+        .in('role', ['admin', 'superadmin', 'expert'])
+        .single()
+
+      if (!adminUser) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
     }
 
     console.log('[IA Cron] ========== FETCH IMPORT ALERTS STARTING ==========')
