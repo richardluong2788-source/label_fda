@@ -6,6 +6,9 @@ export interface KBStatus {
   warningLetterCount: number
   regulationCount: number
   recallCount: number
+  importAlertCount: number
+  /** True when at least Warning Letters and Recalls are also loaded (full RAG coverage) */
+  fullCoverageReady: boolean
 }
 
 /**
@@ -24,18 +27,19 @@ export async function checkKnowledgeBaseStatus(): Promise<KBStatus> {
 
   if (totalError) {
     console.error('[v0] KB check error:', totalError)
-    // If table doesn't exist or query fails, KB is not available
     return {
       available: false,
       totalDocuments: 0,
       warningLetterCount: 0,
       regulationCount: 0,
       recallCount: 0,
+      importAlertCount: 0,
+      fullCoverageReady: false,
     }
   }
 
-  // Count by document type in parallel
-  const [warningLetterResult, regulationResult, recallResult] = await Promise.all([
+  // Count by document type + approved import alerts in parallel
+  const [warningLetterResult, regulationResult, recallResult, importAlertResult] = await Promise.all([
     supabase
       .from('compliance_knowledge')
       .select('*', { count: 'exact', head: true })
@@ -48,15 +52,24 @@ export async function checkKnowledgeBaseStatus(): Promise<KBStatus> {
       .from('compliance_knowledge')
       .select('*', { count: 'exact', head: true })
       .eq('document_type', 'FDA Recall'),
+    // Import Alerts are stored in a separate table — count approved ones
+    supabase
+      .from('fda_import_alerts')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'approved'),
   ])
 
   const warningLetterCount = warningLetterResult.count ?? 0
   const regulationCount = regulationResult.count ?? 0
   const recallCount = recallResult.count ?? 0
+  const importAlertCount = importAlertResult.count ?? 0
   const total = totalDocuments ?? 0
 
-  // KB is considered available if there is at least 1 document of any type
-  const available = total > 0
+  // KB is considered available if there is at least 1 regulation document
+  const available = regulationCount > 0 || total > 0
+
+  // Full coverage = all 4 data layers have content
+  const fullCoverageReady = regulationCount > 0 && warningLetterCount > 0 && recallCount > 0
 
   return {
     available,
@@ -64,5 +77,7 @@ export async function checkKnowledgeBaseStatus(): Promise<KBStatus> {
     warningLetterCount,
     regulationCount,
     recallCount,
+    importAlertCount,
+    fullCoverageReady,
   }
 }
