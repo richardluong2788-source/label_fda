@@ -582,9 +582,15 @@ export async function POST(request: Request) {
     }
 
     // Step 4: Claims validation using AI-detected claims
-    console.log('[v0] Step 4: Validating health claims...')
+    // DOMAIN-AWARE: pass productDomain so the correct ruleset is applied.
+    //   cosmetic  → "prevents blisters/chafing" is a LEGAL cosmetic action claim
+    //   food/supplement → "prevent" triggers prohibited disease claim check
+    console.log('[v0] Step 4: Validating health claims (domain:', productDomain, ')...')
     const detectedClaimsText = visionResult.detectedClaims.join(' ')
-    const claimViolations = ClaimsValidator.validateClaims(labelText + ' ' + detectedClaimsText)
+    const claimViolations = ClaimsValidator.validateClaims(
+      labelText + ' ' + detectedClaimsText,
+      productDomain as import('@/lib/claims-validator').ProductDomain
+    )
 
     // Multi-language validation using DETECTED languages from AI
     console.log('[v0] Step 6: Validating multi-language requirements...')
