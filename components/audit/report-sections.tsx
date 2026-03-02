@@ -42,7 +42,7 @@ export function RiskAssessmentSection({ report }: RiskAssessmentProps) {
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Activity className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold text-lg">Rui ro Thuc thi FDA</h2>
+            <h2 className="font-semibold text-lg">Rủi ro thực thi FDA</h2>
           </div>
 
           <div className="flex items-center gap-8 mb-5">
@@ -91,7 +91,7 @@ export function RiskAssessmentSection({ report }: RiskAssessmentProps) {
 
             <div className="flex-1 space-y-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm text-muted-foreground">Muc do rui ro</span>
+                <span className="text-sm text-muted-foreground">Mức độ rủi ro</span>
                 <Badge
                   className={`${
                     report.risk_assessment === 'Critical' || report.risk_assessment === 'High'
@@ -112,7 +112,7 @@ export function RiskAssessmentSection({ report }: RiskAssessmentProps) {
                     <TrendingDown className="h-4 w-4 text-success shrink-0" />
                     <div className="text-sm">
                       <span className="text-muted-foreground">
-                        Sau khi sua loi nghiem trong:{' '}
+                        Sau khi sửa lỗi nghiêm trọng:{' '}
                       </span>
                       <span className="font-semibold text-success">
                         {report.projected_risk_score.toFixed(1)}/10
@@ -122,8 +122,8 @@ export function RiskAssessmentSection({ report }: RiskAssessmentProps) {
                 )}
 
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Diem risk dua tren muc do vi pham, lich su enforcement cua FDA, va Warning
-                Letters lien quan.
+                Điểm risk dựa trên mức độ vi phạm, lịch sử enforcement của FDA, và Warning
+                Letters liên quan.
               </p>
             </div>
           </div>
@@ -139,9 +139,9 @@ export function RiskAssessmentSection({ report }: RiskAssessmentProps) {
               <div className="flex-1 h-2 rounded-r-full bg-destructive" />
             </div>
             <div className="flex justify-between">
-              <span className="text-[11px] text-muted-foreground">Thap (0)</span>
-              <span className="text-[11px] text-muted-foreground">Trung binh (5)</span>
-              <span className="text-[11px] text-muted-foreground">Nghiem trong (10)</span>
+              <span className="text-[11px] text-muted-foreground">Thấp (0)</span>
+              <span className="text-[11px] text-muted-foreground">Trung bình (5)</span>
+              <span className="text-[11px] text-muted-foreground">Nghiêm trọng (10)</span>
             </div>
           </div>
         </Card>
@@ -152,7 +152,7 @@ export function RiskAssessmentSection({ report }: RiskAssessmentProps) {
         <Card className="p-6 border-info/30 bg-info/5">
           <div className="flex items-center gap-2 mb-4">
             <Lightbulb className="h-5 w-5 text-info" />
-            <h2 className="font-semibold text-lg">Loi khuyen tu Chuyen gia</h2>
+            <h2 className="font-semibold text-lg">Lời khuyên từ chuyên gia</h2>
           </div>
           <div className="space-y-3">
             {report.expert_tips.map((tip: string, idx: number) => (
@@ -200,7 +200,7 @@ export function TechnicalChecksSection({ report }: TechnicalChecksProps) {
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-4">
             <Ruler className="h-4 w-4 text-violet-600" />
-            <h3 className="font-semibold text-sm">Kiem tra Hinh hoc</h3>
+            <h3 className="font-semibold text-sm">Kiểm tra hình học</h3>
             <Badge variant="secondary" className="text-xs ml-auto">
               {report.geometry_violations!.length}
             </Badge>
@@ -232,10 +232,10 @@ export function TechnicalChecksSection({ report }: TechnicalChecksProps) {
                     }`}
                   >
                     {gv.severity === 'critical'
-                      ? 'Nghiem trong'
+                      ? 'Nghiêm trọng'
                       : gv.severity === 'warning'
-                      ? 'Canh bao'
-                      : 'Thong tin'}
+                      ? 'Cảnh báo'
+                      : 'Thông tin'}
                   </Badge>
                 </div>
                 <p className="text-muted-foreground leading-relaxed">{gv.description}</p>
@@ -247,10 +247,10 @@ export function TechnicalChecksSection({ report }: TechnicalChecksProps) {
                 {(gv.expected || gv.actual) && (
                   <div className="flex gap-3 mt-2 pt-2 border-t">
                     {gv.expected && (
-                      <span className="text-success">Chuan: {gv.expected}</span>
+                      <span className="text-success">Chuẩn: {gv.expected}</span>
                     )}
                     {gv.actual && (
-                      <span className="text-destructive">Thuc te: {gv.actual}</span>
+                      <span className="text-destructive">Thực tế: {gv.actual}</span>
                     )}
                   </div>
                 )}
@@ -265,7 +265,7 @@ export function TechnicalChecksSection({ report }: TechnicalChecksProps) {
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-4">
             <Palette className="h-4 w-4 text-pink-600" />
-            <h3 className="font-semibold text-sm">Tuong phan Mau sac</h3>
+            <h3 className="font-semibold text-sm">Tương phản màu sắc</h3>
             <Badge variant="secondary" className="text-xs ml-auto">
               {report.contrast_violations!.length}
             </Badge>
@@ -279,7 +279,7 @@ export function TechnicalChecksSection({ report }: TechnicalChecksProps) {
                 <p className="font-medium mb-1.5">{cv.description}</p>
                 {cv.ratio !== undefined && (
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-muted-foreground">Ty le:</span>
+                    <span className="text-muted-foreground">Tỷ lệ:</span>
                     <span
                       className={`font-bold ${
                         cv.ratio >= 4.5
@@ -291,7 +291,7 @@ export function TechnicalChecksSection({ report }: TechnicalChecksProps) {
                     >
                       {cv.ratio.toFixed(2)}:1
                     </span>
-                    <span className="text-muted-foreground">(toi thieu 4.5:1)</span>
+                    <span className="text-muted-foreground">(tối thiểu 4.5:1)</span>
                   </div>
                 )}
                 {cv.colors && (
@@ -329,7 +329,7 @@ export function TechnicalChecksSection({ report }: TechnicalChecksProps) {
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-4">
             <Languages className="h-4 w-4 text-teal-600" />
-            <h3 className="font-semibold text-sm">Kiem tra Da ngon ngu</h3>
+            <h3 className="font-semibold text-sm">Kiểm tra đa ngôn ngữ</h3>
             <Badge variant="secondary" className="text-xs ml-auto">
               {report.multilanguage_issues!.length}
             </Badge>
@@ -354,7 +354,7 @@ export function TechnicalChecksSection({ report }: TechnicalChecksProps) {
                 )}
                 {ml.missingFields && ml.missingFields.length > 0 && (
                   <div className="mt-2 pt-2 border-t">
-                    <p className="text-muted-foreground mb-1">Thieu ban dich:</p>
+                    <p className="text-muted-foreground mb-1">Thiếu bản dịch:</p>
                     <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
                       {ml.missingFields.map((field: string, fIdx: number) => (
                         <li key={fIdx}>{field}</li>
@@ -386,10 +386,10 @@ export function CommercialSummarySection({ summary }: CommercialSummaryProps) {
         <summary className="flex items-center justify-between cursor-pointer">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-bold">Bao cao Thuong mai Tong hop</h2>
+            <h2 className="text-xl font-bold">Báo cáo thương mại tổng hợp</h2>
           </div>
           <Badge variant="outline" className="group-open:hidden">
-            Nhan de xem chi tiet
+            Nhấn để xem chi tiết
           </Badge>
         </summary>
         <div className="mt-4 pt-4 border-t prose prose-sm max-w-none">

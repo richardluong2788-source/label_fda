@@ -3,7 +3,6 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
-  AlertCircle,
   AlertTriangle,
   CheckCircle,
   FileText,
@@ -45,10 +44,10 @@ export function ReportSummary({
       <Card className="lg:col-span-1">
         <div className="p-6">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
-            {report.label_image_url === 'manual-entry' ? 'Xem truoc Nhan' : 'Hinh anh Nhan'}
+            {report.label_image_url === 'manual-entry' ? 'Xem trước nhãn' : 'Hình ảnh nhãn'}
             {report.label_images && report.label_images.length > 1 && (
               <Badge variant="secondary" className="text-xs ml-auto">
-                {report.label_images.length} hinh anh
+                {report.label_images.length} hình ảnh
               </Badge>
             )}
           </h2>
@@ -60,7 +59,7 @@ export function ReportSummary({
                   formData={report.form_data}
                 />
               ) : (
-                <div className="text-muted-foreground">Khong co du lieu dinh duong</div>
+                <div className="text-muted-foreground">Không có dữ liệu dinh dưỡng</div>
               )}
             </div>
           ) : (
@@ -82,21 +81,21 @@ export function ReportSummary({
               <div className="flex items-center gap-2 mb-3">
                 <Settings className="h-4 w-4 text-muted-foreground" />
                 <span className="text-xs font-medium text-muted-foreground">
-                  Cau hinh phan tich da ap dung
+                  Cấu hình phân tích đã áp dụng
                 </span>
               </div>
               <div className="space-y-2">
                 {report.target_market && (
                   <div className="flex items-center gap-2 text-xs">
                     <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground">Thi truong:</span>
+                    <span className="text-muted-foreground">Thị trường:</span>
                     <span className="font-medium">{report.target_market}</span>
                   </div>
                 )}
                 {report.label_language && report.label_language.length > 0 && (
                   <div className="flex items-center gap-2 text-xs">
                     <Languages className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground">Ngon ngu:</span>
+                    <span className="text-muted-foreground">Ngôn ngữ:</span>
                     <span className="font-medium">
                       {report.label_language.join(', ').toUpperCase()}
                     </span>
@@ -105,7 +104,7 @@ export function ReportSummary({
                 {report.packaging_format && (
                   <div className="flex items-center gap-2 text-xs">
                     <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground">Bao bi:</span>
+                    <span className="text-muted-foreground">Bao bì:</span>
                     <span className="font-medium">
                       {report.packaging_format.replace(/_/g, ' ')}
                     </span>
@@ -114,7 +113,7 @@ export function ReportSummary({
                 {report.product_type && (
                   <div className="flex items-center gap-2 text-xs">
                     <FileSearch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-muted-foreground">Loai SP:</span>
+                    <span className="text-muted-foreground">Loại SP:</span>
                     <span className="font-medium">{report.product_type}</span>
                   </div>
                 )}
@@ -137,13 +136,13 @@ export function ReportSummary({
       {/* Analysis Detail */}
       <Card className="lg:col-span-2">
         <div className="p-6">
-          <h2 className="font-semibold text-lg mb-4">Chi tiet Phan tich</h2>
+          <h2 className="font-semibold text-lg mb-4">Chi tiết phân tích</h2>
 
           {/* Status Overview */}
           <div className="grid sm:grid-cols-2 gap-4 mb-6 pb-6 border-b">
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-muted-foreground text-sm">Trang thai:</span>
+                <span className="text-muted-foreground text-sm">Trạng thái:</span>
                 <Badge
                   variant={
                     report.status === 'verified'
@@ -154,14 +153,14 @@ export function ReportSummary({
                   }
                 >
                   {report.status === 'pending'
-                    ? 'Dang xu ly'
+                    ? 'Đang xử lý'
                     : report.status === 'ai_completed'
-                    ? 'Cho Xem xet'
-                    : 'Da Xac minh'}
+                    ? 'Chờ xem xét'
+                    : 'Đã xác minh'}
                 </Badge>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground text-sm">Ngay tao:</span>
+                <span className="text-muted-foreground text-sm">Ngày tạo:</span>
                 <span className="font-medium text-sm">
                   {new Date(report.created_at).toLocaleString('vi-VN', {
                     hour: '2-digit',
@@ -173,28 +172,28 @@ export function ReportSummary({
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground text-sm">Vi pham CFR:</span>
+                <span className="text-muted-foreground text-sm">Vi phạm CFR:</span>
                 <span className="font-semibold text-sm">{violationsCount}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground text-sm">Trich dan CFR:</span>
+                <span className="text-muted-foreground text-sm">Trích dẫn CFR:</span>
                 <span className="font-semibold text-sm">{citationsCount}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground text-sm">Rui ro Import Alert:</span>
+                <span className="text-muted-foreground text-sm">Rủi ro Import Alert:</span>
                 <span
                   className={`font-semibold text-sm ${
                     importAlertCount > 0 ? 'text-warning' : 'text-success'
                   }`}
                 >
-                  {importAlertCount > 0 ? `${importAlertCount} canh bao` : 'Khong co'}
+                  {importAlertCount > 0 ? `${importAlertCount} cảnh báo` : 'Không có'}
                 </span>
               </div>
             </div>
             <div className="space-y-3">
               {(report as any).pdp_area_square_inches && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">Dien tich PDP:</span>
+                  <span className="text-muted-foreground text-sm">Diện tích PDP:</span>
                   <span className="font-medium text-sm">
                     {(report as any).pdp_area_square_inches.toFixed(2)} sq in
                   </span>
@@ -202,7 +201,7 @@ export function ReportSummary({
               )}
               {(report as any).pixels_per_inch && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">Do phan giai:</span>
+                  <span className="text-muted-foreground text-sm">Độ phân giải:</span>
                   <span className="font-medium text-sm">
                     {(report as any).pixels_per_inch.toFixed(0)} PPI
                   </span>
@@ -210,13 +209,13 @@ export function ReportSummary({
               )}
               {report.product_category && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">Danh muc:</span>
+                  <span className="text-muted-foreground text-sm">Danh mục:</span>
                   <span className="font-medium text-sm">{report.product_category}</span>
                 </div>
               )}
               {report.ocr_confidence !== undefined && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground text-sm">Do tin cay OCR:</span>
+                  <span className="text-muted-foreground text-sm">Độ tin cậy OCR:</span>
                   <span className="font-medium text-sm">
                     {Math.round(report.ocr_confidence * 100)}%
                   </span>
@@ -229,7 +228,7 @@ export function ReportSummary({
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold">Du lieu Nhan AI trich xuat</h3>
+              <h3 className="font-semibold">Dữ liệu nhãn AI trích xuất</h3>
             </div>
 
             {/* Nutrition Facts */}
@@ -237,7 +236,7 @@ export function ReportSummary({
               <div className="rounded-lg border bg-card p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <FileText className="h-4 w-4 text-success" />
-                  <h4 className="font-medium text-sm">Thanh phan Dinh duong</h4>
+                  <h4 className="font-medium text-sm">Thành phần dinh dưỡng</h4>
                   <Badge variant="secondary" className="text-xs ml-auto">
                     {report.nutrition_facts.length} nutrients
                   </Badge>
@@ -272,24 +271,24 @@ export function ReportSummary({
                 <div className="rounded-lg border bg-card p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <FileSearch className="h-4 w-4 text-primary" />
-                    <h4 className="font-medium text-sm">Thong tin San pham</h4>
+                    <h4 className="font-medium text-sm">Thông tin sản phẩm</h4>
                   </div>
                   <div className="space-y-2 text-xs">
                     {(report as any).brand_name && (
                       <div>
-                        <span className="text-muted-foreground">Thuong hieu:</span>
+                        <span className="text-muted-foreground">Thương hiệu:</span>
                         <p className="font-medium mt-0.5">{(report as any).brand_name}</p>
                       </div>
                     )}
                     {report.product_name && (
                       <div>
-                        <span className="text-muted-foreground">San pham:</span>
+                        <span className="text-muted-foreground">Sản phẩm:</span>
                         <p className="font-medium mt-0.5">{report.product_name}</p>
                       </div>
                     )}
                     {(report as any).net_quantity && (
                       <div>
-                        <span className="text-muted-foreground">Khoi luong tinh:</span>
+                        <span className="text-muted-foreground">Khối lượng tịnh:</span>
                         <p className="font-medium mt-0.5">{(report as any).net_quantity}</p>
                       </div>
                     )}
@@ -299,10 +298,10 @@ export function ReportSummary({
 
               {/* Ingredients */}
               {report.ingredient_list && (
-                <div className="rounded-lg border border-warning/30 bg-warning/5 p-4">
+                <div className="rounded-lg border bg-card p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Database className="h-4 w-4 text-purple-600" />
-                    <h4 className="font-medium text-sm">Thanh phan</h4>
+                    <h4 className="font-medium text-sm">Thành phần</h4>
                   </div>
                   <p className="text-xs text-muted-foreground line-clamp-4">
                     {report.ingredient_list}
@@ -317,7 +316,7 @@ export function ReportSummary({
                 <div className="rounded-lg border border-warning/30 bg-warning/5 p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Shield className="h-4 w-4 text-warning" />
-                    <h4 className="font-medium text-sm">Chat gay Di ung</h4>
+                    <h4 className="font-medium text-sm">Chất gây dị ứng</h4>
                   </div>
                   <p className="text-xs">{report.allergen_declaration}</p>
                 </div>
@@ -328,7 +327,7 @@ export function ReportSummary({
                   <div className="rounded-lg border border-purple-200 bg-purple-50/50 p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Sparkles className="h-4 w-4 text-purple-600" />
-                      <h4 className="font-medium text-sm">Cong bo Suc khoe</h4>
+                      <h4 className="font-medium text-sm">Công bố sức khỏe</h4>
                     </div>
                     <div className="space-y-1">
                       {(report as any).health_claims.map((claim: string, idx: number) => (
@@ -346,7 +345,7 @@ export function ReportSummary({
             {(report as any).detected_languages &&
               (report as any).detected_languages.length > 0 && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>Ngon ngu phat hien:</span>
+                  <span>Ngôn ngữ phát hiện:</span>
                   <div className="flex gap-1">
                     {(report as any).detected_languages.map(
                       (lang: string, idx: number) => (
@@ -368,12 +367,12 @@ export function ReportSummary({
               <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold mb-1">
-                  Bao cao nay can chuyen gia xac minh
+                  Báo cáo này cần chuyên gia xác minh
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   {violationsCount > 0
-                    ? `Nhan nay co ${violationsCount} vi pham can duoc sua truoc khi phan phoi.`
-                    : 'Phan tich AI hoan tat. Khuyen nghi chuyen gia xem xet de phe duyet cuoi cung.'}
+                    ? `Nhãn này có ${violationsCount} vi phạm cần được sửa trước khi phân phối.`
+                    : 'Phân tích AI hoàn tất. Khuyến nghị chuyên gia xem xét để phê duyệt cuối cùng.'}
                 </p>
               </div>
             </div>
@@ -386,11 +385,11 @@ export function ReportSummary({
             <div className="flex gap-3">
               <CheckCircle className="h-5 w-5 text-success shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium">Danh gia tong the</p>
+                <p className="font-medium">Đánh giá tổng thể</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {violationsCount === 0
-                    ? 'Nhan nay tuan thu cac quy dinh FDA. Khong phat hien vi pham.'
-                    : `Nhan nay co ${violationsCount} vi pham can duoc sua truoc khi phan phoi.`}
+                    ? 'Nhãn này tuân thủ các quy định FDA. Không phát hiện vi phạm.'
+                    : `Nhãn này có ${violationsCount} vi phạm cần được sửa trước khi phân phối.`}
                 </p>
               </div>
             </div>

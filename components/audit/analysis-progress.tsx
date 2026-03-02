@@ -28,80 +28,80 @@ import { getLabelConfig } from '@/lib/label-field-config'
 const ANALYSIS_STEPS = [
   {
     id: 'vision',
-    title: 'Phan tich hinh anh bang GPT-4 Vision',
-    description: 'Dang quet va trich xuat van ban, mau sac, kich thuoc chu, va layout tu nhan...',
+    title: 'Phân tích hình ảnh bằng GPT-4 Vision',
+    description: 'Đang quét và trích xuất văn bản, màu sắc, kích thước chữ, và layout từ nhãn...',
     icon: ScanLine,
     progress: 15,
     details: [
-      'Optical Character Recognition (OCR)',
-      'Phat hien Nutrition Facts panel',
-      'Do luong kich thuoc chu',
-      'Phan tich mau sac va contrast',
+      'Nhận dạng ký tự quang học (OCR)',
+      'Phát hiện bảng Nutrition Facts',
+      'Đo lường kích thước chữ',
+      'Phân tích màu sắc và tương phản',
     ],
   },
   {
     id: 'fda_search',
-    title: 'Tra cuu FDA Regulations (Knowledge Base)',
-    description: 'Dang tim kiem quy dinh FDA trong Knowledge Base voi RAG AI (Do tuong dong 99%)...',
+    title: 'Tra cứu quy định FDA (Knowledge Base)',
+    description: 'Đang tìm kiếm quy định FDA trong Knowledge Base với RAG AI (Độ tương đồng 99%)...',
     icon: Database,
     progress: 35,
     details: [
-      '21 CFR Phan 101 - Nhan dinh duong',
-      'FALCPA - Luat chat gay di ung',
-      'Quy dinh ve Health Claims',
-      'Yeu cau liet ke thanh phan',
+      '21 CFR Phần 101 — Nhãn dinh dưỡng',
+      'FALCPA — Luật chất gây dị ứng',
+      'Quy định về Health Claims',
+      'Yêu cầu liệt kê thành phần',
     ],
   },
   {
     id: 'geometry',
-    title: 'Kiem tra hinh hoc va kich thuoc',
-    description: 'Dang xac minh kich thuoc panel, font size, va spacing theo quy dinh FDA...',
+    title: 'Kiểm tra hình học và kích thước',
+    description: 'Đang xác minh kích thước panel, font size, và spacing theo quy định FDA...',
     icon: FileSearch,
     progress: 55,
     details: [
-      'Tinh dien tich Principal Display Panel',
-      'Kiem tra minimum font size',
-      'Xac minh spacing va margins',
-      'Do luong hairlines',
+      'Tính diện tích Principal Display Panel',
+      'Kiểm tra minimum font size',
+      'Xác minh spacing và margins',
+      'Đo lường hairlines',
     ],
   },
   {
     id: 'allergen',
-    title: 'Phan tich chat gay di ung (Allergens)',
-    description: 'Dang kiem tra khai bao allergen theo FALCPA Section 203...',
+    title: 'Phân tích chất gây dị ứng (Allergens)',
+    description: 'Đang kiểm tra khai báo allergen theo FALCPA Section 203...',
     icon: Shield,
     progress: 70,
     details: [
       'Milk, Eggs, Fish, Shellfish',
       'Tree nuts, Peanuts, Wheat, Soybeans',
-      'Kiem tra "Contains:" statement',
-      'Xac minh bold formatting',
+      'Kiểm tra câu lệnh "Contains:"',
+      'Xác minh định dạng in đậm (bold)',
     ],
   },
   {
     id: 'nutrition',
-    title: 'Xac thuc Nutrition Facts',
-    description: 'Dang kiem tra format, rounding, va thu tu nutrients...',
+    title: 'Xác thực Nutrition Facts',
+    description: 'Đang kiểm tra format, quy tắc làm tròn, và thứ tự nutrients...',
     icon: FileText,
     progress: 85,
     details: [
-      'Tuan thu khau phan (Serving size)',
-      'Khai bao Calorie',
-      'Quy tac lam tron chat dinh duong',
-      'Ty le Gia tri Hang ngay (% DV)',
+      'Tuân thủ khẩu phần (Serving size)',
+      'Khai báo Calorie',
+      'Quy tắc làm tròn chất dinh dưỡng',
+      'Tỷ lệ Giá trị Hàng ngày (% DV)',
     ],
   },
   {
     id: 'mapping',
-    title: 'Anh xa vi pham voi trich dan CFR',
-    description: 'Dang tao bao cao thuong mai voi trich dan chinh xac tu FDA...',
+    title: 'Ánh xạ vi phạm với trích dẫn CFR',
+    description: 'Đang tạo báo cáo thương mại với trích dẫn chính xác từ FDA...',
     icon: Sparkles,
     progress: 95,
     details: [
-      'Dinh dang trich dan thong minh',
-      'Anh xa vi pham → CFR',
-      'Tao bao cao thuong mai',
-      'Khuyen nghi chuyen gia',
+      'Định dạng trích dẫn thông minh',
+      'Ánh xạ vi phạm → CFR',
+      'Tạo báo cáo thương mại',
+      'Khuyến nghị chuyên gia',
     ],
   },
 ]
@@ -146,10 +146,10 @@ export function AnalysisProgressView({
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <ScanLine className="h-5 w-5 text-primary" />
-              {report.label_image_url === 'manual-entry' ? 'Xem truoc Nhan' : 'Hinh anh Nhan'}
+              {report.label_image_url === 'manual-entry' ? 'Xem trước nhãn' : 'Hình ảnh nhãn'}
               {report.label_images && report.label_images.length > 1 && (
                 <Badge variant="secondary" className="text-xs ml-auto">
-                  {report.label_images.length} hinh anh
+                  {report.label_images.length} hình ảnh
                 </Badge>
               )}
             </h2>
@@ -161,7 +161,7 @@ export function AnalysisProgressView({
                     formData={report.form_data}
                   />
                 ) : (
-                  <div className="text-muted-foreground">Khong co du lieu dinh duong</div>
+                  <div className="text-muted-foreground">Không có dữ liệu dinh dưỡng</div>
                 )}
               </div>
             ) : (
@@ -182,12 +182,12 @@ export function AnalysisProgressView({
           <div className="space-y-6">
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Tien trinh phan tich</h2>
+                <h2 className="text-lg font-semibold">Tiến trình phân tích</h2>
                 <Badge variant="secondary">{progress}%</Badge>
               </div>
               <Progress value={progress} className="h-2 mb-2" />
               <p className="text-sm text-muted-foreground">
-                Buoc {currentStepIndex + 1} / {ANALYSIS_STEPS.length}
+                Bước {currentStepIndex + 1} / {ANALYSIS_STEPS.length}
               </p>
             </Card>
 
@@ -214,7 +214,7 @@ export function AnalysisProgressView({
 
             {/* All Steps Timeline */}
             <Card className="p-6">
-              <h3 className="font-semibold mb-4">Quy trinh phan tich FDA</h3>
+              <h3 className="font-semibold mb-4">Quy trình phân tích FDA</h3>
               <div className="space-y-3">
                 {ANALYSIS_STEPS.map((step, idx) => {
                   const Icon = step.icon
@@ -261,7 +261,7 @@ export function AnalysisProgressView({
                       </div>
                       {isCompleted && (
                         <Badge variant="secondary" className="text-xs">
-                          Hoan thanh
+                          Hoàn thành
                         </Badge>
                       )}
                     </div>
@@ -292,7 +292,7 @@ export function AnalysisConfigBadges({ report }: { report: AuditReport }) {
       <div className="flex items-center gap-2 mb-2">
         <Settings className="h-4 w-4 text-muted-foreground" />
         <span className="text-xs font-medium text-muted-foreground">
-          Cau hinh phan tich
+          Cấu hình phân tích
         </span>
       </div>
       <div className="flex flex-wrap gap-1.5">

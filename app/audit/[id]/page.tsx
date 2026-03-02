@@ -72,7 +72,7 @@ export default function AuditPage() {
       const res = await fetch(`/api/audit/${params.id}/pdf`)
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || 'Khong the tao file bao cao')
+        throw new Error(err.error || 'Không thể tạo file báo cáo')
       }
       const html = await res.text()
       const blob = new Blob([html], { type: 'text/html' })
@@ -82,7 +82,7 @@ export default function AuditPage() {
       setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch (err: any) {
       console.error('[v0] PDF download error:', err)
-      alert(err.message || 'Khong the tai bao cao. Vui long thu lai.')
+      alert(err.message || 'Không thể tải báo cáo. Vui lòng thử lại.')
     } finally {
       setPdfLoading(false)
     }
@@ -138,7 +138,7 @@ export default function AuditPage() {
       if (data.status === 'kb_unavailable') {
         setKbError({
           message:
-            'Knowledge Base chua co du lieu khi lan phan tich truoc. Vui long thu lai sau khi Admin da nap tai lieu.',
+            'Knowledge Base chưa có dữ liệu khi lần phân tích trước. Vui lòng thử lại sau khi Admin đã nạp tài liệu.',
           totalDocuments: 0,
         })
         return
@@ -182,7 +182,7 @@ export default function AuditPage() {
         setAnalyzing(false)
         setLoading(false)
         setQuotaError({
-          message: errData.message || 'Ban da dung het luot phan tich trong thang nay.',
+          message: errData.message || 'Bạn đã dùng hết lượt phân tích trong tháng này.',
           plan_name: errData.quota?.plan_name || 'Free',
           reports_used: errData.quota?.reports_used ?? 0,
           reports_limit: errData.quota?.reports_limit ?? 0,
@@ -199,7 +199,7 @@ export default function AuditPage() {
           setKbError({
             message:
               errData.message ||
-              'Knowledge Base chua co du lieu. Vui long lien he Admin.',
+              'Knowledge Base chưa có dữ liệu. Vui lòng liên hệ Admin.',
             totalDocuments: errData.kbStatus?.totalDocuments ?? 0,
           })
           return
@@ -228,27 +228,27 @@ export default function AuditPage() {
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="p-8 max-w-md w-full text-center">
           <AlertCircle className="h-12 w-12 text-warning mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Da het luot phan tich</h2>
+          <h2 className="text-xl font-bold mb-2">Đã hết lượt phân tích</h2>
           <p className="text-muted-foreground mb-4">{quotaError.message}</p>
           <div className="bg-muted rounded-lg p-4 mb-6 text-sm space-y-1">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Goi hien tai</span>
+              <span className="text-muted-foreground">Gói hiện tại</span>
               <span className="font-semibold">{quotaError.plan_name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Da dung thang nay</span>
+              <span className="text-muted-foreground">Đã dùng tháng này</span>
               <span className="font-semibold">
-                {quotaError.reports_used} / {quotaError.reports_limit} luot
+                {quotaError.reports_used} / {quotaError.reports_limit} lượt
               </span>
             </div>
           </div>
           <div className="flex flex-col gap-3">
             <Button asChild>
-              <a href="/pricing">Nang cap goi ngay</a>
+              <a href="/pricing">Nâng cấp gói ngay</a>
             </Button>
             <Button variant="outline" onClick={() => router.push('/dashboard')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Quay lai Dashboard
+              Quay lại Dashboard
             </Button>
           </div>
         </Card>
@@ -261,31 +261,31 @@ export default function AuditPage() {
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="p-8 max-w-lg w-full text-center">
           <Database className="h-12 w-12 text-warning mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Knowledge Base chua san sang</h2>
+          <h2 className="text-xl font-bold mb-2">Knowledge Base chưa sẵn sàng</h2>
           <p className="text-muted-foreground mb-4">{kbError.message}</p>
           <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 mb-6 text-sm text-left space-y-2">
-            <p className="font-medium">Tai sao khong the phan tich?</p>
+            <p className="font-medium">Tại sao không thể phân tích?</p>
             <ul className="list-disc list-inside text-muted-foreground space-y-1">
               <li>
-                He thong can du lieu FDA regulations, Warning Letters va Recalls de phan tich
-                chinh xac.
+                Hệ thống cần dữ liệu FDA regulations, Warning Letters và Recalls để phân tích
+                chính xác.
               </li>
               <li>
-                Hien tai co <strong>{kbError.totalDocuments}</strong> tai lieu trong Knowledge
+                Hiện tại có <strong>{kbError.totalDocuments}</strong> tài liệu trong Knowledge
                 Base.
               </li>
-              <li>Can it nhat 1 tai lieu duoc nap vao de bat dau phan tich.</li>
+              <li>Cần ít nhất 1 tài liệu được nạp vào để bắt đầu phân tích.</li>
             </ul>
           </div>
           <div className="bg-muted rounded-lg p-4 mb-6 text-sm text-left space-y-2">
-            <p className="font-medium">Cach khac phuc:</p>
+            <p className="font-medium">Cách khắc phục:</p>
             <ol className="list-decimal list-inside text-muted-foreground space-y-1">
-              <li>Lien he Admin de nap tai lieu FDA vao Knowledge Base.</li>
+              <li>Liên hệ Admin để nạp tài liệu FDA vào Knowledge Base.</li>
               <li>
-                Truy cap trang <strong>Knowledge Base</strong> va su dung chuc nang &quot;Nap
-                tai lieu moi&quot; hoac &quot;FDA Warning Letters Pipeline&quot;.
+                Truy cập trang <strong>Knowledge Base</strong> và sử dụng chức năng &quot;Nạp
+                tài liệu mới&quot; hoặc &quot;FDA Warning Letters Pipeline&quot;.
               </li>
-              <li>Sau khi nap xong, quay lai day de chay phan tich.</li>
+              <li>Sau khi nạp xong, quay lại đây để chạy phân tích.</li>
             </ol>
           </div>
           <div className="flex flex-col gap-3">
@@ -302,11 +302,11 @@ export default function AuditPage() {
                 startAnalysis()
               }}
             >
-              Thu lai phan tich
+              Thử lại phân tích
             </Button>
             <Button variant="outline" onClick={() => router.push('/dashboard')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Quay lai Dashboard
+              Quay lại Dashboard
             </Button>
           </div>
         </Card>
@@ -321,7 +321,7 @@ export default function AuditPage() {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Dang tai bao cao...</p>
+          <p className="text-muted-foreground">Đang tải báo cáo...</p>
         </div>
       </div>
     )
@@ -332,13 +332,13 @@ export default function AuditPage() {
       <div className="flex-1 flex items-center justify-center">
         <Card className="p-8 text-center">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Khong tim thay bao cao</h2>
+          <h2 className="text-xl font-semibold mb-2">Không tìm thấy báo cáo</h2>
           <p className="text-muted-foreground mb-4">
-            Bao cao nay khong ton tai hoac da bi xoa
+            Báo cáo này không tồn tại hoặc đã bị xóa
           </p>
           <Button onClick={() => router.push('/dashboard')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Quay lai Dashboard
+            Quay lại Dashboard
           </Button>
         </Card>
       </div>
@@ -391,7 +391,7 @@ export default function AuditPage() {
             onClick={() => router.push(`/audit/${params.id}/versions`)}
           >
             <History className="mr-2 h-4 w-4" />
-            Lich su phien ban
+            Lịch sử phiên bản
           </Button>
           <Button
             variant="outline"
@@ -404,11 +404,11 @@ export default function AuditPage() {
             ) : (
               <Download className="mr-2 h-4 w-4" />
             )}
-            {pdfLoading ? 'Dang tao...' : 'Tai PDF'}
+            {pdfLoading ? 'Đang tạo...' : 'Tải PDF'}
           </Button>
           <Button variant="outline" size="sm">
             <Share2 className="mr-2 h-4 w-4" />
-            Chia se
+            Chia sẻ
           </Button>
           <Button
             size="sm"
@@ -420,7 +420,7 @@ export default function AuditPage() {
             }}
           >
             <MessageCircle className="mr-2 h-4 w-4" />
-            {report.needs_expert_review ? 'Can tu van chuyen gia' : 'Yeu cau tu van'}
+            {report.needs_expert_review ? 'Cần tư vấn chuyên gia' : 'Yêu cầu tư vấn'}
           </Button>
         </div>
       </div>
@@ -430,7 +430,7 @@ export default function AuditPage() {
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2 flex items-center gap-3 text-balance">
-              Bao cao Kiem tra Tuan thu FDA
+              Báo cáo Kiểm tra Tuân thủ FDA
               <Badge
                 variant={
                   report.overall_result === 'pass'
@@ -450,10 +450,10 @@ export default function AuditPage() {
                   <AlertTriangle className="mr-1 h-4 w-4" />
                 )}
                 {report.overall_result === 'pass'
-                  ? 'Dat'
+                  ? 'Đạt'
                   : report.overall_result === 'fail'
-                  ? 'Khong dat'
-                  : 'Can Xem xet'}
+                  ? 'Không đạt'
+                  : 'Cần xem xét'}
               </Badge>
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -467,7 +467,7 @@ export default function AuditPage() {
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              {pdfLoading ? 'Dang tao PDF...' : 'Tai xuong PDF'}
+              {pdfLoading ? 'Đang tạo PDF...' : 'Tải xuống PDF'}
             </Button>
           ) : (
             <Button
@@ -476,7 +476,7 @@ export default function AuditPage() {
               onClick={() => router.push('/pricing?highlight=starter')}
             >
               <Download className="h-4 w-4" />
-              Nang cap de tai PDF
+              Nâng cấp để tải PDF
             </Button>
           )}
         </div>
@@ -491,18 +491,17 @@ export default function AuditPage() {
 
         {/* Re-analyze notice for old reports */}
         {report.created_at &&
-          new Date(report.created_at) < new Date('2026-03-02T12:00:00Z') && (
+          new Date(report.created_at) < new Date('2025-06-01T00:00:00Z') && (
             <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 px-5 py-4 mb-6">
               <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm mb-0.5">
-                  Report nay duoc tao truoc khi cap nhat ruleset domain-aware
+                  Báo cáo này được tạo trước khi cập nhật bộ quy tắc phân loại sản phẩm
                 </p>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  He thong da duoc cap nhat de phan biet quy dinh rieng cho{' '}
-                  <strong>Cosmetic</strong>, <strong>Food/Supplement</strong> va{' '}
-                  <strong>OTC Drug</strong>. Vui long chay lai phan tich de nhan ket qua cap
-                  nhat.
+                  Hệ thống đã được cập nhật để phân biệt quy định riêng cho{' '}
+                  <strong>Mỹ phẩm (Cosmetic)</strong>, <strong>Thực phẩm/Thực phẩm bổ sung (Food/Supplement)</strong> và{' '}
+                  <strong>Thuốc không kê đơn (OTC Drug)</strong>. Vui lòng chạy lại phân tích để nhận kết quả cập nhật.
                 </p>
               </div>
             </div>
@@ -518,7 +517,7 @@ export default function AuditPage() {
           <TabsList className="w-full justify-start flex-wrap h-auto gap-1 bg-muted/50 p-1">
             <TabsTrigger value="cfr" className="gap-2 data-[state=active]:bg-background">
               <FileText className="h-4 w-4" />
-              Tuan thu CFR
+              Tuân thủ CFR
               {cfrViolations.length > 0 && (
                 <Badge
                   variant="secondary"

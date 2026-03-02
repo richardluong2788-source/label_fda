@@ -23,7 +23,7 @@ function ViolationConfidence({ score }: { score: number }) {
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between text-xs mb-1">
-        <span className="text-muted-foreground">Do tin cay phan tich:</span>
+        <span className="text-muted-foreground">Độ tin cậy phân tích:</span>
         <span className="font-medium">{Math.round(score * 100)}%</span>
       </div>
       <Progress value={score * 100} className="h-1" />
@@ -54,29 +54,29 @@ export function CFRViolationsSection({ violations }: CFRViolationsSectionProps) 
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-bold">Kiem tra Tuan thu Nhan</h2>
-          <Badge variant="secondary">{cfrViolations.length} vi pham</Badge>
+          <h2 className="text-xl font-bold">Kiểm tra tuân thủ nhãn</h2>
+          <Badge variant="secondary">{cfrViolations.length} vi phạm</Badge>
         </div>
         {cfrViolations.length > 0 && (
           <div className="text-sm text-muted-foreground">
-            {criticalCount} Nghiem trong &bull; {warningCount} Canh bao
+            {criticalCount} Nghiêm trọng &bull; {warningCount} Cảnh báo
           </div>
         )}
       </div>
 
       <p className="text-sm text-muted-foreground mb-6 border-l-2 border-primary/30 pl-3">
-        Ket qua kiem tra tuan thu nhan theo quy dinh{' '}
-        <span className="font-medium text-foreground">21 CFR</span>. Ket qua Dat/Khong Dat dua
-        tren cac vi pham nghiem trong ben duoi. Lich su Warning Letter va Recall duoc hien thi
-        rieng o cac tab khac.
+        Kết quả kiểm tra tuân thủ nhãn theo quy định{' '}
+        <span className="font-medium text-foreground">21 CFR</span>. Kết quả Đạt/Không đạt dựa
+        trên các vi phạm nghiêm trọng bên dưới. Lịch sử Warning Letter và Recall được hiển thị
+        riêng ở các tab khác.
       </p>
 
       {cfrViolations.length === 0 ? (
         <div className="text-center py-12">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">Khong co vi pham CFR</h3>
+          <h3 className="text-xl font-semibold mb-2">Không có vi phạm CFR</h3>
           <p className="text-muted-foreground">
-            Nhan cua ban tuan thu tat ca cac quy dinh FDA duoc kiem tra
+            Nhãn của bạn tuân thủ tất cả các quy định FDA được kiểm tra
           </p>
         </div>
       ) : (
@@ -110,7 +110,7 @@ export function CFRViolationsSection({ violations }: CFRViolationsSectionProps) 
                       variant={violation.severity === 'critical' ? 'destructive' : 'default'}
                       className="shrink-0"
                     >
-                      {violation.severity === 'critical' ? 'Nghiem trong' : 'Canh bao'}
+                      {violation.severity === 'critical' ? 'Nghiêm trọng' : 'Cảnh báo'}
                     </Badge>
                   </div>
 
@@ -119,7 +119,7 @@ export function CFRViolationsSection({ violations }: CFRViolationsSectionProps) 
                   {violation.regulation_reference && (
                     <div className="bg-muted rounded-lg p-4 mb-4">
                       <p className="text-xs font-medium text-muted-foreground mb-1">
-                        Dieu khoan ap dung:
+                        Điều khoản áp dụng:
                       </p>
                       <p className="text-sm font-mono text-primary">
                         {violation.regulation_reference}
@@ -130,7 +130,7 @@ export function CFRViolationsSection({ violations }: CFRViolationsSectionProps) 
                   {violation.suggested_fix && (
                     <div className="bg-info/10 rounded-lg p-4 mb-4">
                       <p className="text-xs font-medium text-info mb-2">
-                        Huong dan khac phuc:
+                        Hướng dẫn khắc phục:
                       </p>
                       <p className="text-sm text-info/80">{violation.suggested_fix}</p>
                     </div>
@@ -139,7 +139,7 @@ export function CFRViolationsSection({ violations }: CFRViolationsSectionProps) 
                   {violation.citations && violation.citations.length > 0 && (
                     <details className="group">
                       <summary className="cursor-pointer text-sm font-medium text-primary hover:underline mb-2">
-                        Trich dan tu quy dinh ({violation.citations.length}):
+                        Trích dẫn từ quy định ({violation.citations.length}):
                       </summary>
                       <div className="space-y-2 ml-4 mt-2">
                         {violation.citations.map((citation, citIdx) => (
@@ -150,7 +150,7 @@ export function CFRViolationsSection({ violations }: CFRViolationsSectionProps) 
                             <p className="font-medium mb-1">{citation.section}</p>
                             <p className="text-muted-foreground italic">{citation.text}</p>
                             <p className="text-xs text-muted-foreground mt-2">
-                              Nguon: {citation.source} (Do lien quan:{' '}
+                              Nguồn: {citation.source} (Độ liên quan:{' '}
                               {(citation.relevance_score * 100).toFixed(0)}%)
                             </p>
                           </div>
@@ -189,22 +189,22 @@ export function WarningLetterSection({ violations }: WarningLetterSectionProps) 
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Mail className="h-5 w-5 text-purple-600" />
-          <h2 className="text-xl font-bold">Mau Canh bao FDA (Warning Letter)</h2>
+          <h2 className="text-xl font-bold">Mẫu cảnh báo FDA (Warning Letter)</h2>
           <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">
-            {wlViolations.length} mau phat hien
+            {wlViolations.length} mẫu phát hiện
           </Badge>
         </div>
       </div>
 
       <div className="rounded-lg bg-purple-50 border-l-4 border-purple-400 p-4 mb-6">
         <p className="text-sm font-semibold text-purple-900 mb-1">
-          Dua tren lich su FDA Warning Letters thuc te
+          Dựa trên lịch sử FDA Warning Letters thực tế
         </p>
         <p className="text-sm text-purple-800 leading-relaxed">
-          Cac muc nay khong phai vi pham CFR moi — chung la{' '}
-          <span className="font-medium">mau loi lap lai</span> ma FDA da gui Warning Letter
-          cho cac doanh nghiep khac voi ngon ngu tuong tu. Day la tin hieu rui ro enforcement
-          cao. Khong anh huong den ket qua Pass/Fail cua nhan.
+          Các mục này không phải vi phạm CFR mới — chúng là{' '}
+          <span className="font-medium">mẫu lỗi lặp lại</span> mà FDA đã gửi Warning Letter
+          cho các doanh nghiệp khác với ngôn ngữ tương tự. Đây là tín hiệu rủi ro enforcement
+          cao. Không ảnh hưởng đến kết quả Đạt/Không đạt của nhãn.
         </p>
       </div>
 
@@ -233,7 +233,7 @@ export function WarningLetterSection({ violations }: WarningLetterSectionProps) 
                       variant={violation.severity === 'critical' ? 'destructive' : 'outline'}
                       className="text-xs"
                     >
-                      {violation.severity === 'critical' ? 'Nghiem trong' : 'Canh bao'}
+                      {violation.severity === 'critical' ? 'Nghiêm trọng' : 'Cảnh báo'}
                     </Badge>
                   </div>
                 </div>
@@ -243,7 +243,7 @@ export function WarningLetterSection({ violations }: WarningLetterSectionProps) 
                 {violation.regulation_reference && (
                   <div className="bg-purple-100/60 rounded-lg p-3 mb-3">
                     <p className="text-xs font-medium text-purple-900 mb-0.5">
-                      Dieu khoan lien quan:
+                      Điều khoản liên quan:
                     </p>
                     <p className="text-xs font-mono text-purple-800">
                       {violation.regulation_reference}
@@ -254,7 +254,7 @@ export function WarningLetterSection({ violations }: WarningLetterSectionProps) 
                 {violation.suggested_fix && (
                   <div className="bg-info/10 rounded-lg p-3 mb-3">
                     <p className="text-xs font-medium text-info mb-1">
-                      Huong dan khac phuc:
+                      Hướng dẫn khắc phục:
                     </p>
                     <p className="text-xs text-info/80">{violation.suggested_fix}</p>
                   </div>
@@ -267,7 +267,7 @@ export function WarningLetterSection({ violations }: WarningLetterSectionProps) 
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-xs text-purple-700 hover:underline"
                   >
-                    Xem Warning Letter goc tren FDA.gov{' '}
+                    Xem Warning Letter gốc trên FDA.gov{' '}
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
@@ -276,7 +276,7 @@ export function WarningLetterSection({ violations }: WarningLetterSectionProps) 
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="text-muted-foreground">
-                        Muc tuong dong voi Warning Letter:
+                        Mức tương đồng với Warning Letter:
                       </span>
                       <span className="font-medium">
                         {Math.round(violation.confidence_score * 100)}%
@@ -287,8 +287,8 @@ export function WarningLetterSection({ violations }: WarningLetterSectionProps) 
                 )}
 
                 <p className="text-xs text-muted-foreground mt-3 italic border-t pt-2">
-                  Nguon: Lich su Warning Letter cua FDA — day la tin hieu rui ro, khong phai vi
-                  pham CFR truc tiep.
+                  Nguồn: Lịch sử Warning Letter của FDA — đây là tín hiệu rủi ro, không phải vi
+                  phạm CFR trực tiếp.
                 </p>
               </div>
             </div>
@@ -322,7 +322,7 @@ export function RecallSection({ violations }: RecallSectionProps) {
           <RotateCcw
             className={`h-5 w-5 ${hasClassI ? 'text-orange-600' : 'text-warning'}`}
           />
-          <h2 className="text-xl font-bold">Mau Thu hoi FDA (Recall)</h2>
+          <h2 className="text-xl font-bold">Mẫu thu hồi FDA (Recall)</h2>
           <Badge
             className={`${
               hasClassI
@@ -330,7 +330,7 @@ export function RecallSection({ violations }: RecallSectionProps) {
                 : 'bg-warning/20 text-warning-foreground'
             } hover:bg-inherit`}
           >
-            {recallViolations.length} mau phat hien
+            {recallViolations.length} mẫu phát hiện
           </Badge>
         </div>
       </div>
@@ -347,16 +347,16 @@ export function RecallSection({ violations }: RecallSectionProps) {
             hasClassI ? 'text-orange-900' : 'text-warning-foreground'
           }`}
         >
-          Nhan chua yeu to tuong tu san pham da bi FDA Recall
+          Nhãn chứa yếu tố tương tự sản phẩm đã bị FDA Recall
         </p>
         <p
           className={`text-sm leading-relaxed ${
             hasClassI ? 'text-orange-800' : 'text-warning-foreground/80'
           }`}
         >
-          Cac muc nay duoc phat hien dua tren co so du lieu openFDA Recall. Khong co nghia san
-          pham cua ban se bi recall — nhung chua tu khoa, thanh phan, hoac cau truc nhan tuong
-          dong voi san pham da bi thu hoi. Khong anh huong den Pass/Fail.
+          Các mục này được phát hiện dựa trên cơ sở dữ liệu openFDA Recall. Không có nghĩa sản
+          phẩm của bạn sẽ bị recall — nhưng chứa từ khóa, thành phần, hoặc cấu trúc nhãn tương
+          đồng với sản phẩm đã bị thu hồi. Không ảnh hưởng đến Đạt/Không đạt.
         </p>
       </div>
 
@@ -394,7 +394,7 @@ export function RecallSection({ violations }: RecallSectionProps) {
                         : 'bg-warning hover:bg-warning'
                     }`}
                   >
-                    {violation.severity === 'critical' ? 'Recall Loai I' : 'Mau Thu hoi'}
+                    {violation.severity === 'critical' ? 'Recall Loại I' : 'Mẫu thu hồi'}
                   </Badge>
                 </div>
 
@@ -408,7 +408,7 @@ export function RecallSection({ violations }: RecallSectionProps) {
                         : 'bg-warning/10'
                     }`}
                   >
-                    <p className="text-xs font-medium mb-0.5">Nguon du lieu Recall:</p>
+                    <p className="text-xs font-medium mb-0.5">Nguồn dữ liệu Recall:</p>
                     <p className="text-xs font-mono">{violation.regulation_reference}</p>
                   </div>
                 )}
@@ -416,7 +416,7 @@ export function RecallSection({ violations }: RecallSectionProps) {
                 {violation.suggested_fix && (
                   <div className="bg-info/10 rounded-lg p-3 mb-3">
                     <p className="text-xs font-medium text-info mb-1">
-                      Hanh dong phong ngua de xuat:
+                      Hành động phòng ngừa đề xuất:
                     </p>
                     <p className="text-xs text-info/80">{violation.suggested_fix}</p>
                   </div>
@@ -426,7 +426,7 @@ export function RecallSection({ violations }: RecallSectionProps) {
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="text-muted-foreground">
-                        Muc tuong dong voi su kien Recall:
+                        Mức tương đồng với sự kiện Recall:
                       </span>
                       <span className="font-medium">
                         {Math.round(violation.confidence_score * 100)}%
@@ -437,8 +437,8 @@ export function RecallSection({ violations }: RecallSectionProps) {
                 )}
 
                 <p className="text-xs text-muted-foreground mt-3 italic border-t pt-2">
-                  Nguon: Co so du lieu openFDA Recall — day la tin hieu rui ro, khong phai vi
-                  pham CFR truc tiep.
+                  Nguồn: Cơ sở dữ liệu openFDA Recall — đây là tín hiệu rủi ro, không phải vi
+                  phạm CFR trực tiếp.
                 </p>
               </div>
             </div>
@@ -470,7 +470,7 @@ export function ImportAlertSection({ violations }: ImportAlertSectionProps) {
           <Ship
             className={`h-5 w-5 ${hasCritical ? 'text-destructive' : 'text-warning'}`}
           />
-          <h2 className="text-xl font-bold">Rui ro Thong quan Bien gioi</h2>
+          <h2 className="text-xl font-bold">Rủi ro thông quan biên giới</h2>
           <Badge
             className={`${
               hasCritical
@@ -495,17 +495,17 @@ export function ImportAlertSection({ violations }: ImportAlertSectionProps) {
             hasCritical ? 'text-destructive' : 'text-warning-foreground'
           }`}
         >
-          Quan trong: Nhan dung luat khong dam bao hang qua cang
+          Quan trọng: Nhãn đúng luật không đảm bảo hàng qua cảng
         </p>
         <p
           className={`text-sm leading-relaxed ${
             hasCritical ? 'text-destructive/80' : 'text-warning-foreground/80'
           }`}
         >
-          Nhan cua ban co the <span className="font-medium">Pass</span> toan bo kiem tra CFR
-          ben tren, nhung hang hoa van co nguy co bi giu tai cang My (DWPE — Detention Without
-          Physical Examination) neu san pham hoac nha san xuat thuoc dien Import Alert cua FDA.
-          Day la rui ro bien gioi doc lap voi tuan thu nhan.
+          Nhãn của bạn có thể <span className="font-medium">Đạt</span> toàn bộ kiểm tra CFR
+          bên trên, nhưng hàng hóa vẫn có nguy cơ bị giữ tại cảng Mỹ (DWPE — Detention Without
+          Physical Examination) nếu sản phẩm hoặc nhà sản xuất thuộc diện Import Alert của FDA.
+          Đây là rủi ro biên giới độc lập với tuân thủ nhãn.
         </p>
       </div>
 
@@ -547,7 +547,7 @@ export function ImportAlertSection({ violations }: ImportAlertSectionProps) {
                         : 'bg-warning hover:bg-warning'
                     } text-background`}
                   >
-                    {violation.severity === 'critical' ? 'Rui ro DWPE' : 'Rui ro Nhap khau'}
+                    {violation.severity === 'critical' ? 'Rủi ro DWPE' : 'Rủi ro nhập khẩu'}
                   </Badge>
                 </div>
 
@@ -571,7 +571,7 @@ export function ImportAlertSection({ violations }: ImportAlertSectionProps) {
                         rel="noopener noreferrer"
                         className="text-xs text-primary hover:underline flex items-center gap-1 shrink-0"
                       >
-                        Xem tren FDA.gov <ExternalLink className="h-3 w-3" />
+                        Xem trên FDA.gov <ExternalLink className="h-3 w-3" />
                       </a>
                     )}
                   </div>
@@ -579,7 +579,7 @@ export function ImportAlertSection({ violations }: ImportAlertSectionProps) {
 
                 {violation.suggested_fix && (
                   <div className="bg-info/10 rounded-lg p-3 mb-3">
-                    <p className="text-xs font-medium text-info mb-1">Khuyen nghi:</p>
+                    <p className="text-xs font-medium text-info mb-1">Khuyến nghị:</p>
                     <p className="text-xs text-info/80">{violation.suggested_fix}</p>
                   </div>
                 )}
@@ -587,7 +587,7 @@ export function ImportAlertSection({ violations }: ImportAlertSectionProps) {
                 {violation.confidence_score !== undefined && (
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-muted-foreground">Muc lien quan:</span>
+                      <span className="text-muted-foreground">Mức liên quan:</span>
                       <span className="font-medium">
                         {Math.round(violation.confidence_score * 100)}%
                       </span>
@@ -597,8 +597,8 @@ export function ImportAlertSection({ violations }: ImportAlertSectionProps) {
                 )}
 
                 <p className="text-xs text-muted-foreground mt-3 italic border-t pt-2">
-                  Import Alert la tin hieu rui ro bien gioi — khong phai vi pham CFR truc tiep.
-                  Khong duoc tinh vao ket qua Pass/Fail cua nhan.
+                  Import Alert là tín hiệu rủi ro biên giới — không phải vi phạm CFR trực tiếp.
+                  Không được tính vào kết quả Đạt/Không đạt của nhãn.
                 </p>
               </div>
             </div>
