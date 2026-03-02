@@ -15,6 +15,10 @@ import {
   ArrowRight,
   Expand,
   Shield,
+  Mail,
+  RotateCcw,
+  Ship,
+  FileText,
 } from 'lucide-react'
 import type { AuditReport, Violation, LabelImageEntry } from '@/lib/types'
 import { LabelImageGallery } from '@/components/label-image-gallery'
@@ -75,7 +79,7 @@ function OcrConfidenceBar({ confidence }: { confidence: number }) {
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex items-center gap-2 text-xs text-slate-500">
-        <span>{'DO TIN CAY OCR'}</span>
+        <span>ĐỘ TIN CẬY OCR</span>
       </div>
       <span className="text-lg font-bold text-slate-800">{pct}%</span>
       <div className="w-28 h-2 bg-slate-200 rounded-full overflow-hidden">
@@ -119,20 +123,20 @@ function IngredientTags({ ingredientList }: { ingredientList: string }) {
 }
 
 // ────────────────────────────────────────────────────────────
-// Severity Badge (NGHIEM TRONG / CANH BAO)
+// Severity Badge (NGHIÊM TRỌNG / CẢNH BÁO)
 // ────────────────────────────────────────────────────────────
 
 function SeverityBadge({ severity }: { severity: string }) {
   if (severity === 'critical') {
     return (
       <span className="inline-flex items-center px-3 py-1 rounded text-xs font-bold uppercase tracking-wide bg-red-500 text-white">
-        {'NGHIEM TRONG'}
+        NGHIÊM TRỌNG
       </span>
     )
   }
   return (
     <span className="inline-flex items-center px-3 py-1 rounded text-xs font-bold uppercase tracking-wide bg-amber-500 text-white">
-      {'CANH BAO'}
+      CẢNH BÁO
     </span>
   )
 }
@@ -146,6 +150,27 @@ function ViolationIcon({ severity, type }: { severity: string; type?: string }) 
     return (
       <div className="rounded-full bg-blue-100 p-2.5 shrink-0">
         <Info className="h-5 w-5 text-blue-600" />
+      </div>
+    )
+  }
+  if (type === 'warning_letter') {
+    return (
+      <div className="rounded-full bg-orange-100 p-2.5 shrink-0">
+        <Mail className="h-5 w-5 text-orange-600" />
+      </div>
+    )
+  }
+  if (type === 'recall') {
+    return (
+      <div className="rounded-full bg-purple-100 p-2.5 shrink-0">
+        <RotateCcw className="h-5 w-5 text-purple-600" />
+      </div>
+    )
+  }
+  if (type === 'import_alert') {
+    return (
+      <div className="rounded-full bg-cyan-100 p-2.5 shrink-0">
+        <Ship className="h-5 w-5 text-cyan-600" />
       </div>
     )
   }
@@ -170,8 +195,47 @@ function ViolationIcon({ severity, type }: { severity: string; type?: string }) 
 function ViolationCard({ violation, index }: { violation: Violation; index: number }) {
   const isContrast =
     violation.category?.toLowerCase().includes('contrast') ||
-    violation.category?.toLowerCase().includes('tuong phan') ||
+    violation.category?.toLowerCase().includes('tương phản') ||
     violation.category?.toLowerCase().includes('color')
+
+  // Translate category name to proper Vietnamese
+  const getCategoryName = (category: string) => {
+    const translations: Record<string, string> = {
+      'Health Claims': 'Tuyên bố sức khỏe',
+      'health claims': 'Tuyên bố sức khỏe',
+      'Ingredient Order': 'Thứ tự nguyên liệu',
+      'ingredient order': 'Thứ tự nguyên liệu',
+      'Color Contrast': 'Độ tương phản màu sắc',
+      'color contrast': 'Độ tương phản màu sắc',
+      'Missing Information': 'Thiếu thông tin bắt buộc',
+      'missing information': 'Thiếu thông tin bắt buộc',
+      'Net Weight': 'Khối lượng tịnh',
+      'net weight': 'Khối lượng tịnh',
+      'Font Size': 'Kích thước chữ',
+      'font size': 'Kích thước chữ',
+      'Allergen Warning': 'Cảnh báo dị ứng',
+      'allergen warning': 'Cảnh báo dị ứng',
+      'Nutrition Facts': 'Thông tin dinh dưỡng',
+      'nutrition facts': 'Thông tin dinh dưỡng',
+    }
+    return translations[category] || category
+  }
+
+  // Translate suggested fix to Vietnamese if it's in English
+  const getVietnameseFix = (fix: string | undefined, category: string) => {
+    if (!fix) return 'Liên hệ chuyên gia Vexim để được tư vấn chi tiết.'
+    
+    // Common English fix patterns -> Vietnamese
+    const fixTranslations: Record<string, string> = {
+      'Remove all disease treatment/cure claims. Only FDA-approved health claims are allowed.':
+        'Loại bỏ từ "prevent", "cure", "treat". Sử dụng các từ mô tả chức năng mỹ phẩm như "reduces friction", "soothes skin".',
+      'Ensure ingredients are listed in descending order by weight':
+        'Đối chiếu danh sách nguyên liệu với công thức sản xuất. Sắp xếp lại theo thứ tự giảm dần về khối lượng (ingredient chiếm % cao nhất đứng đầu).',
+    }
+    
+    // Return Vietnamese translation if exists, otherwise return original
+    return fixTranslations[fix] || fix
+  }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -180,11 +244,11 @@ function ViolationCard({ violation, index }: { violation: Violation; index: numb
         <div className="flex items-start gap-3">
           <ViolationIcon
             severity={violation.severity}
-            type={isContrast ? 'contrast' : undefined}
+            type={isContrast ? 'contrast' : violation.source_type}
           />
           <div>
             <h3 className="font-semibold text-base text-slate-900 leading-tight">
-              {violation.category}
+              {getCategoryName(violation.category)}
             </h3>
             {violation.regulation_reference && (
               <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -203,20 +267,163 @@ function ViolationCard({ violation, index }: { violation: Violation; index: numb
         {/* Left: Current on label (red) */}
         <div className="p-5 bg-red-50/60 border-t border-r border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-red-700 mb-3">
-            {'HIEN TAI TREN NHAN'}
+            HIỆN TẠI TRÊN NHÃN
           </p>
           <p className="text-sm text-slate-700 leading-relaxed italic">
-            {'"'}{violation.description}{'"'}
+            &ldquo;{violation.description}&rdquo;
           </p>
         </div>
 
         {/* Right: Fix recommendation (green) */}
         <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
-            {'HUONG DAN KHAC PHUC (VEXIM RECOMMENDATION)'}
+            HƯỚNG DẪN KHẮC PHỤC (VEXIM)
           </p>
           <p className="text-sm text-slate-700 leading-relaxed">
-            {violation.suggested_fix || 'Chua co huong dan khac phuc tu he thong.'}
+            {getVietnameseFix(violation.suggested_fix, violation.category)}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ────────────────────────────────────────────────────────────
+// Warning Letter Violation Card
+// ────────────────────────────────────────────────────────────
+
+function WarningLetterCard({ violation }: { violation: Violation }) {
+  return (
+    <div className="rounded-xl border border-orange-200 bg-white overflow-hidden">
+      <div className="flex items-start justify-between p-5 pb-3">
+        <div className="flex items-start gap-3">
+          <ViolationIcon severity={violation.severity} type="warning_letter" />
+          <div>
+            <h3 className="font-semibold text-base text-slate-900 leading-tight">
+              Cảnh báo từ FDA Warning Letter
+            </h3>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-orange-100 text-orange-700 border border-orange-200">
+                FDA Warning Letter
+              </span>
+              {violation.regulation_reference && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200">
+                  {violation.regulation_reference}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <SeverityBadge severity={violation.severity} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-0">
+        <div className="p-5 bg-orange-50/60 border-t border-r border-slate-200">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-orange-700 mb-3">
+            NỘI DUNG VI PHẠM
+          </p>
+          <p className="text-sm text-slate-700 leading-relaxed italic">
+            &ldquo;{violation.description}&rdquo;
+          </p>
+        </div>
+        <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
+            KHUYẾN NGHỊ TỪ VEXIM
+          </p>
+          <p className="text-sm text-slate-700 leading-relaxed">
+            {violation.suggested_fix || 'Xem xét lại nhãn để tránh các lỗi tương tự đã bị FDA cảnh báo trước đây.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ────────────────────────────────────────────────────────────
+// Recall Card
+// ────────────────────────────────────────────────────────────
+
+function RecallCard({ violation }: { violation: Violation }) {
+  return (
+    <div className="rounded-xl border border-purple-200 bg-white overflow-hidden">
+      <div className="flex items-start justify-between p-5 pb-3">
+        <div className="flex items-start gap-3">
+          <ViolationIcon severity={violation.severity} type="recall" />
+          <div>
+            <h3 className="font-semibold text-base text-slate-900 leading-tight">
+              Liên quan đến sản phẩm bị thu hồi
+            </h3>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-purple-100 text-purple-700 border border-purple-200">
+                FDA Recall
+              </span>
+            </div>
+          </div>
+        </div>
+        <SeverityBadge severity={violation.severity} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-0">
+        <div className="p-5 bg-purple-50/60 border-t border-r border-slate-200">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-purple-700 mb-3">
+            THÔNG TIN THU HỒI
+          </p>
+          <p className="text-sm text-slate-700 leading-relaxed italic">
+            &ldquo;{violation.description}&rdquo;
+          </p>
+        </div>
+        <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
+            KHUYẾN NGHỊ TỪ VEXIM
+          </p>
+          <p className="text-sm text-slate-700 leading-relaxed">
+            {violation.suggested_fix || 'Kiểm tra xem sản phẩm của bạn có thành phần hoặc đặc điểm tương tự với sản phẩm bị thu hồi không.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ────────────────────────────────────────────────────────────
+// Import Alert Card
+// ────────────────────────────────────────────────────────────
+
+function ImportAlertCard({ violation }: { violation: Violation }) {
+  return (
+    <div className="rounded-xl border border-cyan-200 bg-white overflow-hidden">
+      <div className="flex items-start justify-between p-5 pb-3">
+        <div className="flex items-start gap-3">
+          <ViolationIcon severity={violation.severity} type="import_alert" />
+          <div>
+            <h3 className="font-semibold text-base text-slate-900 leading-tight">
+              Cảnh báo nhập khẩu FDA
+            </h3>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-cyan-100 text-cyan-700 border border-cyan-200">
+                Import Alert
+              </span>
+            </div>
+          </div>
+        </div>
+        <SeverityBadge severity={violation.severity} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-0">
+        <div className="p-5 bg-cyan-50/60 border-t border-r border-slate-200">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-cyan-700 mb-3">
+            NỘI DUNG CẢNH BÁO
+          </p>
+          <p className="text-sm text-slate-700 leading-relaxed italic">
+            &ldquo;{violation.description}&rdquo;
+          </p>
+        </div>
+        <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
+            KHUYẾN NGHỊ TỪ VEXIM
+          </p>
+          <p className="text-sm text-slate-700 leading-relaxed">
+            {violation.suggested_fix || 'Đảm bảo sản phẩm tuân thủ đầy đủ quy định để tránh bị giữ tại cảng nhập khẩu.'}
           </p>
         </div>
       </div>
@@ -241,7 +448,7 @@ function ContrastViolationCard({
   }
 }) {
   const ratioText = violation.ratio
-    ? `Ty le tuong phan ${violation.ratio.toFixed(2)}:1 (Yeu cau toi thieu 4.5:1)`
+    ? `Tỷ lệ tương phản ${violation.ratio.toFixed(2)}:1 (Yêu cầu tối thiểu 4.5:1)`
     : violation.description
 
   return (
@@ -254,11 +461,11 @@ function ContrastViolationCard({
           </div>
           <div>
             <h3 className="font-semibold text-base text-slate-900 leading-tight">
-              {'Do tuong phan mau sac thap'}
+              Độ tương phản màu sắc thấp
             </h3>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200">
-                {'FDA "conspicuous" labeling requirements'}
+                Yêu cầu FDA về độ rõ ràng của nhãn
               </span>
             </div>
           </div>
@@ -271,10 +478,10 @@ function ContrastViolationCard({
         {/* Left: Current (red) */}
         <div className="p-5 bg-red-50/60 border-t border-r border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-red-700 mb-3">
-            {'HIEN TAI TREN NHAN'}
+            HIỆN TẠI TRÊN NHÃN
           </p>
           <p className="text-sm text-slate-700 leading-relaxed italic">
-            {'"'}{ratioText}{'"'}
+            &ldquo;{ratioText}&rdquo;
           </p>
           {violation.colors && (
             <div className="flex items-center gap-2 mt-3">
@@ -300,11 +507,11 @@ function ContrastViolationCard({
         {/* Right: Recommendation (green) */}
         <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
-            {'HUONG DAN KHAC PHUC (VEXIM RECOMMENDATION)'}
+            HƯỚNG DẪN KHẮC PHỤC (VEXIM)
           </p>
           <p className="text-sm text-slate-700 leading-relaxed">
             {violation.recommendation ||
-              'Tang do dam cua chu hoac thay doi mau nen de dam bao tinh de doc.'}
+              'Tăng độ đậm của chữ hoặc thay đổi màu nền để đảm bảo tính dễ đọc.'}
           </p>
         </div>
       </div>
@@ -330,36 +537,42 @@ export function ReportResultView({
   const router = useRouter()
 
   const allViolations: Violation[] = report.findings || report.violations || []
+  
+  // Filter violations by source type - these come from real FDA data
   const cfrViolations = allViolations.filter(
     (v) =>
       v.source_type !== 'import_alert' &&
       v.source_type !== 'warning_letter' &&
       v.source_type !== 'recall'
   )
+  const wlViolations = allViolations.filter((v) => v.source_type === 'warning_letter')
+  const recallViolations = allViolations.filter((v) => v.source_type === 'recall')
+  const importAlertViolations = allViolations.filter((v) => v.source_type === 'import_alert')
+  
   const contrastViolations = report.contrast_violations || []
 
-  // Risk label
+  // Risk label with proper Vietnamese
   const riskScore = report.overall_risk_score ?? 5
   const riskLabel =
     riskScore >= 7
       ? 'Cao'
       : riskScore >= 4
-        ? 'Trung binh - Cao'
+        ? 'Trung bình - Cao'
         : riskScore >= 2
-          ? 'Trung binh'
-          : 'Thap'
+          ? 'Trung bình'
+          : 'Thấp'
 
   const criticalCount =
-    cfrViolations.filter((v) => v.severity === 'critical').length +
+    allViolations.filter((v) => v.severity === 'critical').length +
     contrastViolations.filter((v) => v.severity === 'critical').length
   const warningCount =
-    cfrViolations.filter((v) => v.severity === 'warning').length +
+    allViolations.filter((v) => v.severity === 'warning').length +
     contrastViolations.filter((v) => v.severity === 'warning' || v.severity === 'info').length
 
   // Description sentence
   const descParts: string[] = []
-  if (criticalCount > 0) descParts.push(`${criticalCount} vi pham nghiem trong`)
-  if (warningCount > 0) descParts.push(`${warningCount} canh bao`)
+  if (criticalCount > 0) descParts.push(`${criticalCount} vi phạm nghiêm trọng`)
+  if (warningCount > 0) descParts.push(`${warningCount} cảnh báo`)
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -373,7 +586,7 @@ export function ReportResultView({
             <div>
               <h1 className="text-sm font-bold leading-tight">Vexim Compliance AI</h1>
               <p className="text-[11px] text-slate-400 uppercase tracking-wider leading-tight">
-                {'THI TRUONG: HOA KY (FDA)'}
+                THỊ TRƯỜNG: HOA KỲ (FDA)
               </p>
             </div>
           </div>
@@ -397,7 +610,7 @@ export function ReportResultView({
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              {pdfLoading ? 'Dang tao...' : 'Xuat Bao Cao'}
+              {pdfLoading ? 'Đang tạo...' : 'Xuất Báo Cáo'}
             </Button>
           </div>
         </div>
@@ -414,11 +627,11 @@ export function ReportResultView({
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-semibold text-sm text-slate-800 flex items-center gap-2">
                     <Expand className="h-4 w-4 text-slate-500" />
-                    {'Hinh anh nhan'}
+                    Hình ảnh nhãn
                   </h2>
                   {report.label_images && report.label_images.length > 0 && (
                     <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 text-[10px] uppercase font-bold tracking-wider border-0">
-                      {report.label_images.length} {'HINH ANH'}
+                      {report.label_images.length} HÌNH ẢNH
                     </Badge>
                   )}
                 </div>
@@ -432,7 +645,7 @@ export function ReportResultView({
                       />
                     ) : (
                       <p className="text-muted-foreground text-sm">
-                        {'Khong co du lieu'}
+                        Không có dữ liệu
                       </p>
                     )}
                   </div>
@@ -451,7 +664,7 @@ export function ReportResultView({
                 <div className="flex items-center gap-2 mb-4">
                   <Info className="h-4 w-4 text-slate-500" />
                   <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    {'THONG TIN SAN PHAM (AI)'}
+                    THÔNG TIN SẢN PHẨM (AI)
                   </h2>
                 </div>
 
@@ -459,7 +672,7 @@ export function ReportResultView({
                   {(report as any).brand_name && (
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider">
-                        {'THUONG HIEU'}
+                        THƯƠNG HIỆU
                       </p>
                       <p className="text-sm font-semibold text-slate-800">
                         {(report as any).brand_name}
@@ -470,7 +683,7 @@ export function ReportResultView({
                   {report.product_name && (
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider">
-                        {'TEN SAN PHAM'}
+                        TÊN SẢN PHẨM
                       </p>
                       <p className="text-sm font-medium text-slate-700 italic">
                         {report.product_name}
@@ -481,7 +694,7 @@ export function ReportResultView({
                   {report.ingredient_list && (
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider mb-2">
-                        {'THANH PHAN TRICH XUAT'}
+                        THÀNH PHẦN TRÍCH XUẤT
                       </p>
                       <IngredientTags ingredientList={report.ingredient_list} />
                     </div>
@@ -490,7 +703,7 @@ export function ReportResultView({
                   {report.product_category && (
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider">
-                        {'DANH MUC'}
+                        DANH MỤC
                       </p>
                       <p className="text-sm font-medium text-slate-700">
                         {report.product_category}
@@ -501,7 +714,7 @@ export function ReportResultView({
                   {report.target_market && (
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider">
-                        {'THI TRUONG'}
+                        THỊ TRƯỜNG
                       </p>
                       <p className="text-sm font-medium text-slate-700">
                         {report.target_market}
@@ -522,7 +735,7 @@ export function ReportResultView({
 
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-bold text-slate-900">
-                    {'Muc do rui ro: '}
+                    Mức độ rủi ro:{' '}
                     <span
                       className={
                         riskScore >= 7
@@ -537,8 +750,8 @@ export function ReportResultView({
                   </h2>
                   <p className="text-sm text-slate-500 mt-1 leading-relaxed">
                     {descParts.length > 0
-                      ? `Nhan co ${descParts.join(' va ')} can duoc sua truoc khi phan phoi.`
-                      : 'Nhan tuan thu cac quy dinh FDA duoc kiem tra. Rui ro thap.'}
+                      ? `Nhãn có ${descParts.join(' và ')} cần được sửa trước khi phân phối.`
+                      : 'Nhãn tuân thủ các quy định FDA được kiểm tra. Rủi ro thấp.'}
                   </p>
                 </div>
 
@@ -548,12 +761,12 @@ export function ReportResultView({
               </div>
             </Card>
 
-            {/* ── VIOLATIONS SECTION ───────────────────────── */}
+            {/* ── CFR VIOLATIONS SECTION ───────────────────────── */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Info className="h-4 w-4 text-slate-500" />
+                <FileText className="h-4 w-4 text-slate-500" />
                 <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                  {'CHI TIET KIEM TRA TUAN THU (21 CFR)'}
+                  CHI TIẾT KIỂM TRA TUÂN THỦ (21 CFR)
                 </h2>
               </div>
 
@@ -561,10 +774,10 @@ export function ReportResultView({
                 <Card className="bg-white border-slate-200 p-12 text-center">
                   <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-slate-800 mb-2">
-                    {'Khong co vi pham CFR'}
+                    Không có vi phạm CFR
                   </h3>
                   <p className="text-slate-500">
-                    {'Nhan cua ban tuan thu tat ca cac quy dinh FDA duoc kiem tra'}
+                    Nhãn của bạn tuân thủ tất cả các quy định FDA được kiểm tra
                   </p>
                 </Card>
               ) : (
@@ -589,35 +802,88 @@ export function ReportResultView({
               )}
             </div>
 
-            {/* ── EXPERT CTA BANNER ────────────────────────── */}
-            <div className="rounded-xl bg-[#1e293b] p-6 flex items-center justify-between gap-6 flex-wrap">
-              <div className="flex items-start gap-4 min-w-0">
-                <div className="rounded-full bg-blue-600/20 p-3 shrink-0">
-                  <Search className="h-6 w-6 text-blue-400" />
+            {/* ── WARNING LETTERS SECTION ───────────────────────── */}
+            {wlViolations.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Mail className="h-4 w-4 text-orange-500" />
+                  <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                    CẢNH BÁO TỪ FDA WARNING LETTERS ({wlViolations.length})
+                  </h2>
                 </div>
-                <div>
-                  <h3 className="text-white font-bold text-lg">
-                    {'Tu van chuyen gia Vexim'}
-                  </h3>
-                  <p className="text-slate-400 text-sm mt-1 leading-relaxed max-w-lg">
-                    {'He thong phat hien cac diem can chuyen gia xem xet ky hon de toi uu hoa kha nang thong quan va tranh bi FDA Warning Letter.'}
-                  </p>
+                <div className="space-y-5">
+                  {wlViolations.map((violation, index) => (
+                    <WarningLetterCard key={`wl-${index}`} violation={violation} />
+                  ))}
                 </div>
               </div>
+            )}
 
-              <Button
-                onClick={() => {
-                  document
-                    .getElementById('expert-request-panel')
-                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                }}
-                className="bg-white text-slate-900 hover:bg-slate-100 font-bold gap-2 px-6 shrink-0"
-                size="lg"
-              >
-                {'GUI YEU CAU TU VAN'}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
+            {/* ── RECALLS SECTION ───────────────────────── */}
+            {recallViolations.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <RotateCcw className="h-4 w-4 text-purple-500" />
+                  <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                    LIÊN QUAN ĐẾN SẢN PHẨM BỊ THU HỒI ({recallViolations.length})
+                  </h2>
+                </div>
+                <div className="space-y-5">
+                  {recallViolations.map((violation, index) => (
+                    <RecallCard key={`recall-${index}`} violation={violation} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── IMPORT ALERTS SECTION ───────────────────────── */}
+            {importAlertViolations.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Ship className="h-4 w-4 text-cyan-500" />
+                  <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                    CẢNH BÁO NHẬP KHẨU FDA ({importAlertViolations.length})
+                  </h2>
+                </div>
+                <div className="space-y-5">
+                  {importAlertViolations.map((violation, index) => (
+                    <ImportAlertCard key={`ia-${index}`} violation={violation} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── EXPERT CTA - Just a hint to scroll down ────── */}
+            {(report.needs_expert_review || allViolations.length > 0) && (
+              <div className="rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 p-6 flex items-center justify-between gap-6 flex-wrap">
+                <div className="flex items-start gap-4 min-w-0">
+                  <div className="rounded-full bg-blue-600/20 p-3 shrink-0">
+                    <Search className="h-6 w-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-lg">
+                      Cần hỗ trợ từ chuyên gia?
+                    </h3>
+                    <p className="text-slate-400 text-sm mt-1 leading-relaxed max-w-lg">
+                      Hệ thống phát hiện các điểm cần chuyên gia xem xét kỹ hơn để tối ưu hóa khả năng thông quan và tránh bị FDA Warning Letter.
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => {
+                    document
+                      .getElementById('expert-request-panel')
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                  }}
+                  className="bg-white text-slate-900 hover:bg-slate-100 font-bold gap-2 px-6 shrink-0"
+                  size="lg"
+                >
+                  Xem chi tiết tư vấn
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </main>
