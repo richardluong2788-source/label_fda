@@ -290,7 +290,6 @@ export async function POST(request: Request) {
     console.log('[v0] KB Status:', JSON.stringify(kbStatus))
 
     if (!kbStatus.available) {
-      // Update report status to reflect KB unavailability
       await supabase
         .from('audit_reports')
         .update({ status: 'kb_unavailable' })
@@ -301,6 +300,20 @@ export async function POST(request: Request) {
         message: 'Hệ thống Knowledge Base chưa có dữ liệu. Vui lòng liên hệ Admin để nạp tài liệu FDA (regulations, warning letters, recalls) trước khi chạy phân tích.',
         kbStatus,
       }, { status: 503 })
+    }
+
+    // Warn when secondary RAG layers are missing — analysis continues but with reduced accuracy
+    if (!kbStatus.fullCoverageReady) {
+      const missing = []
+      if (kbStatus.warningLetterCount === 0) missing.push('Warning Letters (L2)')
+      if (kbStatus.recallCount === 0) missing.push('Recalls (L3)')
+      if (kbStatus.importAlertCount === 0) missing.push('Import Alerts (L4)')
+      console.warn(
+        `[v0] REDUCED RAG COVERAGE: Missing ${missing.join(', ')}. ` +
+        `Analysis will proceed using 21 CFR only — approve pending items in Admin > Knowledge to enable full coverage.`
+      )
+    } else {
+      console.log('[v0] Full RAG coverage confirmed: CFR + Warning Letters + Recalls + Import Alerts loaded.')
     }
     // ── END KB CHECK ─────────────────────────────────────────────────────────
 
