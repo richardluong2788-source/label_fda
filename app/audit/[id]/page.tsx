@@ -4,41 +4,17 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   AlertCircle,
   AlertTriangle,
-  CheckCircle,
   ArrowLeft,
   Loader2,
-  FileText,
-  History,
-  Download,
-  Share2,
-  MessageCircle,
   Database,
-  Ship,
-  Mail,
-  RotateCcw,
-  ShieldCheck,
-  ShieldAlert,
 } from 'lucide-react'
-import type { AuditReport, Violation } from '@/lib/types'
+import type { AuditReport } from '@/lib/types'
 import { ExpertRequestPanel } from '@/components/expert-request-panel'
 import { AnalysisProgressView, ANALYSIS_STEPS } from '@/components/audit/analysis-progress'
-import { ReportSummary } from '@/components/audit/report-summary'
-import {
-  CFRViolationsSection,
-  WarningLetterSection,
-  RecallSection,
-  ImportAlertSection,
-} from '@/components/audit/violation-sections'
-import {
-  RiskAssessmentSection,
-  TechnicalChecksSection,
-  CommercialSummarySection,
-} from '@/components/audit/report-sections'
+import { ReportResultView } from '@/components/audit/report-result-view'
 
 // ────────────────────────────────────────────────────────────
 // Main Audit Page
@@ -223,7 +199,7 @@ export default function AuditPage() {
     }
   }
 
-  // ── Error States ──────────────────────────────────────────
+  // ── Error States ���─────────────────────────────────────────
 
   if (quotaError) {
     return (
@@ -364,277 +340,33 @@ export default function AuditPage() {
 
   // ── Results View ──────────────────────────────────────────
 
-  const allViolations: Violation[] = report.findings || report.violations || []
-  const cfrViolations = allViolations.filter(
-    (v) =>
-      v.source_type !== 'import_alert' &&
-      v.source_type !== 'warning_letter' &&
-      v.source_type !== 'recall'
-  )
-  const wlViolations = allViolations.filter((v) => v.source_type === 'warning_letter')
-  const recallViolations = allViolations.filter((v) => v.source_type === 'recall')
-  const importAlertViolations = allViolations.filter(
-    (v) => v.source_type === 'import_alert'
-  )
-  const violationsCount = cfrViolations.length
-  const citationsCount =
-    report.citation_count ||
-    allViolations.reduce((sum, v) => sum + (v.citations?.length || 0), 0) ||
-    0
-
-  // Risk-based result label
-  const overallRiskLabel =
-    report.overall_result === 'pass'
-      ? violationsCount === 0
-        ? 'Rủi ro thấp'
-        : 'Rủi ro trung bình'
-      : report.overall_result === 'fail'
-      ? 'Rủi ro cao'
-      : 'Cần đánh giá'
-
-  const overallRiskBadgeVariant =
-    report.overall_result === 'pass'
-      ? violationsCount === 0
-        ? ('default' as const)
-        : ('secondary' as const)
-      : report.overall_result === 'fail'
-      ? ('destructive' as const)
-      : ('secondary' as const)
-
   return (
     <div>
-      {/* Action Bar */}
-      <div className="border-b bg-background/95 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-3 max-w-7xl flex items-center justify-end gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push(`/audit/${params.id}/versions`)}
-          >
-            <History className="mr-2 h-4 w-4" />
-            Lịch sử phiên bản
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownloadPdf}
-            disabled={pdfLoading}
-          >
-            {pdfLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="mr-2 h-4 w-4" />
-            )}
-            {pdfLoading ? 'Đang tạo...' : 'Tải PDF'}
-          </Button>
-          <Button variant="outline" size="sm">
-            <Share2 className="mr-2 h-4 w-4" />
-            Chia sẻ
-          </Button>
-          <Button
-            size="sm"
-            variant={report.needs_expert_review ? 'default' : 'outline'}
-            onClick={() => {
-              document
-                .getElementById('expert-request-panel')
-                ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            }}
-          >
-            <MessageCircle className="mr-2 h-4 w-4" />
-            {report.needs_expert_review ? 'Cần tư vấn chuyên gia' : 'Yêu cầu tư vấn'}
-          </Button>
+      <ReportResultView
+        report={report}
+        onDownloadPdf={handleDownloadPdf}
+        pdfLoading={pdfLoading}
+      />
+
+      {/* Expert Request Panel (below the new layout) */}
+      <div className="bg-slate-50">
+        <div className="container mx-auto px-4 pb-12 max-w-7xl">
+          <div className="grid lg:grid-cols-[320px_1fr] gap-6">
+            <div className="hidden lg:block" />
+            <div id="expert-request-panel">
+              <ExpertRequestPanel
+                reportId={String(params.id)}
+                productName={report.product_name}
+                productCategory={report.product_category}
+                overallResult={report.overall_result}
+                needsExpertReview={report.needs_expert_review}
+                planName={(report as any).plan_name}
+                expertReviewsIncluded={(report as any).expert_reviews_included}
+              />
+            </div>
+          </div>
         </div>
       </div>
-
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Report Header */}
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold mb-2 flex items-center gap-3 text-balance">
-              Báo cáo Kiểm tra Tuân thủ FDA
-              <Badge variant={overallRiskBadgeVariant}>
-                {report.overall_result === 'pass' && violationsCount === 0 && (
-                  <ShieldCheck className="mr-1 h-4 w-4" />
-                )}
-                {report.overall_result === 'fail' && (
-                  <ShieldAlert className="mr-1 h-4 w-4" />
-                )}
-                {report.overall_result === 'pass' && violationsCount > 0 && (
-                  <AlertTriangle className="mr-1 h-4 w-4" />
-                )}
-                {report.overall_result === 'review' && (
-                  <AlertTriangle className="mr-1 h-4 w-4" />
-                )}
-                {overallRiskLabel}
-              </Badge>
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Report ID: {String(params.id).slice(0, 8)}
-            </p>
-          </div>
-          {(report as any).can_export_pdf !== false ? (
-            <Button onClick={handleDownloadPdf} disabled={pdfLoading} className="gap-2">
-              {pdfLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              {pdfLoading ? 'Đang tạo PDF...' : 'Tải xuống PDF'}
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => router.push('/pricing?highlight=starter')}
-            >
-              <Download className="h-4 w-4" />
-              Nâng cấp để tải PDF
-            </Button>
-          )}
-        </div>
-
-        {/* Summary Grid */}
-        <ReportSummary
-          report={report}
-          violationsCount={violationsCount}
-          citationsCount={citationsCount}
-          importAlertCount={importAlertViolations.length}
-        />
-
-        {/* Re-analyze notice for old reports */}
-        {report.created_at &&
-          new Date(report.created_at) < new Date('2026-03-02T12:00:00Z') && (
-            <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 px-5 py-4 mb-6">
-              <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm mb-0.5">
-                  Report này được tạo trước khi cập nhật ruleset domain-aware
-                </p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Hệ thống đã được cập nhật để phân biệt quy định riêng cho{' '}
-                  <strong>Cosmetic</strong>, <strong>Food/Supplement</strong> và{' '}
-                  <strong>OTC Drug</strong>. Vui lòng chạy lại phân tích để nhận kết quả cập
-                  nhật.
-                </p>
-              </div>
-            </div>
-          )}
-
-        {/* Risk Assessment + Expert Tips */}
-        <div className="mb-8">
-          <RiskAssessmentSection report={report} />
-        </div>
-
-        {/* Tabbed Violation Sections */}
-        <Tabs defaultValue="cfr" className="mb-8">
-          <TabsList className="w-full justify-start flex-wrap h-auto gap-1 bg-muted/50 p-1">
-            <TabsTrigger value="cfr" className="gap-2 data-[state=active]:bg-background">
-              <FileText className="h-4 w-4" />
-              Tuân thủ CFR
-              {cfrViolations.length > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="ml-1 h-5 min-w-5 flex items-center justify-center text-xs"
-                >
-                  {cfrViolations.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            {wlViolations.length > 0 && (
-              <TabsTrigger
-                value="warning-letters"
-                className="gap-2 data-[state=active]:bg-background"
-              >
-                <Mail className="h-4 w-4" />
-                Warning Letters
-                <Badge
-                  variant="secondary"
-                  className="ml-1 h-5 min-w-5 flex items-center justify-center text-xs"
-                >
-                  {wlViolations.length}
-                </Badge>
-              </TabsTrigger>
-            )}
-            {recallViolations.length > 0 && (
-              <TabsTrigger
-                value="recalls"
-                className="gap-2 data-[state=active]:bg-background"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Recalls
-                <Badge
-                  variant="secondary"
-                  className="ml-1 h-5 min-w-5 flex items-center justify-center text-xs"
-                >
-                  {recallViolations.length}
-                </Badge>
-              </TabsTrigger>
-            )}
-            {importAlertViolations.length > 0 && (
-              <TabsTrigger
-                value="import-alerts"
-                className="gap-2 data-[state=active]:bg-background"
-              >
-                <Ship className="h-4 w-4" />
-                Import Alerts
-                <Badge
-                  variant="secondary"
-                  className="ml-1 h-5 min-w-5 flex items-center justify-center text-xs"
-                >
-                  {importAlertViolations.length}
-                </Badge>
-              </TabsTrigger>
-            )}
-          </TabsList>
-
-          <TabsContent value="cfr" className="mt-6">
-            <CFRViolationsSection violations={allViolations} />
-          </TabsContent>
-
-          {wlViolations.length > 0 && (
-            <TabsContent value="warning-letters" className="mt-6">
-              <WarningLetterSection violations={allViolations} />
-            </TabsContent>
-          )}
-
-          {recallViolations.length > 0 && (
-            <TabsContent value="recalls" className="mt-6">
-              <RecallSection violations={allViolations} />
-            </TabsContent>
-          )}
-
-          {importAlertViolations.length > 0 && (
-            <TabsContent value="import-alerts" className="mt-6">
-              <ImportAlertSection violations={allViolations} />
-            </TabsContent>
-          )}
-        </Tabs>
-
-        {/* Technical Checks (Geometry, Contrast, Multi-language) */}
-        <div className="mb-8">
-          <TechnicalChecksSection report={report} />
-        </div>
-
-        {/* Commercial Summary Report */}
-        {report.commercial_summary && (
-          <div className="mb-8">
-            <CommercialSummarySection summary={report.commercial_summary} />
-          </div>
-        )}
-
-        {/* Expert Request Panel */}
-        <div id="expert-request-panel" className="mt-8">
-          <ExpertRequestPanel
-            reportId={String(params.id)}
-            productName={report.product_name}
-            productCategory={report.product_category}
-            overallResult={report.overall_result}
-            needsExpertReview={report.needs_expert_review}
-            planName={(report as any).plan_name}
-            expertReviewsIncluded={(report as any).expert_reviews_included}
-          />
-        </div>
-      </main>
     </div>
   )
 }
