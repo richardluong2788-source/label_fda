@@ -21,6 +21,8 @@ import {
   Ship,
   Mail,
   RotateCcw,
+  ShieldCheck,
+  ShieldAlert,
 } from 'lucide-react'
 import type { AuditReport, Violation } from '@/lib/types'
 import { ExpertRequestPanel } from '@/components/expert-request-panel'
@@ -380,6 +382,25 @@ export default function AuditPage() {
     allViolations.reduce((sum, v) => sum + (v.citations?.length || 0), 0) ||
     0
 
+  // Risk-based result label
+  const overallRiskLabel =
+    report.overall_result === 'pass'
+      ? violationsCount === 0
+        ? 'Rủi ro thấp'
+        : 'Rủi ro trung bình'
+      : report.overall_result === 'fail'
+      ? 'Rủi ro cao'
+      : 'Cần đánh giá'
+
+  const overallRiskBadgeVariant =
+    report.overall_result === 'pass'
+      ? violationsCount === 0
+        ? ('default' as const)
+        : ('secondary' as const)
+      : report.overall_result === 'fail'
+      ? ('destructive' as const)
+      : ('secondary' as const)
+
   return (
     <div>
       {/* Action Bar */}
@@ -431,29 +452,20 @@ export default function AuditPage() {
           <div>
             <h1 className="text-3xl font-bold mb-2 flex items-center gap-3 text-balance">
               Báo cáo Kiểm tra Tuân thủ FDA
-              <Badge
-                variant={
-                  report.overall_result === 'pass'
-                    ? 'default'
-                    : report.overall_result === 'fail'
-                    ? 'destructive'
-                    : 'secondary'
-                }
-              >
-                {report.overall_result === 'pass' && (
-                  <CheckCircle className="mr-1 h-4 w-4" />
+              <Badge variant={overallRiskBadgeVariant}>
+                {report.overall_result === 'pass' && violationsCount === 0 && (
+                  <ShieldCheck className="mr-1 h-4 w-4" />
                 )}
                 {report.overall_result === 'fail' && (
-                  <AlertCircle className="mr-1 h-4 w-4" />
+                  <ShieldAlert className="mr-1 h-4 w-4" />
+                )}
+                {report.overall_result === 'pass' && violationsCount > 0 && (
+                  <AlertTriangle className="mr-1 h-4 w-4" />
                 )}
                 {report.overall_result === 'review' && (
                   <AlertTriangle className="mr-1 h-4 w-4" />
                 )}
-                {report.overall_result === 'pass'
-                  ? 'Đạt'
-                  : report.overall_result === 'fail'
-                  ? 'Không đạt'
-                  : 'Cần xem xét'}
+                {overallRiskLabel}
               </Badge>
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -491,17 +503,18 @@ export default function AuditPage() {
 
         {/* Re-analyze notice for old reports */}
         {report.created_at &&
-          new Date(report.created_at) < new Date('2025-06-01T00:00:00Z') && (
+          new Date(report.created_at) < new Date('2026-03-02T12:00:00Z') && (
             <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 px-5 py-4 mb-6">
               <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm mb-0.5">
-                  Báo cáo này được tạo trước khi cập nhật bộ quy tắc phân loại sản phẩm
+                  Report này được tạo trước khi cập nhật ruleset domain-aware
                 </p>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Hệ thống đã được cập nhật để phân biệt quy định riêng cho{' '}
-                  <strong>Mỹ phẩm (Cosmetic)</strong>, <strong>Thực phẩm/Thực phẩm bổ sung (Food/Supplement)</strong> và{' '}
-                  <strong>Thuốc không kê đơn (OTC Drug)</strong>. Vui lòng chạy lại phân tích để nhận kết quả cập nhật.
+                  <strong>Cosmetic</strong>, <strong>Food/Supplement</strong> và{' '}
+                  <strong>OTC Drug</strong>. Vui lòng chạy lại phân tích để nhận kết quả cập
+                  nhật.
                 </p>
               </div>
             </div>

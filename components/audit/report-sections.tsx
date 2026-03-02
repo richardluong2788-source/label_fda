@@ -10,6 +10,7 @@ import {
   Palette,
   Languages,
   FileText,
+  Info,
 } from 'lucide-react'
 import type { AuditReport } from '@/lib/types'
 
@@ -42,7 +43,7 @@ export function RiskAssessmentSection({ report }: RiskAssessmentProps) {
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Activity className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold text-lg">Rủi ro thực thi FDA</h2>
+            <h2 className="font-semibold text-lg">Rủi ro Thực thi FDA</h2>
           </div>
 
           <div className="flex items-center gap-8 mb-5">
@@ -152,7 +153,7 @@ export function RiskAssessmentSection({ report }: RiskAssessmentProps) {
         <Card className="p-6 border-info/30 bg-info/5">
           <div className="flex items-center gap-2 mb-4">
             <Lightbulb className="h-5 w-5 text-info" />
-            <h2 className="font-semibold text-lg">Lời khuyên từ chuyên gia</h2>
+            <h2 className="font-semibold text-lg">Lời khuyên từ Chuyên gia</h2>
           </div>
           <div className="space-y-3">
             {report.expert_tips.map((tip: string, idx: number) => (
@@ -200,7 +201,7 @@ export function TechnicalChecksSection({ report }: TechnicalChecksProps) {
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-4">
             <Ruler className="h-4 w-4 text-violet-600" />
-            <h3 className="font-semibold text-sm">Kiểm tra hình học</h3>
+            <h3 className="font-semibold text-sm">Kiểm tra Hình học</h3>
             <Badge variant="secondary" className="text-xs ml-auto">
               {report.geometry_violations!.length}
             </Badge>
@@ -265,11 +266,22 @@ export function TechnicalChecksSection({ report }: TechnicalChecksProps) {
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-4">
             <Palette className="h-4 w-4 text-pink-600" />
-            <h3 className="font-semibold text-sm">Tương phản màu sắc</h3>
+            <h3 className="font-semibold text-sm">Tương phản Màu sắc</h3>
             <Badge variant="secondary" className="text-xs ml-auto">
               {report.contrast_violations!.length}
             </Badge>
           </div>
+
+          {/* Explanation note */}
+          <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3 mb-3">
+            <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              FDA quy định văn bản bắt buộc trên nhãn phải đủ tương phản với nền để người tiêu dùng 
+              đọc được. Tỷ lệ tương phản tối thiểu khuyến nghị là <strong>4.5:1</strong> theo 
+              WCAG AA. Dưới 3:1 được coi là không đạt.
+            </p>
+          </div>
+
           <div className="space-y-3">
             {report.contrast_violations!.map((cv: any, idx: number) => (
               <div
@@ -329,7 +341,7 @@ export function TechnicalChecksSection({ report }: TechnicalChecksProps) {
         <Card className="p-5">
           <div className="flex items-center gap-2 mb-4">
             <Languages className="h-4 w-4 text-teal-600" />
-            <h3 className="font-semibold text-sm">Kiểm tra đa ngôn ngữ</h3>
+            <h3 className="font-semibold text-sm">Kiểm tra Đa ngôn ngữ</h3>
             <Badge variant="secondary" className="text-xs ml-auto">
               {report.multilanguage_issues!.length}
             </Badge>
@@ -380,24 +392,27 @@ interface CommercialSummaryProps {
 }
 
 export function CommercialSummarySection({ summary }: CommercialSummaryProps) {
+  // Parse summary into structured sections for better rendering
+  const lines = summary.split('\n')
+  
   return (
     <Card className="p-6">
-      <details className="group">
+      <details className="group" open>
         <summary className="flex items-center justify-between cursor-pointer">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-bold">Báo cáo thương mại tổng hợp</h2>
+            <h2 className="text-xl font-bold">Báo cáo Thương mại Tổng hợp</h2>
           </div>
           <Badge variant="outline" className="group-open:hidden">
             Nhấn để xem chi tiết
           </Badge>
         </summary>
         <div className="mt-4 pt-4 border-t prose prose-sm max-w-none">
-          {summary.split('\n').map((line: string, idx: number) => {
+          {lines.map((line: string, idx: number) => {
             if (line.startsWith('### ')) {
               return (
                 <h3 key={idx} className="text-base font-bold mt-4 mb-2">
-                  {line.replace(/^### /, '').replace(/[^\w\s.,;:!?()[\]{}'"\/\-–—&@#%+=<>|\\`~^$*_]/g, '').trim()}
+                  {line.replace(/^### /, '').replace(/[^\w\sÀ-ỹà-ỹ.,;:!?()[\]{}'"\/\-–—&@#%+=<>|\\`~^$*_]/g, '').trim()}
                 </h3>
               )
             }
@@ -417,14 +432,15 @@ export function CommercialSummarySection({ summary }: CommercialSummaryProps) {
             }
             if (line.startsWith('- ')) {
               return (
-                <p key={idx} className="text-sm pl-4 py-0.5 text-muted-foreground">
-                  {line.replace(/^- /, '')}
+                <p key={idx} className="text-sm pl-4 py-0.5 text-muted-foreground flex items-start gap-2">
+                  <span className="shrink-0 mt-1.5 h-1 w-1 rounded-full bg-muted-foreground" />
+                  <span>{line.replace(/^- /, '').replace(/\*\*/g, '')}</span>
                 </p>
               )
             }
             if (line.trim() === '') return <div key={idx} className="h-2" />
             return (
-              <p key={idx} className="text-sm">
+              <p key={idx} className="text-sm leading-relaxed">
                 {line.replace(/\*\*/g, '')}
               </p>
             )

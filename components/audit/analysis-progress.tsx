@@ -33,21 +33,21 @@ const ANALYSIS_STEPS = [
     icon: ScanLine,
     progress: 15,
     details: [
-      'Nhận dạng ký tự quang học (OCR)',
-      'Phát hiện bảng Nutrition Facts',
+      'Optical Character Recognition (OCR)',
+      'Phát hiện Nutrition Facts panel',
       'Đo lường kích thước chữ',
-      'Phân tích màu sắc và tương phản',
+      'Phân tích màu sắc và contrast',
     ],
   },
   {
     id: 'fda_search',
-    title: 'Tra cứu quy định FDA (Knowledge Base)',
+    title: 'Tra cứu FDA Regulations (Knowledge Base)',
     description: 'Đang tìm kiếm quy định FDA trong Knowledge Base với RAG AI (Độ tương đồng 99%)...',
     icon: Database,
     progress: 35,
     details: [
-      '21 CFR Phần 101 — Nhãn dinh dưỡng',
-      'FALCPA — Luật chất gây dị ứng',
+      '21 CFR Phần 101 - Nhãn dinh dưỡng',
+      'FALCPA - Luật chất gây dị ứng',
       'Quy định về Health Claims',
       'Yêu cầu liệt kê thành phần',
     ],
@@ -74,14 +74,14 @@ const ANALYSIS_STEPS = [
     details: [
       'Milk, Eggs, Fish, Shellfish',
       'Tree nuts, Peanuts, Wheat, Soybeans',
-      'Kiểm tra câu lệnh "Contains:"',
-      'Xác minh định dạng in đậm (bold)',
+      'Kiểm tra "Contains:" statement',
+      'Xác minh bold formatting',
     ],
   },
   {
     id: 'nutrition',
     title: 'Xác thực Nutrition Facts',
-    description: 'Đang kiểm tra format, quy tắc làm tròn, và thứ tự nutrients...',
+    description: 'Đang kiểm tra format, rounding, và thứ tự nutrients...',
     icon: FileText,
     progress: 85,
     details: [
@@ -146,7 +146,7 @@ export function AnalysisProgressView({
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <ScanLine className="h-5 w-5 text-primary" />
-              {report.label_image_url === 'manual-entry' ? 'Xem trước nhãn' : 'Hình ảnh nhãn'}
+              {report.label_image_url === 'manual-entry' ? 'Xem trước Nhãn' : 'Hình ảnh Nhãn'}
               {report.label_images && report.label_images.length > 1 && (
                 <Badge variant="secondary" className="text-xs ml-auto">
                   {report.label_images.length} hình ảnh

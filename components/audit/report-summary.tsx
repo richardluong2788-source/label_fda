@@ -3,6 +3,7 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
+  AlertCircle,
   AlertTriangle,
   CheckCircle,
   FileText,
@@ -15,11 +16,30 @@ import {
   Languages,
   Package,
   Ruler,
+  ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react'
 import type { AuditReport, LabelImageEntry } from '@/lib/types'
 import { LabelPreview } from '@/components/label-preview'
 import { LabelImageGallery } from '@/components/label-image-gallery'
 import { getLabelConfig } from '@/lib/label-field-config'
+
+// ────────────────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────────────────
+
+function getRiskLabel(result: string | undefined, violationsCount: number) {
+  if (result === 'pass' && violationsCount === 0) {
+    return { text: 'Rủi ro thấp (Low Risk)', color: 'text-success', icon: ShieldCheck }
+  }
+  if (result === 'pass') {
+    return { text: 'Rủi ro trung bình (Medium Risk)', color: 'text-warning', icon: ShieldAlert }
+  }
+  if (result === 'fail') {
+    return { text: 'Rủi ro cao (High Risk)', color: 'text-destructive', icon: ShieldAlert }
+  }
+  return { text: 'Đang đánh giá', color: 'text-muted-foreground', icon: ShieldAlert }
+}
 
 // ────────────────────────────────────────────────────────────
 // Report Summary Header (3-column grid in results view)
@@ -38,13 +58,16 @@ export function ReportSummary({
   citationsCount,
   importAlertCount,
 }: ReportSummaryProps) {
+  const risk = getRiskLabel(report.overall_result, violationsCount)
+  const RiskIcon = risk.icon
+
   return (
     <div className="grid lg:grid-cols-3 gap-6 mb-8">
       {/* Label Display */}
       <Card className="lg:col-span-1">
         <div className="p-6">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
-            {report.label_image_url === 'manual-entry' ? 'Xem trước nhãn' : 'Hình ảnh nhãn'}
+            {report.label_image_url === 'manual-entry' ? 'Xem trước Nhãn' : 'Hình ảnh Nhãn'}
             {report.label_images && report.label_images.length > 1 && (
               <Badge variant="secondary" className="text-xs ml-auto">
                 {report.label_images.length} hình ảnh
@@ -136,28 +159,19 @@ export function ReportSummary({
       {/* Analysis Detail */}
       <Card className="lg:col-span-2">
         <div className="p-6">
-          <h2 className="font-semibold text-lg mb-4">Chi tiết phân tích</h2>
+          <h2 className="font-semibold text-lg mb-4">Chi tiết Phân tích</h2>
 
           {/* Status Overview */}
           <div className="grid sm:grid-cols-2 gap-4 mb-6 pb-6 border-b">
             <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground text-sm">Trạng thái:</span>
-                <Badge
-                  variant={
-                    report.status === 'verified'
-                      ? 'default'
-                      : report.status === 'ai_completed'
-                      ? 'secondary'
-                      : 'outline'
-                  }
-                >
-                  {report.status === 'pending'
-                    ? 'Đang xử lý'
-                    : report.status === 'ai_completed'
-                    ? 'Chờ xem xét'
-                    : 'Đã xác minh'}
-                </Badge>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground text-sm">Mức độ rủi ro:</span>
+                <div className="flex items-center gap-1.5">
+                  <RiskIcon className={`h-4 w-4 ${risk.color}`} />
+                  <span className={`font-semibold text-sm ${risk.color}`}>
+                    {risk.text}
+                  </span>
+                </div>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground text-sm">Ngày tạo:</span>
@@ -228,7 +242,7 @@ export function ReportSummary({
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold">Dữ liệu nhãn AI trích xuất</h3>
+              <h3 className="font-semibold">Dữ liệu Nhãn AI trích xuất</h3>
             </div>
 
             {/* Nutrition Facts */}
@@ -236,7 +250,7 @@ export function ReportSummary({
               <div className="rounded-lg border bg-card p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <FileText className="h-4 w-4 text-success" />
-                  <h4 className="font-medium text-sm">Thành phần dinh dưỡng</h4>
+                  <h4 className="font-medium text-sm">Thành phần Dinh dưỡng</h4>
                   <Badge variant="secondary" className="text-xs ml-auto">
                     {report.nutrition_facts.length} nutrients
                   </Badge>
@@ -271,7 +285,7 @@ export function ReportSummary({
                 <div className="rounded-lg border bg-card p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <FileSearch className="h-4 w-4 text-primary" />
-                    <h4 className="font-medium text-sm">Thông tin sản phẩm</h4>
+                    <h4 className="font-medium text-sm">Thông tin Sản phẩm</h4>
                   </div>
                   <div className="space-y-2 text-xs">
                     {(report as any).brand_name && (
@@ -298,7 +312,7 @@ export function ReportSummary({
 
               {/* Ingredients */}
               {report.ingredient_list && (
-                <div className="rounded-lg border bg-card p-4">
+                <div className="rounded-lg border border-warning/30 bg-warning/5 p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Database className="h-4 w-4 text-purple-600" />
                     <h4 className="font-medium text-sm">Thành phần</h4>
@@ -316,7 +330,7 @@ export function ReportSummary({
                 <div className="rounded-lg border border-warning/30 bg-warning/5 p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Shield className="h-4 w-4 text-warning" />
-                    <h4 className="font-medium text-sm">Chất gây dị ứng</h4>
+                    <h4 className="font-medium text-sm">Chất gây Dị ứng</h4>
                   </div>
                   <p className="text-xs">{report.allergen_declaration}</p>
                 </div>
@@ -327,7 +341,7 @@ export function ReportSummary({
                   <div className="rounded-lg border border-purple-200 bg-purple-50/50 p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Sparkles className="h-4 w-4 text-purple-600" />
-                      <h4 className="font-medium text-sm">Công bố sức khỏe</h4>
+                      <h4 className="font-medium text-sm">Công bố Sức khỏe</h4>
                     </div>
                     <div className="space-y-1">
                       {(report as any).health_claims.map((claim: string, idx: number) => (
@@ -379,17 +393,31 @@ export function ReportSummary({
           </div>
         )}
 
-        {/* Pass result alert */}
+        {/* Overall conclusion alert */}
         {report.overall_result === 'pass' && (
           <div className="mx-6 mb-6 p-4 rounded-lg bg-success/10 border border-success/30">
             <div className="flex gap-3">
               <CheckCircle className="h-5 w-5 text-success shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium">Đánh giá tổng thể</p>
+                <p className="font-medium">Kết luận: Chưa phát hiện vi phạm trọng yếu</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {violationsCount === 0
-                    ? 'Nhãn này tuân thủ các quy định FDA. Không phát hiện vi phạm.'
-                    : `Nhãn này có ${violationsCount} vi phạm cần được sửa trước khi phân phối.`}
+                    ? 'Nhãn này tuân thủ các quy định FDA được kiểm tra. Rủi ro thấp (Low Risk) — không phát hiện điểm không phù hợp.'
+                    : `Nhãn có ${violationsCount} điểm cần lưu ý nhưng không ảnh hưởng nghiêm trọng đến tuân thủ. Khuyến nghị xem xét và khắc phục.`}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {report.overall_result === 'fail' && !report.needs_expert_review && (
+          <div className="mx-6 mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/30">
+            <div className="flex gap-3">
+              <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium">Kết luận: Phát hiện điểm không phù hợp (High Risk)</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Nhãn có {violationsCount} vi phạm nghiêm trọng cần khắc phục trước khi phân phối tại thị trường Mỹ. Vui lòng xem chi tiết bên dưới và thực hiện các hướng dẫn khắc phục.
                 </p>
               </div>
             </div>
