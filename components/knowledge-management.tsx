@@ -35,6 +35,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { AppHeader } from '@/components/app-header'
 import { CfrDiffViewer } from '@/components/cfr-diff-viewer'
+import { EcfrSyncPanel } from '@/components/ecfr-sync-panel'
 import { toast } from '@/hooks/use-toast'
 
 interface KnowledgeEntry {
@@ -502,6 +503,9 @@ export function KnowledgeManagement({ userId, userRole, userEmail }: Props) {
             </div>
           </Card>
         )}
+
+        {/* Auto-sync from eCFR API — no local script needed */}
+        <EcfrSyncPanel onComplete={() => { loadEntries(); handleCheckUpdates() }} />
 
         {/* Version Check Results Panel */}
         {showUpdatePanel && updateResults && (() => {
