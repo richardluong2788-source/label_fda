@@ -14,7 +14,40 @@ import {
   Zap,
   Globe,
 } from 'lucide-react'
-import { CFR_PART_LABELS } from '@/lib/rag/cfr-metadata-mapper'
+// Human-readable labels — inlined to avoid circular/missing export during build
+const CFR_PART_LABELS: Record<string, string> = {
+  '1':   'Registration / Prior Notice / FSVP',
+  '7':   'Recalls & Enforcement',
+  '11':  'Electronic Records & Signatures',
+  '101': 'Food Labeling',
+  '102': 'Common or Usual Name',
+  '104': 'Nutritional Quality Guidelines',
+  '105': 'Foods for Special Dietary Use',
+  '110': 'Current GMP — Food',
+  '111': 'Dietary Supplement GMP',
+  '112': 'Produce Safety',
+  '114': 'Acidified Foods',
+  '117': 'FSMA Preventive Controls',
+  '123': 'Seafood HACCP',
+  '131': 'Milk & Cream Standards',
+  '145': 'Canned Fruits Standards',
+  '146': 'Fruit Juice Standards',
+  '161': 'Fish & Shellfish Standards',
+  '170': 'Food Additives — General',
+  '172': 'Food Additives — Direct',
+  '182': 'GRAS Substances',
+  '184': 'GRAS Affirmed — Direct',
+  '190': 'Dietary Supplement Labeling',
+  '201': 'Drug Labeling',
+  '700': 'Cosmetics — General',
+  '701': 'Cosmetics Labeling',
+  '710': 'Cosmetics Registration',
+  '720': 'Voluntary Cosmetics Reporting',
+  '740': 'Cosmetic Warning Statements',
+  '801': 'Medical Device Labeling',
+  '807': 'Device Establishment Registration',
+  '820': 'Quality System Regulation',
+}
 
 // All Parts Vexim needs — mirrors fetch-ecfr-to-json.mjs --all
 const ALL_VEXIM_PARTS = [
