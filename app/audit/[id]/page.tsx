@@ -57,7 +57,7 @@ const ANALYSIS_STEPS = [
   {
     id: 'fda_search',
     title: 'Tra cứu FDA Regulations (Knowledge Base)',
-    description: 'Dang tim kiem quy dinh FDA trong Knowledge Base voi RAG AI (Similarity 99%)...',
+    description: 'Đang tìm kiếm quy định FDA trong Knowledge Base với RAG AI (Similarity 99%)...',
     icon: Database,
     progress: 35,
     details: ['21 CFR Part 101 - Nutrition Labeling', 'FALCPA - Allergen Laws', 'Health Claims Regulations', 'Ingredient Listing Requirements'],
@@ -92,7 +92,7 @@ const ANALYSIS_STEPS = [
     description: 'Đang tạo báo cáo thương mại với citations chính xác từ FDA...',
     icon: Sparkles,
     progress: 95,
-    details: ['Smart citation formatting', 'Violation-to-CFR mapper', 'Commercial report generation', 'Expert recommendations'],
+    details: ['Smart citation formatting', 'Violation-to-CFR mapper', 'Tạo báo cáo thương mại', 'Lời khuyên từ chuyên gia'],
   },
 ]
 
@@ -201,7 +201,7 @@ export default function AuditPage() {
       // If KB was unavailable previously, show the KB error screen so user can retry
       if (data.status === 'kb_unavailable') {
         setKbError({
-          message: 'Knowledge Base chua co du lieu khi lan phan tich truoc. Vui long thu lai sau khi Admin da nap tai lieu.',
+          message: 'Knowledge Base chưa có dữ liệu khi lần phân tích trước. Vui lòng thử lại sau khi Admin đã nạp tài liệu.',
           totalDocuments: 0,
         })
         return
@@ -327,22 +327,22 @@ export default function AuditPage() {
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="p-8 max-w-lg w-full text-center">
           <Database className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Knowledge Base chua san sang</h2>
+          <h2 className="text-xl font-bold mb-2">Knowledge Base chưa sẵn sàng</h2>
           <p className="text-muted-foreground mb-4">{kbError.message}</p>
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm text-left space-y-2">
-            <p className="font-medium text-amber-900">Tai sao khong the phan tich?</p>
+            <p className="font-medium text-amber-900">Tại sao không thể phân tích?</p>
             <ul className="list-disc list-inside text-amber-800 space-y-1">
-              <li>He thong can du lieu FDA regulations, Warning Letters va Recalls de phan tich chinh xac.</li>
-              <li>Hien tai co <strong>{kbError.totalDocuments}</strong> tai lieu trong Knowledge Base.</li>
-              <li>Can it nhat 1 tai lieu duoc nap vao de bat dau phan tich.</li>
+              <li>Hệ thống cần dữ liệu FDA regulations, Warning Letters và Recalls để phân tích chính xác.</li>
+              <li>Hiện tại có <strong>{kbError.totalDocuments}</strong> tài liệu trong Knowledge Base.</li>
+              <li>Cần ít nhất 1 tài liệu được nạp vào để bắt đầu phân tích.</li>
             </ul>
           </div>
           <div className="bg-muted rounded-lg p-4 mb-6 text-sm text-left space-y-2">
-            <p className="font-medium">Cach khac phuc:</p>
+            <p className="font-medium">Cách khắc phục:</p>
             <ol className="list-decimal list-inside text-muted-foreground space-y-1">
-              <li>Lien he Admin de nap tai lieu FDA vao Knowledge Base.</li>
-              <li>Truy cap trang <strong>Knowledge Base</strong> va su dung chuc nang &quot;Nap tai lieu moi&quot; hoac &quot;FDA Warning Letters Pipeline&quot;.</li>
-              <li>Sau khi nap xong, quay lai day de chay phan tich.</li>
+              <li>Liên hệ Admin để nạp tài liệu FDA vào Knowledge Base.</li>
+              <li>Truy cập trang <strong>Knowledge Base</strong> và sử dụng chức năng &quot;Nạp tài liệu mới&quot; hoặc &quot;FDA Warning Letters Pipeline&quot;.</li>
+              <li>Sau khi nạp xong, quay lại đây để chạy phân tích.</li>
             </ol>
           </div>
           <div className="flex flex-col gap-3">
@@ -358,11 +358,11 @@ export default function AuditPage() {
               } catch {}
               startAnalysis()
             }}>
-              Thu lai phan tich
+              Thử lại phân tích
             </Button>
             <Button variant="outline" onClick={() => router.push('/dashboard')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Quay lai Dashboard
+              Quay lại Dashboard
             </Button>
           </div>
         </Card>
@@ -425,7 +425,7 @@ export default function AuditPage() {
                 {report.label_image_url === 'manual-entry' ? 'Xem trước Nhãn' : 'Hình ảnh Nhãn'}
                 {report.label_images && report.label_images.length > 1 && (
                   <Badge variant="secondary" className="text-xs ml-auto">
-                    {report.label_images.length} hinh anh
+                    {report.label_images.length} hình ảnh
                   </Badge>
                 )}
               </h2>
@@ -456,7 +456,7 @@ export default function AuditPage() {
                 <div className="mt-4 pt-4 border-t">
                   <div className="flex items-center gap-2 mb-2">
                     <Settings className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs font-medium text-muted-foreground">Cau hinh phan tich</span>
+                    <span className="text-xs font-medium text-muted-foreground">Cấu hình phân tích</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {report.target_market && (
@@ -707,7 +707,7 @@ export default function AuditPage() {
                 {report.label_image_url === 'manual-entry' ? 'Xem trước Nhãn' : 'Hình ảnh Nhãn'}
                 {report.label_images && report.label_images.length > 1 && (
                   <Badge variant="secondary" className="text-xs ml-auto">
-                    {report.label_images.length} hinh anh
+                    {report.label_images.length} hình ảnh
                   </Badge>
                 )}
               </h2>
@@ -737,34 +737,34 @@ export default function AuditPage() {
                 <div className="mt-4 pt-4 border-t">
                   <div className="flex items-center gap-2 mb-3">
                     <Settings className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs font-medium text-muted-foreground">Cau hinh phan tich da ap dung</span>
+                    <span className="text-xs font-medium text-muted-foreground">Cấu hình phân tích đã áp dụng</span>
                   </div>
                   <div className="space-y-2">
                     {report.target_market && (
                       <div className="flex items-center gap-2 text-xs">
                         <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-muted-foreground">Thi truong:</span>
+                        <span className="text-muted-foreground">Thị trường:</span>
                         <span className="font-medium">{report.target_market}</span>
                       </div>
                     )}
                     {report.label_language && report.label_language.length > 0 && (
                       <div className="flex items-center gap-2 text-xs">
                         <Languages className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-muted-foreground">Ngon ngu:</span>
+                        <span className="text-muted-foreground">Ngôn ngữ:</span>
                         <span className="font-medium">{report.label_language.join(', ').toUpperCase()}</span>
                       </div>
                     )}
                     {report.packaging_format && (
                       <div className="flex items-center gap-2 text-xs">
                         <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-muted-foreground">Bao bi:</span>
+                        <span className="text-muted-foreground">Bao bì:</span>
                         <span className="font-medium">{report.packaging_format.replace(/_/g, ' ')}</span>
                       </div>
                     )}
                     {report.product_type && (
                       <div className="flex items-center gap-2 text-xs">
                         <FileSearch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-muted-foreground">Loai SP:</span>
+                        <span className="text-muted-foreground">Loại SP:</span>
                         <span className="font-medium">{report.product_type}</span>
                       </div>
                     )}
@@ -830,7 +830,7 @@ export default function AuditPage() {
                     <span className="font-semibold text-sm">{citationsCount}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground text-sm">Import Alert Risk:</span>
+                    <span className="text-muted-foreground text-sm">Rủi ro Import Alert:</span>
                     <span className={`font-semibold text-sm ${importAlertViolations.length > 0 ? 'text-amber-600' : 'text-green-600'}`}>
                       {importAlertViolations.length > 0 ? `${importAlertViolations.length} cảnh báo` : 'Không có'}
                     </span>
@@ -1022,20 +1022,39 @@ export default function AuditPage() {
           </Card>
         </div>
 
+        {/* ── Re-analyze notice for reports generated before domain-aware ruleset fix ── */}
+        {report.created_at && new Date(report.created_at) < new Date('2026-03-02T12:00:00Z') && (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-5 py-4 mb-2">
+            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-amber-900 text-sm mb-0.5">
+                Report này được tạo trước khi cập nhật ruleset domain-aware
+              </p>
+              <p className="text-sm text-amber-800 leading-relaxed">
+                Hệ thống đã được cập nhật để phân biệt quy định riêng cho <strong>Cosmetic</strong>,{' '}
+                <strong>Food/Supplement</strong> và <strong>OTC Drug</strong>. Một số vi phạm trong report
+                này (ví dụ: "prevent" bị flag cho sản phẩm cosmetic) có thể không còn chính xác.
+                Vui lòng chạy lại phân tích để nhận kết quả cập nhật.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ── Risk Assessment + Expert Tips ─────────────────────────────────────── */}
         {(report.overall_risk_score !== undefined || (report.expert_tips && report.expert_tips.length > 0)) && (
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <div className={`grid gap-6 mb-8 ${report.expert_tips && report.expert_tips.length > 0 ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
             {/* Risk Score Card */}
             {report.overall_risk_score !== undefined && (
               <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Activity className="h-5 w-5 text-primary" />
-                  <h2 className="font-semibold text-lg">FDA Enforcement Risk</h2>
+                  <h2 className="font-semibold text-lg">Rủi ro Enforcement FDA</h2>
                 </div>
 
-                {/* Risk Gauge */}
-                <div className="flex items-center gap-6 mb-5">
-                  <div className="relative flex items-center justify-center">
+                {/* Risk Gauge — flex row: gauge | stats | (projected score when full-width) */}
+                <div className="flex items-center gap-8 mb-5">
+                  {/* Circular gauge */}
+                  <div className="relative flex items-center justify-center shrink-0">
                     <svg viewBox="0 0 100 100" className="h-28 w-28 -rotate-90">
                       <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted/20" />
                       <circle
@@ -1060,10 +1079,11 @@ export default function AuditPage() {
                     </span>
                   </div>
 
+                  {/* Stats */}
                   <div className="flex-1 space-y-3">
-                    <div>
-                      <span className="text-xs text-muted-foreground">Muc do rui ro</span>
-                      <Badge className={`ml-2 ${
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-muted-foreground">Mức độ rủi ro</span>
+                      <Badge className={`${
                         report.risk_assessment === 'Critical' || report.risk_assessment === 'High'
                           ? 'bg-red-100 text-red-800 hover:bg-red-100'
                           : report.risk_assessment === 'Medium-High' || report.risk_assessment === 'Medium'
@@ -1077,32 +1097,34 @@ export default function AuditPage() {
                     {report.projected_risk_score !== undefined && report.projected_risk_score < report.overall_risk_score && (
                       <div className="flex items-center gap-2">
                         <TrendingDown className="h-4 w-4 text-green-600 shrink-0" />
-                        <div className="text-xs">
-                          <span className="text-muted-foreground">Sau khi sua loi nghiem trong: </span>
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Sau khi sửa lỗi nghiêm trọng: </span>
                           <span className="font-semibold text-green-700">{report.projected_risk_score.toFixed(1)}/10</span>
                         </div>
                       </div>
                     )}
 
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Diem risk dua tren muc do vi pham, lich su enforcement cua FDA, va Warning Letters lien quan.
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Điểm risk dựa trên mức độ vi phạm, lịch sử enforcement của FDA, và Warning Letters liên quan.
                     </p>
                   </div>
                 </div>
 
-                {/* Risk Scale Legend */}
-                <div className="flex items-center gap-1 pt-3 border-t">
-                  <div className="flex-1 h-1.5 rounded-full bg-green-400" />
-                  <div className="flex-1 h-1.5 rounded-full bg-green-300" />
-                  <div className="flex-1 h-1.5 rounded-full bg-amber-300" />
-                  <div className="flex-1 h-1.5 rounded-full bg-amber-400" />
-                  <div className="flex-1 h-1.5 rounded-full bg-red-400" />
-                  <div className="flex-1 h-1.5 rounded-full bg-red-500" />
-                </div>
-                <div className="flex justify-between mt-1">
-                  <span className="text-[10px] text-muted-foreground">Low (0)</span>
-                  <span className="text-[10px] text-muted-foreground">Medium (5)</span>
-                  <span className="text-[10px] text-muted-foreground">Critical (10)</span>
+                {/* Risk Scale Legend — full width bar */}
+                <div className="pt-4 border-t">
+                  <div className="flex items-center gap-0.5 mb-1.5">
+                    <div className="flex-1 h-2 rounded-l-full bg-green-400" />
+                    <div className="flex-1 h-2 bg-green-300" />
+                    <div className="flex-1 h-2 bg-amber-300" />
+                    <div className="flex-1 h-2 bg-amber-400" />
+                    <div className="flex-1 h-2 bg-red-400" />
+                    <div className="flex-1 h-2 rounded-r-full bg-red-500" />
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[11px] text-muted-foreground">Thấp (0)</span>
+                    <span className="text-[11px] text-muted-foreground">Trung bình (5)</span>
+                    <span className="text-[11px] text-muted-foreground">Nghiêm trọng (10)</span>
+                  </div>
                 </div>
               </Card>
             )}
@@ -1112,7 +1134,7 @@ export default function AuditPage() {
               <Card className="p-6 border-blue-200 bg-blue-50/30">
                 <div className="flex items-center gap-2 mb-4">
                   <Lightbulb className="h-5 w-5 text-blue-600" />
-                  <h2 className="font-semibold text-lg">Loi khuyen tu Chuyen gia</h2>
+                  <h2 className="font-semibold text-lg">Lời khuyên từ Chuyên gia</h2>
                 </div>
                 <div className="space-y-3">
                   {report.expert_tips.map((tip: string, idx: number) => (
@@ -1148,7 +1170,7 @@ export default function AuditPage() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-bold">Label Compliance Audit</h2>
+                  <h2 className="text-xl font-bold">Kiểm tra Tuân thủ Nhãn</h2>
                   <Badge variant="secondary">{cfrViolations.length} vi phạm</Badge>
                 </div>
                 {cfrViolations.length > 0 && (
@@ -1279,7 +1301,7 @@ export default function AuditPage() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Mail className="h-5 w-5 text-purple-600" />
-                  <h2 className="text-xl font-bold">FDA Warning Letter Patterns</h2>
+                  <h2 className="text-xl font-bold">Mẫu Cảnh báo FDA (Warning Letter)</h2>
                   <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">
                     {wlViolations.length} mẫu phát hiện
                   </Badge>
@@ -1377,7 +1399,7 @@ export default function AuditPage() {
           )
         })()}
 
-        {/* ── SECTION 1c: FDA Recall Patterns ─────────────────────────────────── */}
+        {/* ── SECTION 1c: FDA Recall Patterns ─────────────────────────���───────── */}
         {(() => {
           const allViolations = report.findings || report.violations || []
           const recallViolations = allViolations.filter((v: Violation) => v.source_type === 'recall')
@@ -1392,7 +1414,7 @@ export default function AuditPage() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <RotateCcw className={`h-5 w-5 ${hasClassI ? 'text-orange-600' : 'text-yellow-600'}`} />
-                  <h2 className="text-xl font-bold">FDA Recall Enforcement Patterns</h2>
+                  <h2 className="text-xl font-bold">Mẫu Thu hồi FDA (Recall Patterns)</h2>
                   <Badge className={`${hasClassI ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800'} hover:bg-inherit`}>
                     {recallViolations.length} mẫu phát hiện
                   </Badge>
@@ -1438,7 +1460,7 @@ export default function AuditPage() {
                                   : 'bg-yellow-500 hover:bg-yellow-500'
                               }`}
                             >
-                              {violation.severity === 'critical' ? 'Class I Recall' : 'Recall Pattern'}
+                              {violation.severity === 'critical' ? 'Recall Loại I' : 'Mẫu Thu hồi'}
                             </Badge>
                           </div>
                         </div>
@@ -1495,7 +1517,7 @@ export default function AuditPage() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Ship className={`h-5 w-5 ${hasCritical ? 'text-red-600' : 'text-amber-600'}`} />
-                  <h2 className="text-xl font-bold">Border Entry Risk Assessment</h2>
+                  <h2 className="text-xl font-bold">Đánh giá Rủi ro Nhập khẩu (Border Entry Risk)</h2>
                   <Badge className={`${hasCritical ? 'bg-red-600 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-500'} text-white`}>
                     {importAlertViolations.length} Import Alert
                   </Badge>
@@ -1510,7 +1532,7 @@ export default function AuditPage() {
                 <p className={`text-sm leading-relaxed ${hasCritical ? 'text-red-800' : 'text-amber-800'}`}>
                   Nhãn của bạn có thể <span className="font-medium">Pass</span> toàn bộ kiểm tra CFR bên trên,
                   nhưng hàng hóa vẫn có nguy cơ bị giữ tại cảng Mỹ (DWPE — Detention Without Physical Examination)
-                  nếu sản phẩm hoặc nhà sản xuất thuộc diện Import Alert của FDA.
+                  n��u sản phẩm hoặc nhà sản xuất thuộc diện Import Alert của FDA.
                   Đây là rủi ro biên giới độc lập với tuân thủ nhãn.
                 </p>
               </div>
@@ -1536,7 +1558,7 @@ export default function AuditPage() {
                           <h3 className="font-semibold text-base">{violation.category}</h3>
                           <div className="flex items-center gap-2 shrink-0">
                             <Badge className={`text-xs ${violation.severity === 'critical' ? 'bg-red-600 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-500'} text-white`}>
-                              {violation.severity === 'critical' ? 'DWPE Risk' : 'Import Risk'}
+                              {violation.severity === 'critical' ? 'Rủi ro DWPE' : 'Rủi ro Nhập khẩu'}
                             </Badge>
                           </div>
                         </div>
@@ -1553,7 +1575,7 @@ export default function AuditPage() {
                                 rel="noopener noreferrer"
                                 className="text-xs text-blue-600 hover:underline flex items-center gap-1 shrink-0"
                               >
-                                FDA Source <ExternalLink className="h-3 w-3" />
+                                Nguồn FDA <ExternalLink className="h-3 w-3" />
                               </a>
                             )}
                           </div>
@@ -1595,13 +1617,20 @@ export default function AuditPage() {
           (report.contrast_violations && report.contrast_violations.length > 0) ||
           (report.multilanguage_issues && report.multilanguage_issues.length > 0)
         ) && (
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className={`grid gap-4 ${(() => {
+            const count = [
+              report.geometry_violations?.length > 0,
+              report.contrast_violations?.length > 0,
+              report.multilanguage_issues?.length > 0,
+            ].filter(Boolean).length
+            return count === 1 ? 'grid-cols-1' : count === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'
+          })()}`}>
             {/* Geometry Violations */}
             {report.geometry_violations && report.geometry_violations.length > 0 && (
               <Card className="p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <Ruler className="h-4 w-4 text-violet-600" />
-                  <h3 className="font-semibold text-sm">Kiem tra Hinh hoc</h3>
+                  <h3 className="font-semibold text-sm">Kiểm tra Hình học</h3>
                   <Badge variant="secondary" className="text-xs ml-auto">
                     {report.geometry_violations.length}
                   </Badge>
@@ -1732,10 +1761,10 @@ export default function AuditPage() {
               <summary className="flex items-center justify-between cursor-pointer">
                 <div className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-bold">Bao cao Thuong mai Tong hop</h2>
+                  <h2 className="text-xl font-bold">Báo cáo Thương mại Tổng hợp</h2>
                 </div>
                 <Badge variant="outline" className="group-open:hidden">
-                  Nhan de xem chi tiet
+                  Nhấn để xem chi tiết
                 </Badge>
               </summary>
               <div className="mt-4 pt-4 border-t prose prose-sm max-w-none">
