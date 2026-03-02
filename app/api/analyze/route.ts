@@ -689,11 +689,11 @@ export async function POST(request: Request) {
           }
 
           violations.push({
-            category: `Warning Letter Pattern: ${meta.violation_type?.[0] || 'Potential Violation'}`,
+            category: `Mẫu Warning Letter: ${meta.violation_type?.[0] || 'Ngôn ngữ tiềm ẩn rủi ro'}`,
             severity: meta.severity === 'Critical' ? 'critical' : meta.severity === 'Major' ? 'warning' : 'info',
-            description: `This label contains language similar to claims that FDA flagged in Warning Letter ${meta.letter_id || ''} to ${meta.company_name || 'a company'}. Matched red-flag phrases: "${matchedKeywords.join('", "')}". Original violation: ${meta.why_problematic || 'See warning letter for details.'}`,
-            regulation_reference: meta.regulation_violated?.[0] || 'See FDA Warning Letter',
-            suggested_fix: meta.correction_required || 'Review and remove or modify the flagged language to ensure FDA compliance.',
+            description: `Nhãn này chứa ngôn ngữ tương đồng với nội dung mà FDA đã gửi Warning Letter ${meta.letter_id || ''} đến ${meta.company_name || 'một doanh nghiệp'}. Cụm từ bị nhận diện: "${matchedKeywords.join('", "')}". Vi phạm gốc: ${meta.why_problematic || 'Xem chi tiết trong Warning Letter.'}`,
+            regulation_reference: meta.regulation_violated?.[0] || 'Xem FDA Warning Letter',
+            suggested_fix: meta.correction_required || 'Xem xét và sửa đổi hoặc xóa ngôn ngữ bị gắn cờ để đảm bảo tuân thủ FDA.',
             citations: [warningCitation],
             confidence_score: Math.min(0.95, 0.5 + (matchedKeywords.length * 0.15)),
             source_type: 'warning_letter',
@@ -729,11 +729,11 @@ export async function POST(request: Request) {
           }
 
           violations.push({
-            category: `Recall Pattern: ${meta.recall_issue_type || 'Potential Issue'}`,
+            category: `Mẫu Thu hồi: ${meta.recall_issue_type || 'Yếu tố tiềm ẩn rủi ro'}`,
             severity: meta.recall_classification === 'Class I' ? 'critical' : meta.recall_classification === 'Class II' ? 'warning' : 'info',
-            description: `This label contains elements similar to products recalled by FDA. Recall ${meta.recall_number || 'N/A'} (${meta.recalling_firm || 'a firm'}): ${meta.why_recalled || 'See recall details.'}. Matched keywords: "${matchedKeywords.join('", "')}".`,
-            regulation_reference: meta.regulation_related || 'See FDA Recall Database',
-            suggested_fix: meta.preventive_action || 'Review and address the flagged elements to avoid potential recall risk.',
+            description: `Nhãn này chứa các yếu tố tương đồng với sản phẩm đã bị FDA thu hồi. Recall ${meta.recall_number || 'N/A'} (${meta.recalling_firm || 'một doanh nghiệp'}): ${meta.why_recalled || 'Xem chi tiết sự kiện thu hồi.'}. Từ khóa nhận diện: "${matchedKeywords.join('", "')}".`,
+            regulation_reference: meta.regulation_related || 'Xem Cơ sở dữ liệu FDA Recall',
+            suggested_fix: meta.preventive_action || 'Xem xét và khắc phục các yếu tố bị gắn cờ để tránh nguy cơ thu hồi tiềm ẩn.',
             citations: [recallCitation],
             confidence_score: Math.min(0.95, 0.5 + (matchedKeywords.length * 0.15)),
             source_type: 'recall',
@@ -756,16 +756,16 @@ export async function POST(request: Request) {
         const activeEntities = (ia.red_list_entities || []).filter((e: any) => e.is_active)
 
         violations.push({
-          category: `Import Alert: ${ia.action_type} Risk (${ia.alert_number})`,
+          category: `Import Alert: Rủi ro ${ia.action_type} (${ia.alert_number})`,
           severity: isEntityMatch ? 'critical' as const : 'warning' as const,
           description: isEntityMatch
-            ? `BORDER ENFORCEMENT: This product or its manufacturer may be subject to FDA Import Alert ${ia.alert_number} (${ia.action_type}). Reason: ${ia.reason_for_alert.slice(0, 300)}. ${activeEntities.length > 0 ? `${activeEntities.length} entities currently on the Red List.` : ''} Products from firms on the Red List may be detained at US ports without physical examination.`
-            : `FDA Import Alert ${ia.alert_number} targets products in this category (${ia.industry_type}) for: ${ia.reason_for_alert.slice(0, 300)}. While your specific firm may not be on the Red List, this alert indicates heightened FDA scrutiny for this type of product.`,
+            ? `CẢNH BÁO BIÊN GIỚI: Sản phẩm hoặc nhà sản xuất có thể thuộc diện FDA Import Alert ${ia.alert_number} (${ia.action_type}). Lý do: ${ia.reason_for_alert.slice(0, 300)}. ${activeEntities.length > 0 ? `${activeEntities.length} tổ chức hiện đang trong Danh sách Đỏ (Red List).` : ''} Hàng hóa từ các doanh nghiệp trong Danh sách Đỏ có thể bị giữ tại cảng Mỹ mà không cần kiểm tra thực tế (DWPE).`
+            : `FDA Import Alert ${ia.alert_number} nhắm vào các sản phẩm trong ngành ${ia.industry_type} với lý do: ${ia.reason_for_alert.slice(0, 300)}. Mặc dù doanh nghiệp của bạn có thể chưa có trong Danh sách Đỏ, cảnh báo này cho thấy FDA đang tăng cường giám sát đối với loại sản phẩm này.`,
           regulation_reference: `FDA Import Alert ${ia.alert_number}`,
           suggested_fix: isEntityMatch
-            ? `To be removed from the Red List: (1) Submit corrective action documentation to FDA, (2) Request a follow-up inspection, (3) Provide laboratory test results demonstrating compliance. Contact FDA DIOD for specific requirements.`
-            : `Ensure full compliance with the requirements cited in Import Alert ${ia.alert_number} to avoid potential detention. Review CGMP documentation and consider proactive testing.`,
-          citations: [], // Import Alerts are NOT included in citations per spec
+            ? `Để được xóa khỏi Danh sách Đỏ: (1) Nộp tài liệu hành động khắc phục cho FDA, (2) Yêu cầu kiểm tra tái xác nhận, (3) Cung cấp kết quả kiểm nghiệm phòng thí nghiệm chứng minh tuân thủ. Liên hệ FDA DIOD để biết yêu cầu cụ thể.`
+            : `Đảm bảo tuân thủ đầy đủ các yêu cầu nêu trong Import Alert ${ia.alert_number} để tránh nguy cơ bị giữ hàng. Xem lại tài liệu CGMP và cân nhắc thực hiện kiểm nghiệm chủ động.`,
+          citations: [], // Import Alerts không được đưa vào citations theo spec
           confidence_score: isEntityMatch ? 0.90 : 0.60,
           source_type: 'import_alert',
           import_alert_number: ia.alert_number,

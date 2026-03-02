@@ -68,13 +68,32 @@ export class SmartCitationFormatter {
           `Hướng sửa đổi: Thêm cả hai đơn vị đo lường. Ví dụ: nếu sản phẩm là 500g thì ghi "Net Wt. 17.6 oz (500g)".`
       },
       ingredient_order: {
-        summary: (v: ViolationMapping) => `Cảnh báo về thứ tự nguyên liệu`,
-        legalBasis: (v: ViolationMapping, reg: KnowledgeSearchResult | null) => 
-          `Căn cứ theo ${v.regulationSection}, các nguyên liệu phải được liệt kê theo thứ tự giảm dần về trọng lượng`,
-        expertLogic: (v: ViolationMapping) => 
-          `Hệ thống nhận diện danh sách nguyên liệu: ${v.detectedValue}. Vui lòng kiểm tra xem thứ tự này có đúng với tỷ lệ trọng lượng thực tế không. Nguyên liệu chiếm tỷ trọng lớn nhất phải đứng đầu.`,
-        remediation: (v: ViolationMapping) => 
-          `Hướng kiểm tra: Đối chiếu danh sách nguyên liệu với công thức sản xuất. Sắp xếp lại theo thứ tự giảm dần về khối lượng (ingredient chiếm % cao nhất đứng đầu).`
+        summary: (v: ViolationMapping) => {
+          if (v.regulationSection.includes('701.3')) return `Cảnh báo về thứ tự thành phần mỹ phẩm (INCI)`
+          if (v.regulationSection.includes('201.10')) return `Cảnh báo về thứ tự thành phần bất hoạt (OTC Drug)`
+          return `Cảnh báo về thứ tự nguyên liệu`
+        },
+        legalBasis: (v: ViolationMapping, reg: KnowledgeSearchResult | null) => {
+          if (v.regulationSection.includes('701.3'))
+            return `Căn cứ theo ${v.regulationSection} (21 CFR 701.3 — Nhãn mỹ phẩm), các thành phần INCI phải được liệt kê theo thứ tự giảm dần về trọng lượng`
+          if (v.regulationSection.includes('201.10'))
+            return `Căn cứ theo ${v.regulationSection} (21 CFR 201.10 — Nhãn thuốc OTC), các thành phần bất hoạt phải được liệt kê theo thứ tự giảm dần về trọng lượng`
+          return `Căn cứ theo ${v.regulationSection} (21 CFR 101.4 — Nhãn thực phẩm), các nguyên liệu phải được liệt kê theo thứ tự giảm dần về trọng lượng`
+        },
+        expertLogic: (v: ViolationMapping) => {
+          if (v.regulationSection.includes('701.3'))
+            return `Hệ thống nhận diện danh sách thành phần INCI của mỹ phẩm: ${v.detectedValue}. Theo 21 CFR 701.3(a), các thành phần phải được liệt kê theo thứ tự giảm dần về hàm lượng. Vui lòng đối chiếu với công thức sản xuất để xác nhận thứ tự chính xác.`
+          if (v.regulationSection.includes('201.10'))
+            return `Hệ thống nhận diện danh sách thành phần bất hoạt (inactive ingredients) của sản phẩm OTC: ${v.detectedValue}. Theo 21 CFR 201.10(g), thứ tự phải theo hàm lượng giảm dần. Vui lòng kiểm tra lại với nhà sản xuất.`
+          return `Hệ thống nhận diện danh sách nguyên liệu: ${v.detectedValue}. Vui lòng kiểm tra xem thứ tự này có đúng với tỷ lệ trọng lượng thực tế không. Nguyên liệu chiếm tỷ trọng lớn nhất phải đứng đầu.`
+        },
+        remediation: (v: ViolationMapping) => {
+          if (v.regulationSection.includes('701.3'))
+            return `Hướng kiểm tra: Đối chiếu danh sách INCI với công thức mỹ phẩm. Sắp xếp lại theo hàm lượng giảm dần (% w/w). Thành phần có hàm lượng dưới 1% có thể liệt kê theo thứ tự bất kỳ ở cuối danh sách.`
+          if (v.regulationSection.includes('201.10'))
+            return `Hướng kiểm tra: Đối chiếu danh sách thành phần bất hoạt với công thức OTC drug. Sắp xếp theo hàm lượng giảm dần và tham khảo USP monograph tương ứng.`
+          return `Hướng kiểm tra: Đối chiếu danh sách nguyên liệu với công thức sản xuất. Sắp xếp lại theo thứ tự giảm dần về khối lượng (ingredient chiếm % cao nhất đứng đầu).`
+        },
       },
       allergen_bold: {
         summary: (v: ViolationMapping) => `Phát hiện lỗi định dạng chất gây dị ứng (allergen)`,

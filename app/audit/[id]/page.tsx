@@ -57,10 +57,10 @@ const ANALYSIS_STEPS = [
   {
     id: 'fda_search',
     title: 'Tra cứu FDA Regulations (Knowledge Base)',
-    description: 'Đang tìm kiếm quy định FDA trong Knowledge Base với RAG AI (Similarity 99%)...',
+    description: 'Đang tìm kiếm quy định FDA trong Knowledge Base với RAG AI (Độ tương đồng 99%)...',
     icon: Database,
     progress: 35,
-    details: ['21 CFR Part 101 - Nutrition Labeling', 'FALCPA - Allergen Laws', 'Health Claims Regulations', 'Ingredient Listing Requirements'],
+    details: ['21 CFR Phần 101 - Nhãn dinh dưỡng', 'FALCPA - Luật chất gây dị ứng', 'Quy định về Health Claims', 'Yêu cầu liệt kê thành phần'],
   },
   {
     id: 'geometry',
@@ -84,15 +84,15 @@ const ANALYSIS_STEPS = [
     description: 'Đang kiểm tra format, rounding, và thứ tự nutrients...',
     icon: FileText,
     progress: 85,
-    details: ['Serving size compliance', 'Calorie declaration', 'Nutrient rounding rules', 'Daily Value percentages'],
+    details: ['Tuân thủ khẩu phần (Serving size)', 'Khai báo Calorie', 'Quy tắc làm tròn chất dinh dưỡng', 'Tỷ lệ Giá trị Hằng ngày (% DV)'],
   },
   {
     id: 'mapping',
-    title: 'Mapping violations với CFR citations',
-    description: 'Đang tạo báo cáo thương mại với citations chính xác từ FDA...',
+    title: 'Ánh xạ vi phạm với trích dẫn CFR',
+    description: 'Đang tạo báo cáo thương mại với trích dẫn chính xác từ FDA...',
     icon: Sparkles,
     progress: 95,
-    details: ['Smart citation formatting', 'Violation-to-CFR mapper', 'Tạo báo cáo thương mại', 'Lời khuyên từ chuyên gia'],
+    details: ['Định dạng trích dẫn thông minh', 'Ánh xạ vi phạm → CFR', 'Tạo báo cáo thương mại', 'Khuyến nghị chuyên gia'],
   },
 ]
 
@@ -201,7 +201,7 @@ export default function AuditPage() {
       // If KB was unavailable previously, show the KB error screen so user can retry
       if (data.status === 'kb_unavailable') {
         setKbError({
-          message: 'Knowledge Base chưa có dữ liệu khi lần phân tích trước. Vui lòng thử lại sau khi Admin đã nạp tài liệu.',
+          message: 'Knowledge Base chua co du lieu khi lan phan tich truoc. Vui long thu lai sau khi Admin da nap tai lieu.',
           totalDocuments: 0,
         })
         return
@@ -327,22 +327,22 @@ export default function AuditPage() {
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="p-8 max-w-lg w-full text-center">
           <Database className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Knowledge Base chưa sẵn sàng</h2>
+          <h2 className="text-xl font-bold mb-2">Knowledge Base chua san sang</h2>
           <p className="text-muted-foreground mb-4">{kbError.message}</p>
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm text-left space-y-2">
-            <p className="font-medium text-amber-900">Tại sao không thể phân tích?</p>
+            <p className="font-medium text-amber-900">Tai sao khong the phan tich?</p>
             <ul className="list-disc list-inside text-amber-800 space-y-1">
-              <li>Hệ thống cần dữ liệu FDA regulations, Warning Letters và Recalls để phân tích chính xác.</li>
-              <li>Hiện tại có <strong>{kbError.totalDocuments}</strong> tài liệu trong Knowledge Base.</li>
-              <li>Cần ít nhất 1 tài liệu được nạp vào để bắt đầu phân tích.</li>
+              <li>He thong can du lieu FDA regulations, Warning Letters va Recalls de phan tich chinh xac.</li>
+              <li>Hien tai co <strong>{kbError.totalDocuments}</strong> tai lieu trong Knowledge Base.</li>
+              <li>Can it nhat 1 tai lieu duoc nap vao de bat dau phan tich.</li>
             </ul>
           </div>
           <div className="bg-muted rounded-lg p-4 mb-6 text-sm text-left space-y-2">
-            <p className="font-medium">Cách khắc phục:</p>
+            <p className="font-medium">Cach khac phuc:</p>
             <ol className="list-decimal list-inside text-muted-foreground space-y-1">
-              <li>Liên hệ Admin để nạp tài liệu FDA vào Knowledge Base.</li>
-              <li>Truy cập trang <strong>Knowledge Base</strong> và sử dụng chức năng &quot;Nạp tài liệu mới&quot; hoặc &quot;FDA Warning Letters Pipeline&quot;.</li>
-              <li>Sau khi nạp xong, quay lại đây để chạy phân tích.</li>
+              <li>Lien he Admin de nap tai lieu FDA vao Knowledge Base.</li>
+              <li>Truy cap trang <strong>Knowledge Base</strong> va su dung chuc nang &quot;Nap tai lieu moi&quot; hoac &quot;FDA Warning Letters Pipeline&quot;.</li>
+              <li>Sau khi nap xong, quay lai day de chay phan tich.</li>
             </ol>
           </div>
           <div className="flex flex-col gap-3">
@@ -358,11 +358,11 @@ export default function AuditPage() {
               } catch {}
               startAnalysis()
             }}>
-              Thử lại phân tích
+              Thu lai phan tich
             </Button>
             <Button variant="outline" onClick={() => router.push('/dashboard')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Quay lại Dashboard
+              Quay lai Dashboard
             </Button>
           </div>
         </Card>
@@ -425,7 +425,7 @@ export default function AuditPage() {
                 {report.label_image_url === 'manual-entry' ? 'Xem trước Nhãn' : 'Hình ảnh Nhãn'}
                 {report.label_images && report.label_images.length > 1 && (
                   <Badge variant="secondary" className="text-xs ml-auto">
-                    {report.label_images.length} hình ảnh
+                    {report.label_images.length} hinh anh
                   </Badge>
                 )}
               </h2>
@@ -456,7 +456,7 @@ export default function AuditPage() {
                 <div className="mt-4 pt-4 border-t">
                   <div className="flex items-center gap-2 mb-2">
                     <Settings className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs font-medium text-muted-foreground">Cấu hình phân tích</span>
+                    <span className="text-xs font-medium text-muted-foreground">Cau hinh phan tich</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {report.target_market && (
@@ -707,7 +707,7 @@ export default function AuditPage() {
                 {report.label_image_url === 'manual-entry' ? 'Xem trước Nhãn' : 'Hình ảnh Nhãn'}
                 {report.label_images && report.label_images.length > 1 && (
                   <Badge variant="secondary" className="text-xs ml-auto">
-                    {report.label_images.length} hình ảnh
+                    {report.label_images.length} hinh anh
                   </Badge>
                 )}
               </h2>
@@ -737,34 +737,34 @@ export default function AuditPage() {
                 <div className="mt-4 pt-4 border-t">
                   <div className="flex items-center gap-2 mb-3">
                     <Settings className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs font-medium text-muted-foreground">Cấu hình phân tích đã áp dụng</span>
+                    <span className="text-xs font-medium text-muted-foreground">Cau hinh phan tich da ap dung</span>
                   </div>
                   <div className="space-y-2">
                     {report.target_market && (
                       <div className="flex items-center gap-2 text-xs">
                         <Globe className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-muted-foreground">Thị trường:</span>
+                        <span className="text-muted-foreground">Thi truong:</span>
                         <span className="font-medium">{report.target_market}</span>
                       </div>
                     )}
                     {report.label_language && report.label_language.length > 0 && (
                       <div className="flex items-center gap-2 text-xs">
                         <Languages className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-muted-foreground">Ngôn ngữ:</span>
+                        <span className="text-muted-foreground">Ngon ngu:</span>
                         <span className="font-medium">{report.label_language.join(', ').toUpperCase()}</span>
                       </div>
                     )}
                     {report.packaging_format && (
                       <div className="flex items-center gap-2 text-xs">
                         <Package className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-muted-foreground">Bao bì:</span>
+                        <span className="text-muted-foreground">Bao bi:</span>
                         <span className="font-medium">{report.packaging_format.replace(/_/g, ' ')}</span>
                       </div>
                     )}
                     {report.product_type && (
                       <div className="flex items-center gap-2 text-xs">
                         <FileSearch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="text-muted-foreground">Loại SP:</span>
+                        <span className="text-muted-foreground">Loai SP:</span>
                         <span className="font-medium">{report.product_type}</span>
                       </div>
                     )}
@@ -1048,7 +1048,7 @@ export default function AuditPage() {
               <Card className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Activity className="h-5 w-5 text-primary" />
-                  <h2 className="font-semibold text-lg">Rủi ro Enforcement FDA</h2>
+                  <h2 className="font-semibold text-lg">Rủi ro Thực thi FDA</h2>
                 </div>
 
                 {/* Risk Gauge — flex row: gauge | stats | (projected score when full-width) */}
@@ -1182,8 +1182,8 @@ export default function AuditPage() {
 
               <p className="text-sm text-muted-foreground mb-6 border-l-2 border-primary/30 pl-3">
                 Kết quả kiểm tra tuân thủ nhãn theo quy định <span className="font-medium text-foreground">21 CFR</span>.
-                Pass/Fail dựa trên các vi phạm nghiêm trọng bên dưới.
-                Warning Letters và Recalls được hiển thị riêng ở các mục bên dưới.
+                Kết quả Đạt/Không Đạt dựa trên các vi phạm nghiêm trọng bên dưới.
+                Lịch sử Warning Letter và Recall được hiển thị riêng ở các mục bên dưới.
               </p>
 
               {cfrViolations.length === 0 ? (
@@ -1234,7 +1234,7 @@ export default function AuditPage() {
                           {violation.regulation_reference && (
                             <div className="bg-slate-100 rounded-lg p-4 mb-4">
                               <p className="text-xs font-medium text-muted-foreground mb-1">
-                                Tham chiếu Quy định:
+                                Điều khoản áp dụng:
                               </p>
                               <p className="text-sm font-mono text-primary">
                                 {violation.regulation_reference}
@@ -1244,7 +1244,7 @@ export default function AuditPage() {
 
                           {violation.suggested_fix && (
                             <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                              <p className="text-xs font-medium text-blue-900 mb-2">Khuyến nghị Sửa:</p>
+                              <p className="text-xs font-medium text-blue-900 mb-2">Hướng dẫn khắc phục:</p>
                               <p className="text-sm text-blue-800">{violation.suggested_fix}</p>
                             </div>
                           )}
@@ -1252,7 +1252,7 @@ export default function AuditPage() {
                           {violation.citations && violation.citations.length > 0 && (
                             <details className="group">
                               <summary className="cursor-pointer text-sm font-medium text-primary hover:underline mb-2">
-                                Trích dẫn ({violation.citations.length}):
+                                Trích dẫn từ quy định ({violation.citations.length}):
                               </summary>
                               <div className="space-y-2 ml-4 mt-2">
                                 {violation.citations.map((citation, citIdx) => (
@@ -1263,7 +1263,7 @@ export default function AuditPage() {
                                     <p className="font-medium mb-1">{citation.section}</p>
                                     <p className="text-muted-foreground italic">{citation.text}</p>
                                     <p className="text-xs text-muted-foreground mt-2">
-                                      Nguồn: {citation.source} (Mức liên quan: {(citation.relevance_score * 100).toFixed(0)}%)
+                                      Nguồn: {citation.source} (Độ liên quan: {(citation.relevance_score * 100).toFixed(0)}%)
                                     </p>
                                   </div>
                                 ))}
@@ -1274,7 +1274,7 @@ export default function AuditPage() {
                           {violation.confidence_score !== undefined && (
                             <div className="mt-4">
                               <div className="flex items-center justify-between text-xs mb-1">
-                                <span className="text-muted-foreground">Độ tin cậy AI:</span>
+                                <span className="text-muted-foreground">Độ tin cậy phân tích:</span>
                                 <span className="font-medium">{Math.round(violation.confidence_score * 100)}%</span>
                               </div>
                               <Progress value={violation.confidence_score * 100} className="h-1" />
@@ -1354,14 +1354,14 @@ export default function AuditPage() {
 
                         {violation.regulation_reference && (
                           <div className="bg-purple-100/60 rounded-lg p-3 mb-3">
-                            <p className="text-xs font-medium text-purple-900 mb-0.5">Tham chiếu Quy định:</p>
+                            <p className="text-xs font-medium text-purple-900 mb-0.5">Điều khoản liên quan:</p>
                             <p className="text-xs font-mono text-purple-800">{violation.regulation_reference}</p>
                           </div>
                         )}
 
                         {violation.suggested_fix && (
                           <div className="bg-blue-50 rounded-lg p-3 mb-3">
-                            <p className="text-xs font-medium text-blue-900 mb-1">Khuyến nghị Sửa:</p>
+                            <p className="text-xs font-medium text-blue-900 mb-1">Hướng dẫn khắc phục:</p>
                             <p className="text-xs text-blue-800">{violation.suggested_fix}</p>
                           </div>
                         )}
@@ -1373,7 +1373,7 @@ export default function AuditPage() {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-xs text-purple-700 hover:underline"
                           >
-                            Xem FDA Warning Letter gốc <ExternalLink className="h-3 w-3" />
+                            Xem Warning Letter gốc trên FDA.gov <ExternalLink className="h-3 w-3" />
                           </a>
                         )}
 
@@ -1388,7 +1388,7 @@ export default function AuditPage() {
                         )}
 
                         <p className="text-xs text-muted-foreground mt-3 italic border-t pt-2">
-                          Nguồn: FDA Warning Letter enforcement history — không phải vi phạm CFR trực tiếp.
+                          Nguồn: Lịch sử Warning Letter của FDA — đây là tín hiệu rủi ro, không phải vi phạm CFR trực tiếp.
                         </p>
                       </div>
                     </div>
@@ -1414,7 +1414,7 @@ export default function AuditPage() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <RotateCcw className={`h-5 w-5 ${hasClassI ? 'text-orange-600' : 'text-yellow-600'}`} />
-                  <h2 className="text-xl font-bold">Mẫu Thu hồi FDA (Recall Patterns)</h2>
+                  <h2 className="text-xl font-bold">Mẫu Thu hồi FDA (Recall)</h2>
                   <Badge className={`${hasClassI ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800'} hover:bg-inherit`}>
                     {recallViolations.length} mẫu phát hiện
                   </Badge>
@@ -1469,14 +1469,14 @@ export default function AuditPage() {
 
                         {violation.regulation_reference && (
                           <div className={`rounded-lg p-3 mb-3 ${violation.severity === 'critical' ? 'bg-orange-100/60' : 'bg-yellow-100/60'}`}>
-                            <p className="text-xs font-medium text-slate-700 mb-0.5">Tham chiếu / Nguồn Recall:</p>
+                            <p className="text-xs font-medium text-slate-700 mb-0.5">Nguồn dữ liệu Recall:</p>
                             <p className="text-xs font-mono text-slate-700">{violation.regulation_reference}</p>
                           </div>
                         )}
 
                         {violation.suggested_fix && (
                           <div className="bg-blue-50 rounded-lg p-3 mb-3">
-                            <p className="text-xs font-medium text-blue-900 mb-1">Hành động phòng ngừa:</p>
+                            <p className="text-xs font-medium text-blue-900 mb-1">Hành động phòng ngừa đề xuất:</p>
                             <p className="text-xs text-blue-800">{violation.suggested_fix}</p>
                           </div>
                         )}
@@ -1484,7 +1484,7 @@ export default function AuditPage() {
                         {violation.confidence_score !== undefined && (
                           <div className="mt-3">
                             <div className="flex items-center justify-between text-xs mb-1">
-                              <span className="text-muted-foreground">Mức tương đồng với Recall:</span>
+                              <span className="text-muted-foreground">Mức tương đồng với sự kiện Recall:</span>
                               <span className="font-medium">{Math.round(violation.confidence_score * 100)}%</span>
                             </div>
                             <Progress value={violation.confidence_score * 100} className="h-1" />
@@ -1492,7 +1492,7 @@ export default function AuditPage() {
                         )}
 
                         <p className="text-xs text-muted-foreground mt-3 italic border-t pt-2">
-                          Nguồn: openFDA Recall Database — tín hiệu rủi ro, không phải vi phạm CFR trực tiếp.
+                          Nguồn: Cơ sở dữ liệu openFDA Recall — đây là tín hiệu rủi ro, không phải vi phạm CFR trực tiếp.
                         </p>
                       </div>
                     </div>
@@ -1517,7 +1517,7 @@ export default function AuditPage() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Ship className={`h-5 w-5 ${hasCritical ? 'text-red-600' : 'text-amber-600'}`} />
-                  <h2 className="text-xl font-bold">Đánh giá Rủi ro Nhập khẩu (Border Entry Risk)</h2>
+                  <h2 className="text-xl font-bold">Rủi ro Thông quan Biên giới</h2>
                   <Badge className={`${hasCritical ? 'bg-red-600 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-500'} text-white`}>
                     {importAlertViolations.length} Import Alert
                   </Badge>
@@ -1575,7 +1575,7 @@ export default function AuditPage() {
                                 rel="noopener noreferrer"
                                 className="text-xs text-blue-600 hover:underline flex items-center gap-1 shrink-0"
                               >
-                                Nguồn FDA <ExternalLink className="h-3 w-3" />
+                                Xem trên FDA.gov <ExternalLink className="h-3 w-3" />
                               </a>
                             )}
                           </div>
@@ -1649,7 +1649,7 @@ export default function AuditPage() {
                           gv.severity === 'warning' ? 'border-amber-300 text-amber-700' :
                           'border-blue-300 text-blue-700'
                         }`}>
-                          {gv.severity}
+                          {gv.severity === 'critical' ? 'Nghiêm trọng' : gv.severity === 'warning' ? 'Cảnh báo' : 'Thông tin'}
                         </Badge>
                       </div>
                       <p className="text-muted-foreground leading-relaxed">{gv.description}</p>
@@ -1658,8 +1658,8 @@ export default function AuditPage() {
                       )}
                       {(gv.expected || gv.actual) && (
                         <div className="flex gap-3 mt-2 pt-2 border-t">
-                          {gv.expected && <span className="text-green-700">Chuan: {gv.expected}</span>}
-                          {gv.actual && <span className="text-red-700">Thuc te: {gv.actual}</span>}
+                          {gv.expected && <span className="text-green-700">Chuẩn: {gv.expected}</span>}
+                          {gv.actual && <span className="text-red-700">Thực tế: {gv.actual}</span>}
                         </div>
                       )}
                     </div>
@@ -1673,7 +1673,7 @@ export default function AuditPage() {
               <Card className="p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <Palette className="h-4 w-4 text-pink-600" />
-                  <h3 className="font-semibold text-sm">Tuong phan Mau sac</h3>
+                  <h3 className="font-semibold text-sm">Tương phản Màu sắc</h3>
                   <Badge variant="secondary" className="text-xs ml-auto">
                     {report.contrast_violations.length}
                   </Badge>
@@ -1684,11 +1684,11 @@ export default function AuditPage() {
                       <p className="font-medium mb-1.5">{cv.description}</p>
                       {cv.ratio !== undefined && (
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-muted-foreground">Ti le:</span>
+                          <span className="text-muted-foreground">Tỷ lệ:</span>
                           <span className={`font-bold ${cv.ratio >= 4.5 ? 'text-green-700' : cv.ratio >= 3 ? 'text-amber-700' : 'text-red-700'}`}>
                             {cv.ratio.toFixed(2)}:1
                           </span>
-                          <span className="text-muted-foreground">(toi thieu 4.5:1)</span>
+                          <span className="text-muted-foreground">(tối thiểu 4.5:1)</span>
                         </div>
                       )}
                       {cv.colors && (
@@ -1718,7 +1718,7 @@ export default function AuditPage() {
               <Card className="p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <Languages className="h-4 w-4 text-teal-600" />
-                  <h3 className="font-semibold text-sm">Kiem tra Da ngon ngu</h3>
+                  <h3 className="font-semibold text-sm">Kiểm tra Đa ngôn ngữ</h3>
                   <Badge variant="secondary" className="text-xs ml-auto">
                     {report.multilanguage_issues.length}
                   </Badge>
@@ -1738,7 +1738,7 @@ export default function AuditPage() {
                       )}
                       {ml.missingFields && ml.missingFields.length > 0 && (
                         <div className="mt-2 pt-2 border-t">
-                          <p className="text-muted-foreground mb-1">Thieu ban dich:</p>
+                          <p className="text-muted-foreground mb-1">Thiếu bản dịch:</p>
                           <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
                             {ml.missingFields.map((field: string, fIdx: number) => (
                               <li key={fIdx}>{field}</li>
