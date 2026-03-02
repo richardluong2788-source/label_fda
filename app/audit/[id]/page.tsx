@@ -34,6 +34,8 @@ import {
   Lightbulb,
   Activity,
   Palette,
+  Mail,
+  RotateCcw,
 } from 'lucide-react'
 import type { AuditReport, Violation, LabelImageEntry } from '@/lib/types'
 import { LabelPreview } from '@/components/label-preview'
@@ -1128,10 +1130,16 @@ export default function AuditPage() {
           </div>
         )}
 
-        {/* ── SECTION 1: Label Compliance Audit (CFR violations) ─────────────────── */}
+        {/* ── SECTION 1: Label Compliance Audit (CFR violations only) ──────────── */}
         {(() => {
           const allViolations = report.findings || report.violations || []
-          const cfrViolations = allViolations.filter((v: Violation) => v.source_type !== 'import_alert')
+          // Pure CFR violations — exclude enforcement-history signals (handled in dedicated sections below)
+          const cfrViolations = allViolations.filter(
+            (v: Violation) =>
+              v.source_type !== 'import_alert' &&
+              v.source_type !== 'warning_letter' &&
+              v.source_type !== 'recall'
+          )
           const criticalCount = cfrViolations.filter((v: Violation) => v.severity === 'critical').length
           const warningCount  = cfrViolations.filter((v: Violation) => v.severity === 'warning').length
 
@@ -1150,10 +1158,10 @@ export default function AuditPage() {
                 )}
               </div>
 
-              {/* Section description — key educational note */}
               <p className="text-sm text-muted-foreground mb-6 border-l-2 border-primary/30 pl-3">
                 Kết quả kiểm tra tuân thủ nhãn theo quy định <span className="font-medium text-foreground">21 CFR</span>.
                 Pass/Fail dựa trên các vi phạm nghiêm trọng bên dưới.
+                Warning Letters và Recalls được hiển thị riêng ở các mục bên dưới.
               </p>
 
               {cfrViolations.length === 0 ? (
@@ -1256,6 +1264,219 @@ export default function AuditPage() {
                   ))}
                 </div>
               )}
+            </Card>
+          )
+        })()}
+
+        {/* ── SECTION 1b: FDA Warning Letter Patterns ──────────────────────────── */}
+        {(() => {
+          const allViolations = report.findings || report.violations || []
+          const wlViolations = allViolations.filter((v: Violation) => v.source_type === 'warning_letter')
+          if (wlViolations.length === 0) return null
+
+          return (
+            <Card className="p-6 border-purple-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-purple-600" />
+                  <h2 className="text-xl font-bold">FDA Warning Letter Patterns</h2>
+                  <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">
+                    {wlViolations.length} mẫu phát hiện
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-purple-50 border-l-4 border-purple-400 p-4 mb-6">
+                <p className="text-sm font-semibold text-purple-900 mb-1">
+                  Dựa trên lịch sử FDA Warning Letters thực tế
+                </p>
+                <p className="text-sm text-purple-800 leading-relaxed">
+                  Các mục này không phải vi phạm CFR mới — chúng là <span className="font-medium">mẫu lỗi lặp lại</span> mà FDA
+                  đã gửi Warning Letter cho các doanh nghiệp khác với ngôn ngữ tương tự. Đây là tín hiệu
+                  rủi ro enforcement cao, cần xem xét và sửa trước khi phân phối.
+                  Không ảnh hưởng đến kết quả Pass/Fail của nhãn.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {wlViolations.map((violation: Violation, index: number) => (
+                  <Card
+                    key={index}
+                    className={`p-5 border-purple-200 bg-purple-50/40 ${
+                      violation.severity === 'critical' ? 'border-l-4 border-l-purple-500' : ''
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="shrink-0">
+                        <div className="rounded-full bg-purple-100 p-2">
+                          <Mail className="h-5 w-5 text-purple-600" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <h3 className="font-semibold text-base text-slate-800">{violation.category}</h3>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge className="bg-purple-600 hover:bg-purple-600 text-white text-xs">
+                              Warning Letter
+                            </Badge>
+                            <Badge
+                              variant={violation.severity === 'critical' ? 'destructive' : 'outline'}
+                              className="text-xs"
+                            >
+                              {violation.severity === 'critical' ? 'Nghiêm trọng' : 'Cảnh báo'}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-slate-700 mb-3">{violation.description}</p>
+
+                        {violation.regulation_reference && (
+                          <div className="bg-purple-100/60 rounded-lg p-3 mb-3">
+                            <p className="text-xs font-medium text-purple-900 mb-0.5">Tham chiếu Quy định:</p>
+                            <p className="text-xs font-mono text-purple-800">{violation.regulation_reference}</p>
+                          </div>
+                        )}
+
+                        {violation.suggested_fix && (
+                          <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                            <p className="text-xs font-medium text-blue-900 mb-1">Khuyến nghị Sửa:</p>
+                            <p className="text-xs text-blue-800">{violation.suggested_fix}</p>
+                          </div>
+                        )}
+
+                        {violation.warning_letter_id && (
+                          <a
+                            href={`https://www.fda.gov/inspections-compliance-enforcement-and-criminal-investigations/warning-letters/${violation.warning_letter_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-purple-700 hover:underline"
+                          >
+                            Xem FDA Warning Letter gốc <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+
+                        {violation.confidence_score !== undefined && (
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-muted-foreground">Mức tương đồng với Warning Letter:</span>
+                              <span className="font-medium">{Math.round(violation.confidence_score * 100)}%</span>
+                            </div>
+                            <Progress value={violation.confidence_score * 100} className="h-1" />
+                          </div>
+                        )}
+
+                        <p className="text-xs text-muted-foreground mt-3 italic border-t pt-2">
+                          Nguồn: FDA Warning Letter enforcement history — không phải vi phạm CFR trực tiếp.
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </Card>
+          )
+        })()}
+
+        {/* ── SECTION 1c: FDA Recall Patterns ─────────────────────────────────── */}
+        {(() => {
+          const allViolations = report.findings || report.violations || []
+          const recallViolations = allViolations.filter((v: Violation) => v.source_type === 'recall')
+          if (recallViolations.length === 0) return null
+
+          const hasClassI = recallViolations.some(
+            (v: Violation) => v.category?.includes('Class I') || v.severity === 'critical'
+          )
+
+          return (
+            <Card className={`p-6 ${hasClassI ? 'border-orange-300' : 'border-yellow-200'}`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <RotateCcw className={`h-5 w-5 ${hasClassI ? 'text-orange-600' : 'text-yellow-600'}`} />
+                  <h2 className="text-xl font-bold">FDA Recall Enforcement Patterns</h2>
+                  <Badge className={`${hasClassI ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800'} hover:bg-inherit`}>
+                    {recallViolations.length} mẫu phát hiện
+                  </Badge>
+                </div>
+              </div>
+
+              <div className={`rounded-lg border-l-4 p-4 mb-6 ${hasClassI ? 'bg-orange-50 border-orange-400' : 'bg-yellow-50 border-yellow-400'}`}>
+                <p className={`text-sm font-semibold mb-1 ${hasClassI ? 'text-orange-900' : 'text-yellow-900'}`}>
+                  Nhãn chứa yếu tố tương tự sản phẩm đã bị FDA Recall
+                </p>
+                <p className={`text-sm leading-relaxed ${hasClassI ? 'text-orange-800' : 'text-yellow-800'}`}>
+                  Các mục này được phát hiện dựa trên cơ sở dữ liệu openFDA Recall.
+                  Không có nghĩa sản phẩm của bạn sẽ bị recall — nhưng chứa từ khóa, thành phần,
+                  hoặc cấu trúc nhãn tương đồng với sản phẩm đã bị thu hồi.
+                  Cần xem xét kỹ để phòng ngừa rủi ro. Không ảnh hưởng đến Pass/Fail.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {recallViolations.map((violation: Violation, index: number) => (
+                  <Card
+                    key={index}
+                    className={`p-5 ${
+                      violation.severity === 'critical'
+                        ? 'border-orange-300 bg-orange-50/40 border-l-4 border-l-orange-500'
+                        : 'border-yellow-200 bg-yellow-50/30'
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="shrink-0">
+                        <div className={`rounded-full p-2 ${violation.severity === 'critical' ? 'bg-orange-100' : 'bg-yellow-100'}`}>
+                          <RotateCcw className={`h-5 w-5 ${violation.severity === 'critical' ? 'text-orange-600' : 'text-yellow-600'}`} />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <h3 className="font-semibold text-base text-slate-800">{violation.category}</h3>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge
+                              className={`text-xs text-white ${
+                                violation.severity === 'critical'
+                                  ? 'bg-orange-600 hover:bg-orange-600'
+                                  : 'bg-yellow-500 hover:bg-yellow-500'
+                              }`}
+                            >
+                              {violation.severity === 'critical' ? 'Class I Recall' : 'Recall Pattern'}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-slate-700 mb-3">{violation.description}</p>
+
+                        {violation.regulation_reference && (
+                          <div className={`rounded-lg p-3 mb-3 ${violation.severity === 'critical' ? 'bg-orange-100/60' : 'bg-yellow-100/60'}`}>
+                            <p className="text-xs font-medium text-slate-700 mb-0.5">Tham chiếu / Nguồn Recall:</p>
+                            <p className="text-xs font-mono text-slate-700">{violation.regulation_reference}</p>
+                          </div>
+                        )}
+
+                        {violation.suggested_fix && (
+                          <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                            <p className="text-xs font-medium text-blue-900 mb-1">Hành động phòng ngừa:</p>
+                            <p className="text-xs text-blue-800">{violation.suggested_fix}</p>
+                          </div>
+                        )}
+
+                        {violation.confidence_score !== undefined && (
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-muted-foreground">Mức tương đồng với Recall:</span>
+                              <span className="font-medium">{Math.round(violation.confidence_score * 100)}%</span>
+                            </div>
+                            <Progress value={violation.confidence_score * 100} className="h-1" />
+                          </div>
+                        )}
+
+                        <p className="text-xs text-muted-foreground mt-3 italic border-t pt-2">
+                          Nguồn: openFDA Recall Database — tín hiệu rủi ro, không phải vi phạm CFR trực tiếp.
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
             </Card>
           )
         })()}
