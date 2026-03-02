@@ -830,7 +830,7 @@ export default function AuditPage() {
                     <span className="font-semibold text-sm">{citationsCount}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground text-sm">Rủi ro Import Alert:</span>
+                    <span className="text-muted-foreground text-sm">Import Alert Risk:</span>
                     <span className={`font-semibold text-sm ${importAlertViolations.length > 0 ? 'text-amber-600' : 'text-green-600'}`}>
                       {importAlertViolations.length > 0 ? `${importAlertViolations.length} cảnh báo` : 'Không có'}
                     </span>
@@ -1121,9 +1121,9 @@ export default function AuditPage() {
                     <div className="flex-1 h-2 rounded-r-full bg-red-500" />
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[11px] text-muted-foreground">Thấp (0)</span>
-                    <span className="text-[11px] text-muted-foreground">Trung bình (5)</span>
-                    <span className="text-[11px] text-muted-foreground">Nghiêm trọng (10)</span>
+                    <span className="text-[11px] text-muted-foreground">Low (0)</span>
+                    <span className="text-[11px] text-muted-foreground">Medium (5)</span>
+                    <span className="text-[11px] text-muted-foreground">Critical (10)</span>
                   </div>
                 </div>
               </Card>
@@ -1134,7 +1134,7 @@ export default function AuditPage() {
               <Card className="p-6 border-blue-200 bg-blue-50/30">
                 <div className="flex items-center gap-2 mb-4">
                   <Lightbulb className="h-5 w-5 text-blue-600" />
-                  <h2 className="font-semibold text-lg">Lời khuyên từ Chuyên gia</h2>
+                  <h2 className="font-semibold text-lg">Loi khuyen tu Chuyen gia</h2>
                 </div>
                 <div className="space-y-3">
                   {report.expert_tips.map((tip: string, idx: number) => (
@@ -1170,7 +1170,7 @@ export default function AuditPage() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-bold">Kiểm tra Tuân thủ Nhãn</h2>
+                  <h2 className="text-xl font-bold">Label Compliance Audit</h2>
                   <Badge variant="secondary">{cfrViolations.length} vi phạm</Badge>
                 </div>
                 {cfrViolations.length > 0 && (
@@ -1301,7 +1301,7 @@ export default function AuditPage() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Mail className="h-5 w-5 text-purple-600" />
-                  <h2 className="text-xl font-bold">Mẫu Cảnh báo FDA (Warning Letter)</h2>
+                  <h2 className="text-xl font-bold">FDA Warning Letter Patterns</h2>
                   <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">
                     {wlViolations.length} mẫu phát hiện
                   </Badge>
@@ -1460,7 +1460,7 @@ export default function AuditPage() {
                                   : 'bg-yellow-500 hover:bg-yellow-500'
                               }`}
                             >
-                              {violation.severity === 'critical' ? 'Recall Loại I' : 'Mẫu Thu hồi'}
+                              {violation.severity === 'critical' ? 'Class I Recall' : 'Recall Pattern'}
                             </Badge>
                           </div>
                         </div>
@@ -1532,7 +1532,7 @@ export default function AuditPage() {
                 <p className={`text-sm leading-relaxed ${hasCritical ? 'text-red-800' : 'text-amber-800'}`}>
                   Nhãn của bạn có thể <span className="font-medium">Pass</span> toàn bộ kiểm tra CFR bên trên,
                   nhưng hàng hóa vẫn có nguy cơ bị giữ tại cảng Mỹ (DWPE — Detention Without Physical Examination)
-                  n��u sản phẩm hoặc nhà sản xuất thuộc diện Import Alert của FDA.
+                  nếu sản phẩm hoặc nhà sản xuất thuộc diện Import Alert của FDA.
                   Đây là rủi ro biên giới độc lập với tuân thủ nhãn.
                 </p>
               </div>
@@ -1761,10 +1761,10 @@ export default function AuditPage() {
               <summary className="flex items-center justify-between cursor-pointer">
                 <div className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-bold">Báo cáo Thương mại Tổng hợp</h2>
+                  <h2 className="text-xl font-bold">Bao cao Thuong mai Tong hop</h2>
                 </div>
                 <Badge variant="outline" className="group-open:hidden">
-                  Nhấn để xem chi tiết
+                  Nhan de xem chi tiet
                 </Badge>
               </summary>
               <div className="mt-4 pt-4 border-t prose prose-sm max-w-none">
