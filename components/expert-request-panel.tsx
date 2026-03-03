@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { useTranslation } from '@/lib/i18n'
 import {
   MessageCircle,
   CheckCircle,
@@ -26,9 +27,9 @@ interface ExpertRequestPanelProps {
   productCategory?: string
   overallResult?: string
   needsExpertReview?: boolean
-  planName?: string               // Tên gói hiện tại
-  expertReviewsIncluded?: boolean // true = Pro/Enterprise
-  expertReviewPrice?: number      // Giá lẻ VND — nếu không truyền sẽ fetch từ DB
+  planName?: string
+  expertReviewsIncluded?: boolean
+  expertReviewPrice?: number
 }
 
 type RequestStatus = 'idle' | 'pending' | 'in_review' | 'completed' | 'cancelled'
@@ -63,6 +64,7 @@ export function ExpertRequestPanel({
   expertReviewsIncluded = false,
   expertReviewPrice: expertReviewPriceProp,
 }: ExpertRequestPanelProps) {
+  const { t, locale } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const [existingRequest, setExistingRequest] = useState<ExpertRequest | null>(null)
   const [loading, setLoading] = useState(true)
@@ -70,17 +72,14 @@ export function ExpertRequestPanel({
   const [userContext, setUserContext] = useState('')
   const [targetMarket, setTargetMarket] = useState('US')
   const [error, setError] = useState<string | null>(null)
-  // Giá tư vấn lẻ — ưu tiên prop, fallback fetch từ API
   const [expertReviewPrice, setExpertReviewPrice] = useState<number>(expertReviewPriceProp ?? 499000)
 
-  // Tự động mở panel nếu AI flag needs_expert_review
   useEffect(() => {
     if (needsExpertReview) setExpanded(true)
   }, [needsExpertReview])
 
-  // Fetch giá tư vấn lẻ từ plan của user (nếu chưa được truyền qua prop)
   useEffect(() => {
-    if (expertReviewPriceProp !== undefined) return // đã có prop, không fetch
+    if (expertReviewPriceProp !== undefined) return
     const fetchPrice = async () => {
       try {
         const res = await fetch('/api/expert-request/price')
@@ -89,13 +88,12 @@ export function ExpertRequestPanel({
           setExpertReviewPrice(data.expert_review_price_vnd)
         }
       } catch {
-        // giữ default 499000
+        // keep default
       }
     }
     fetchPrice()
   }, [expertReviewPriceProp])
 
-  // Lấy request hiện tại nếu đã gửi
   useEffect(() => {
     const fetchRequest = async () => {
       try {
@@ -103,7 +101,7 @@ export function ExpertRequestPanel({
         const data = await res.json()
         if (data.request) setExistingRequest(data.request)
       } catch {
-        // bỏ qua lỗi fetch
+        // ignore
       } finally {
         setLoading(false)
       }
@@ -129,7 +127,6 @@ export function ExpertRequestPanel({
       const data = await res.json()
 
       if (res.status === 409) {
-        // Đã có request pending — refresh lại
         const refresh = await fetch(`/api/expert-request?reportId=${reportId}`)
         const refreshData = await refresh.json()
         if (refreshData.request) setExistingRequest(refreshData.request)
@@ -139,13 +136,13 @@ export function ExpertRequestPanel({
       if (res.status === 402) {
         setError(
           data.reason === 'no_active_subscription'
-            ? 'Bạn cần đăng ký gói để sử dụng dịch vụ tư vấn chuyên gia.'
-            : `Bạn đã dùng hết ${data.reviews_used}/${data.reviews_limit} lượt tư vấn trong tháng. Nâng cấp gói để tiếp tục.`
+            ? t.expert.errorNoSubscription
+            : t.expert.errorQuotaExhausted(data.reviews_used, data.reviews_limit)
         )
         return
       }
 
-      if (!res.ok) throw new Error(data.error || 'Gửi yêu cầu thất bại')
+      if (!res.ok) throw new Error(data.error || t.expert.errorSubmitFailed)
 
       setExistingRequest(data.request)
     } catch (err: any) {
@@ -156,15 +153,15 @@ export function ExpertRequestPanel({
   }
 
   const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-    pending:   { label: 'Đang chờ chuyên gia',   color: 'bg-amber-100 text-amber-700 border-amber-200',  icon: Clock },
-    in_review: { label: 'Chuyên gia đang review', color: 'bg-blue-100 text-blue-700 border-blue-200',     icon: Loader2 },
-    completed: { label: 'Đã có kết quả',          color: 'bg-green-100 text-green-700 border-green-200',  icon: CheckCircle },
-    cancelled: { label: 'Đã huỷ',                 color: 'bg-muted text-muted-foreground border-border',  icon: AlertTriangle },
+    pending:   { label: t.expert.statusPending,   color: 'bg-amber-100 text-amber-700 border-amber-200',  icon: Clock },
+    in_review: { label: t.expert.statusInReview,   color: 'bg-blue-100 text-blue-700 border-blue-200',     icon: Loader2 },
+    completed: { label: t.expert.statusCompleted,  color: 'bg-green-100 text-green-700 border-green-200',  icon: CheckCircle },
+    cancelled: { label: t.expert.statusCancelled,  color: 'bg-muted text-muted-foreground border-border',  icon: AlertTriangle },
   }
 
   if (loading) return null
 
-  // Nếu đã có request — hiển thị trạng thái
+  // Existing request — show status
   if (existingRequest) {
     const cfg = statusConfig[existingRequest.status] ?? statusConfig.pending
     const StatusIcon = cfg.icon
@@ -180,9 +177,9 @@ export function ExpertRequestPanel({
               <MessageCircle className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="font-semibold text-sm">Tư vấn chuyên gia Vexim</p>
+              <p className="font-semibold text-sm">{t.expert.title}</p>
               <p className="text-xs text-muted-foreground">
-                Yêu cầu gửi lúc {new Date(existingRequest.created_at).toLocaleString('vi-VN')}
+                {t.expert.requestSentAt(new Date(existingRequest.created_at).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US'))}
               </p>
             </div>
           </div>
@@ -195,15 +192,14 @@ export function ExpertRequestPanel({
           </div>
         </div>
 
-        {/* Kết quả review từ chuyên gia */}
+        {/* Expert review results */}
         {expanded && existingRequest.status === 'completed' && (
           <div className="px-5 pb-5 space-y-4 border-t pt-4">
-            {/* Expert Summary */}
             {existingRequest.expert_summary && (
               <div>
                 <p className="text-sm font-semibold mb-2 flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
-                  Nhận xét tổng quan từ chuyên gia
+                  {t.expert.expertSummaryTitle}
                 </p>
                 <div className="bg-primary/5 rounded-lg p-4 text-sm leading-relaxed">
                   {existingRequest.expert_summary}
@@ -211,12 +207,11 @@ export function ExpertRequestPanel({
               </div>
             )}
 
-            {/* Violation Reviews — wording fix từng lỗi */}
             {existingRequest.violation_reviews && existingRequest.violation_reviews.length > 0 && (
               <div>
                 <p className="text-sm font-semibold mb-2 flex items-center gap-2">
                   <FileText className="h-4 w-4 text-primary" />
-                  Hướng dẫn sửa từng vi phạm
+                  {t.expert.violationFixTitle}
                 </p>
                 <div className="space-y-3">
                   {existingRequest.violation_reviews.map((vr, i) => (
@@ -227,12 +222,12 @@ export function ExpertRequestPanel({
                           : <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
                         }
                         <span className="font-medium">
-                          Vi phạm #{vr.violation_index + 1} — {vr.confirmed ? 'Xác nhận cần sửa' : 'Không nghiêm trọng'}
+                          {t.expert.violationIndex(vr.violation_index + 1)} — {vr.confirmed ? t.expert.violationConfirmed : t.expert.violationNotSerious}
                         </span>
                       </div>
                       {vr.wording_fix && (
                         <div className="mt-2">
-                          <span className="text-xs text-muted-foreground">Wording đề xuất:</span>
+                          <span className="text-xs text-muted-foreground">{t.expert.suggestedWording}</span>
                           <p className="mt-1 font-medium text-foreground bg-white rounded px-2 py-1 border">
                             {vr.wording_fix}
                           </p>
@@ -247,18 +242,17 @@ export function ExpertRequestPanel({
               </div>
             )}
 
-            {/* Recommended Actions */}
             {existingRequest.recommended_actions && existingRequest.recommended_actions.length > 0 && (
               <div>
                 <p className="text-sm font-semibold mb-2 flex items-center gap-2">
                   <ArrowRight className="h-4 w-4 text-primary" />
-                  Hành động ưu tiên
+                  {t.expert.priorityActionsTitle}
                 </p>
                 <div className="space-y-2">
                   {existingRequest.recommended_actions.map((ra, i) => (
                     <div key={i} className="flex items-start gap-2 text-sm">
                       <Badge variant="outline" className={`shrink-0 text-xs ${ra.priority === 'high' ? 'border-red-300 text-red-700' : ra.priority === 'medium' ? 'border-amber-300 text-amber-700' : 'border-border'}`}>
-                        {ra.priority === 'high' ? 'Gấp' : ra.priority === 'medium' ? 'Quan trọng' : 'Nên làm'}
+                        {ra.priority === 'high' ? t.expert.priorityHigh : ra.priority === 'medium' ? t.expert.priorityMedium : t.expert.priorityLow}
                       </Badge>
                       <span>{ra.action}</span>
                       {ra.cfr_reference && <span className="text-xs text-muted-foreground ml-auto shrink-0">({ra.cfr_reference})</span>}
@@ -268,23 +262,21 @@ export function ExpertRequestPanel({
               </div>
             )}
 
-            {/* Sign off */}
             {existingRequest.sign_off_name && (
               <div className="border-t pt-3 flex items-center gap-2 text-xs text-muted-foreground">
                 <User className="h-3.5 w-3.5" />
-                <span>Ký xác nhận bởi <span className="font-medium text-foreground">{existingRequest.sign_off_name}</span></span>
-                <span>•</span>
-                <span>{new Date(existingRequest.sign_off_at!).toLocaleString('vi-VN')}</span>
+                <span>{t.expert.signedBy} <span className="font-medium text-foreground">{existingRequest.sign_off_name}</span></span>
+                <span>{'•'}</span>
+                <span>{new Date(existingRequest.sign_off_at!).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}</span>
               </div>
             )}
           </div>
         )}
 
-        {/* Trạng thái đang chờ */}
         {expanded && existingRequest.status === 'pending' && (
           <div className="px-5 pb-5 border-t pt-4">
             <p className="text-sm text-muted-foreground">
-              Yêu cầu của bạn đã được ghi nhận. Chuyên gia Vexim sẽ phản hồi trong vòng <span className="font-medium text-foreground">48 giờ làm việc</span>.
+              {t.expert.pendingMessage(48)}
             </p>
           </div>
         )}
@@ -292,7 +284,7 @@ export function ExpertRequestPanel({
         {expanded && existingRequest.status === 'in_review' && (
           <div className="px-5 pb-5 border-t pt-4">
             <p className="text-sm text-muted-foreground">
-              Chuyên gia Vexim đang xem xét báo cáo của bạn. Kết quả sẽ có trong thời gian sớm nhất.
+              {t.expert.inReviewMessage}
             </p>
           </div>
         )}
@@ -300,12 +292,11 @@ export function ExpertRequestPanel({
     )
   }
 
-  // Chưa có request — hiển thị form gửi yêu cầu
+  // No request yet — show submission form
   const isHighRisk = overallResult === 'fail' || needsExpertReview
 
   return (
     <Card className={`border-2 ${isHighRisk ? 'border-amber-300' : 'border-slate-200'}`}>
-      {/* Question Banner */}
       <div className={`p-4 rounded-t-lg ${isHighRisk ? 'bg-amber-50 border-b border-amber-200' : 'bg-slate-50 border-b border-slate-200'}`}>
         <div className="flex items-center gap-3">
           <div className={`rounded-full p-2.5 ${isHighRisk ? 'bg-amber-100' : 'bg-blue-100'}`}>
@@ -313,12 +304,10 @@ export function ExpertRequestPanel({
           </div>
           <div className="flex-1">
             <p className={`font-bold text-base ${isHighRisk ? 'text-amber-800' : 'text-slate-800'}`}>
-              Bạn có cần hỗ trợ từ chuyên gia Vexim không?
+              {t.expert.questionBannerHighRisk}
             </p>
             <p className="text-sm text-slate-600 mt-0.5">
-              {isHighRisk
-                ? 'AI phát hiện một số điểm cần chuyên gia xem xét kỹ hơn để đảm bảo tuân thủ FDA.'
-                : 'Chuyên gia sẽ giúp bạn hiểu rõ hơn về kết quả và tối ưu hóa nhãn sản phẩm.'}
+              {isHighRisk ? t.expert.questionBannerHighRiskDesc : t.expert.questionBannerNormalDesc}
             </p>
           </div>
         </div>
@@ -330,23 +319,24 @@ export function ExpertRequestPanel({
       >
         <div className="flex items-center gap-3">
           <div>
-            <p className="font-semibold text-sm text-slate-700">Tư vấn chuyên gia Vexim</p>
+            <p className="font-semibold text-sm text-slate-700">{t.expert.title}</p>
             <p className="text-xs text-muted-foreground">
-              Nhận hướng dẫn sửa chi tiết + wording chính xác từ chuyên gia pháp lý FDA
+              {t.expert.subtitle}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {!expertReviewsIncluded && expertReviewPrice > 0 && (
             <Badge variant="outline" className="text-xs">
-              {expertReviewPrice.toLocaleString('vi-VN')}₫/lần
+              {expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}{'₫/'}
+              {locale === 'vi' ? 'lần' : 'time'}
             </Badge>
           )}
           {expertReviewsIncluded && (
-            <Badge className="text-xs bg-primary text-primary-foreground">Miễn phí trong gói</Badge>
+            <Badge className="text-xs bg-primary text-primary-foreground">{t.expert.freeInPlan}</Badge>
           )}
           {needsExpertReview && (
-            <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 border">Khuyến nghị</Badge>
+            <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 border">{t.expert.recommended}</Badge>
           )}
           {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
         </div>
@@ -354,16 +344,8 @@ export function ExpertRequestPanel({
 
       {expanded && (
         <div className="px-5 pb-5 border-t pt-4 space-y-4">
-          {/* Mô tả dịch vụ */}
           <div className="grid grid-cols-2 gap-2 text-xs">
-            {[
-              'Phân tích bối cảnh sản phẩm cụ thể',
-              'Viết hướng dẫn sửa chi tiết',
-              'Đề xuất wording chính xác',
-              'Xác nhận sau khi sửa',
-              'Ký tên & đóng dấu xác nhận',
-              'SLA: phản hồi trong 48h',
-            ].map((item) => (
+            {t.expert.serviceItems.map((item) => (
               <div key={item} className="flex items-center gap-1.5 text-muted-foreground">
                 <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
                 {item}
@@ -371,28 +353,26 @@ export function ExpertRequestPanel({
             ))}
           </div>
 
-          {/* Thị trường mục tiêu */}
           <div>
-            <Label className="text-xs mb-1 block">Thị trường mục tiêu</Label>
+            <Label className="text-xs mb-1 block">{t.expert.targetMarketLabel}</Label>
             <select
               value={targetMarket}
               onChange={(e) => setTargetMarket(e.target.value)}
               className="w-full px-3 py-2 border rounded-md text-sm bg-background"
             >
-              <option value="US">Hoa Kỳ (FDA)</option>
-              <option value="EU">Liên minh châu Âu</option>
-              <option value="CA">Canada</option>
-              <option value="AU">Úc</option>
+              <option value="US">{t.expert.marketUS}</option>
+              <option value="EU">{t.expert.marketEU}</option>
+              <option value="CA">{t.expert.marketCA}</option>
+              <option value="AU">{t.expert.marketAU}</option>
             </select>
           </div>
 
-          {/* Context tùy chọn */}
           <div>
             <Label className="text-xs mb-1 block">
-              Thông tin bổ sung <span className="text-muted-foreground">(tùy chọn)</span>
+              {t.expert.additionalInfo} <span className="text-muted-foreground">{t.expert.additionalInfoOptional}</span>
             </Label>
             <Textarea
-              placeholder="Ví dụ: Sản phẩm của tôi là thực phẩm chức năng cho người cao tuổi, dự kiến bán trên Amazon US..."
+              placeholder={t.expert.additionalInfoPlaceholder}
               value={userContext}
               onChange={(e) => setUserContext(e.target.value)}
               rows={3}
@@ -404,9 +384,9 @@ export function ExpertRequestPanel({
             <div className="text-sm text-destructive bg-destructive/10 rounded-lg p-3 flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
               <span>{error}</span>
-              {(error.includes('Nâng cấp') || error.includes('đăng ký gói')) && (
+              {(error.includes(t.expert.viewPricing) || error.includes('subscription') || error.includes('gói')) && (
                 <a href="/pricing?highlight=business#subscription-plans" className="ml-auto shrink-0 underline font-medium">
-                  Xem bảng giá
+                  {t.expert.viewPricing}
                 </a>
               )}
             </div>
@@ -423,19 +403,19 @@ export function ExpertRequestPanel({
               <MessageCircle className="mr-2 h-4 w-4" />
             )}
             {submitting
-              ? 'Đang gửi...'
+              ? t.expert.submitting
               : expertReviewsIncluded
-              ? 'Gửi yêu cầu tư vấn (Miễn phí trong gói)'
+              ? t.expert.submitFreeInPlan
               : expertReviewPrice > 0
-              ? `Gửi yêu cầu tư vấn — ${expertReviewPrice.toLocaleString('vi-VN')}₫`
-              : 'Gửi yêu cầu tư vấn'}
+              ? t.expert.submitWithPrice(expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US') + '₫')
+              : t.expert.submitDefault}
           </Button>
 
           {!expertReviewsIncluded && (
             <p className="text-xs text-center text-muted-foreground">
-              Gói Business/Pro có lượt Expert Review miễn phí.{' '}
+              {t.expert.proUpgradeNote}{' '}
               <a href="/pricing?highlight=business#subscription-plans" className="text-primary underline font-medium">
-                Xem bảng giá
+                {t.expert.viewPricing}
               </a>
             </p>
           )}

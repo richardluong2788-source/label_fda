@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/lib/i18n'
 import type { LabelImageEntry } from '@/lib/types'
 
 const LABEL_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
@@ -29,6 +30,7 @@ export function LabelImageGallery({
   autoRotate = false,
   autoRotateInterval = 4000,
 }: LabelImageGalleryProps) {
+  const { t } = useTranslation()
   // Derive the effective list: use label_images if available, else fallback to single URL
   const imageList: LabelImageEntry[] =
     images && images.length > 0
@@ -51,7 +53,7 @@ export function LabelImageGallery({
   if (imageList.length === 0) {
     return (
       <div className="flex items-center justify-center h-48 bg-slate-100 rounded-lg">
-        <p className="text-muted-foreground text-sm">Khong co hinh anh</p>
+        <p className="text-muted-foreground text-sm">{t.gallery.noImages}</p>
       </div>
     )
   }
@@ -98,7 +100,7 @@ export function LabelImageGallery({
             <div className="absolute top-3 right-3">
               <Badge className="bg-primary/90 backdrop-blur-sm text-xs">
                 <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                Dang quet...
+                {t.gallery.scanning}
               </Badge>
             </div>
           </>
@@ -144,7 +146,7 @@ export function LabelImageGallery({
       {/* Image count info */}
       {imageList.length > 1 && (
         <p className="text-xs text-muted-foreground text-center">
-          {activeIndex + 1} / {imageList.length} hinh anh nhan
+          {t.gallery.labelImageCount(activeIndex + 1, imageList.length)}
         </p>
       )}
     </div>

@@ -523,40 +523,29 @@ export function LabelAnalyzer() {
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-bold text-red-900 mb-1">Top 3 Lỗi Nhãn gây Reject Hàng thường gặp (Dữ liệu FDA 2021-2025)</h3>
+              <h3 className="font-bold text-red-900 mb-1">{t.analyze.top3Title}</h3>
               <p className="text-xs text-red-700 mb-3">
                 {kbDocCount && kbDocCount > 0
-                  ? `Phan tich tu ${kbDocCount.toLocaleString()} tai lieu FDA ve Food Labeling Violations`
-                  : 'Du lieu FDA Warning Letters - Lien he Admin de cap nhat Knowledge Base'}
+                  ? t.analyze.top3DescWithKb(kbDocCount)
+                  : t.analyze.top3DescNoKb}
               </p>
               
               <div className="space-y-2">
-                <div className="text-sm">
-                  <strong className="text-red-900">1. Net Weight thiếu hoặc sai format</strong>
-                  <span className="text-red-700"> - 387 cases (31%)</span>
-                  <p className="text-xs text-red-600">21 CFR 101.105: Phải có cả Metric và Imperial. VD: "Net Wt. 24 oz (680g)"</p>
-                </div>
-                
-                <div className="text-sm">
-                  <strong className="text-red-900">2. Nutrition Facts không tuân thủ 2016 Format</strong>
-                  <span className="text-red-700"> - 294 cases (24%)</span>
-                  <p className="text-xs text-red-600">21 CFR 101.9: Font size, spacing, added sugars declaration</p>
-                </div>
-                
-                <div className="text-sm">
-                  <strong className="text-red-900">3. Allergen declaration thiếu hoặc không rõ ràng</strong>
-                  <span className="text-red-700"> - 218 cases (17%)</span>
-                  <p className="text-xs text-red-600">FALCPA: Phải khai báo 9 allergen chính bằng plain language</p>
-                </div>
+                {t.analyze.top3Items.map((item, idx) => (
+                  <div key={idx} className="text-sm">
+                    <strong className="text-red-900">{idx + 1}. {item.title}</strong>
+                    <span className="text-red-700"> - {item.cases}</span>
+                    <p className="text-xs text-red-600">{item.cfr}</p>
+                  </div>
+                ))}
               </div>
 
               <div className="pt-3 border-t border-red-200 mt-3">
                 <p className="text-xs font-medium text-red-900 flex items-center gap-1">
                   <Shield className="h-3.5 w-3.5" />
                   {kbDocCount && kbDocCount > 0
-                    ? `AI cua chung toi duoc train voi ${kbDocCount.toLocaleString()} tai lieu FDA de phat hien chinh xac cac loi tuong tu.`
-                    : 'AI cua chung toi su dung 21 CFR Regulations de phat hien cac loi co ban.'}
-                
+                    ? t.analyze.top3FooterWithKb(kbDocCount)
+                    : t.analyze.top3FooterNoKb}
                 </p>
               </div>
             </div>
@@ -567,21 +556,21 @@ export function LabelAnalyzer() {
       {/* Cost Impact */}
       <div className="grid md:grid-cols-3 gap-4">
         <Card className="p-4 border-l-4 border-l-red-500">
-          <div className="text-xs font-medium text-muted-foreground mb-1">Chi phí Detention tại cảng</div>
+          <div className="text-xs font-medium text-muted-foreground mb-1">{t.analyze.costDetention}</div>
           <div className="text-xl font-bold text-red-600">$5,000-15,000</div>
-          <p className="text-xs text-muted-foreground">Lưu container, demurrage, storage per ngày</p>
+          <p className="text-xs text-muted-foreground">{t.analyze.costDetentionDesc}</p>
         </Card>
         
         <Card className="p-4 border-l-4 border-l-orange-500">
-          <div className="text-xs font-medium text-muted-foreground mb-1">Chi phí Relabeling/Rework</div>
+          <div className="text-xs font-medium text-muted-foreground mb-1">{t.analyze.costRelabeling}</div>
           <div className="text-xl font-bold text-orange-600">$8,000-25,000</div>
-          <p className="text-xs text-muted-foreground">In nhãn mới, dán lại tại US, labor cost</p>
+          <p className="text-xs text-muted-foreground">{t.analyze.costRelabelingDesc}</p>
         </Card>
         
         <Card className="p-4 border-l-4 border-l-amber-500">
-          <div className="text-xs font-medium text-muted-foreground mb-1">Mất đơn hàng & Uy tín</div>
+          <div className="text-xs font-medium text-muted-foreground mb-1">{t.analyze.costReputation}</div>
           <div className="text-xl font-bold text-amber-600">$50,000+</div>
-          <p className="text-xs text-muted-foreground">Customer hủy PO, mất slot retail shelf</p>
+          <p className="text-xs text-muted-foreground">{t.analyze.costReputationDesc}</p>
         </Card>
       </div>
 
@@ -589,17 +578,17 @@ export function LabelAnalyzer() {
       <div className="flex items-center justify-center gap-8 py-4 border-y">
         <div className="text-center">
           <div className="text-2xl font-bold text-primary">{kbDocCount !== null ? kbDocCount.toLocaleString() : '...'}</div>
-          <div className="text-xs text-muted-foreground">Tai lieu FDA trong KB</div>
+          <div className="text-xs text-muted-foreground">{t.analyze.statFdaDocs}</div>
         </div>
         <div className="h-10 w-px bg-border"></div>
         <div className="text-center">
           <div className="text-2xl font-bold text-primary">21 CFR</div>
-          <div className="text-xs text-muted-foreground">Food Labeling Regulations</div>
+          <div className="text-xs text-muted-foreground">{t.analyze.statRegulations}</div>
         </div>
         <div className="h-10 w-px bg-border"></div>
         <div className="text-center">
           <div className="text-2xl font-bold text-primary">95%+</div>
-          <div className="text-xs text-muted-foreground">Độ chính xác AI</div>
+          <div className="text-xs text-muted-foreground">{t.analyze.statAiAccuracy}</div>
         </div>
       </div>
     </div>

@@ -73,6 +73,7 @@ function RiskScoreGauge({ score }: { score: number }) {
 // ────────────────────────────────────────────────────────────
 
 function OcrConfidenceBar({ confidence }: { confidence: number }) {
+  const { t } = useTranslation()
   const pct = Math.round(confidence * 100)
   const barColor =
     pct >= 80 ? 'bg-green-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500'
@@ -80,7 +81,7 @@ function OcrConfidenceBar({ confidence }: { confidence: number }) {
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex items-center gap-2 text-xs text-slate-500">
-        <span>ĐỘ TIN CẬY OCR</span>
+        <span>{t.report.ocrConfidence}</span>
       </div>
       <span className="text-lg font-bold text-slate-800">{pct}%</span>
       <div className="w-28 h-2 bg-slate-200 rounded-full overflow-hidden">

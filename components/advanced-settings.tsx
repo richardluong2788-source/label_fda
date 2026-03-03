@@ -1,10 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   Select,
@@ -15,6 +13,7 @@ import {
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Info, Ruler, Globe, Package, Building2, Layers } from 'lucide-react'
+import { useTranslation } from '@/lib/i18n'
 import { PACKAGING_FORMATS, PRODUCT_DOMAINS, type PackagingFormatId, mapProductTypeToDomain, getResolvedFdaNotesVi, getResolvedRegulations } from '@/lib/packaging-format-config'
 
 interface AdvancedSettingsProps {
@@ -37,6 +36,9 @@ interface AdvancedSettingsProps {
 }
 
 export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) {
+  const { t } = useTranslation()
+  const af = t.advancedForm
+
   return (
     <Card className="overflow-hidden">
       <div className="p-6 space-y-6">
@@ -44,12 +46,12 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Globe className="h-4 w-4 text-purple-600" />
-                <span>Ngôn ngữ & Thị trường</span>
+                <span>{af.languageMarket}</span>
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="target-market" className="text-xs">
-                    Thị trường mục tiêu
+                    {af.targetMarket}
                     <span className="ml-1 text-red-500">*</span>
                   </Label>
                   <Select
@@ -59,24 +61,24 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
                     }
                   >
                     <SelectTrigger id="target-market">
-                      <SelectValue placeholder="Chọn thị trường" />
+                      <SelectValue placeholder={af.selectMarket} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="US">Hoa Kỳ (US)</SelectItem>
-                      <SelectItem value="Canada">Canada</SelectItem>
-                      <SelectItem value="EU">Liên minh Châu Âu (EU)</SelectItem>
-                      <SelectItem value="Multiple">Nhiều thị trường</SelectItem>
+                      <SelectItem value="US">{af.marketUS}</SelectItem>
+                      <SelectItem value="Canada">{af.marketCA}</SelectItem>
+                      <SelectItem value="EU">{af.marketEU}</SelectItem>
+                      <SelectItem value="Multiple">{af.marketMultiple}</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground flex items-start gap-1">
                     <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                    Mỗi thị trường có quy định FDA/CFIA/EFSA khác nhau
+                    {af.marketNote}
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="label-language" className="text-xs">
-                    Ngôn ngữ trên nhãn
+                    {af.labelLanguage}
                   </Label>
                   <Select
                     value={settings.label_language?.[0] || 'en'}
@@ -88,13 +90,13 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
                     }
                   >
                     <SelectTrigger id="label-language">
-                      <SelectValue placeholder="Chọn ngôn ngữ" />
+                      <SelectValue placeholder={af.selectLanguage} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en">Tiếng Anh</SelectItem>
-                      <SelectItem value="es">Tiếng Tây Ban Nha</SelectItem>
-                      <SelectItem value="bilingual">Song ngữ (EN + ES)</SelectItem>
-                      <SelectItem value="fr">Tiếng Pháp (Canada)</SelectItem>
+                      <SelectItem value="en">{af.langEn}</SelectItem>
+                      <SelectItem value="es">{af.langEs}</SelectItem>
+                      <SelectItem value="bilingual">{af.langBilingual}</SelectItem>
+                      <SelectItem value="fr">{af.langFr}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -105,12 +107,12 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Ruler className="h-4 w-4 text-purple-600" />
-                <span>Kích thước vật lý</span>
+                <span>{af.physicalDimensions}</span>
               </div>
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="pdp-width" className="text-xs">
-                    Chiều rộng mặt trước chính (PDP)
+                    {af.pdpWidth}
                   </Label>
                   <div className="flex gap-2">
                     <Input
@@ -158,7 +160,7 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
 
                 <div className="space-y-2">
                   <Label htmlFor="pdp-height" className="text-xs">
-                    Chiều cao mặt trước chính (PDP)
+                    {af.pdpHeight}
                   </Label>
                   <Input
                     id="pdp-height"
@@ -182,7 +184,7 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
 
                 <div className="space-y-2">
                   <Label htmlFor="net-content" className="text-xs">
-                    Khối lượng tịnh
+                    {af.netWeight}
                   </Label>
                   <div className="flex gap-2">
                     <Input
@@ -232,20 +234,20 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
               </div>
               <p className="text-xs text-muted-foreground flex items-start gap-1">
                 <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                Kích thước PDP giúp AI kiểm tra cỡ chữ đúng quy định. Khối lượng tịnh để đối chiếu với khẩu phần ăn.
+                {af.dimensionNote}
               </p>
             </div>
 
-            {/* Product Type & Container Section — MUST come before Packaging Format for domain-aware notes */}
+            {/* Product Type & Container Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Package className="h-4 w-4 text-purple-600" />
-                <span>Loại sản phẩm & Bao bì</span>
+                <span>{af.productPackaging}</span>
               </div>
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="product-type" className="text-xs">
-                    Loại sản phẩm
+                    {af.productType}
                     <span className="ml-1 text-red-500">*</span>
                   </Label>
                   <Select
@@ -255,26 +257,26 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
                     }
                   >
                     <SelectTrigger id="product-type">
-                      <SelectValue placeholder="Chọn loại" />
+                      <SelectValue placeholder={af.selectProductType} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="food">Thực phẩm thông thường</SelectItem>
-                      <SelectItem value="dietary_supplement">Thực phẩm chức năng / TPCN</SelectItem>
-                      <SelectItem value="beverage">Đồ uống</SelectItem>
-                      <SelectItem value="infant_formula">Sữa công thức trẻ em</SelectItem>
-                      <SelectItem value="medical_food">Thực phẩm y học</SelectItem>
-                      <SelectItem value="cosmetic">Mỹ phẩm</SelectItem>
-                      <SelectItem value="drug_otc">Dược phẩm không kê đơn (OTC)</SelectItem>
+                      <SelectItem value="food">{af.productFood}</SelectItem>
+                      <SelectItem value="dietary_supplement">{af.productSupplement}</SelectItem>
+                      <SelectItem value="beverage">{af.productBeverage}</SelectItem>
+                      <SelectItem value="infant_formula">{af.productInfant}</SelectItem>
+                      <SelectItem value="medical_food">{af.productMedical}</SelectItem>
+                      <SelectItem value="cosmetic">{af.productCosmetic}</SelectItem>
+                      <SelectItem value="drug_otc">{af.productOTC}</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-[10px] text-muted-foreground">
-                    Ảnh hưởng đến quy định FDA áp dụng
+                    {af.productTypeNote}
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="package-type" className="text-xs">
-                    Hình dạng bao bì
+                    {af.packageShape}
                   </Label>
                   <Select
                     value={settings.package_type}
@@ -283,22 +285,22 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
                     }
                   >
                     <SelectTrigger id="package-type">
-                      <SelectValue placeholder="Chọn bao bì" />
+                      <SelectValue placeholder={af.selectPackage} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="bottle">Chai / Lọ dạng chai</SelectItem>
-                      <SelectItem value="box">Hộp</SelectItem>
-                      <SelectItem value="pouch">Túi mềm</SelectItem>
-                      <SelectItem value="can">Lon / Hộp thiếc</SelectItem>
-                      <SelectItem value="jar">Lọ / Hũ</SelectItem>
-                      <SelectItem value="bag">Bao / Túi lớn</SelectItem>
+                      <SelectItem value="bottle">{af.pkgBottle}</SelectItem>
+                      <SelectItem value="box">{af.pkgBox}</SelectItem>
+                      <SelectItem value="pouch">{af.pkgPouch}</SelectItem>
+                      <SelectItem value="can">{af.pkgCan}</SelectItem>
+                      <SelectItem value="jar">{af.pkgJar}</SelectItem>
+                      <SelectItem value="bag">{af.pkgBag}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="target-audience" className="text-xs">
-                    Đối tượng sử dụng
+                    {af.targetAudience}
                   </Label>
                   <Select
                     value={settings.target_audience}
@@ -307,43 +309,42 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
                     }
                   >
                     <SelectTrigger id="target-audience">
-                      <SelectValue placeholder="Chọn đối tượng" />
+                      <SelectValue placeholder={af.selectAudience} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="adults">Người lớn</SelectItem>
-                      <SelectItem value="children">Trẻ em (4 - 12 tuổi)</SelectItem>
-                      <SelectItem value="infants">{'Trẻ sơ sinh (dưới 2 tuổi)'}</SelectItem>
-                      <SelectItem value="elderly">Người cao tuổi</SelectItem>
+                      <SelectItem value="adults">{af.audienceAdults}</SelectItem>
+                      <SelectItem value="children">{af.audienceChildren}</SelectItem>
+                      <SelectItem value="infants">{af.audienceInfants}</SelectItem>
+                      <SelectItem value="elderly">{af.audienceElderly}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
             </div>
 
-            {/* Packaging Format Section — renders AFTER product type so domain is resolved */}
+            {/* Packaging Format Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Layers className="h-4 w-4 text-purple-600" />
-                <span>Tầng bao bì (Phân loại theo cấp độ đóng gói)</span>
+                <span>{af.packagingTier}</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Mỗi tầng bao bì có quy định FDA khác nhau tùy loại sản phẩm. Chọn đúng để AI phân tích chính xác hơn.
+                {af.packagingTierDesc}
               </p>
 
-              {/* Prompt to select product type first if not yet selected */}
               {!settings.product_type && (
                 <Alert className="border-amber-200 bg-amber-50/50">
                   <Info className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-xs text-amber-800">
-                    Vui lòng chọn <strong>Loại sản phẩm</strong> trước để hiển thị quy định FDA chính xác cho từng ngành (Thực phẩm / Mỹ phẩm / TPCN / Dược phẩm).
+                    {af.selectProductFirst('Food / Cosmetics / Supplements / OTC')}
                   </AlertDescription>
                 </Alert>
               )}
 
               <div className="space-y-2">
                 <Label htmlFor="packaging-format" className="text-xs">
-                  Tầng bao bì đang phân tích
-                  <span className="ml-1 text-amber-600 font-normal">(Quan trọng)</span>
+                  {af.packagingTierLabel}
+                  <span className="ml-1 text-amber-600 font-normal">{af.packagingTierImportant}</span>
                 </Label>
                 <Select
                   value={settings.packaging_format || ''}
@@ -352,7 +353,7 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
                   }
                 >
                   <SelectTrigger id="packaging-format">
-                    <SelectValue placeholder="Chọn tầng bao bì" />
+                    <SelectValue placeholder={af.selectPackagingTier} />
                   </SelectTrigger>
                   <SelectContent>
                     {PACKAGING_FORMATS.map((format) => (
@@ -367,7 +368,7 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
                 </Select>
               </div>
 
-              {/* Domain-aware FDA notes — update whenever product_type or packaging_format changes */}
+              {/* Domain-aware FDA notes */}
               {settings.packaging_format && (() => {
                 const selectedFormat = PACKAGING_FORMATS.find(f => f.id === settings.packaging_format)
                 if (!selectedFormat) return null
@@ -382,11 +383,11 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
                     <AlertDescription>
                       <div className="flex items-center gap-2 mb-2 flex-wrap">
                         <p className="text-xs font-semibold text-blue-900">
-                          Quy định cho {selectedFormat.nameVi}
+                          {af.regulationsFor(selectedFormat.nameVi)}
                         </p>
                         <Badge variant="outline" className={`text-[10px] ${isDefaultDomain ? 'border-amber-300 text-amber-700' : 'border-blue-300 text-blue-700'}`}>
                           {domainMeta.nameVi}
-                          {isDefaultDomain && ' (mặc định)'}
+                          {isDefaultDomain && ` ${af.defaultDomain}`}
                         </Badge>
                       </div>
                       <ul className="text-xs text-blue-800 space-y-1">
@@ -399,10 +400,10 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
                       </ul>
                       <div className="mt-2 pt-2 border-t border-blue-100 space-y-0.5">
                         <p className="text-[10px] text-blue-600">
-                          Tham chiếu: {regulations.join(', ')}
+                          {af.reference}: {regulations.join(', ')}
                         </p>
                         <p className="text-[10px] text-blue-500">
-                          Bảng thông tin bắt buộc: <strong>{domainMeta.factsPanelVi}</strong> ({domainMeta.primaryRegulation})
+                          {af.requiredPanel}: <strong>{domainMeta.factsPanelVi}</strong> ({domainMeta.primaryRegulation})
                         </p>
                       </div>
                     </AlertDescription>
@@ -415,16 +416,16 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Building2 className="h-4 w-4 text-purple-600" />
-                <span>Thông tin nhà sản xuất</span>
+                <span>{af.manufacturerInfo}</span>
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="country-origin" className="text-xs">
-                    Nước sản xuất
+                    {af.countryOfOrigin}
                   </Label>
                   <Input
                     id="country-origin"
-                    placeholder="Ví dụ: Việt Nam"
+                    placeholder={af.countryPlaceholder}
                     value={settings.manufacturer_info?.country_of_origin || ''}
                     onChange={(e) =>
                       onChange({
@@ -440,7 +441,7 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
 
                 <div className="space-y-2">
                   <Label htmlFor="is-importer" className="text-xs">
-                    Vai trò
+                    {af.role}
                   </Label>
                   <Select
                     value={settings.manufacturer_info?.is_importer ? 'importer' : 'manufacturer'}
@@ -458,8 +459,8 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="manufacturer">Nhà sản xuất</SelectItem>
-                      <SelectItem value="importer">Nhà nhập khẩu</SelectItem>
+                      <SelectItem value="manufacturer">{af.roleManufacturer}</SelectItem>
+                      <SelectItem value="importer">{af.roleImporter}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
