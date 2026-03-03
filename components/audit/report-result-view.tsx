@@ -575,49 +575,31 @@ export function ReportResultView({
   if (warningCount > 0) descParts.push(`${warningCount} cảnh báo`)
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* ── HEADER BAR ────────────────────────────────────── */}
-      <header className="bg-[#1e293b] text-white sticky top-0 z-20">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between max-w-7xl">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-blue-600 p-2">
-              <Shield className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-sm font-bold leading-tight">Vexim Compliance AI</h1>
-              <p className="text-[11px] text-slate-400 uppercase tracking-wider leading-tight">
-                THỊ TRƯỜNG: HOA KỲ (FDA)
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {/* Pipeline indicator */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-700/60 border border-slate-600">
-              <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-xs text-slate-300">FDA Pipeline: Connected</span>
-            </div>
-
-            {/* Export Button */}
-            <Button
-              onClick={onDownloadPdf}
-              disabled={pdfLoading}
-              className="bg-red-600 hover:bg-red-700 text-white gap-2 text-sm font-semibold"
-              size="sm"
-            >
-              {pdfLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              {pdfLoading ? 'Đang tạo...' : 'Xuất Báo Cáo'}
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <div className="bg-slate-50">
       {/* ── BODY CONTENT ──────────────────────────────────── */}
       <main className="container mx-auto px-4 py-6 max-w-7xl">
+        {/* Action Bar */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200">
+              <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-xs text-slate-600 font-medium">FDA Pipeline: Connected</span>
+            </div>
+          </div>
+          <Button
+            onClick={onDownloadPdf}
+            disabled={pdfLoading}
+            className="bg-red-600 hover:bg-red-700 text-white gap-2 text-sm font-semibold"
+            size="sm"
+          >
+            {pdfLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {pdfLoading ? 'Đang tạo...' : 'Xuất Báo Cáo'}
+          </Button>
+        </div>
         <div className="grid lg:grid-cols-[320px_1fr] gap-6">
           {/* ── LEFT SIDEBAR ───────────────────────────────── */}
           <aside className="space-y-4">

@@ -148,6 +148,60 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     font-size: 10pt;
   }
 
+  /* Download Button - Fixed position */
+  .download-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #0f172a;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+
+  .download-bar-title {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #2563eb;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .download-btn:hover {
+    background: #1d4ed8;
+  }
+
+  .download-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .page-content-wrapper {
+    padding-top: 60px;
+  }
+
+  @media print {
+    .download-bar { display: none !important; }
+    .page-content-wrapper { padding-top: 0; }
+  }
+
   .page {
     width: 210mm;
     min-height: auto;
@@ -944,6 +998,19 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 </head>
 <body>
 
+<!-- Download Bar (hidden when printing) -->
+<div class="download-bar">
+  <div class="download-bar-title">Báo cáo kiểm tra tuân thủ FDA - ${escapeHtml(report.product_name || 'Label Analysis')}</div>
+  <button class="download-btn" onclick="window.print()">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    </svg>
+    Tải xuống PDF
+  </button>
+</div>
+
+<div class="page-content-wrapper">
+
 <!-- COVER PAGE -->
 <div class="page cover-page">
   <div class="cover-header">
@@ -1539,6 +1606,8 @@ ${report.commercial_summary ? `
 </div>
 
 <div class="watermark">VEXIM</div>
+
+</div><!-- End page-content-wrapper -->
 
 </body>
 </html>`
