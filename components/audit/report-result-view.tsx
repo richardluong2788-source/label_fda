@@ -549,55 +549,9 @@ function WarningLetterCard({ violation, t }: { violation: Violation; t: ReturnTy
         </div>
         <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
-                  {t.report.veximRecommendation}
-                  </p>
-                  <MarkdownContent content={violation.suggested_fix || t.report.warningLetterDefaultFix} />
-                  </div>
-                  </div>
-                  
-                  </div>
-                  ))}
-                  </div>
-                  )}
-
-                  {/* Recall Violations */}
-                  {recallViolations.length > 0 && (
-                  <div className="space-y-4">
-                  <h3 className="font-semibold text-sm flex items-center gap-2 text-purple-800">
-                  <RotateCcw className="h-4 w-4" />
-                  Recalls ({recallViolations.length})
-                  </h3>
-                  {recallViolations.map((violation, idx) => (
-                  <div key={`recall-${idx}`} className="rounded-xl border border-purple-200 bg-white overflow-hidden">
-                  <div className="p-5">
-                  <div className="flex items-start gap-3">
-                  <div className="flex items-center justify-center h-7 w-7 rounded-full bg-purple-100 shrink-0 mt-0.5">
-                  <RotateCcw className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-base text-slate-900 leading-tight">
-                  {violation.violation_type || violation.field_name}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                  {violation.regulation}
-                  </p>
-                  </div>
-                  </div>
-                  </div>
-                  <div className="grid sm:grid-cols-2">
-                  <div className="p-5 bg-purple-50/60 border-t border-r border-slate-200">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-purple-700 mb-3">
-                  {t.report.recallInfo}
-                  </p>
-                  <p className="text-sm text-slate-700 leading-relaxed italic">
-                  &ldquo;{violation.description}&rdquo;
-                  </p>
-                  </div>
-                  <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
-                  {t.report.veximRecommendation}
-                  </p>
-                  <MarkdownContent content={violation.suggested_fix || t.report.recallDefaultFix} />
+            {t.report.veximRecommendation}
+          </p>
+          <MarkdownContent content={violation.suggested_fix || t.report.warningLetterDefaultFix} />
         </div>
       </div>
     </div>
@@ -641,9 +595,7 @@ function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<type
           <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
             {t.report.veximRecommendation}
           </p>
-          <p className="text-sm text-slate-700 leading-relaxed">
-            {violation.suggested_fix || t.report.recallDefaultFix}
-          </p>
+          <MarkdownContent content={violation.suggested_fix || t.report.recallDefaultFix} />
         </div>
       </div>
     </div>
