@@ -24,6 +24,7 @@ import type { AuditReport, Violation, LabelImageEntry } from '@/lib/types'
 import { LabelImageGallery } from '@/components/label-image-gallery'
 import { LabelPreview } from '@/components/label-preview'
 import { getLabelConfig } from '@/lib/label-field-config'
+import { useTranslation } from '@/lib/i18n'
 
 // ────────────────────────────────────────────────────────────
 // Risk Score Circular Gauge - Vexim Compliance AI
@@ -126,17 +127,17 @@ function IngredientTags({ ingredientList }: { ingredientList: string }) {
 // Severity Badge (NGHIÊM TRỌNG / CẢNH BÁO)
 // ────────────────────────────────────────────────────────────
 
-function SeverityBadge({ severity }: { severity: string }) {
+function SeverityBadge({ severity, t }: { severity: string; t: ReturnType<typeof useTranslation>['t'] }) {
   if (severity === 'critical') {
     return (
       <span className="inline-flex items-center px-3 py-1 rounded text-xs font-bold uppercase tracking-wide bg-red-500 text-white">
-        NGHIÊM TRỌNG
+        {t.report.critical}
       </span>
     )
   }
   return (
     <span className="inline-flex items-center px-3 py-1 rounded text-xs font-bold uppercase tracking-wide bg-amber-500 text-white">
-      CẢNH BÁO
+      {t.report.warning}
     </span>
   )
 }
@@ -192,49 +193,20 @@ function ViolationIcon({ severity, type }: { severity: string; type?: string }) 
 // A/B Comparison Violation Card
 // ────────────────────────────────────────────────────────────
 
-function ViolationCard({ violation, index }: { violation: Violation; index: number }) {
+function ViolationCard({ violation, index, t }: { violation: Violation; index: number; t: ReturnType<typeof useTranslation>['t'] }) {
   const isContrast =
     violation.category?.toLowerCase().includes('contrast') ||
     violation.category?.toLowerCase().includes('tương phản') ||
     violation.category?.toLowerCase().includes('color')
 
-  // Translate category name to proper Vietnamese
   const getCategoryName = (category: string) => {
-    const translations: Record<string, string> = {
-      'Health Claims': 'Tuyên bố sức khỏe',
-      'health claims': 'Tuyên bố sức khỏe',
-      'Ingredient Order': 'Thứ tự nguyên liệu',
-      'ingredient order': 'Thứ tự nguyên liệu',
-      'Color Contrast': 'Độ tương phản màu sắc',
-      'color contrast': 'Độ tương phản màu sắc',
-      'Missing Information': 'Thiếu thông tin bắt buộc',
-      'missing information': 'Thiếu thông tin bắt buộc',
-      'Net Weight': 'Khối lượng tịnh',
-      'net weight': 'Khối lượng tịnh',
-      'Font Size': 'Kích thước chữ',
-      'font size': 'Kích thước chữ',
-      'Allergen Warning': 'Cảnh báo dị ứng',
-      'allergen warning': 'Cảnh báo dị ứng',
-      'Nutrition Facts': 'Thông tin dinh dưỡng',
-      'nutrition facts': 'Thông tin dinh dưỡng',
-    }
-    return translations[category] || category
+    // Check both exact and case-insensitive match
+    return t.report.categoryNames[category] || t.report.categoryNames[category.toLowerCase()] || category
   }
 
-  // Translate suggested fix to Vietnamese if it's in English
-  const getVietnameseFix = (fix: string | undefined, category: string) => {
-    if (!fix) return 'Liên hệ chuyên gia Vexim để được tư vấn chi tiết.'
-    
-    // Common English fix patterns -> Vietnamese
-    const fixTranslations: Record<string, string> = {
-      'Remove all disease treatment/cure claims. Only FDA-approved health claims are allowed.':
-        'Loại bỏ từ "prevent", "cure", "treat". Sử dụng các từ mô tả chức năng mỹ phẩm như "reduces friction", "soothes skin".',
-      'Ensure ingredients are listed in descending order by weight':
-        'Đối chiếu danh sách nguyên liệu với công thức sản xuất. Sắp xếp lại theo thứ tự giảm dần về khối lượng (ingredient chiếm % cao nhất đứng đầu).',
-    }
-    
-    // Return Vietnamese translation if exists, otherwise return original
-    return fixTranslations[fix] || fix
+  const getLocalizedFix = (fix: string | undefined) => {
+    if (!fix) return t.report.defaultFix
+    return fix
   }
 
   return (
@@ -259,7 +231,7 @@ function ViolationCard({ violation, index }: { violation: Violation; index: numb
             )}
           </div>
         </div>
-        <SeverityBadge severity={violation.severity} />
+        <SeverityBadge severity={violation.severity} t={t} />
       </div>
 
       {/* A/B Comparison Grid */}
@@ -267,7 +239,7 @@ function ViolationCard({ violation, index }: { violation: Violation; index: numb
         {/* Left: Current on label (red) */}
         <div className="p-5 bg-red-50/60 border-t border-r border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-red-700 mb-3">
-            HIỆN TẠI TRÊN NHÃN
+            {t.report.currentOnLabel}
           </p>
           <p className="text-sm text-slate-700 leading-relaxed italic">
             &ldquo;{violation.description}&rdquo;
@@ -277,10 +249,10 @@ function ViolationCard({ violation, index }: { violation: Violation; index: numb
         {/* Right: Fix recommendation (green) */}
         <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
-            HƯỚNG DẪN KHẮC PHỤC (VEXIM)
+            {t.report.fixGuidance}
           </p>
           <p className="text-sm text-slate-700 leading-relaxed">
-            {getVietnameseFix(violation.suggested_fix, violation.category)}
+            {getLocalizedFix(violation.suggested_fix)}
           </p>
         </div>
       </div>
@@ -292,7 +264,7 @@ function ViolationCard({ violation, index }: { violation: Violation; index: numb
 // Warning Letter Violation Card
 // ────────────────────────────────────────────────────────────
 
-function WarningLetterCard({ violation }: { violation: Violation }) {
+function WarningLetterCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
     <div className="rounded-xl border border-orange-200 bg-white overflow-hidden">
       <div className="flex items-start justify-between p-5 pb-3">
@@ -300,7 +272,7 @@ function WarningLetterCard({ violation }: { violation: Violation }) {
           <ViolationIcon severity={violation.severity} type="warning_letter" />
           <div>
             <h3 className="font-semibold text-base text-slate-900 leading-tight">
-              Cảnh báo từ FDA Warning Letter
+              {t.report.warningLetterTitle}
             </h3>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-orange-100 text-orange-700 border border-orange-200">
@@ -314,13 +286,13 @@ function WarningLetterCard({ violation }: { violation: Violation }) {
             </div>
           </div>
         </div>
-        <SeverityBadge severity={violation.severity} />
+        <SeverityBadge severity={violation.severity} t={t} />
       </div>
 
       <div className="grid md:grid-cols-2 gap-0">
         <div className="p-5 bg-orange-50/60 border-t border-r border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-orange-700 mb-3">
-            NỘI DUNG VI PHẠM
+            {t.report.violationContent}
           </p>
           <p className="text-sm text-slate-700 leading-relaxed italic">
             &ldquo;{violation.description}&rdquo;
@@ -328,10 +300,10 @@ function WarningLetterCard({ violation }: { violation: Violation }) {
         </div>
         <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
-            KHUYẾN NGHỊ TỪ VEXIM
+            {t.report.veximRecommendation}
           </p>
           <p className="text-sm text-slate-700 leading-relaxed">
-            {violation.suggested_fix || 'Xem xét lại nhãn để tránh các lỗi tương tự đã bị FDA cảnh báo trước đây.'}
+            {violation.suggested_fix || t.report.warningLetterDefaultFix}
           </p>
         </div>
       </div>
@@ -343,7 +315,7 @@ function WarningLetterCard({ violation }: { violation: Violation }) {
 // Recall Card
 // ────────────────────────────────────────────────────────────
 
-function RecallCard({ violation }: { violation: Violation }) {
+function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
     <div className="rounded-xl border border-purple-200 bg-white overflow-hidden">
       <div className="flex items-start justify-between p-5 pb-3">
@@ -351,7 +323,7 @@ function RecallCard({ violation }: { violation: Violation }) {
           <ViolationIcon severity={violation.severity} type="recall" />
           <div>
             <h3 className="font-semibold text-base text-slate-900 leading-tight">
-              Liên quan đến sản phẩm bị thu hồi
+              {t.report.recallTitle}
             </h3>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-purple-100 text-purple-700 border border-purple-200">
@@ -360,13 +332,13 @@ function RecallCard({ violation }: { violation: Violation }) {
             </div>
           </div>
         </div>
-        <SeverityBadge severity={violation.severity} />
+        <SeverityBadge severity={violation.severity} t={t} />
       </div>
 
       <div className="grid md:grid-cols-2 gap-0">
         <div className="p-5 bg-purple-50/60 border-t border-r border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-purple-700 mb-3">
-            THÔNG TIN THU HỒI
+            {t.report.recallInfo}
           </p>
           <p className="text-sm text-slate-700 leading-relaxed italic">
             &ldquo;{violation.description}&rdquo;
@@ -374,10 +346,10 @@ function RecallCard({ violation }: { violation: Violation }) {
         </div>
         <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
-            KHUYẾN NGHỊ TỪ VEXIM
+            {t.report.veximRecommendation}
           </p>
           <p className="text-sm text-slate-700 leading-relaxed">
-            {violation.suggested_fix || 'Kiểm tra xem sản phẩm của bạn có thành phần hoặc đặc điểm tương tự với sản phẩm bị thu hồi không.'}
+            {violation.suggested_fix || t.report.recallDefaultFix}
           </p>
         </div>
       </div>
@@ -389,7 +361,7 @@ function RecallCard({ violation }: { violation: Violation }) {
 // Import Alert Card
 // ────────────────────────────────────────────────────────────
 
-function ImportAlertCard({ violation }: { violation: Violation }) {
+function ImportAlertCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
     <div className="rounded-xl border border-cyan-200 bg-white overflow-hidden">
       <div className="flex items-start justify-between p-5 pb-3">
@@ -397,7 +369,7 @@ function ImportAlertCard({ violation }: { violation: Violation }) {
           <ViolationIcon severity={violation.severity} type="import_alert" />
           <div>
             <h3 className="font-semibold text-base text-slate-900 leading-tight">
-              Cảnh báo nhập khẩu FDA
+              {t.report.importAlertTitle}
             </h3>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-cyan-100 text-cyan-700 border border-cyan-200">
@@ -406,13 +378,13 @@ function ImportAlertCard({ violation }: { violation: Violation }) {
             </div>
           </div>
         </div>
-        <SeverityBadge severity={violation.severity} />
+        <SeverityBadge severity={violation.severity} t={t} />
       </div>
 
       <div className="grid md:grid-cols-2 gap-0">
         <div className="p-5 bg-cyan-50/60 border-t border-r border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-cyan-700 mb-3">
-            NỘI DUNG CẢNH BÁO
+            {t.report.importAlertContent}
           </p>
           <p className="text-sm text-slate-700 leading-relaxed italic">
             &ldquo;{violation.description}&rdquo;
@@ -420,10 +392,10 @@ function ImportAlertCard({ violation }: { violation: Violation }) {
         </div>
         <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
-            KHUYẾN NGHỊ TỪ VEXIM
+            {t.report.veximRecommendation}
           </p>
           <p className="text-sm text-slate-700 leading-relaxed">
-            {violation.suggested_fix || 'Đảm bảo sản phẩm tuân thủ đầy đủ quy định để tránh bị giữ tại cảng nhập khẩu.'}
+            {violation.suggested_fix || t.report.importAlertDefaultFix}
           </p>
         </div>
       </div>
@@ -431,12 +403,13 @@ function ImportAlertCard({ violation }: { violation: Violation }) {
   )
 }
 
-// ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────���──────────────
 // Contrast Violation Card (merged into main list per spec)
 // ────────────────────────────────────────────────────────────
 
 function ContrastViolationCard({
   violation,
+  t,
 }: {
   violation: {
     type: string
@@ -446,9 +419,10 @@ function ContrastViolationCard({
     recommendation?: string
     colors?: { foreground: string; background: string }
   }
+  t: ReturnType<typeof useTranslation>['t']
 }) {
   const ratioText = violation.ratio
-    ? `Tỷ lệ tương phản ${violation.ratio.toFixed(2)}:1 (Yêu cầu tối thiểu 4.5:1)`
+    ? t.report.contrastRatio(violation.ratio)
     : violation.description
 
   return (
@@ -461,16 +435,16 @@ function ContrastViolationCard({
           </div>
           <div>
             <h3 className="font-semibold text-base text-slate-900 leading-tight">
-              Độ tương phản màu sắc thấp
+              {t.report.lowContrastTitle}
             </h3>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200">
-                Yêu cầu FDA về độ rõ ràng của nhãn
+                {t.report.fdaReadabilityReq}
               </span>
             </div>
           </div>
         </div>
-        <SeverityBadge severity={violation.severity === 'critical' ? 'critical' : 'warning'} />
+        <SeverityBadge severity={violation.severity === 'critical' ? 'critical' : 'warning'} t={t} />
       </div>
 
       {/* A/B Comparison Grid */}
@@ -478,7 +452,7 @@ function ContrastViolationCard({
         {/* Left: Current (red) */}
         <div className="p-5 bg-red-50/60 border-t border-r border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-red-700 mb-3">
-            HIỆN TẠI TRÊN NHÃN
+            {t.report.currentOnLabel}
           </p>
           <p className="text-sm text-slate-700 leading-relaxed italic">
             &ldquo;{ratioText}&rdquo;
@@ -507,11 +481,10 @@ function ContrastViolationCard({
         {/* Right: Recommendation (green) */}
         <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
-            HƯỚNG DẪN KHẮC PHỤC (VEXIM)
+            {t.report.fixGuidance}
           </p>
           <p className="text-sm text-slate-700 leading-relaxed">
-            {violation.recommendation ||
-              'Tăng độ đậm của chữ hoặc thay đổi màu nền để đảm bảo tính dễ đọc.'}
+            {violation.recommendation || t.report.contrastDefaultFix}
           </p>
         </div>
       </div>
@@ -535,6 +508,7 @@ export function ReportResultView({
   pdfLoading,
 }: ReportResultViewProps) {
   const router = useRouter()
+  const { t } = useTranslation()
 
   const allViolations: Violation[] = report.findings || report.violations || []
   
@@ -551,16 +525,15 @@ export function ReportResultView({
   
   const contrastViolations = report.contrast_violations || []
 
-  // Risk label with proper Vietnamese
   const riskScore = report.overall_risk_score ?? 5
   const riskLabel =
     riskScore >= 7
-      ? 'Cao'
+      ? t.report.riskHigh
       : riskScore >= 4
-        ? 'Trung bình - Cao'
+        ? t.report.riskMediumHigh
         : riskScore >= 2
-          ? 'Trung bình'
-          : 'Thấp'
+          ? t.report.riskMedium
+          : t.report.riskLow
 
   const criticalCount =
     allViolations.filter((v) => v.severity === 'critical').length +
@@ -569,10 +542,9 @@ export function ReportResultView({
     allViolations.filter((v) => v.severity === 'warning').length +
     contrastViolations.filter((v) => v.severity === 'warning' || v.severity === 'info').length
 
-  // Description sentence
   const descParts: string[] = []
-  if (criticalCount > 0) descParts.push(`${criticalCount} vi phạm nghiêm trọng`)
-  if (warningCount > 0) descParts.push(`${warningCount} cảnh báo`)
+  if (criticalCount > 0) descParts.push(`${criticalCount} ${t.report.criticalViolations}`)
+  if (warningCount > 0) descParts.push(`${warningCount} ${t.report.warnings}`)
 
   return (
     <div className="bg-slate-50">
@@ -597,7 +569,7 @@ export function ReportResultView({
             ) : (
               <Download className="h-4 w-4" />
             )}
-            {pdfLoading ? 'Đang tạo...' : 'Xuất Báo Cáo'}
+            {pdfLoading ? t.report.generating : t.report.exportReport}
           </Button>
         </div>
         <div className="grid lg:grid-cols-[320px_1fr] gap-6">
@@ -609,11 +581,11 @@ export function ReportResultView({
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-semibold text-sm text-slate-800 flex items-center gap-2">
                     <Expand className="h-4 w-4 text-slate-500" />
-                    Hình ảnh nhãn
+                    {t.report.labelImages}
                   </h2>
                   {report.label_images && report.label_images.length > 0 && (
                     <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 text-[10px] uppercase font-bold tracking-wider border-0">
-                      {report.label_images.length} HÌNH ẢNH
+                      {report.label_images.length} {t.report.images}
                     </Badge>
                   )}
                 </div>
@@ -627,7 +599,7 @@ export function ReportResultView({
                       />
                     ) : (
                       <p className="text-muted-foreground text-sm">
-                        Không có dữ liệu
+                        {t.common.noData}
                       </p>
                     )}
                   </div>
@@ -646,7 +618,7 @@ export function ReportResultView({
                 <div className="flex items-center gap-2 mb-4">
                   <Info className="h-4 w-4 text-slate-500" />
                   <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    THÔNG TIN SẢN PHẨM (AI)
+                    {t.report.productInfoAI}
                   </h2>
                 </div>
 
@@ -654,8 +626,7 @@ export function ReportResultView({
                   {(report as any).brand_name && (
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider">
-                        THƯƠNG HIỆU
-                      </p>
+                        {t.report.brand}
                       <p className="text-sm font-semibold text-slate-800">
                         {(report as any).brand_name}
                       </p>
@@ -665,7 +636,7 @@ export function ReportResultView({
                   {report.product_name && (
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider">
-                        TÊN SẢN PHẨM
+                        {t.report.productName}
                       </p>
                       <p className="text-sm font-medium text-slate-700 italic">
                         {report.product_name}
@@ -676,7 +647,7 @@ export function ReportResultView({
                   {report.ingredient_list && (
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider mb-2">
-                        THÀNH PHẦN TRÍCH XUẤT
+                        {t.report.extractedIngredients}
                       </p>
                       <IngredientTags ingredientList={report.ingredient_list} />
                     </div>
@@ -685,7 +656,7 @@ export function ReportResultView({
                   {report.product_category && (
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider">
-                        DANH MỤC
+                        {t.report.category}
                       </p>
                       <p className="text-sm font-medium text-slate-700">
                         {report.product_category}
@@ -696,7 +667,7 @@ export function ReportResultView({
                   {report.target_market && (
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider">
-                        THỊ TRƯỜNG
+                        {t.report.market}
                       </p>
                       <p className="text-sm font-medium text-slate-700">
                         {report.target_market}
@@ -717,7 +688,7 @@ export function ReportResultView({
 
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-bold text-slate-900">
-                    Mức độ rủi ro:{' '}
+                    {t.report.riskLevel}:{' '}
                     <span
                       className={
                         riskScore >= 7
@@ -732,8 +703,8 @@ export function ReportResultView({
                   </h2>
                   <p className="text-sm text-slate-500 mt-1 leading-relaxed">
                     {descParts.length > 0
-                      ? `Nhãn có ${descParts.join(' và ')} cần được sửa trước khi phân phối.`
-                      : 'Nhãn tuân thủ các quy định FDA được kiểm tra. Rủi ro thấp.'}
+                      ? t.report.riskDescWithIssues(descParts.join(` ${t.common.and} `))
+                      : t.report.riskDescCompliant}
                   </p>
                 </div>
 
@@ -769,7 +740,7 @@ export function ReportResultView({
                     )}
                   </div>
                   <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">
-                    Đánh Giá Tổng Thể Từ Vexim AI
+                    {t.report.overallAssessment}
                   </h2>
                 </div>
 
@@ -778,21 +749,21 @@ export function ReportResultView({
                   {/* Regulations Checked */}
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-                      QUY ĐỊNH ĐÃ KIỂM TRA
+                      {t.report.regulationsChecked}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
-                        21 CFR 101 - Nhãn thực phẩm
+                        {t.report.cfr101}
                       </span>
                       <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
-                        21 CFR 701 - Nhãn mỹ phẩm
+                        {t.report.cfr701}
                       </span>
                       <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
                         FD&C Act Section 403
                       </span>
                       {report.product_category === 'cosmetic' && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
-                          21 CFR 700-740 - Mỹ phẩm
+                          {t.report.cfr700}
                         </span>
                       )}
                     </div>
@@ -801,7 +772,7 @@ export function ReportResultView({
                   {/* Historical Data Check */}
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-                      KIỂM TRA DỮ LIỆU LỊCH SỬ FDA
+                      {t.report.historicalDataCheck}
                     </p>
                     <div className="grid sm:grid-cols-3 gap-3">
                       <div className={`rounded-lg p-3 ${
@@ -812,7 +783,7 @@ export function ReportResultView({
                           <span className="text-xs font-medium text-slate-700">Warning Letters</span>
                         </div>
                         <p className={`text-lg font-bold mt-1 ${wlViolations.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                          {wlViolations.length > 0 ? `${wlViolations.length} liên quan` : 'Không có'}
+                          {wlViolations.length > 0 ? `${wlViolations.length} ${t.report.related}` : t.report.none}
                         </p>
                       </div>
                       
@@ -824,7 +795,7 @@ export function ReportResultView({
                           <span className="text-xs font-medium text-slate-700">Recalls</span>
                         </div>
                         <p className={`text-lg font-bold mt-1 ${recallViolations.length > 0 ? 'text-purple-600' : 'text-green-600'}`}>
-                          {recallViolations.length > 0 ? `${recallViolations.length} liên quan` : 'Không có'}
+                          {recallViolations.length > 0 ? `${recallViolations.length} ${t.report.related}` : t.report.none}
                         </p>
                       </div>
                       
@@ -836,7 +807,7 @@ export function ReportResultView({
                           <span className="text-xs font-medium text-slate-700">Import Alerts</span>
                         </div>
                         <p className={`text-lg font-bold mt-1 ${importAlertViolations.length > 0 ? 'text-cyan-600' : 'text-green-600'}`}>
-                          {importAlertViolations.length > 0 ? `${importAlertViolations.length} liên quan` : 'Không có'}
+                          {importAlertViolations.length > 0 ? `${importAlertViolations.length} ${t.report.related}` : t.report.none}
                         </p>
                       </div>
                     </div>
@@ -851,43 +822,33 @@ export function ReportResultView({
                         : 'bg-green-100 border border-green-200'
                   }`}>
                     <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">
-                      KẾT LUẬN
+                      {t.report.conclusion}
                     </p>
                     {riskScore >= 7 ? (
                       <div className="space-y-2">
                         <p className="text-sm font-semibold text-red-800">
-                          Nhãn sản phẩm có rủi ro cao về tuân thủ FDA.
+                          {t.report.conclusionHigh}
                         </p>
                         <p className="text-sm text-red-700 leading-relaxed">
-                          Vexim AI phát hiện {criticalCount > 0 ? `${criticalCount} vi phạm nghiêm trọng` : ''}{criticalCount > 0 && warningCount > 0 ? ' và ' : ''}{warningCount > 0 ? `${warningCount} cảnh báo` : ''} cần được khắc phục ngay. 
-                          {wlViolations.length > 0 && ` Có ${wlViolations.length} trường hợp tương tự đã bị FDA gửi Warning Letter.`}
-                          {recallViolations.length > 0 && ` Có ${recallViolations.length} sản phẩm tương tự đã bị thu hồi.`}
-                          {importAlertViolations.length > 0 && ` Có ${importAlertViolations.length} cảnh báo nhập khẩu liên quan.`}
-                          {' '}Khuyến nghị: Sửa các lỗi được liệt kê bên dưới trước khi phân phối tại thị trường Hoa Kỳ.
+                          {t.report.conclusionHighDesc(criticalCount, warningCount, wlViolations.length, recallViolations.length, importAlertViolations.length)}
                         </p>
                       </div>
                     ) : riskScore >= 2 ? (
                       <div className="space-y-2">
                         <p className="text-sm font-semibold text-amber-800">
-                          Nhãn sản phẩm có một số điểm cần cải thiện.
+                          {t.report.conclusionMedium}
                         </p>
                         <p className="text-sm text-amber-700 leading-relaxed">
-                          Vexim AI phát hiện {warningCount > 0 ? `${warningCount} cảnh báo` : 'một số điểm'} nên được xem xét để tối ưu hóa tuân thủ.
-                          {wlViolations.length === 0 && recallViolations.length === 0 && importAlertViolations.length === 0 && 
-                            ' Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA.'}
-                          {' '}Khuyến nghị: Xem xét các cảnh báo bên dưới để giảm thiểu rủi ro bị FDA kiểm tra.
+                          {t.report.conclusionMediumDesc(warningCount, wlViolations.length === 0 && recallViolations.length === 0 && importAlertViolations.length === 0)}
                         </p>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         <p className="text-sm font-semibold text-green-800">
-                          Nhãn sản phẩm tuân thủ tốt các quy định FDA.
+                          {t.report.conclusionLow}
                         </p>
                         <p className="text-sm text-green-700 leading-relaxed">
-                          Vexim AI không phát hiện vi phạm nghiêm trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR.
-                          {wlViolations.length === 0 && recallViolations.length === 0 && importAlertViolations.length === 0 && 
-                            ' Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA.'}
-                          {' '}Sản phẩm có thể được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.
+                          {t.report.conclusionLowDesc(wlViolations.length === 0 && recallViolations.length === 0 && importAlertViolations.length === 0)}
                         </p>
                       </div>
                     )}
@@ -901,7 +862,7 @@ export function ReportResultView({
               <div className="flex items-center gap-2 mb-4">
                 <FileText className="h-4 w-4 text-slate-500" />
                 <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                  CHI TIẾT KIỂM TRA TUÂN THỦ (21 CFR)
+                  {t.report.cfrComplianceDetail}
                 </h2>
               </div>
 
@@ -909,10 +870,10 @@ export function ReportResultView({
                 <Card className="bg-white border-slate-200 p-12 text-center">
                   <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-slate-800 mb-2">
-                    Không có vi phạm CFR
+                    {t.report.noCfrViolations}
                   </h3>
                   <p className="text-slate-500">
-                    Nhãn của bạn tuân thủ tất cả các quy định FDA được kiểm tra
+                    {t.report.labelCompliant}
                   </p>
                 </Card>
               ) : (
@@ -923,6 +884,7 @@ export function ReportResultView({
                       key={`cfr-${index}`}
                       violation={violation}
                       index={index}
+                      t={t}
                     />
                   ))}
 
@@ -931,6 +893,7 @@ export function ReportResultView({
                     <ContrastViolationCard
                       key={`contrast-${index}`}
                       violation={cv}
+                      t={t}
                     />
                   ))}
                 </div>
@@ -943,12 +906,12 @@ export function ReportResultView({
                 <div className="flex items-center gap-2 mb-4">
                   <Mail className="h-4 w-4 text-orange-500" />
                   <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                    CẢNH BÁO TỪ FDA WARNING LETTERS ({wlViolations.length})
+                    {t.report.warningLettersSection} ({wlViolations.length})
                   </h2>
                 </div>
                 <div className="space-y-5">
                   {wlViolations.map((violation, index) => (
-                    <WarningLetterCard key={`wl-${index}`} violation={violation} />
+                    <WarningLetterCard key={`wl-${index}`} violation={violation} t={t} />
                   ))}
                 </div>
               </div>
@@ -960,12 +923,12 @@ export function ReportResultView({
                 <div className="flex items-center gap-2 mb-4">
                   <RotateCcw className="h-4 w-4 text-purple-500" />
                   <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                    LIÊN QUAN ĐẾN SẢN PHẨM BỊ THU HỒI ({recallViolations.length})
+                    {t.report.recallsSection} ({recallViolations.length})
                   </h2>
                 </div>
                 <div className="space-y-5">
                   {recallViolations.map((violation, index) => (
-                    <RecallCard key={`recall-${index}`} violation={violation} />
+                    <RecallCard key={`recall-${index}`} violation={violation} t={t} />
                   ))}
                 </div>
               </div>
@@ -977,12 +940,12 @@ export function ReportResultView({
                 <div className="flex items-center gap-2 mb-4">
                   <Ship className="h-4 w-4 text-cyan-500" />
                   <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                    CẢNH BÁO NHẬP KHẨU FDA ({importAlertViolations.length})
+                    {t.report.importAlertsSection} ({importAlertViolations.length})
                   </h2>
                 </div>
                 <div className="space-y-5">
                   {importAlertViolations.map((violation, index) => (
-                    <ImportAlertCard key={`ia-${index}`} violation={violation} />
+                    <ImportAlertCard key={`ia-${index}`} violation={violation} t={t} />
                   ))}
                 </div>
               </div>

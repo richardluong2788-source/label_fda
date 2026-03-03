@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { AdvancedSettings } from '@/components/advanced-settings'
+import { useTranslation } from '@/lib/i18n'
 
 interface LabelImage {
   id: string
@@ -59,12 +60,20 @@ const IMAGE_TYPES = {
 
 export function LabelAnalyzer() {
   const router = useRouter()
+  const { t } = useTranslation()
   const [images, setImages] = useState<LabelImage[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [advancedSettings, setAdvancedSettings] = useState<any>({})
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [kbDocCount, setKbDocCount] = useState<number | null>(null)
+
+  const IMAGE_TYPES_I18N = {
+    pdp: { ...t.analyze.imageTypes.pdp, required: true, icon: '📦' },
+    nutrition: { ...t.analyze.imageTypes.nutrition, required: true, icon: '📊' },
+    ingredients: { ...t.analyze.imageTypes.ingredients, required: false, icon: '🧪' },
+    other: { ...t.analyze.imageTypes.other, required: false, icon: '📄' },
+  }
 
   // Fetch KB status on mount to display actual document counts
   useEffect(() => {
@@ -137,8 +146,8 @@ export function LabelAnalyzer() {
                 quality: 'poor',
                 blur: false,
                 readable: false,
-                message: 'Không thể xác thực ảnh',
-                issues: ['Lỗi hệ thống']
+                message: t.analyze.cannotValidate,
+                issues: [t.analyze.systemError]
               }
             }
           : img
@@ -148,12 +157,12 @@ export function LabelAnalyzer() {
 
   const addImage = useCallback(async (file: File, type: LabelImage['type']) => {
     if (!file.type.startsWith('image/')) {
-      setError('Vui lòng chọn file ảnh')
+      setError(t.analyze.selectImageFile)
       return
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      setError('File quá lớn (tối đa 10MB)')
+      setError(t.analyze.fileTooLarge)
       return
     }
 
@@ -164,7 +173,7 @@ export function LabelAnalyzer() {
         file,
         preview: reader.result as string,
         type,
-        label: IMAGE_TYPES[type].label,
+        label: IMAGE_TYPES_I18N[type].label,
         status: 'analyzing'
       }
       setImages(prev => [...prev, newImage])
@@ -195,19 +204,19 @@ export function LabelAnalyzer() {
 
   const handleAnalyze = async () => {
     if (!hasPDP || !hasNutrition) {
-      setError('Vui lòng upload đầy đủ ảnh Mặt trước (PDP) và Bảng Nutrition Facts')
+      setError(t.analyze.uploadRequired)
       return
     }
 
     const hasErrorImages = images.some(img => img.status === 'error')
     if (hasErrorImages) {
-      setError('Có ảnh không hợp lệ. Vui lòng xóa và upload lại.')
+      setError(t.analyze.invalidImages)
       return
     }
 
     const hasAnalyzingImages = images.some(img => img.status === 'analyzing')
     if (hasAnalyzingImages) {
-      setError('Vui lòng đợi AI kiểm tra xong.')
+      setError(t.analyze.waitForAI)
       return
     }
 
@@ -218,7 +227,7 @@ export function LabelAnalyzer() {
       const supabase = createClient()
       
       const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError || !user) throw new Error('Bạn cần đăng nhập')
+      if (userError || !user) throw new Error(t.analyze.needLogin)
 
       const uploadedUrls: { type: string; url: string }[] = []
       
@@ -279,7 +288,7 @@ export function LabelAnalyzer() {
 
       router.push(`/audit/${report.id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Phân tích thất bại')
+      setError(err instanceof Error ? err.message : t.analyze.analyzeFailed)
     } finally {
       setIsAnalyzing(false)
     }
@@ -293,29 +302,29 @@ export function LabelAnalyzer() {
           <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
           <span className="text-xs font-medium text-red-900">
             {kbDocCount && kbDocCount > 0
-              ? `AI duoc dao tao tren ${kbDocCount.toLocaleString()} tai lieu FDA thuc te`
-              : 'He thong Knowledge Base chua co du lieu - Lien he Admin de nap tai lieu'}
+              ? t.analyze.kbTrainedOn(kbDocCount)
+              : t.analyze.kbNoData}
           </span>
         </div>
         
         <h1 className="text-3xl font-bold tracking-tight">
-          Phát hiện Vi phạm FDA<br/>
-          <span className="text-primary">Trước khi Hàng bị Reject</span>
+          {t.analyze.heroTitle}<br/>
+          <span className="text-primary">{t.analyze.heroTitleHighlight}</span>
         </h1>
         
         <p className="text-base text-muted-foreground max-w-2xl mx-auto">
           {kbDocCount && kbDocCount > 0
-            ? `AI quet nhan cua ban voi ${kbDocCount.toLocaleString()} tai lieu FDA (Warning Letters, Regulations, Recalls). `
-            : 'AI quet nhan cua ban voi 21 CFR Regulations. '}
-          Phat hien loi nghiem trong co the khien container bi giu tai cang, gay thiet hai <strong className="text-foreground">$15,000-50,000 USD</strong> moi lo hang.
+            ? t.analyze.heroDescWithKb(kbDocCount)
+            : t.analyze.heroDescNoKb}
+          {t.analyze.heroDescSuffix} <strong className="text-foreground">{t.analyze.heroDescAmount}</strong> {t.analyze.heroDescPerShipment}
         </p>
       </div>
 
       {/* Upload Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {Object.entries(IMAGE_TYPES).map(([key, info]) => {
+        {Object.entries(IMAGE_TYPES_I18N).map(([key, info]) => {
           const imageOfThisType = images.find(img => img.type === key)
-          const typeKey = key as keyof typeof IMAGE_TYPES
+          const typeKey = key as keyof typeof IMAGE_TYPES_I18N
           
           return (
             <Card 
@@ -334,7 +343,7 @@ export function LabelAnalyzer() {
                 </div>
                 <div className="flex items-center gap-1 ml-2">
                   {info.required && !imageOfThisType && (
-                    <Badge variant="destructive" className="text-[10px] px-2 py-0.5 h-5">BẮT BUỘC</Badge>
+                    <Badge variant="destructive" className="text-[10px] px-2 py-0.5 h-5">{t.common.required}</Badge>
                   )}
                   {imageOfThisType && (
                     <Button
@@ -359,7 +368,7 @@ export function LabelAnalyzer() {
                   <label htmlFor={`${key}-upload`} className="cursor-pointer w-full h-full flex items-center justify-center">
                     <div className="space-y-2 text-center">
                       <Upload className="h-6 w-6 mx-auto text-blue-500" />
-                      <p className="text-sm font-medium text-blue-600">Kéo thả hoặc Click để tải lên</p>
+                      <p className="text-sm font-medium text-blue-600">{t.analyze.dragOrClick}</p>
                     </div>
                     <input
                       id={`${key}-upload`}
@@ -374,7 +383,7 @@ export function LabelAnalyzer() {
                 <div className="h-40 rounded-xl bg-blue-50 flex items-center justify-center">
                   <div className="text-center">
                     <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                    <p className="text-sm font-medium text-blue-600">AI ĐANG QUÉT DỮ LIỆU...</p>
+                    <p className="text-sm font-medium text-blue-600">{t.analyze.aiScanning}</p>
                   </div>
                 </div>
               ) : imageOfThisType.status === 'error' ? (
@@ -388,7 +397,7 @@ export function LabelAnalyzer() {
                     <div className="text-center space-y-1">
                       <AlertCircle className="h-6 w-6 mx-auto text-red-600" />
                       <p className="text-xs font-medium text-red-900">
-                        {imageOfThisType.validationResult?.message || 'Ảnh không hợp lệ'}
+                        {imageOfThisType.validationResult?.message || t.analyze.invalidImage}
                       </p>
                     </div>
                   </div>
@@ -425,13 +434,13 @@ export function LabelAnalyzer() {
                         <>
                           <AlertCircle className="h-3.5 w-3.5 text-amber-300" />
                           <span className="text-xs font-medium">
-                            Phát hiện ảnh {IMAGE_TYPES[imageOfThisType.validationResult.detectedType as keyof typeof IMAGE_TYPES]?.label || 'khác'}
+                            {t.analyze.detectedImage(IMAGE_TYPES_I18N[imageOfThisType.validationResult.detectedType as keyof typeof IMAGE_TYPES_I18N]?.label || imageOfThisType.validationResult.detectedType)}
                           </span>
                         </>
                       ) : (
                         <>
                           <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
-                          <span className="text-xs font-medium">AI đã nhận diện thành công</span>
+                          <span className="text-xs font-medium">{t.analyze.aiRecognized}</span>
                         </>
                       )}
                     </div>
@@ -458,8 +467,8 @@ export function LabelAnalyzer() {
             <div className="flex items-center gap-3">
               <Settings className="h-4 w-4 text-primary" />
               <div className="text-left">
-                <span className="font-medium">Thông số nâng cao</span>
-                <p className="text-xs text-muted-foreground">Tùy chỉnh thêm thông tin để AI phân tích chính xác hơn</p>
+                <span className="font-medium">{t.analyze.advancedSettings}</span>
+                <p className="text-xs text-muted-foreground">{t.analyze.advancedSettingsDesc}</p>
               </div>
             </div>
             <ChevronDown className={`h-4 w-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
@@ -478,12 +487,12 @@ export function LabelAnalyzer() {
       {/* CTA Section */}
       <Card className="p-6 bg-blue-50/50 border-blue-200">
         <div className="text-center space-y-4">
-          <h3 className="text-lg font-bold">Sẵn sàng Quét Vi phạm FDA?</h3>
+          <h3 className="text-lg font-bold">{t.analyze.ctaTitle}</h3>
           <p className="text-sm text-muted-foreground">
             {kbDocCount && kbDocCount > 0
-              ? `AI se so sanh nhan cua ban voi ${kbDocCount.toLocaleString()} tai lieu FDA va 21 CFR Regulations. `
-              : 'AI se kiem tra nhan cua ban voi 21 CFR Regulations. '}
-            Nhan bao cao chi tiet voi citations va huong dan sua loi trong vai phut.
+              ? t.analyze.ctaDescWithKb(kbDocCount)
+              : t.analyze.ctaDescNoKb}
+            {t.analyze.ctaDescSuffix}
           </p>
           
           <Button
@@ -492,7 +501,7 @@ export function LabelAnalyzer() {
             disabled={!hasPDP || !hasNutrition || isAnalyzing}
             className="px-8"
           >
-            {isAnalyzing ? 'Đang phân tích...' : 'Quét Vi phạm FDA ngay (Miễn phí Preview)'}
+            {isAnalyzing ? t.analyze.analyzing : t.analyze.scanNow}
           </Button>
 
           {error && (
@@ -503,7 +512,7 @@ export function LabelAnalyzer() {
           )}
 
           <p className="text-xs text-muted-foreground">
-            Miễn phí xem trước vi phạm nghiêm trọng. Mở khóa báo cáo đầy đủ để export PDF và tư vấn chi tiết.
+            {t.analyze.freePreviewNote}
           </p>
         </div>
       </Card>

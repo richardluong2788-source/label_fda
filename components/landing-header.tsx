@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { FileText, Menu } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { LanguageSwitcher } from '@/components/language-switcher'
+import { useTranslation } from '@/lib/i18n'
 import {
   Sheet,
   SheetContent,
@@ -14,10 +16,11 @@ import {
 
 export function LandingHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { t } = useTranslation()
 
   const navLinks = [
-    { href: '/pricing', label: 'Bảng giá' },
-    { href: '/knowledge', label: 'Kiến thức' },
+    { href: '/pricing', label: t.nav.pricingPage },
+    { href: '/knowledge', label: t.nav.knowledge },
   ]
 
   return (
@@ -57,10 +60,10 @@ export function LandingHeader() {
 
               <div className="p-4 border-t mt-auto flex flex-col gap-2">
                 <Link href="/auth/login" onClick={() => setMobileOpen(false)}>
-                  <Button variant="outline" className="w-full">Đăng nhập</Button>
+                  <Button variant="outline" className="w-full">{t.nav.login}</Button>
                 </Link>
                 <Link href="/auth/sign-up" onClick={() => setMobileOpen(false)}>
-                  <Button className="w-full">Bắt đầu miễn phí</Button>
+                  <Button className="w-full">{t.nav.signUp}</Button>
                 </Link>
               </div>
             </SheetContent>
@@ -93,13 +96,14 @@ export function LandingHeader() {
 
         {/* Auth buttons */}
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-            <Link href="/auth/login">Đăng nhập</Link>
+            <Link href="/auth/login">{t.nav.login}</Link>
           </Button>
           <Button size="sm" asChild>
             <Link href="/auth/sign-up">
-              <span className="hidden sm:inline">Bắt đầu miễn phí</span>
-              <span className="sm:hidden">Đăng ký</span>
+              <span className="hidden sm:inline">{t.nav.signUp}</span>
+              <span className="sm:hidden">{t.nav.signUpShort}</span>
             </Link>
           </Button>
         </div>

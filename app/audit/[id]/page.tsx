@@ -15,6 +15,7 @@ import type { AuditReport } from '@/lib/types'
 import { ExpertRequestPanel } from '@/components/expert-request-panel'
 import { AnalysisProgressView, ANALYSIS_STEPS } from '@/components/audit/analysis-progress'
 import { ReportResultView } from '@/components/audit/report-result-view'
+import { useTranslation } from '@/lib/i18n'
 
 // ────────────────────────────────────────────────────────────
 // Main Audit Page
@@ -23,6 +24,9 @@ import { ReportResultView } from '@/components/audit/report-result-view'
 export default function AuditPage() {
   const params = useParams()
   const router = useRouter()
+  const { t } = useTranslation()
+  const a = t.audit
+
   const [report, setReport] = useState<AuditReport | null>(null)
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
@@ -50,20 +54,18 @@ export default function AuditPage() {
       const res = await fetch(`/api/audit/${params.id}/pdf`)
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || 'Không thể tạo file báo cáo')
+        throw new Error(err.error || a.cannotCreateReport)
       }
       const html = await res.text()
       
-      // Open in new tab with download button
       const blob = new Blob([html], { type: 'text/html' })
       const url = URL.createObjectURL(blob)
       const win = window.open(url, '_blank')
       if (win) win.focus()
-      // Clean up blob URL after some time
       setTimeout(() => URL.revokeObjectURL(url), 120000)
     } catch (err: any) {
       console.error('[v0] PDF download error:', err)
-      alert(err.message || 'Không thể tải báo cáo. Vui lòng thử lại.')
+      alert(err.message || a.pdfDownloadError)
     } finally {
       setPdfLoading(false)
     }
@@ -105,7 +107,6 @@ export default function AuditPage() {
       const data = await res.json()
       const rpt = data.report || data
 
-      // Gate: redirect to preview if not unlocked and not pending
       if (rpt && rpt.status !== 'pending' && rpt.status !== 'kb_unavailable') {
         const isUnlocked = rpt.report_unlocked === true || rpt.payment_status === 'paid'
         if (!isUnlocked) {
@@ -118,8 +119,7 @@ export default function AuditPage() {
 
       if (data.status === 'kb_unavailable') {
         setKbError({
-          message:
-            'Knowledge Base chưa có dữ liệu khi lần phân tích trước. Vui lòng thử lại sau khi Admin đã nạp tài liệu.',
+          message: a.kbWhyItems[0],
           totalDocuments: 0,
         })
         return
@@ -163,7 +163,7 @@ export default function AuditPage() {
         setAnalyzing(false)
         setLoading(false)
         setQuotaError({
-          message: errData.message || 'Bạn đã dùng hết lượt phân tích trong tháng này.',
+          message: errData.message || a.quotaExhausted,
           plan_name: errData.quota?.plan_name || 'Free',
           reports_used: errData.quota?.reports_used ?? 0,
           reports_limit: errData.quota?.reports_limit ?? 0,
@@ -178,9 +178,7 @@ export default function AuditPage() {
           setAnalyzing(false)
           setLoading(false)
           setKbError({
-            message:
-              errData.message ||
-              'Knowledge Base chưa có dữ liệu. Vui lòng liên hệ Admin.',
+            message: errData.message || a.kbNotReady,
             totalDocuments: errData.kbStatus?.totalDocuments ?? 0,
           })
           return
@@ -202,34 +200,34 @@ export default function AuditPage() {
     }
   }
 
-  // ── Error States ���─────────────────────────────────────────
+  // ── Error States ──────────────────────────────────────────
 
   if (quotaError) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="p-8 max-w-md w-full text-center">
           <AlertCircle className="h-12 w-12 text-warning mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Đã hết lượt phân tích</h2>
+          <h2 className="text-xl font-bold mb-2">{a.quotaExhausted}</h2>
           <p className="text-muted-foreground mb-4">{quotaError.message}</p>
           <div className="bg-muted rounded-lg p-4 mb-6 text-sm space-y-1">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Gói hiện tại</span>
+              <span className="text-muted-foreground">{a.quotaCurrentPlan}</span>
               <span className="font-semibold">{quotaError.plan_name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Đã dùng tháng này</span>
+              <span className="text-muted-foreground">{a.quotaUsedThisMonth}</span>
               <span className="font-semibold">
-                {quotaError.reports_used} / {quotaError.reports_limit} lượt
+                {a.quotaUsedOf(quotaError.reports_used, quotaError.reports_limit)}
               </span>
             </div>
           </div>
           <div className="flex flex-col gap-3">
             <Button asChild>
-              <a href="/pricing">Nâng cấp gói ngay</a>
+              <a href="/pricing">{a.upgradePlan}</a>
             </Button>
             <Button variant="outline" onClick={() => router.push('/dashboard')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Quay lại Dashboard
+              {a.backToDashboard}
             </Button>
           </div>
         </Card>
@@ -242,31 +240,23 @@ export default function AuditPage() {
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="p-8 max-w-lg w-full text-center">
           <Database className="h-12 w-12 text-warning mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Knowledge Base chưa sẵn sàng</h2>
+          <h2 className="text-xl font-bold mb-2">{a.kbNotReady}</h2>
           <p className="text-muted-foreground mb-4">{kbError.message}</p>
           <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 mb-6 text-sm text-left space-y-2">
-            <p className="font-medium">Tại sao không thể phân tích?</p>
+            <p className="font-medium">{a.kbWhyTitle}</p>
             <ul className="list-disc list-inside text-muted-foreground space-y-1">
-              <li>
-                Hệ thống cần dữ liệu FDA regulations, Warning Letters và Recalls để phân tích
-                chính xác.
-              </li>
-              <li>
-                Hiện tại có <strong>{kbError.totalDocuments}</strong> tài liệu trong Knowledge
-                Base.
-              </li>
-              <li>Cần ít nhất 1 tài liệu được nạp vào để bắt đầu phân tích.</li>
+              {a.kbWhyItems.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+              <li>{a.kbDocsCount(kbError.totalDocuments)}</li>
             </ul>
           </div>
           <div className="bg-muted rounded-lg p-4 mb-6 text-sm text-left space-y-2">
-            <p className="font-medium">Cách khắc phục:</p>
+            <p className="font-medium">{a.kbFixTitle}</p>
             <ol className="list-decimal list-inside text-muted-foreground space-y-1">
-              <li>Liên hệ Admin để nạp tài liệu FDA vào Knowledge Base.</li>
-              <li>
-                Truy cập trang <strong>Knowledge Base</strong> và sử dụng chức năng &quot;Nạp
-                tài liệu mới&quot; hoặc &quot;FDA Warning Letters Pipeline&quot;.
-              </li>
-              <li>Sau khi nạp xong, quay lại đây để chạy phân tích.</li>
+              {a.kbFixItems.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
             </ol>
           </div>
           <div className="flex flex-col gap-3">
@@ -283,11 +273,11 @@ export default function AuditPage() {
                 startAnalysis()
               }}
             >
-              Thử lại phân tích
+              {a.retryAnalysis}
             </Button>
             <Button variant="outline" onClick={() => router.push('/dashboard')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Quay lại Dashboard
+              {a.backToDashboard}
             </Button>
           </div>
         </Card>
@@ -302,7 +292,7 @@ export default function AuditPage() {
       <div className="min-h-[calc(100vh-80px)] flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Đang tải báo cáo...</p>
+          <p className="text-muted-foreground">{a.loadingReport}</p>
         </div>
       </div>
     )
@@ -313,13 +303,11 @@ export default function AuditPage() {
       <div className="min-h-[calc(100vh-80px)] flex items-center justify-center">
         <Card className="p-8 text-center">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Không tìm thấy báo cáo</h2>
-          <p className="text-muted-foreground mb-4">
-            Báo cáo này không tồn tại hoặc đã bị xóa
-          </p>
+          <h2 className="text-xl font-semibold mb-2">{a.error}</h2>
+          <p className="text-muted-foreground mb-4">{a.errorDeleted}</p>
           <Button onClick={() => router.push('/dashboard')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Quay lại Dashboard
+            {a.backToDashboard}
           </Button>
         </Card>
       </div>
@@ -351,7 +339,7 @@ export default function AuditPage() {
         pdfLoading={pdfLoading}
       />
 
-      {/* Expert Request Panel (below the new layout) */}
+      {/* Expert Request Panel */}
       <div className="bg-slate-50">
         <div className="container mx-auto px-4 pb-12 max-w-7xl">
           <div className="grid lg:grid-cols-[320px_1fr] gap-6">

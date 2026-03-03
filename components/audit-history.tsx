@@ -7,6 +7,7 @@ import { CheckCircle, AlertTriangle, AlertCircle, Clock } from 'lucide-react'
 import Link from 'next/link'
 import type { AuditReport } from '@/lib/types'
 import { FormatDate } from '@/components/format-date'
+import { useTranslation } from '@/lib/i18n'
 
 interface AuditHistoryProps {
   reports: AuditReport[]
@@ -28,42 +29,41 @@ function getResultIcon(result?: string) {
   }
 }
 
-function getResultBadge(result?: string) {
-  switch (result) {
-    case 'pass':
-      return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Đạt chuẩn</Badge>
-    case 'warning':
-      return <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100">Cảnh báo</Badge>
-    case 'fail':
-      return <Badge variant="destructive">Cần kiểm duyệt</Badge>
-    default:
-      return <Badge variant="secondary">Đang xử lý</Badge>
-  }
-}
-
-// Simple placeholder - 1x1 transparent pixel
-const PLACEHOLDER_IMAGE = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-
 export function AuditHistory({ reports, currentPage, totalPages, totalCount }: AuditHistoryProps) {
+  const { t } = useTranslation()
+  const h = t.history
+
+  function getResultBadge(result?: string) {
+    const label = result ? (h.resultLabels[result] || result) : h.resultLabels.processing
+    switch (result) {
+      case 'pass':
+        return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">{label}</Badge>
+      case 'warning':
+        return <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100">{label}</Badge>
+      case 'fail':
+        return <Badge variant="destructive">{label}</Badge>
+      default:
+        return <Badge variant="secondary">{label}</Badge>
+    }
+  }
+
   return (
     <div className="mt-8">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Lịch sử kiểm tra</h3>
+        <h3 className="text-lg font-semibold">{h.title}</h3>
         <div className="text-sm text-muted-foreground">
-          Trang {currentPage} / {totalPages} • Tổng: {totalCount} báo cáo
+          {h.pageInfo(currentPage, totalPages, totalCount)}
         </div>
       </div>
       <div className="space-y-3">
         {reports.map((report) => {
           const violationCount = report.violations ? (Array.isArray(report.violations) ? report.violations.length : 0) : 0
           
-          // Get product info
-          const productName = report.product_name || report.brand_name || 'Báo cáo kiểm tra'
+          const productName = report.product_name || report.brand_name || h.defaultName
           const categoryDisplay = report.product_category ? 
             report.product_category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
-            'Chưa phân loại'
+            h.uncategorized
           
-          // Determine which page to link to based on payment status
           const reportLink = report.report_unlocked || report.payment_status === 'paid' 
             ? `/audit/${report.id}` 
             : `/audit/${report.id}/preview`
@@ -82,25 +82,25 @@ export function AuditHistory({ reports, currentPage, totalPages, totalCount }: A
                     </div>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground mb-1">
                       <span className="font-medium text-foreground">{categoryDisplay}</span>
-                      <span>•</span>
+                      <span>{'·'}</span>
                       <FormatDate date={report.created_at} />
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="capitalize">Trạng thái: {report.status}</span>
-                      <span>•</span>
+                      <span className="capitalize">{h.statusPrefix}: {report.status}</span>
+                      <span>{'·'}</span>
                       <span className={violationCount > 0 ? "font-medium text-destructive" : ""}>
-                        {violationCount > 0 ? `${violationCount} vi phạm` : 'Chưa có dữ liệu'}
+                        {violationCount > 0 ? h.violations(violationCount) : h.noViolationData}
                       </span>
                       {report.brand_name && report.product_name && (
                         <>
-                          <span>•</span>
-                          <span>Nhãn hiệu: {report.brand_name}</span>
+                          <span>{'·'}</span>
+                          <span>{h.brandPrefix}: {report.brand_name}</span>
                         </>
                       )}
                     </div>
                   </div>
                   <Button variant="outline" size="sm" className="flex-shrink-0 bg-transparent">
-                    Xem báo cáo
+                    {h.viewReport}
                   </Button>
                 </div>
               </Link>
@@ -118,7 +118,7 @@ export function AuditHistory({ reports, currentPage, totalPages, totalCount }: A
             disabled={currentPage === 1}
             asChild
           >
-            <Link href={`/dashboard?page=${currentPage - 1}`}>Trước</Link>
+            <Link href={`/history?page=${currentPage - 1}`}>{h.prev}</Link>
           </Button>
           <div className="flex gap-1">
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -139,7 +139,7 @@ export function AuditHistory({ reports, currentPage, totalPages, totalCount }: A
                   size="sm"
                   asChild
                 >
-                  <Link href={`/dashboard?page=${pageNum}`}>{pageNum}</Link>
+                  <Link href={`/history?page=${pageNum}`}>{pageNum}</Link>
                 </Button>
               )
             })}
@@ -150,7 +150,7 @@ export function AuditHistory({ reports, currentPage, totalPages, totalCount }: A
             disabled={currentPage === totalPages}
             asChild
           >
-            <Link href={`/dashboard?page=${currentPage + 1}`}>Sau</Link>
+            <Link href={`/history?page=${currentPage + 1}`}>{h.next}</Link>
           </Button>
         </div>
       )}

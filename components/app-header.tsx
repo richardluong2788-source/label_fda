@@ -9,6 +9,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { UserProfileMenu } from '@/components/user-profile-menu'
+import { LanguageSwitcher } from '@/components/language-switcher'
+import { useTranslation } from '@/lib/i18n'
 import {
   Sheet,
   SheetContent,
@@ -26,18 +28,19 @@ interface AppHeaderProps {
 export function AppHeader({ email, isAdmin, showAuth = true }: AppHeaderProps) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { t } = useTranslation()
 
   const navItems = [
-    { href: '/dashboard', label: 'Trang chủ',       icon: Home,       exact: true },
-    { href: '/analyze',   label: 'Phân tích',       icon: ScanLine,   exact: false },
-    { href: '/history',   label: 'Lịch sử',         icon: History,    exact: false },
-    { href: '/settings',  label: 'Cài đặt',         icon: Settings,   exact: false },
+    { href: '/dashboard', label: t.nav.home,           icon: Home,       exact: true },
+    { href: '/analyze',   label: t.nav.analyze,        icon: ScanLine,   exact: false },
+    { href: '/history',   label: t.nav.history,        icon: History,    exact: false },
+    { href: '/settings',  label: t.nav.settings,       icon: Settings,   exact: false },
     ...(isAdmin
       ? [
-          { href: '/admin/knowledge', label: 'Knowledge Base', icon: Database,   exact: false },
-          { href: '/admin/revenue',   label: 'Doanh thu',      icon: TrendingUp, exact: false },
-          { href: '/admin/pricing',   label: 'Giá gói',        icon: Tag,        exact: false },
-          { href: '/admin',           label: 'Admin',          icon: BarChart3,  exact: true },
+          { href: '/admin/knowledge', label: t.nav.knowledgeBase, icon: Database,   exact: false },
+          { href: '/admin/revenue',   label: t.nav.revenue,       icon: TrendingUp, exact: false },
+          { href: '/admin/pricing',   label: t.nav.pricing,       icon: Tag,        exact: false },
+          { href: '/admin',           label: t.nav.adminPanel,    icon: BarChart3,  exact: true },
         ]
       : []),
   ]
@@ -92,12 +95,12 @@ export function AppHeader({ email, isAdmin, showAuth = true }: AppHeaderProps) {
                 <div className="mt-auto border-t p-4">
                   <p className="text-sm font-medium truncate">{email}</p>
                   <p className="text-xs text-muted-foreground">
-                    {isAdmin ? 'Quản trị viên' : 'Người dùng'}
+                    {isAdmin ? t.common.admin : t.common.user}
                   </p>
                   <div className="flex flex-col gap-1 mt-3">
                     <Link href="/profile" onClick={() => setMobileOpen(false)}>
                       <Button variant="ghost" size="sm" className="w-full justify-start">
-                        Hồ sơ cá nhân
+                        {t.nav.profile}
                       </Button>
                     </Link>
                     <form action="/auth/logout" method="post" className="w-full">
@@ -107,7 +110,7 @@ export function AppHeader({ email, isAdmin, showAuth = true }: AppHeaderProps) {
                         type="submit"
                         className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
                       >
-                        Đăng xuất
+                        {t.nav.logout}
                       </Button>
                     </form>
                   </div>
@@ -148,7 +151,10 @@ export function AppHeader({ email, isAdmin, showAuth = true }: AppHeaderProps) {
           </nav>
         </div>
 
-        {showAuth && email && <UserProfileMenu email={email} isAdmin={isAdmin} />}
+        <div className="flex items-center gap-1">
+          <LanguageSwitcher />
+          {showAuth && email && <UserProfileMenu email={email} isAdmin={isAdmin} />}
+        </div>
       </div>
     </header>
   )

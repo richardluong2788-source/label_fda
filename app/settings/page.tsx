@@ -1,9 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AppHeader } from '@/components/app-header'
-import BillingTab from './billing-tab'
-import OtherSettingsTab from './other-settings-tab'
+import { SettingsClient } from './settings-client'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -17,7 +15,7 @@ export default async function SettingsPage() {
     redirect('/auth/login')
   }
 
-  // Check admin role — đồng nhất với /analyze và /history
+  // Check admin role
   const { data: adminUser } = await supabase
     .from('admin_users')
     .select('role')
@@ -68,29 +66,12 @@ export default async function SettingsPage() {
       <AppHeader email={user.email ?? ''} isAdmin={isAdmin} />
 
       <main className="container mx-auto px-4 py-8 max-w-3xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-1">Cài đặt</h1>
-          <p className="text-muted-foreground">Quản lý tài khoản và gói dịch vụ của bạn</p>
-        </div>
-
-        <Tabs defaultValue="billing">
-          <TabsList className="mb-6">
-            <TabsTrigger value="billing">Gói dịch vụ & Thanh toán</TabsTrigger>
-            <TabsTrigger value="other">Tài khoản</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="billing">
-            <BillingTab
-              subscription={activeSub}
-              transactions={transactions ?? []}
-              allPlans={allPlans ?? []}
-            />
-          </TabsContent>
-
-          <TabsContent value="other">
-            <OtherSettingsTab user={user} />
-          </TabsContent>
-        </Tabs>
+        <SettingsClient
+          user={user}
+          subscription={activeSub}
+          transactions={transactions ?? []}
+          allPlans={allPlans ?? []}
+        />
       </main>
     </div>
   )

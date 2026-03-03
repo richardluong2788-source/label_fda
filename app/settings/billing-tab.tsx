@@ -9,6 +9,8 @@ import { CreditCard, Calendar, TrendingUp, CheckCircle2, Clock, XCircle } from '
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
+import { enUS } from 'date-fns/locale'
+import { useTranslation } from '@/lib/i18n'
 
 interface Plan {
   id: string
@@ -46,13 +48,6 @@ interface Props {
   allPlans: Plan[]
 }
 
-const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  active:          { label: 'Đang hoạt động', variant: 'default' },
-  cancelled:       { label: 'Đã huỷ',         variant: 'destructive' },
-  expired:         { label: 'Hết hạn',         variant: 'destructive' },
-  pending_payment: { label: 'Chờ thanh toán',  variant: 'secondary' },
-}
-
 const TXN_STATUS_ICONS: Record<string, React.ReactNode> = {
   completed: <CheckCircle2 className="h-4 w-4 text-green-600" />,
   pending:   <Clock        className="h-4 w-4 text-yellow-500" />,
@@ -61,12 +56,30 @@ const TXN_STATUS_ICONS: Record<string, React.ReactNode> = {
 }
 
 export default function BillingTab({ subscription, transactions, allPlans }: Props) {
+  const { t, locale } = useTranslation()
+  const s = t.settings
+  const dateFnsLocale = locale === 'vi' ? vi : enUS
+
+  const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+    active:          { label: s.statusActive, variant: 'default' },
+    cancelled:       { label: s.statusCancelled, variant: 'destructive' },
+    expired:         { label: s.statusExpired, variant: 'destructive' },
+    pending_payment: { label: s.statusPendingPayment, variant: 'secondary' },
+  }
+
+  const TXN_LABELS: Record<string, string> = {
+    completed: s.txnCompleted,
+    pending: s.txnPending,
+    failed: s.txnFailed,
+    expired: s.txnExpired,
+  }
+
   if (!subscription) {
     return (
       <Card className="p-8 text-center">
-        <p className="text-muted-foreground mb-4">Không tìm thấy thông tin gói.</p>
+        <p className="text-muted-foreground mb-4">{s.noSubscription}</p>
         <Button asChild>
-          <Link href="/pricing">Xem bảng giá</Link>
+          <Link href="/pricing">{s.viewPricing}</Link>
         </Button>
       </Card>
     )
@@ -85,7 +98,6 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
 
   const statusInfo = STATUS_LABELS[subscription.status] ?? { label: subscription.status, variant: 'outline' as const }
 
-  // Plans to show as upgrade options (exclude current and enterprise)
   const upgradePlans = allPlans.filter(
     (p) => p.id !== plan.id && p.id !== 'enterprise' && p.price_vnd > plan.price_vnd
   )
@@ -96,7 +108,7 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
       <Card className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-sm text-muted-foreground mb-1">Gói hiện tại</p>
+            <p className="text-sm text-muted-foreground mb-1">{s.currentPlan}</p>
             <h2 className="text-2xl font-bold">{plan.name}</h2>
           </div>
           <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
@@ -106,27 +118,27 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Lượt đã dùng</p>
+              <p className="text-xs text-muted-foreground">{s.usageUsed}</p>
               <p className="font-semibold">
                 {subscription.reports_used} /{' '}
-                {reportsLimit === Infinity ? '∞' : reportsLimit}
+                {reportsLimit === Infinity ? '\u221E' : reportsLimit}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Gia hạn tiếp theo</p>
+              <p className="text-xs text-muted-foreground">{s.nextRenewal}</p>
               <p className="font-semibold">
-                {format(periodEnd, 'dd/MM/yyyy', { locale: vi })}
+                {format(periodEnd, 'dd/MM/yyyy', { locale: dateFnsLocale })}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Còn lại</p>
-              <p className="font-semibold">{daysLeft} ngày</p>
+              <p className="text-xs text-muted-foreground">{s.daysLeft}</p>
+              <p className="font-semibold">{daysLeft} {s.days}</p>
             </div>
           </div>
         </div>
@@ -135,26 +147,22 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
         {reportsLimit !== Infinity && (
           <div className="mb-4">
             <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>Lượt phân tích tháng này</span>
-              <span>
-                {subscription.reports_used}/{reportsLimit} lượt
-              </span>
+              <span>{s.monthlyUsage}</span>
+              <span>{s.usedOfLimit(subscription.reports_used, reportsLimit as number)}</span>
             </div>
             <Progress
               value={usagePercent}
               className={`h-2 ${usagePercent >= 80 ? '[&>div]:bg-destructive' : ''}`}
             />
             {usagePercent >= 80 && (
-              <p className="text-xs text-destructive mt-1">
-                Sắp hết quota — nâng cấp gói để tiếp tục.
-              </p>
+              <p className="text-xs text-destructive mt-1">{s.almostOutQuota}</p>
             )}
           </div>
         )}
 
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link href="/pricing">Xem tất cả gói</Link>
+            <Link href="/pricing">{s.viewAllPlans}</Link>
           </Button>
           {plan.id !== 'free' && (
             <Button
@@ -162,7 +170,7 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
               className="text-destructive hover:text-destructive"
               asChild
             >
-              <Link href="/contact?subject=cancel">Huỷ gói</Link>
+              <Link href="/contact?subject=cancel">{s.cancelPlan}</Link>
             </Button>
           )}
         </div>
@@ -171,7 +179,7 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
       {/* Upgrade suggestions */}
       {upgradePlans.length > 0 && (
         <div>
-          <h3 className="font-semibold mb-3">Nâng cấp gói</h3>
+          <h3 className="font-semibold mb-3">{s.upgradePlan}</h3>
           <div className="grid sm:grid-cols-2 gap-4">
             {upgradePlans.map((p) => (
               <Card key={p.id} className="p-4 flex items-center justify-between">
@@ -179,18 +187,18 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
                   <p className="font-semibold">{p.name}</p>
                   <p className="text-sm text-muted-foreground">
                     {p.reports_limit === -1
-                      ? 'Không giới hạn lượt'
-                      : `${p.reports_limit} lượt / tháng`}
+                      ? s.unlimitedUsage
+                      : s.usagePerMonth(p.reports_limit)}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-sm">
-                    {p.price_vnd.toLocaleString('vi-VN')}₫
-                    <span className="text-muted-foreground font-normal">/tháng</span>
+                    {p.price_vnd.toLocaleString('vi-VN')}{'\u20AB'}
+                    <span className="text-muted-foreground font-normal">/{t.common.month}</span>
                   </p>
                   <Button size="sm" className="mt-2" asChild>
                     <Link href={`/checkout?plan=${p.id}&amount=${p.price_vnd}`}>
-                      Nâng cấp
+                      {s.upgrade}
                     </Link>
                   </Button>
                 </div>
@@ -202,11 +210,11 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
 
       {/* Payment history */}
       <div>
-        <h3 className="font-semibold mb-3">Lịch sử thanh toán</h3>
+        <h3 className="font-semibold mb-3">{s.paymentHistory}</h3>
         <Card className="divide-y divide-border">
           {transactions.length === 0 ? (
             <div className="p-6 text-center text-muted-foreground text-sm">
-              Chưa có giao dịch nào.
+              {s.noTransactions}
             </div>
           ) : (
             transactions.map((txn) => (
@@ -221,14 +229,14 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
                       {txn.plan_id.charAt(0).toUpperCase() + txn.plan_id.slice(1)} Plan
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(txn.created_at), 'dd/MM/yyyy HH:mm', { locale: vi })}
-                      {txn.vnpay_bank_code ? ` · ${txn.vnpay_bank_code}` : ''}
+                      {format(new Date(txn.created_at), 'dd/MM/yyyy HH:mm', { locale: dateFnsLocale })}
+                      {txn.vnpay_bank_code ? ` \u00B7 ${txn.vnpay_bank_code}` : ''}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold">
-                    {txn.amount_vnd.toLocaleString('vi-VN')}₫
+                    {txn.amount_vnd.toLocaleString('vi-VN')}{'\u20AB'}
                   </p>
                   <Badge
                     variant={
@@ -240,13 +248,7 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
                     }
                     className="text-xs"
                   >
-                    {txn.status === 'completed'
-                      ? 'Thành công'
-                      : txn.status === 'pending'
-                      ? 'Đang chờ'
-                      : txn.status === 'failed'
-                      ? 'Thất bại'
-                      : 'Hết hạn'}
+                    {TXN_LABELS[txn.status] || txn.status}
                   </Badge>
                 </div>
               </div>
@@ -259,9 +261,7 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
 
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <CreditCard className="h-4 w-4" />
-        <span>
-          Thanh toán qua QR ngân hàng Việt Nam (VNPay). Không lưu thông tin thẻ.
-        </span>
+        <span>{s.paymentNote}</span>
       </div>
     </div>
   )
