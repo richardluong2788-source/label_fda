@@ -19,6 +19,8 @@ import {
   AlertTriangle,
   Sparkles,
   ArrowRight,
+  CreditCard,
+  Crown,
 } from 'lucide-react'
 
 interface ExpertRequestPanelProps {
@@ -73,10 +75,33 @@ export function ExpertRequestPanel({
   const [targetMarket, setTargetMarket] = useState('US')
   const [error, setError] = useState<string | null>(null)
   const [expertReviewPrice, setExpertReviewPrice] = useState<number>(expertReviewPriceProp ?? 499000)
+  const [quotaInfo, setQuotaInfo] = useState<{ canRequest: boolean; used: number; limit: number } | null>(null)
+  const [processingAddon, setProcessingAddon] = useState(false)
 
   useEffect(() => {
     if (needsExpertReview) setExpanded(true)
   }, [needsExpertReview])
+
+  // Fetch quota info to determine if user has access
+  useEffect(() => {
+    const fetchQuota = async () => {
+      try {
+        const res = await fetch('/api/expert-request/quota')
+        const data = await res.json()
+        if (data.can_request !== undefined) {
+          setQuotaInfo({
+            canRequest: data.can_request,
+            used: data.reviews_used ?? 0,
+            limit: data.reviews_limit ?? 0,
+          })
+        }
+      } catch {
+        // If can't fetch quota, assume no access
+        setQuotaInfo({ canRequest: false, used: 0, limit: 0 })
+      }
+    }
+    fetchQuota()
+  }, [])
 
   useEffect(() => {
     if (expertReviewPriceProp !== undefined) return
@@ -149,6 +174,38 @@ export function ExpertRequestPanel({
       setError(err.message)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  // Handle addon purchase checkout
+  const handleAddonCheckout = async () => {
+    setProcessingAddon(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/expert-request/addon-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auditReportId: reportId,
+          targetMarket,
+          userContext: userContext.trim() || '',
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.message || data.error || t.expert.errorSubmitFailed)
+      }
+
+      // Redirect to VNPay
+      if (data.payUrl) {
+        window.location.href = data.payUrl
+      }
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setProcessingAddon(false)
     }
   }
 
@@ -326,14 +383,21 @@ export function ExpertRequestPanel({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!expertReviewsIncluded && expertReviewPrice > 0 && (
-            <Badge variant="outline" className="text-xs">
-              {expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}{'₫/'}
-              {locale === 'vi' ? 'lần' : 'time'}
-            </Badge>
-          )}
+          {/* Show "Free in plan" badge for Pro/Business users with quota */}
           {expertReviewsIncluded && (
             <Badge className="text-xs bg-primary text-primary-foreground">{t.expert.freeInPlan}</Badge>
+          )}
+          {/* Show quota remaining for Pro users */}
+          {expertReviewsIncluded && quotaInfo && quotaInfo.limit > 0 && (
+            <Badge variant="outline" className="text-xs text-muted-foreground">
+              {quotaInfo.limit - quotaInfo.used}/{quotaInfo.limit} {t.expert.creditsRemaining || 'remaining'}
+            </Badge>
+          )}
+          {/* Show upgrade prompt for Free/Starter users (no quota) */}
+          {!expertReviewsIncluded && (
+            <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50">
+              {t.expert.upgradeRequired || 'Pro/Business required'}
+            </Badge>
           )}
           {needsExpertReview && (
             <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 border">{t.expert.recommended}</Badge>
@@ -392,32 +456,88 @@ export function ExpertRequestPanel({
             </div>
           )}
 
-          <Button
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="w-full"
-          >
-            {submitting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          {/* Show upgrade CTA for users without quota access */}
+          {!expertReviewsIncluded ? (
+            <div className="space-y-3">
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-amber-800 mb-2">
+                  {t.expert.upgradeToAccess || 'Upgrade to access Expert Consultation'}
+                </p>
+                <p className="text-xs text-amber-700 mb-3">
+                  {t.expert.proUpgradeNote}
+                </p>
+                <Button
+                  asChild
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                >
+                  <a href="/pricing?highlight=business#subscription-plans">
+                    {t.expert.upgradeToPro || 'Upgrade to Pro/Business'}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            {/* Pro users with quota exhausted - show 2 options */}
+            {quotaInfo && !quotaInfo.canRequest && quotaInfo.limit > 0 ? (
+              <div className="space-y-3">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-sm text-amber-800 font-medium mb-1">
+                    {t.expert.quotaExhaustedTitle || 'Monthly quota exhausted'}
+                  </p>
+                  <p className="text-xs text-amber-700">
+                    {t.expert.quotaExhaustedDesc || `You have used all ${quotaInfo.limit} Expert Review credits this month.`}
+                  </p>
+                </div>
+                
+                {/* Option A: Buy addon */}
+                <Button
+                  onClick={handleAddonCheckout}
+                  disabled={processingAddon}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                >
+                  {processingAddon ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <CreditCard className="mr-2 h-4 w-4" />
+                  )}
+                  {processingAddon 
+                    ? t.expert.processingPayment || 'Processing...'
+                    : t.expert.buyAddon 
+                      ? t.expert.buyAddon(expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US'))
+                      : `Buy 1 review - ${expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}₫`
+                  }
+                </Button>
+                
+                {/* Option B: Upgrade to Enterprise */}
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+                >
+                  <a href="/pricing?highlight=enterprise#subscription-plans">
+                    <Crown className="mr-2 h-4 w-4" />
+                    {t.expert.upgradeToEnterprise || 'Upgrade to Enterprise - Unlimited'}
+                  </a>
+                </Button>
+              </div>
             ) : (
-              <MessageCircle className="mr-2 h-4 w-4" />
+              /* Pro users with quota available */
+              <Button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="w-full"
+              >
+                {submitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                )}
+                {submitting
+                  ? t.expert.submitting
+                  : t.expert.submitFreeInPlan}
+              </Button>
             )}
-            {submitting
-              ? t.expert.submitting
-              : expertReviewsIncluded
-              ? t.expert.submitFreeInPlan
-              : expertReviewPrice > 0
-              ? t.expert.submitWithPrice(expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US') + '₫')
-              : t.expert.submitDefault}
-          </Button>
-
-          {!expertReviewsIncluded && (
-            <p className="text-xs text-center text-muted-foreground">
-              {t.expert.proUpgradeNote}{' '}
-              <a href="/pricing?highlight=business#subscription-plans" className="text-primary underline font-medium">
-                {t.expert.viewPricing}
-              </a>
-            </p>
           )}
         </div>
       )}
