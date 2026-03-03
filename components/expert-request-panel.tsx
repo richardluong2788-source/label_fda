@@ -478,6 +478,7 @@ export function ExpertRequestPanel({
               </div>
             </div>
           ) : (
+            <>
             {/* Pro users with quota exhausted - show 2 options */}
             {quotaInfo && !quotaInfo.canRequest && quotaInfo.limit > 0 ? (
               <div className="space-y-3">
@@ -538,6 +539,7 @@ export function ExpertRequestPanel({
                   : t.expert.submitFreeInPlan}
               </Button>
             )}
+            </>
           )}
         </div>
       )}
