@@ -324,7 +324,7 @@ export const vi = {
 
   // ─── Label Image Gallery ─────────────────────────────
   gallery: {
-    noImages: 'Kh��ng có hình ảnh',
+    noImages: 'Không có hình ảnh',
     scanning: 'Đang quét...',
     labelImageCount: (current: number, total: number) => `${current} / ${total} hình ảnh nhãn`,
   },
@@ -671,7 +671,7 @@ export const vi = {
     testimonialsBadge: 'Phản hồi từ khách hàng',
     testimonialsTitle: 'Hơn 200 doanh nghiệp Việt Nam đã kiểm chứng hiệu quả',
     testimonialsDesc: 'Tỷ lệ thông quan FDA đạt 99,5% sau khi sử dụng Vexim.',
-    whatYouGetTitle: 'Bạn nhận đư���c gì khi sử dụng Vexim?',
+    whatYouGetTitle: 'Bạn nhận được gì khi sử dụng Vexim?',
     whatYouGetDesc: 'Cam kết từ đội ngũ FDA Compliance Specialist với hơn 10 năm kinh nghiệm thực chiến.',
     commitment: 'Cam kết từ đội ngũ Vexim Compliance:',
     finalCtaTitle: 'Đừng để lô hàng tiếp theo trở thành bài học đắt giá',
@@ -706,7 +706,7 @@ export const vi = {
     // Flow steps
     flowSteps: [
       { title: 'Tải nhãn lên hệ thống', desc: 'Chụp ảnh hoặc tải file nhãn sản phẩm. AI Vision OCR trích xuất toàn bộ nội dung, bố cục và cấu trúc hình ảnh với độ chính xác cao.', detail: 'Hỗ trợ JPG, PNG, PDF - tối đa 4 mặt nhãn cùng lúc.' },
-      { title: 'Đối chiếu dữ liệu thực tế', desc: 'Từng yếu tố trên nhãn được đối chiếu trực tiếp với 5.346 Warning Letters, Recall, Alerts v�� toàn bộ 21 CFR liên quan.', detail: 'Cơ sở dữ liệu cập nhật hàng tuần từ FDA.gov.' },
+      { title: 'Đối chiếu dữ liệu thực tế', desc: 'Từng yếu tố trên nhãn được đối chiếu trực tiếp với 5.346 Warning Letters, Recall, Alerts và toàn bộ 21 CFR liên quan.', detail: 'Cơ sở dữ liệu cập nhật hàng tuần từ FDA.gov.' },
       { title: 'Phân tích chuyên sâu', desc: 'Mô hình AI chuyên biệt xác định từng điểm vi phạm, trích dẫn mã CFR cụ thể và đánh giá mức độ nghiêm trọng.', detail: 'Phân loại: Critical / Major / Minor - Hoàn thành trong ~2 phút.' },
       { title: 'Chuyên gia rà soát', desc: 'FDA Compliance Specialist rà soát báo cáo AI và bổ sung nhận định chuyên sâu dựa trên kinh nghiệm thực tế.', detail: 'Thời gian rà soát: 4–24 giờ làm việc.' },
       { title: 'Báo cáo & Chứng nhận', desc: 'Báo cáo đầy đủ kèm trích dẫn CFR, hướng dẫn khắc phục từng lỗi, Risk Score tổng thể và xác nhận tuân thủ.', detail: 'Xuất PDF chuyên nghiệp - dùng để đàm phán với buyer và importer.' },
