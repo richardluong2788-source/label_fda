@@ -154,7 +154,7 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     defaultRiskLow: (score: string) => `Nhãn sản phẩm có điểm rủi ro ${score}/10. Không phát hiện vấn đề nghiêm trọng, nhưng cần cải thiện một số điểm.`,
     expertTipCritical: 'Nhãn sản phẩm này có các vấn đề tuân thủ FDA nghiêm trọng cần được khắc phục trước khi phân phối tại thị trường Hoa Kỳ. Không tuân thủ có thể dẫn đến Import Alert, hàng bị giữ tại cảng, hoặc Thư cảnh báo FDA.',
     expertTipWarning: 'Nhãn sản phẩm này đáp ứng yêu cầu FDA tối thiểu nhưng có các điểm cần cải thiện. Khắc phục các cảnh báo sẽ giảm rủi ro bị xử phạt và tăng niềm tin của người tiêu dùng.',
-    expertTipPass: 'Nhãn sản phẩm này thể hiện sự tuân thủ FDA tốt. Tiếp tục theo dõi các cập nhật quy định và duy trì các tiêu chuẩn ghi nhãn hiện tại.',
+    expertTipPass: 'Nhãn sản phẩm này thể hiện sự tuân thủ FDA tốt. Tiếp tục theo dõi các cập nhật quy định v�� duy trì các tiêu chuẩn ghi nhãn hiện tại.',
     riskHigh: 'Cao',
     riskMedHigh: 'Trung bình - Cao',
     riskMed: 'Trung bình',
@@ -989,13 +989,13 @@ ${report.commercial_summary ? `
           } else if (headingText.includes('LỜI KHUYÊN') || headingText.includes('ADVICE')) {
             headingColor = '#065F46'; headingBg = '#D1FAE5'; headingBorder = '2px solid #34D399'
           }
-          return \`<div class="summary-subheading" style="color: \${headingColor}; background: \${headingBg}; border: \${headingBorder}; border-radius: 6px; padding: 8px 12px; margin-top: 16px;">\${escapeHtml(headingText)}</div>\`
+          return `<div class="summary-subheading" style="color: ${headingColor}; background: ${headingBg}; border: ${headingBorder}; border-radius: 6px; padding: 8px 12px; margin-top: 16px;">${escapeHtml(headingText)}</div>`
         }
-        if (line.startsWith('## ')) return \`<div class="summary-heading">\${escapeHtml(line.replace(/^## /, '').replace(/\\*+/g, ''))}</div>\`
-        if (line.startsWith('**') && line.endsWith('**')) return \`<div class="summary-text" style="font-weight: 600;">\${escapeHtml(line.replace(/\\*\\*/g, ''))}</div>\`
-        if (line.startsWith('- ')) return \`<div class="summary-list-item">\${escapeHtml(line.replace(/^- /, '').replace(/\\*+/g, ''))}</div>\`
+        if (line.startsWith('## ')) return `<div class="summary-heading">${escapeHtml(line.replace(/^## /, '').replace(/\*+/g, ''))}</div>`
+        if (line.startsWith('**') && line.endsWith('**')) return `<div class="summary-text" style="font-weight: 600;">${escapeHtml(line.replace(/\*\*/g, ''))}</div>`
+        if (line.startsWith('- ')) return `<div class="summary-list-item">${escapeHtml(line.replace(/^- /, '').replace(/\*+/g, ''))}</div>`
         if (line.trim() === '') return ''
-        return \`<div class="summary-text">\${escapeHtml(line.replace(/\\*+/g, ''))}</div>\`
+        return `<div class="summary-text">${escapeHtml(line.replace(/\*+/g, ''))}</div>`
       }).join('')}
     </div>
   </div>
