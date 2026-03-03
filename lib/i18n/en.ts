@@ -222,6 +222,11 @@ export const en: TranslationKeys = {
     downloadPdf: 'Download PDF',
     downloading: 'Downloading...',
     backToHistory: 'Audit History',
+    // Translation status
+    translating: 'Translating content...',
+    translationFailed: 'Translation unavailable',
+    translatedFrom: 'Translated from',
+    retry: 'Retry',
     reAnalyze: 'Re-analyze',
     newAnalysis: 'New Analysis',
     unlockReport: 'Unlock Full Report',

@@ -222,6 +222,11 @@ export const vi = {
     downloadPdf: 'Tải PDF',
     downloading: 'Đang tải...',
     backToHistory: 'Lịch sử kiểm tra',
+    // Translation status
+    translating: 'Đang dịch nội dung...',
+    translationFailed: 'Không thể dịch',
+    translatedFrom: 'Đã dịch từ',
+    retry: 'Thử lại',
     reAnalyze: 'Phân tích lại',
     newAnalysis: 'Phân tích mới',
     unlockReport: 'Mở khóa báo cáo đầy đủ',
@@ -276,7 +281,7 @@ export const vi = {
 
   // ─── Label Image Gallery ─────────────────────────────
   gallery: {
-    noImages: 'Không có hình ảnh',
+    noImages: 'Kh��ng có hình ảnh',
     scanning: 'Đang quét...',
     labelImageCount: (current: number, total: number) => `${current} / ${total} hình ảnh nhãn`,
   },
