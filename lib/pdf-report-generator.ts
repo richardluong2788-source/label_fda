@@ -124,6 +124,17 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   const riskScore = report.overall_risk_score ?? 0
   const projectedRisk = report.projected_risk_score ?? 0
 
+  // Detect if product is Cosmetic based on category/type
+  const productCategory = (report.product_category || '').toLowerCase()
+  const productType = (report.product_type || '').toLowerCase()
+  const isCosmetic = productCategory.includes('cosmetic') || 
+                     productCategory.includes('mỹ phẩm') ||
+                     productType.includes('cosmetic') ||
+                     productType.includes('skincare') ||
+                     productType.includes('cream') ||
+                     productType.includes('lotion') ||
+                     productType.includes('elixir')
+
   const sortedViolations = [...standardViolations].sort((a, b) => {
     const order = { critical: 0, warning: 1, info: 2 }
     return (order[a.severity] ?? 3) - (order[b.severity] ?? 3)
@@ -1050,7 +1061,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     <!-- Quick Summary -->
     <div style="margin-top: 32px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
       <div style="font-size: 11px; font-weight: 700; color: #0f172a; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Tóm Tắt Nhanh</div>
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px;">
         <div style="text-align: center;">
           <div style="font-size: 24px; font-weight: 800; color: #dc2626;">${criticalCount}</div>
           <div style="font-size: 9px; color: #64748b; text-transform: uppercase;">Nghiêm trọng</div>
@@ -1068,6 +1079,15 @@ export function generatePDFReportHTML(data: PDFReportData): string {
           <div style="font-size: 9px; color: #64748b; text-transform: uppercase;">Trích dẫn CFR</div>
         </div>
       </div>
+      ${sortedViolations.length > 0 ? `
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
+        <div style="font-size: 9px; font-weight: 600; color: #64748b; margin-bottom: 8px; text-transform: uppercase;">Lý do chính:</div>
+        ${sortedViolations.slice(0, 3).map(v => `
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span style="width: 6px; height: 6px; border-radius: 50%; background: ${v.severity === 'critical' ? '#dc2626' : v.severity === 'warning' ? '#f59e0b' : '#2563eb'};"></span>
+          <span style="font-size: 10px; color: #334155;">${escapeHtml(translateCategory(v.category))}</span>
+        </div>`).join('')}
+      </div>` : ''}
     </div>
   </div>
 
@@ -1180,7 +1200,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     </div>
   </div>` : ''}
 
-  ${report.nutrition_facts ? `
+  ${report.nutrition_facts && !isCosmetic ? `
   <div class="section no-break">
     <div class="section-title"><span class="section-number">${report.allergen_declaration ? (report.ingredient_list ? '03b' : '03a') : (report.ingredient_list ? '03a' : '03')}</span> Thông Tin Dinh Dưỡng</div>
     <div class="data-box">
@@ -1559,13 +1579,19 @@ ${report.commercial_summary ? `
   </div>
 
   ${report.status !== 'verified' ? `
-  <div class="cta-box">
-    <div class="cta-box-title">Yêu cầu xác minh chuyên gia</div>
-    <div class="cta-box-text">
+  <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 12px; padding: 24px; margin: 24px 0; color: white; text-align: center;">
+    <div style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">Nâng cao độ tin cậy của báo cáo</div>
+    <div style="font-size: 11px; opacity: 0.9; margin-bottom: 16px; line-height: 1.6;">
       Để chuyên gia tuân thủ FDA có năng lực đánh giá và xác minh báo cáo này.<br/>
-      Xác minh chuyên gia tăng độ tin cậy và cung cấp khuyến nghị chi tiết.
+      Xác minh chuyên gia tăng độ tin cậy và cung cấp khuyến nghị chi tiết hơn.
     </div>
-    <a href="https://vexim.global/pricing" class="cta-box-link">Yêu cầu đánh giá</a>
+    <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+      <a href="https://vexim.global/pricing" style="display: inline-block; background: white; color: #1e40af; padding: 12px 24px; border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none;">Yêu cầu xác minh chuyên gia</a>
+      <a href="mailto:support@vexim.global" style="display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 12px 24px; border-radius: 8px; font-size: 12px; font-weight: 600; text-decoration: none; border: 1px solid rgba(255,255,255,0.3);">Liên hệ tư vấn</a>
+    </div>
+    <div style="margin-top: 12px; font-size: 10px; opacity: 0.8;">
+      Hotline: +1 (555) 123-4567 | Email: support@vexim.global
+    </div>
   </div>` : ''}
 
   <!-- Signature Section -->
