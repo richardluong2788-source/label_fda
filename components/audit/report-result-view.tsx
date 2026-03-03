@@ -40,6 +40,139 @@ import { useTranslation } from '@/lib/i18n'
 import { useTranslateViolations } from '@/hooks/use-translate-violations'
 
 // ────────────────────────────────────────────────────────────
+// Simple Markdown Renderer for AI-generated content
+// ────────────────────────────────────────────────────────────
+
+function MarkdownContent({ content, className }: { content: string; className?: string }) {
+  const lines = content.split('\n')
+  const elements: React.ReactNode[] = []
+  let listItems: React.ReactNode[] = []
+  let listType: 'ul' | 'ol' | null = null
+
+  const flushList = () => {
+    if (listItems.length > 0 && listType) {
+      const ListTag = listType === 'ol' ? 'ol' : 'ul'
+      elements.push(
+        <ListTag
+          key={`list-${elements.length}`}
+          className={`${listType === 'ol' ? 'list-decimal' : 'list-disc'} pl-5 space-y-1 text-sm text-slate-700`}
+        >
+          {listItems}
+        </ListTag>
+      )
+      listItems = []
+      listType = null
+    }
+  }
+
+  const formatInline = (text: string) => {
+    // Handle **bold** and *italic*
+    const parts: React.ReactNode[] = []
+    const regex = /\*\*(.+?)\*\*|\*(.+?)\*/g
+    let lastIndex = 0
+    let match: RegExpExecArray | null
+
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index))
+      }
+      if (match[1]) {
+        parts.push(<strong key={match.index} className="font-semibold text-slate-800">{match[1]}</strong>)
+      } else if (match[2]) {
+        parts.push(<em key={match.index}>{match[2]}</em>)
+      }
+      lastIndex = regex.lastIndex
+    }
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex))
+    }
+    return parts.length > 0 ? parts : [text]
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+
+    // Skip empty lines
+    if (!line) {
+      flushList()
+      continue
+    }
+
+    // Headers: ### / ## / #
+    const h3Match = line.match(/^###\s+(.+)/)
+    if (h3Match) {
+      flushList()
+      elements.push(
+        <h4 key={`h3-${i}`} className="text-xs font-bold uppercase tracking-wider text-slate-600 mt-3 mb-1.5">
+          {formatInline(h3Match[1].replace(/#+$/, '').trim())}
+        </h4>
+      )
+      continue
+    }
+
+    const h2Match = line.match(/^##\s+(.+)/)
+    if (h2Match) {
+      flushList()
+      elements.push(
+        <h3 key={`h2-${i}`} className="text-sm font-bold text-slate-800 mt-3 mb-1.5">
+          {formatInline(h2Match[1].replace(/#+$/, '').trim())}
+        </h3>
+      )
+      continue
+    }
+
+    const h1Match = line.match(/^#\s+(.+)/)
+    if (h1Match) {
+      flushList()
+      elements.push(
+        <h3 key={`h1-${i}`} className="text-sm font-bold text-slate-800 mt-3 mb-1.5">
+          {formatInline(h1Match[1].replace(/#+$/, '').trim())}
+        </h3>
+      )
+      continue
+    }
+
+    // Unordered list: - item
+    const ulMatch = line.match(/^[-*]\s+(.+)/)
+    if (ulMatch) {
+      if (listType === 'ol') flushList()
+      listType = 'ul'
+      listItems.push(
+        <li key={`li-${i}`} className="leading-relaxed">
+          {formatInline(ulMatch[1])}
+        </li>
+      )
+      continue
+    }
+
+    // Ordered list: 1. item
+    const olMatch = line.match(/^\d+[.)]\s+(.+)/)
+    if (olMatch) {
+      if (listType === 'ul') flushList()
+      listType = 'ol'
+      listItems.push(
+        <li key={`li-${i}`} className="leading-relaxed">
+          {formatInline(olMatch[1])}
+        </li>
+      )
+      continue
+    }
+
+    // Regular paragraph
+    flushList()
+    elements.push(
+      <p key={`p-${i}`} className="text-sm text-slate-700 leading-relaxed">
+        {formatInline(line)}
+      </p>
+    )
+  }
+
+  flushList()
+
+  return <div className={`space-y-2 ${className || ''}`}>{elements}</div>
+}
+
+// ────────────────────────────────────────────────────────────
 // Risk Score Circular Gauge - Vexim Compliance AI
 // ────────────────────────────────────────────────────────────
 
@@ -309,12 +442,10 @@ function ViolationCard({ violation, index, t, showExpertCta }: { violation: Viol
         {/* Right: Fix recommendation (green) */}
         <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
-            {t.report.fixGuidance}
-          </p>
-          <p className="text-sm text-slate-700 leading-relaxed">
-            {getLocalizedFix(violation.suggested_fix)}
-          </p>
-        </div>
+                  {t.report.fixGuidance}
+                  </p>
+                  <MarkdownContent content={getLocalizedFix(violation.suggested_fix)} />
+                  </div>
       </div>
 
       {/* Citations section */}
@@ -418,11 +549,55 @@ function WarningLetterCard({ violation, t }: { violation: Violation; t: ReturnTy
         </div>
         <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
-            {t.report.veximRecommendation}
-          </p>
-          <p className="text-sm text-slate-700 leading-relaxed">
-            {violation.suggested_fix || t.report.warningLetterDefaultFix}
-          </p>
+                  {t.report.veximRecommendation}
+                  </p>
+                  <MarkdownContent content={violation.suggested_fix || t.report.warningLetterDefaultFix} />
+                  </div>
+                  </div>
+                  
+                  </div>
+                  ))}
+                  </div>
+                  )}
+
+                  {/* Recall Violations */}
+                  {recallViolations.length > 0 && (
+                  <div className="space-y-4">
+                  <h3 className="font-semibold text-sm flex items-center gap-2 text-purple-800">
+                  <RotateCcw className="h-4 w-4" />
+                  Recalls ({recallViolations.length})
+                  </h3>
+                  {recallViolations.map((violation, idx) => (
+                  <div key={`recall-${idx}`} className="rounded-xl border border-purple-200 bg-white overflow-hidden">
+                  <div className="p-5">
+                  <div className="flex items-start gap-3">
+                  <div className="flex items-center justify-center h-7 w-7 rounded-full bg-purple-100 shrink-0 mt-0.5">
+                  <RotateCcw className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-base text-slate-900 leading-tight">
+                  {violation.violation_type || violation.field_name}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                  {violation.regulation}
+                  </p>
+                  </div>
+                  </div>
+                  </div>
+                  <div className="grid sm:grid-cols-2">
+                  <div className="p-5 bg-purple-50/60 border-t border-r border-slate-200">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-purple-700 mb-3">
+                  {t.report.recallInfo}
+                  </p>
+                  <p className="text-sm text-slate-700 leading-relaxed italic">
+                  &ldquo;{violation.description}&rdquo;
+                  </p>
+                  </div>
+                  <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
+                  {t.report.veximRecommendation}
+                  </p>
+                  <MarkdownContent content={violation.suggested_fix || t.report.recallDefaultFix} />
         </div>
       </div>
     </div>
@@ -510,12 +685,10 @@ function ImportAlertCard({ violation, t }: { violation: Violation; t: ReturnType
         </div>
         <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
-            {t.report.veximRecommendation}
-          </p>
-          <p className="text-sm text-slate-700 leading-relaxed">
-            {violation.suggested_fix || t.report.importAlertDefaultFix}
-          </p>
-        </div>
+                  {t.report.veximRecommendation}
+                  </p>
+                  <MarkdownContent content={violation.suggested_fix || t.report.importAlertDefaultFix} />
+                  </div>
       </div>
     </div>
   )
@@ -599,12 +772,10 @@ function ContrastViolationCard({
         {/* Right: Recommendation (green) */}
         <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
-            {t.report.fixGuidance}
-          </p>
-          <p className="text-sm text-slate-700 leading-relaxed">
-            {violation.recommendation || t.report.contrastDefaultFix}
-          </p>
-        </div>
+                  {t.report.fixGuidance}
+                  </p>
+                  <MarkdownContent content={violation.recommendation || t.report.contrastDefaultFix} />
+                  </div>
       </div>
     </div>
   )
@@ -1124,7 +1295,7 @@ export function ReportResultView({
                         <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700 mb-2">
                           {t.report.aiSummary}
                         </p>
-                        <p className="text-sm text-slate-700 leading-relaxed">{commercialSummary}</p>
+                        <MarkdownContent content={commercialSummary} />
                       </div>
                     )}
                     {expertTips.length > 0 && (
@@ -1137,7 +1308,7 @@ export function ReportResultView({
                             <span className="flex items-center justify-center h-5 w-5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold shrink-0 mt-0.5">
                               {idx + 1}
                             </span>
-                            <p className="text-sm text-slate-700 leading-relaxed">{tip}</p>
+                            <MarkdownContent content={tip} />
                           </div>
                         ))}
                       </div>
@@ -1161,7 +1332,7 @@ export function ReportResultView({
                     {enforcementInsights.map((insight, idx) => (
                       <div key={idx} className="flex items-start gap-2 text-sm text-slate-600">
                         <span className="text-amber-500 mt-1 shrink-0">{'>'}</span>
-                        <span className="leading-relaxed">{insight}</span>
+                        <MarkdownContent content={insight} />
                       </div>
                     ))}
                   </div>
