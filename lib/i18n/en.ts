@@ -237,6 +237,49 @@ export const en: TranslationKeys = {
     noViolations: 'No violations found. Your label is compliant!',
     viewDetails: 'View details',
     collapse: 'Collapse',
+    // Projected risk & risk banner
+    andWord: 'and',
+    currentRisk: 'CURRENT',
+    afterFix: 'AFTER FIX',
+    projectedRiskDesc: (score: number) => `After fixing critical issues, projected risk score drops to ${score.toFixed(1)}/10`,
+    // Expert insights / AI summary
+    expertInsightsTitle: 'AI Expert Insights',
+    expertInsightsDesc: 'Commercial summary and expert recommendations based on FDA data',
+    aiSummary: 'COMMERCIAL SUMMARY',
+    expertTipsLabel: 'EXPERT RECOMMENDATIONS',
+    enforcementInsightsTitle: 'FDA ENFORCEMENT TRENDS',
+    // Consequences banner
+    consequencesTitle: 'CONSEQUENCES OF NON-COMPLIANCE',
+    consequenceDetention: 'Port Detention (DWPE)',
+    consequenceDetentionDesc: 'Container storage, demurrage fees per day',
+    consequenceRelabeling: 'Relabeling Cost',
+    consequenceRelabelingDesc: 'New labels, re-application in US, labor',
+    consequenceRecall: 'Mandatory Recall',
+    consequenceRecallDesc: 'FDA mandated total product recall',
+    // Product info sidebar extras
+    netQuantity: 'NET QUANTITY',
+    allergenDeclaration: 'ALLERGEN DECLARATION',
+    healthClaimsTitle: 'HEALTH CLAIMS (WARNING)',
+    specialClaimsTitle: 'SPECIAL CLAIMS',
+    packagingFormatLabel: 'PACKAGING FORMAT',
+    detectedLanguagesTitle: 'DETECTED LANGUAGES',
+    nutritionFactsTitle: 'NUTRITION FACTS',
+    // Confidence metrics
+    confidenceMetrics: 'ANALYSIS CONFIDENCE',
+    ocrLabel: 'OCR (Text reading)',
+    extractionLabel: 'Data extraction',
+    legalLabel: 'Legal analysis',
+    // Violation card extras
+    aiConfidence: 'AI Confidence',
+    riskScoreLabel: 'Risk score',
+    citationsCount: (count: number) => `${count} regulation citation(s)`,
+    enforcementFrequency: (count: number) => `FDA has enforced ${count} time(s) for similar issues`,
+    criticalNeedsExpert: 'This violation needs expert review',
+    getExpertHelp: 'Contact Vexim Expert',
+    // Geometry violations
+    actualValue: 'ACTUAL VALUE',
+    expectedValue: 'EXPECTED VALUE',
+    geometrySection: 'GEOMETRY & FONT SIZE CHECK (21 CFR)',
   },
 
   // ─── Audit Page ──────────────────────────────────────

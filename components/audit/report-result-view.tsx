@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -11,8 +12,6 @@ import {
   Download,
   Loader2,
   Info,
-  Search,
-  ArrowRight,
   Expand,
   Shield,
   Mail,
@@ -21,8 +20,19 @@ import {
   FileText,
   Languages,
   RefreshCw,
+  TrendingDown,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  Ruler,
+  Package,
+  ShieldAlert,
+  BookOpen,
+  ExternalLink,
+  Utensils,
+  MessageSquare,
 } from 'lucide-react'
-import type { AuditReport, Violation, LabelImageEntry } from '@/lib/types'
+import type { AuditReport, Violation, LabelImageEntry, GeometryViolation } from '@/lib/types'
 import { LabelImageGallery } from '@/components/label-image-gallery'
 import { LabelPreview } from '@/components/label-preview'
 import { getLabelConfig } from '@/lib/label-field-config'
@@ -33,40 +43,30 @@ import { useTranslateViolations } from '@/hooks/use-translate-violations'
 // Risk Score Circular Gauge - Vexim Compliance AI
 // ────────────────────────────────────────────────────────────
 
-function RiskScoreGauge({ score }: { score: number }) {
+function RiskScoreGauge({ score, size = 'lg', label }: { score: number; size?: 'sm' | 'lg'; label?: string }) {
   const color =
     score >= 7 ? '#ef4444' : score >= 4 ? '#f59e0b' : '#22c55e'
   const circumference = 2 * Math.PI * 42
   const dashLength = (score / 10) * circumference
+  const sizeClass = size === 'sm' ? 'h-16 w-16' : 'h-24 w-24'
+  const textClass = size === 'sm' ? 'text-lg' : 'text-2xl'
 
   return (
-    <div className="relative flex items-center justify-center shrink-0">
-      <svg viewBox="0 0 100 100" className="h-24 w-24 -rotate-90">
-        <circle
-          cx="50"
-          cy="50"
-          r="42"
-          fill="none"
-          stroke="#e5e7eb"
-          strokeWidth="8"
-        />
-        <circle
-          cx="50"
-          cy="50"
-          r="42"
-          fill="none"
-          stroke={color}
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={`${dashLength} ${circumference}`}
-        />
-      </svg>
-      <span
-        className="absolute text-2xl font-bold"
-        style={{ color }}
-      >
-        {score.toFixed(1)}
-      </span>
+    <div className="flex flex-col items-center gap-1 shrink-0">
+      <div className="relative flex items-center justify-center">
+        <svg viewBox="0 0 100 100" className={`${sizeClass} -rotate-90`}>
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#e5e7eb" strokeWidth="8" />
+          <circle
+            cx="50" cy="50" r="42" fill="none"
+            stroke={color} strokeWidth="8" strokeLinecap="round"
+            strokeDasharray={`${dashLength} ${circumference}`}
+          />
+        </svg>
+        <span className={`absolute ${textClass} font-bold`} style={{ color }}>
+          {score.toFixed(1)}
+        </span>
+      </div>
+      {label && <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{label}</span>}
     </div>
   )
 }
@@ -93,6 +93,26 @@ function OcrConfidenceBar({ confidence }: { confidence: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
+    </div>
+  )
+}
+
+// ────────────────────────────────────────────────────────────
+// Mini Confidence Bar (for extraction/legal reasoning)
+// ────────────────────────────────────────────────────────────
+
+function MiniConfidenceBar({ label, value }: { label: string; value: number }) {
+  const pct = Math.round(value * 100)
+  const barColor =
+    pct >= 80 ? 'bg-green-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500'
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-slate-500 w-24 shrink-0">{label}</span>
+      <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-[10px] font-medium text-slate-600 w-8 text-right">{pct}%</span>
     </div>
   )
 }
@@ -128,7 +148,7 @@ function IngredientTags({ ingredientList }: { ingredientList: string }) {
 }
 
 // ────────────────────────────────────────────────────────────
-// Severity Badge (NGHIÊM TRỌNG / CẢNH BÁO)
+// Severity Badge (NGHIEM TRONG / CANH BAO)
 // ────────────────────────────────────────────────────────────
 
 function SeverityBadge({ severity, t }: { severity: string; t: ReturnType<typeof useTranslation>['t'] }) {
@@ -194,17 +214,17 @@ function ViolationIcon({ severity, type }: { severity: string; type?: string }) 
 }
 
 // ────────────────────────────────────────────────────────────
-// A/B Comparison Violation Card
+// Enhanced A/B Comparison Violation Card with Citations
 // ────────────────────────────────────────────────────────────
 
-function ViolationCard({ violation, index, t }: { violation: Violation; index: number; t: ReturnType<typeof useTranslation>['t'] }) {
+function ViolationCard({ violation, index, t, showExpertCta }: { violation: Violation; index: number; t: ReturnType<typeof useTranslation>['t']; showExpertCta?: boolean }) {
+  const [showCitations, setShowCitations] = useState(false)
   const isContrast =
     violation.category?.toLowerCase().includes('contrast') ||
-    violation.category?.toLowerCase().includes('tương phản') ||
+    violation.category?.toLowerCase().includes('tuong phan') ||
     violation.category?.toLowerCase().includes('color')
 
   const getCategoryName = (category: string) => {
-    // Check both exact and case-insensitive match
     return t.report.categoryNames[category] || t.report.categoryNames[category.toLowerCase()] || category
   }
 
@@ -212,6 +232,8 @@ function ViolationCard({ violation, index, t }: { violation: Violation; index: n
     if (!fix) return t.report.defaultFix
     return fix
   }
+
+  const hasCitations = violation.citations && violation.citations.length > 0
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -226,17 +248,51 @@ function ViolationCard({ violation, index, t }: { violation: Violation; index: n
             <h3 className="font-semibold text-base text-slate-900 leading-tight">
               {getCategoryName(violation.category)}
             </h3>
-            {violation.regulation_reference && (
-              <div className="flex flex-wrap items-center gap-2 mt-2">
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {violation.regulation_reference && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200">
                   {violation.regulation_reference}
                 </span>
-              </div>
-            )}
+              )}
+              {violation.confidence_score !== undefined && violation.confidence_score > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-100">
+                  {t.report.aiConfidence}: {Math.round(violation.confidence_score * 100)}%
+                </span>
+              )}
+              {violation.risk_score !== undefined && violation.risk_score > 0 && (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border ${
+                  violation.risk_score >= 7 ? 'bg-red-50 text-red-600 border-red-100' :
+                  violation.risk_score >= 4 ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                  'bg-green-50 text-green-600 border-green-100'
+                }`}>
+                  {t.report.riskScoreLabel}: {violation.risk_score}/10
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <SeverityBadge severity={violation.severity} t={t} />
       </div>
+
+      {/* Enforcement context bar */}
+      {(violation.enforcement_frequency || violation.legal_basis) && (
+        <div className="mx-5 mb-3 p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+          <div className="flex flex-wrap items-center gap-3 text-[11px]">
+            {violation.enforcement_frequency && violation.enforcement_frequency > 0 && (
+              <span className="flex items-center gap-1 text-slate-600">
+                <ShieldAlert className="h-3 w-3" />
+                {t.report.enforcementFrequency(violation.enforcement_frequency)}
+              </span>
+            )}
+            {violation.legal_basis && (
+              <span className="flex items-center gap-1 text-slate-500">
+                <BookOpen className="h-3 w-3" />
+                {violation.legal_basis}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* A/B Comparison Grid */}
       <div className="grid md:grid-cols-2 gap-0">
@@ -260,6 +316,64 @@ function ViolationCard({ violation, index, t }: { violation: Violation; index: n
           </p>
         </div>
       </div>
+
+      {/* Citations section */}
+      {hasCitations && (
+        <div className="border-t border-slate-100">
+          <button
+            onClick={() => setShowCitations(!showCitations)}
+            className="w-full flex items-center justify-between px-5 py-2.5 text-xs text-slate-500 hover:bg-slate-50 transition-colors"
+          >
+            <span className="flex items-center gap-1.5">
+              <BookOpen className="h-3 w-3" />
+              {t.report.citationsCount(violation.citations.length)}
+            </span>
+            {showCitations ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </button>
+          {showCitations && (
+            <div className="px-5 pb-4 space-y-2">
+              {violation.citations.map((cit, ci) => (
+                <div key={ci} className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-mono font-medium text-slate-600">{cit.section}</span>
+                    {cit.relevance_tier && (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                        cit.relevance_tier === 'primary' ? 'bg-green-100 text-green-700' :
+                        cit.relevance_tier === 'supporting' ? 'bg-blue-100 text-blue-700' :
+                        'bg-slate-100 text-slate-600'
+                      }`}>
+                        {cit.relevance_tier}
+                      </span>
+                    )}
+                    {cit.relevance_score > 0 && (
+                      <span className="text-[9px] text-slate-400">{Math.round(cit.relevance_score * 100)}%</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-3">{cit.text}</p>
+                  {cit.source && (
+                    <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                      <ExternalLink className="h-2.5 w-2.5" />{cit.source}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Inline Expert CTA for critical violations */}
+      {showExpertCta && violation.severity === 'critical' && (
+        <div className="border-t border-red-100 bg-red-50/30 px-5 py-3 flex items-center justify-between">
+          <span className="text-xs text-red-700">
+            {t.report.criticalNeedsExpert}
+          </span>
+          <a href="#expert-request" className="text-xs font-semibold text-red-600 hover:text-red-800 flex items-center gap-1 transition-colors">
+            {t.report.getExpertHelp}
+            <MessageSquare className="h-3 w-3" />
+          </a>
+        </div>
+      )}
     </div>
   )
 }
@@ -407,7 +521,7 @@ function ImportAlertCard({ violation, t }: { violation: Violation; t: ReturnType
   )
 }
 
-// ─────────────────────────────────────────────���──────────────
+// ────────────────────────────────────────────────────────────
 // Contrast Violation Card (merged into main list per spec)
 // ────────────────────────────────────────────────────────────
 
@@ -497,7 +611,51 @@ function ContrastViolationCard({
 }
 
 // ────────────────────────────────────────────────────────────
-// Main Report Result View (matches mockup layout)
+// Geometry Violation Card
+// ────────────────────────────────────────────────────────────
+
+function GeometryViolationCard({ violation, t }: { violation: GeometryViolation; t: ReturnType<typeof useTranslation>['t'] }) {
+  return (
+    <div className="rounded-xl border border-indigo-200 bg-white overflow-hidden">
+      <div className="flex items-start justify-between p-5 pb-3">
+        <div className="flex items-start gap-3">
+          <div className="rounded-full bg-indigo-100 p-2.5 shrink-0">
+            <Ruler className="h-5 w-5 text-indigo-600" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-base text-slate-900 leading-tight">
+              {violation.description}
+            </h3>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-indigo-50 text-indigo-600 border border-indigo-100">
+                {violation.regulation}
+              </span>
+            </div>
+          </div>
+        </div>
+        <SeverityBadge severity={violation.severity} t={t} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-0">
+        <div className="p-5 bg-red-50/60 border-t border-r border-slate-200">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-red-700 mb-3">
+            {t.report.actualValue}
+          </p>
+          <p className="text-sm text-slate-700 font-mono">{violation.actual}</p>
+        </div>
+        <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
+            {t.report.expectedValue}
+          </p>
+          <p className="text-sm text-slate-700 font-mono">{violation.expected}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ────────────────────────────────────────────────────────────
+// Main Report Result View
 // ────────────────────────────────────────────────────────────
 
 interface ReportResultViewProps {
@@ -513,8 +671,9 @@ export function ReportResultView({
 }: ReportResultViewProps) {
   const router = useRouter()
   const { t, locale } = useTranslation()
+  const [showExpertTips, setShowExpertTips] = useState(true)
 
-  const rawViolations: Violation[] = report.findings || report.violations || []
+  const rawViolations: Violation[] = (report as any).findings || report.violations || []
   
   // Use translation hook for AI-generated content
   const {
@@ -527,7 +686,7 @@ export function ReportResultView({
   
   const allViolations = translatedViolations
   
-  // Filter violations by source type - these come from real FDA data
+  // Filter violations by source type
   const cfrViolations = allViolations.filter(
     (v) =>
       v.source_type !== 'import_alert' &&
@@ -539,8 +698,10 @@ export function ReportResultView({
   const importAlertViolations = allViolations.filter((v) => v.source_type === 'import_alert')
   
   const contrastViolations = report.contrast_violations || []
+  const geometryViolations = report.geometry_violations || []
 
   const riskScore = report.overall_risk_score ?? 5
+  const projectedRiskScore = report.projected_risk_score
   const riskLabel =
     riskScore >= 7
       ? t.report.riskHigh
@@ -561,9 +722,19 @@ export function ReportResultView({
   if (criticalCount > 0) descParts.push(`${criticalCount} ${t.report.criticalViolations}`)
   if (warningCount > 0) descParts.push(`${warningCount} ${t.report.warnings}`)
 
+  const expertTips = report.expert_tips || []
+  const commercialSummary = report.commercial_summary
+  const enforcementInsights = report.enforcement_insights || []
+  const nutritionFacts = report.nutrition_facts || []
+  const allergenDeclaration = report.allergen_declaration
+  const healthClaims = (report as any).health_claims as string[] | undefined
+  const detectedLanguages = (report as any).detected_languages as string[] | undefined
+  const netQuantity = (report as any).net_quantity as string | undefined
+  const packagingFormat = report.packaging_format
+  const specialClaims = report.special_claims || []
+
   return (
     <div className="bg-slate-50">
-      {/* ── BODY CONTENT ──────────────────────────────────── */}
       <main className="container mx-auto px-4 py-6 max-w-7xl">
         {/* Action Bar */}
         <div className="flex items-center justify-between mb-6">
@@ -573,7 +744,6 @@ export function ReportResultView({
               <span className="text-xs text-slate-600 font-medium">FDA Pipeline: Connected</span>
             </div>
             
-            {/* Translation Status Indicator */}
             {isTranslating && (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200">
                 <Loader2 className="h-3 w-3 text-blue-600 animate-spin" />
@@ -662,7 +832,7 @@ export function ReportResultView({
               </div>
             </Card>
 
-            {/* Product Info Card */}
+            {/* Product Info Card (Enhanced) */}
             <Card className="bg-white border-slate-200 overflow-hidden">
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-4">
@@ -695,12 +865,65 @@ export function ReportResultView({
                     </div>
                   )}
 
+                  {/* Net Quantity (NEW) */}
+                  {netQuantity && (
+                    <div>
+                      <p className="text-[11px] text-slate-400 uppercase tracking-wider">
+                        {t.report.netQuantity}
+                      </p>
+                      <p className="text-sm font-medium text-slate-700">{netQuantity}</p>
+                    </div>
+                  )}
+
                   {report.ingredient_list && (
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider mb-2">
                         {t.report.extractedIngredients}
                       </p>
                       <IngredientTags ingredientList={report.ingredient_list} />
+                    </div>
+                  )}
+
+                  {/* Allergen Declaration (NEW) */}
+                  {allergenDeclaration && (
+                    <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+                      <p className="text-[11px] text-amber-700 uppercase tracking-wider font-bold mb-1">
+                        {t.report.allergenDeclaration}
+                      </p>
+                      <p className="text-xs text-amber-900 leading-relaxed">{allergenDeclaration}</p>
+                    </div>
+                  )}
+
+                  {/* Health Claims (NEW) */}
+                  {healthClaims && healthClaims.length > 0 && (
+                    <div className="p-2.5 rounded-lg bg-red-50 border border-red-200">
+                      <p className="text-[11px] text-red-700 uppercase tracking-wider font-bold mb-1.5">
+                        {t.report.healthClaimsTitle}
+                      </p>
+                      <div className="space-y-1">
+                        {healthClaims.map((claim, idx) => (
+                          <p key={idx} className="text-xs text-red-800 flex items-start gap-1.5">
+                            <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
+                            {claim}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Special Claims (NEW) */}
+                  {specialClaims.length > 0 && (
+                    <div>
+                      <p className="text-[11px] text-slate-400 uppercase tracking-wider mb-2">
+                        {t.report.specialClaimsTitle}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {specialClaims.map((claim, idx) => (
+                          <span key={idx} className="px-2 py-0.5 text-[10px] rounded-full bg-green-50 text-green-700 border border-green-200 font-medium">
+                            {claim}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -715,6 +938,19 @@ export function ReportResultView({
                     </div>
                   )}
 
+                  {/* Packaging Format (NEW) */}
+                  {packagingFormat && (
+                    <div>
+                      <p className="text-[11px] text-slate-400 uppercase tracking-wider">
+                        {t.report.packagingFormatLabel}
+                      </p>
+                      <Badge variant="outline" className="text-xs mt-1">
+                        <Package className="h-3 w-3 mr-1" />
+                        {packagingFormat.replace(/_/g, ' ')}
+                      </Badge>
+                    </div>
+                  )}
+
                   {report.target_market && (
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider">
@@ -725,17 +961,106 @@ export function ReportResultView({
                       </p>
                     </div>
                   )}
+
+                  {/* Detected Languages (NEW) */}
+                  {detectedLanguages && detectedLanguages.length > 0 && (
+                    <div>
+                      <p className="text-[11px] text-slate-400 uppercase tracking-wider mb-1.5">
+                        {t.report.detectedLanguagesTitle}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {detectedLanguages.map((lang, idx) => (
+                          <span key={idx} className="px-2 py-0.5 text-[10px] rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-medium flex items-center gap-1">
+                            <Languages className="h-2.5 w-2.5" />
+                            {lang.toUpperCase()}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>
+
+            {/* Nutrition Facts Card (NEW) */}
+            {nutritionFacts.length > 0 && (
+              <Card className="bg-white border-slate-200 overflow-hidden">
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Utensils className="h-4 w-4 text-slate-500" />
+                    <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      {t.report.nutritionFactsTitle}
+                    </h2>
+                    <Badge variant="secondary" className="text-[9px] ml-auto">
+                      {nutritionFacts.length}
+                    </Badge>
+                  </div>
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="bg-slate-800 text-white px-3 py-2 text-xs font-bold uppercase tracking-wider">
+                      Nutrition Facts
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                      {nutritionFacts.slice(0, 12).map((item: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between px-3 py-1.5 text-xs">
+                          <span className="text-slate-700 font-medium">{item.nutrient || item.name}</span>
+                          <span className="text-slate-900 font-semibold">
+                            {item.value}{item.unit}
+                            {item.dailyValue && (
+                              <span className="text-slate-400 font-normal ml-1">({item.dailyValue}% DV)</span>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Confidence Meters (NEW) */}
+            {(report.extraction_confidence || report.legal_reasoning_confidence) && (
+              <Card className="bg-white border-slate-200 overflow-hidden">
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Shield className="h-4 w-4 text-slate-500" />
+                    <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      {t.report.confidenceMetrics}
+                    </h2>
+                  </div>
+                  <div className="space-y-2.5">
+                    {report.ocr_confidence !== undefined && (
+                      <MiniConfidenceBar label={t.report.ocrLabel} value={report.ocr_confidence} />
+                    )}
+                    {report.extraction_confidence !== undefined && (
+                      <MiniConfidenceBar label={t.report.extractionLabel} value={report.extraction_confidence} />
+                    )}
+                    {report.legal_reasoning_confidence !== undefined && (
+                      <MiniConfidenceBar label={t.report.legalLabel} value={report.legal_reasoning_confidence} />
+                    )}
+                  </div>
+                </div>
+              </Card>
+            )}
           </aside>
 
           {/* ── MAIN CONTENT ───────────────────────────────── */}
           <div className="space-y-6">
-            {/* Risk Score Banner */}
+            {/* Risk Score Banner (Enhanced with Projected Score) */}
             <Card className="bg-white border-slate-200 overflow-hidden">
               <div className="p-6 flex items-center gap-6 flex-wrap">
-                <RiskScoreGauge score={riskScore} />
+                <RiskScoreGauge score={riskScore} label={t.report.currentRisk} />
+
+                {projectedRiskScore !== undefined && projectedRiskScore !== null && projectedRiskScore < riskScore && (
+                  <>
+                    <div className="flex flex-col items-center gap-1">
+                      <TrendingDown className="h-5 w-5 text-green-600" />
+                      <span className="text-[10px] text-green-600 font-bold">
+                        -{((riskScore - projectedRiskScore) / riskScore * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                    <RiskScoreGauge score={projectedRiskScore} size="sm" label={t.report.afterFix} />
+                  </>
+                )}
 
                 <div className="flex-1 min-w-0">
                   <h2 className="text-lg font-bold text-slate-900">
@@ -754,9 +1079,15 @@ export function ReportResultView({
                   </h2>
                   <p className="text-sm text-slate-500 mt-1 leading-relaxed">
                     {descParts.length > 0
-                      ? t.report.riskDescWithIssues(descParts.join(` ${t.common.and} `))
+                      ? t.report.riskDescWithIssues(descParts.join(` ${t.report.andWord} `))
                       : t.report.riskDescCompliant}
                   </p>
+                  {projectedRiskScore !== undefined && projectedRiskScore !== null && projectedRiskScore < riskScore && (
+                    <p className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
+                      <TrendingDown className="h-3 w-3" />
+                      {t.report.projectedRiskDesc(projectedRiskScore)}
+                    </p>
+                  )}
                 </div>
 
                 {report.ocr_confidence !== undefined && (
@@ -764,6 +1095,79 @@ export function ReportResultView({
                 )}
               </div>
             </Card>
+
+            {/* ── EXPERT TIPS & AI SUMMARY (NEW) ─────────────── */}
+            {(expertTips.length > 0 || commercialSummary) && (
+              <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 overflow-hidden">
+                <button
+                  onClick={() => setShowExpertTips(!showExpertTips)}
+                  className="w-full flex items-center justify-between p-5 pb-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-full bg-blue-100 p-2.5">
+                      <Sparkles className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <h2 className="text-base font-bold text-slate-900">
+                        {t.report.expertInsightsTitle}
+                      </h2>
+                      <p className="text-xs text-slate-500">{t.report.expertInsightsDesc}</p>
+                    </div>
+                  </div>
+                  {showExpertTips ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+                </button>
+
+                {showExpertTips && (
+                  <div className="px-5 pb-5 space-y-4">
+                    {commercialSummary && (
+                      <div className="p-4 rounded-lg bg-white/70 border border-blue-100">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700 mb-2">
+                          {t.report.aiSummary}
+                        </p>
+                        <p className="text-sm text-slate-700 leading-relaxed">{commercialSummary}</p>
+                      </div>
+                    )}
+                    {expertTips.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700">
+                          {t.report.expertTipsLabel}
+                        </p>
+                        {expertTips.map((tip, idx) => (
+                          <div key={idx} className="flex items-start gap-2.5 p-3 rounded-lg bg-white/70 border border-blue-100">
+                            <span className="flex items-center justify-center h-5 w-5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold shrink-0 mt-0.5">
+                              {idx + 1}
+                            </span>
+                            <p className="text-sm text-slate-700 leading-relaxed">{tip}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* ── ENFORCEMENT INSIGHTS (NEW) ─────────────────── */}
+            {enforcementInsights.length > 0 && (
+              <Card className="bg-white border-slate-200 overflow-hidden">
+                <div className="p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShieldAlert className="h-4 w-4 text-slate-500" />
+                    <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      {t.report.enforcementInsightsTitle}
+                    </h2>
+                  </div>
+                  <div className="space-y-2">
+                    {enforcementInsights.map((insight, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-sm text-slate-600">
+                        <span className="text-amber-500 mt-1 shrink-0">{'>'}</span>
+                        <span className="leading-relaxed">{insight}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            )}
 
             {/* ── OVERALL ASSESSMENT FROM VEXIM AI ─────────────────── */}
             <Card className={`overflow-hidden border-2 ${
@@ -810,7 +1214,7 @@ export function ReportResultView({
                         {t.report.cfr701}
                       </span>
                       <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
-                        FD&C Act Section 403
+                        {'FD&C Act Section 403'}
                       </span>
                       {report.product_category === 'cosmetic' && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
@@ -908,6 +1312,43 @@ export function ReportResultView({
               </div>
             </Card>
 
+            {/* ── CONSEQUENCES BANNER (NEW - for high risk) ──────── */}
+            {riskScore >= 5 && criticalCount > 0 && (
+              <Card className="bg-gradient-to-r from-red-50 to-orange-50 border-red-200 overflow-hidden">
+                <div className="p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShieldAlert className="h-5 w-5 text-red-600" />
+                    <h2 className="text-sm font-bold text-red-800 uppercase tracking-wide">
+                      {t.report.consequencesTitle}
+                    </h2>
+                  </div>
+                  <div className="grid sm:grid-cols-3 gap-3">
+                    <div className="p-3 rounded-lg bg-white/60 border border-red-100">
+                      <p className="text-xs font-bold text-red-700">{t.report.consequenceDetention}</p>
+                      <p className="text-lg font-bold text-red-600 mt-1">$5,000-15,000</p>
+                      <p className="text-[10px] text-slate-500">{t.report.consequenceDetentionDesc}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-white/60 border border-red-100">
+                      <p className="text-xs font-bold text-red-700">{t.report.consequenceRelabeling}</p>
+                      <p className="text-lg font-bold text-red-600 mt-1">$3,000-8,000</p>
+                      <p className="text-[10px] text-slate-500">{t.report.consequenceRelabelingDesc}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-white/60 border border-red-100">
+                      <p className="text-xs font-bold text-red-700">{t.report.consequenceRecall}</p>
+                      <p className="text-lg font-bold text-red-600 mt-1">$50,000+</p>
+                      <p className="text-[10px] text-slate-500">{t.report.consequenceRecallDesc}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-end">
+                    <a href="#expert-request" className="text-xs font-semibold text-red-600 hover:text-red-800 flex items-center gap-1">
+                      {t.report.getExpertHelp}
+                      <MessageSquare className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
+              </Card>
+            )}
+
             {/* ── CFR VIOLATIONS SECTION ───────────────────────── */}
             <div>
               <div className="flex items-center gap-2 mb-4">
@@ -936,6 +1377,7 @@ export function ReportResultView({
                       violation={violation}
                       index={index}
                       t={t}
+                      showExpertCta={riskScore >= 4}
                     />
                   ))}
 
@@ -950,6 +1392,23 @@ export function ReportResultView({
                 </div>
               )}
             </div>
+
+            {/* ── GEOMETRY VIOLATIONS SECTION (NEW) ────────────── */}
+            {geometryViolations.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Ruler className="h-4 w-4 text-indigo-500" />
+                  <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                    {t.report.geometrySection}
+                  </h2>
+                </div>
+                <div className="space-y-5">
+                  {geometryViolations.map((gv, index) => (
+                    <GeometryViolationCard key={`geo-${index}`} violation={gv} t={t} />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* ── WARNING LETTERS SECTION ───────────────────────── */}
             {wlViolations.length > 0 && (
@@ -1001,7 +1460,6 @@ export function ReportResultView({
                 </div>
               </div>
             )}
-
 
           </div>
         </div>

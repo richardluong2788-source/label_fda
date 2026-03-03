@@ -130,7 +130,7 @@ export const vi = {
     warningLetterTitle: 'Cảnh báo từ FDA Warning Letter',
     recallTitle: 'Liên quan đến sản phẩm bị thu hồi',
     importAlertTitle: 'Cảnh báo nhập khẩu FDA',
-    lowContrastTitle: 'Đ��� tương phản màu sắc thấp',
+    lowContrastTitle: 'Đ����� tương phản màu sắc thấp',
     fdaReadabilityReq: 'Yêu cầu FDA về độ rõ ràng của nhãn',
     contrastTitle: 'Độ tương phản màu sắc thấp',
     contrastRef: 'Yêu cầu FDA về độ rõ ràng của nhãn',
@@ -237,6 +237,49 @@ export const vi = {
     noViolations: 'Không phát hiện vi phạm nào. Nhãn của bạn tuân thủ tốt!',
     viewDetails: 'Xem chi tiết',
     collapse: 'Thu gọn',
+    // Projected risk & risk banner
+    andWord: 'và',
+    currentRisk: 'HIỆN TẠI',
+    afterFix: 'SAU KHI SỬA',
+    projectedRiskDesc: (score: number) => `Sau khi sửa lỗi nghiêm trọng, điểm rủi ro dự kiến giảm còn ${score.toFixed(1)}/10`,
+    // Expert insights / AI summary
+    expertInsightsTitle: 'Phân Tích Chuyên Sâu từ AI',
+    expertInsightsDesc: 'Tóm tắt thương mại và lời khuyên chuyên gia dựa trên dữ liệu FDA',
+    aiSummary: 'TÓM TẮT THƯƠNG MẠI',
+    expertTipsLabel: 'LỜI KHUYÊN TỪ CHUYÊN GIA',
+    enforcementInsightsTitle: 'XU HƯỚNG XỬ PHẠT CỦA FDA',
+    // Consequences banner
+    consequencesTitle: 'HẬU QUẢ NẾU KHÔNG KHẮC PHỤC',
+    consequenceDetention: 'Giữ hàng tại cảng (DWPE)',
+    consequenceDetentionDesc: 'Phí lưu container, phí trễ tàu mỗi ngày',
+    consequenceRelabeling: 'Chi phí dán nhãn lại',
+    consequenceRelabelingDesc: 'In nhãn mới, dán lại tại Mỹ, nhân công',
+    consequenceRecall: 'Thu hồi bắt buộc (Recall)',
+    consequenceRecallDesc: 'FDA bắt buộc thu hồi toàn bộ sản phẩm',
+    // Product info sidebar extras
+    netQuantity: 'KHỐI LƯỢNG TỊNH',
+    allergenDeclaration: 'CHẤT GÂY DỊ ỨNG',
+    healthClaimsTitle: 'CÔNG BỐ SỨC KHỎE (CẢNH BÁO)',
+    specialClaimsTitle: 'CÔNG BỐ ĐẶC BIỆT',
+    packagingFormatLabel: 'DẠNG BAO BÌ',
+    detectedLanguagesTitle: 'NGÔN NGỮ PHÁT HIỆN',
+    nutritionFactsTitle: 'THÀNH PHẦN DINH DƯỠNG',
+    // Confidence metrics
+    confidenceMetrics: 'ĐỘ TIN CẬY PHÂN TÍCH',
+    ocrLabel: 'OCR (Đọc văn bản)',
+    extractionLabel: 'Trích xuất dữ liệu',
+    legalLabel: 'Phân tích pháp lý',
+    // Violation card extras
+    aiConfidence: 'Độ tin cậy AI',
+    riskScoreLabel: 'Điểm rủi ro',
+    citationsCount: (count: number) => `${count} trích dẫn quy định`,
+    enforcementFrequency: (count: number) => `FDA đã xử phạt ${count} lần vì lỗi tương tự`,
+    criticalNeedsExpert: 'Vi phạm này cần chuyên gia xem xét',
+    getExpertHelp: 'Liên hệ chuyên gia Vexim',
+    // Geometry violations
+    actualValue: 'GIÁ TRỊ THỰC TẾ',
+    expectedValue: 'GIÁ TRỊ CHUẨN',
+    geometrySection: 'KIỂM TRA HÌNH HỌC & KÍCH THƯỚC CHỮ (21 CFR)',
   },
 
   // ─── Audit Page ──────────────────────────────────────
@@ -663,7 +706,7 @@ export const vi = {
     // Flow steps
     flowSteps: [
       { title: 'Tải nhãn lên hệ thống', desc: 'Chụp ảnh hoặc tải file nhãn sản phẩm. AI Vision OCR trích xuất toàn bộ nội dung, bố cục và cấu trúc hình ảnh với độ chính xác cao.', detail: 'Hỗ trợ JPG, PNG, PDF - tối đa 4 mặt nhãn cùng lúc.' },
-      { title: 'Đối chiếu dữ liệu thực tế', desc: 'Từng yếu tố trên nhãn được đối chiếu trực tiếp với 5.346 Warning Letters, Recall, Alerts và toàn bộ 21 CFR liên quan.', detail: 'Cơ sở dữ liệu cập nhật hàng tuần từ FDA.gov.' },
+      { title: 'Đối chiếu dữ liệu thực tế', desc: 'Từng yếu tố trên nhãn được đối chiếu trực tiếp với 5.346 Warning Letters, Recall, Alerts v�� toàn bộ 21 CFR liên quan.', detail: 'Cơ sở dữ liệu cập nhật hàng tuần từ FDA.gov.' },
       { title: 'Phân tích chuyên sâu', desc: 'Mô hình AI chuyên biệt xác định từng điểm vi phạm, trích dẫn mã CFR cụ thể và đánh giá mức độ nghiêm trọng.', detail: 'Phân loại: Critical / Major / Minor - Hoàn thành trong ~2 phút.' },
       { title: 'Chuyên gia rà soát', desc: 'FDA Compliance Specialist rà soát báo cáo AI và bổ sung nhận định chuyên sâu dựa trên kinh nghiệm thực tế.', detail: 'Thời gian rà soát: 4–24 giờ làm việc.' },
       { title: 'Báo cáo & Chứng nhận', desc: 'Báo cáo đầy đủ kèm trích dẫn CFR, hướng dẫn khắc phục từng lỗi, Risk Score tổng thể và xác nhận tuân thủ.', detail: 'Xuất PDF chuyên nghiệp - dùng để đàm phán với buyer và importer.' },
