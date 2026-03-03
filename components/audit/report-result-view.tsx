@@ -1006,37 +1006,7 @@ export function ReportResultView({
               </div>
             )}
 
-            {/* ── EXPERT CTA - Just a hint to scroll down ────── */}
-            {(report.needs_expert_review || allViolations.length > 0) && (
-              <div className="rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 p-6 flex items-center justify-between gap-6 flex-wrap">
-                <div className="flex items-start gap-4 min-w-0">
-                  <div className="rounded-full bg-blue-600/20 p-3 shrink-0">
-                    <Search className="h-6 w-6 text-blue-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-bold text-lg">
-                      Cần hỗ trợ từ chuyên gia?
-                    </h3>
-                    <p className="text-slate-400 text-sm mt-1 leading-relaxed max-w-lg">
-                      Hệ thống phát hiện các điểm cần chuyên gia xem xét kỹ hơn để tối ưu hóa khả năng thông quan và tránh bị FDA Warning Letter.
-                    </p>
-                  </div>
-                </div>
 
-                <Button
-                  onClick={() => {
-                    document
-                      .getElementById('expert-request-panel')
-                      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                  }}
-                  className="bg-white text-slate-900 hover:bg-slate-100 font-bold gap-2 px-6 shrink-0"
-                  size="lg"
-                >
-                  Xem chi tiết tư vấn
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
           </div>
         </div>
       </main>
