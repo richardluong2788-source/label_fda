@@ -208,6 +208,15 @@ export class SmartCitationFormatter {
       })
     }
 
+    if (categorized.info.length > 0) {
+      summary += `### 🔵 THÔNG TIN (${categorized.info.length})\n`
+      summary += 'Các ghi chú bổ sung để cải thiện nhãn:\n\n'
+      categorized.info.forEach((f, i) => {
+        summary += `**${i + 1}. ${f.summary}**\n`
+        summary += `- ${f.expert_logic}\n\n`
+      })
+    }
+
     if (tips.length > 0) {
       summary += '### 💡 LỜI KHUYÊN TỪ CHUYÊN GIA\n\n'
       tips.forEach(tip => {

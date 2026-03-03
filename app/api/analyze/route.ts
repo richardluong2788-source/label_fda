@@ -1004,9 +1004,32 @@ export async function POST(request: Request) {
     const finalStatus = needsExpertReview ? 'ai_completed' : 'verified'
 
     // NEW: Generate commercial report summary
+    // Build allFindingsForSummary from ALL violations (not just smart-mapped ones)
+    // so the commercial summary includes claim violations, AI-detected issues, etc.
     console.log('[v0] Generating commercial report summary...')
-    const commercialSummary = SmartCitationFormatter.createReportSummary(professionalFindings)
-    const expertTips = SmartCitationFormatter.generateExpertTips(professionalFindings)
+    const professionalFindingCategories = new Set(professionalFindings.map(f => f.summary))
+    const additionalFindings: import('@/lib/violation-to-cfr-mapper').MappedFinding[] = violations
+      .filter(v => {
+        // Skip violations that are already covered by professionalFindings
+        const translatedCat = v.category
+        return !professionalFindings.some(pf => 
+          pf.cfr_reference === v.regulation_reference || 
+          pf.summary.includes(translatedCat)
+        )
+      })
+      .map(v => ({
+        summary: v.category,
+        legal_basis: v.regulation_reference ? `Căn cứ theo ${v.regulation_reference}` : '',
+        expert_logic: v.description,
+        remediation: v.suggested_fix || 'Xem chi tiết trong phần Chi Tiết Phát Hiện',
+        severity: v.severity,
+        cfr_reference: v.regulation_reference || '',
+        confidence_score: v.confidence_score ?? 0.8,
+      }))
+    const allFindingsForSummary = [...professionalFindings, ...additionalFindings]
+    console.log('[v0] Professional findings:', professionalFindings.length, '+ additional:', additionalFindings.length, '= total for summary:', allFindingsForSummary.length)
+    const commercialSummary = SmartCitationFormatter.createReportSummary(allFindingsForSummary)
+    const expertTips = SmartCitationFormatter.generateExpertTips(allFindingsForSummary)
 
     // Update report with results including ALL analysis and cost tracking
     console.log('[v0] ========== ANALYSIS SUMMARY ==========')

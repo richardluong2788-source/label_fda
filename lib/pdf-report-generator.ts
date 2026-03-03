@@ -236,13 +236,13 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   /* COVER PAGE */
   .cover-page {
-    min-height: 297mm;
+    min-height: auto;
     display: flex;
     flex-direction: column;
     position: relative;
     background: #ffffff;
     color: #0f172a;
-    padding: 25mm;
+    padding: 20mm;
   }
 
   .cover-header {
@@ -343,13 +343,10 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   }
 
   .cover-footer {
-    position: absolute;
-    bottom: 25mm;
-    left: 25mm;
-    right: 25mm;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: 24px;
     padding-top: 16px;
     border-top: 1px solid #e2e8f0;
     font-size: 9px;
@@ -1035,7 +1032,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     <div class="cover-badge">CONFIDENTIAL</div>
   </div>
 
-  <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+  <div style="margin-top: 20px;">
     <div class="cover-title">Báo Cáo Kiểm Tra Tuân Thủ FDA</div>
     <div class="cover-subtitle">${escapeHtml(report.product_name || 'Phân Tích Nhãn Sản Phẩm')}</div>
 
@@ -1195,7 +1192,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   <div class="section no-break">
     <div class="section-title"><span class="section-number">${report.allergen_declaration ? '03a' : '03'}</span> Danh Sách Thành Phần</div>
     <div class="data-box">
-      <div class="data-box-label">Thành phần được phát hiện bởi AI Vision</div>
+      <div class="data-box-label">Thành ph���n được phát hiện bởi AI Vision</div>
       ${escapeHtml(report.ingredient_list)}
     </div>
   </div>` : ''}
@@ -1482,7 +1479,23 @@ ${report.commercial_summary ? `
     <div class="section-title"><span class="section-number">${importAlertViolations.length > 0 ? '05b' : '05a'}</span> Tóm Tắt Phân Tích Thương Mại</div>
     <div class="summary-section">
       ${report.commercial_summary.split('\n').map((line: string) => {
-        if (line.startsWith('### ')) return `<div class="summary-subheading">${escapeHtml(line.replace(/^### /, '').replace(/\*+/g, '').trim())}</div>`
+        if (line.startsWith('### ')) {
+          const headingText = line.replace(/^### /, '').replace(/\*+/g, '').trim()
+          // Color-code severity headings
+          let headingColor = '#334155'
+          let headingBg = 'transparent'
+          let headingBorder = 'none'
+          if (headingText.includes('NGHIÊM TRỌNG') || headingText.includes('LỖI NGHIÊM TRỌNG')) {
+            headingColor = '#991B1B'; headingBg = '#FEE2E2'; headingBorder = '2px solid #F87171'
+          } else if (headingText.includes('CẢNH BÁO')) {
+            headingColor = '#92400E'; headingBg = '#FEF3C7'; headingBorder = '2px solid #FBBF24'
+          } else if (headingText.includes('THÔNG TIN')) {
+            headingColor = '#1E40AF'; headingBg = '#DBEAFE'; headingBorder = '2px solid #60A5FA'
+          } else if (headingText.includes('LỜI KHUYÊN')) {
+            headingColor = '#065F46'; headingBg = '#D1FAE5'; headingBorder = '2px solid #34D399'
+          }
+          return `<div class="summary-subheading" style="color: ${headingColor}; background: ${headingBg}; border: ${headingBorder}; border-radius: 6px; padding: 8px 12px; margin-top: 16px;">${escapeHtml(headingText)}</div>`
+        }
         if (line.startsWith('## ')) return `<div class="summary-heading">${escapeHtml(line.replace(/^## /, '').replace(/\*+/g, ''))}</div>`
         if (line.startsWith('**') && line.endsWith('**')) return `<div class="summary-text" style="font-weight: 600;">${escapeHtml(line.replace(/\*\*/g, ''))}</div>`
         if (line.startsWith('- ')) return `<div class="summary-list-item">${escapeHtml(line.replace(/^- /, '').replace(/\*+/g, ''))}</div>`
