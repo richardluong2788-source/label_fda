@@ -306,35 +306,85 @@ function ReportCard({ report }: { report: any }) {
   const findings = report.findings || []
   const criticalCount = findings.filter((f: any) => f.severity === 'critical').length
   const warningCount = findings.filter((f: any) => f.severity === 'warning').length
+  
+  // Get product display name (priority: product_name > brand_name > file_name)
+  const productName = report.product_name || report.brand_name || report.file_name || 'Sản phẩm không tên'
+  
+  // Get user info 
+  const userEmail = report.user_email || 'Unknown user'
+  
+  // Format time for priority indicator
+  const createdAt = new Date(report.created_at)
+  const now = new Date()
+  const hoursAgo = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60))
+  const isUrgent = hoursAgo > 24 // More than 24 hours waiting
 
   return (
-    <Card className="p-4 hover:shadow-md transition-shadow">
-        <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <h3 className="font-semibold">{report.file_name || 'Báo cáo không tên'}</h3>
+    <Card className={`p-4 hover:shadow-md transition-shadow ${isUrgent ? 'border-l-4 border-l-amber-500' : ''}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          {/* Product name and badges */}
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <h3 className="font-semibold truncate" title={productName}>{productName}</h3>
             {report.needs_expert_review && (
-              <Badge variant="destructive" className="text-xs">
+              <Badge variant="destructive" className="text-xs shrink-0">
                 Cần kiểm duyệt
               </Badge>
             )}
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs shrink-0">
               {report.citation_count || 0} Citations
             </Badge>
+            {report.overall_risk_score && (
+              <Badge 
+                variant="outline" 
+                className={`text-xs shrink-0 ${
+                  report.overall_risk_score >= 7 ? 'border-red-300 text-red-600' :
+                  report.overall_risk_score >= 4 ? 'border-amber-300 text-amber-600' :
+                  'border-green-300 text-green-600'
+                }`}
+              >
+                Risk: {report.overall_risk_score}/10
+              </Badge>
+            )}
           </div>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-            <span>
+          
+          {/* Violation counts */}
+          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+            <span className={criticalCount > 0 ? 'text-red-600 font-medium' : ''}>
               {criticalCount} Nghiêm trọng
             </span>
-            <span>
+            <span className={warningCount > 0 ? 'text-amber-600 font-medium' : ''}>
               {warningCount} Cảnh báo
             </span>
-            <span>
-              {new Date(report.created_at).toLocaleDateString('vi-VN')}
+          </div>
+          
+          {/* User info and timestamp */}
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <User className="h-3 w-3" />
+              <span className="truncate max-w-[200px]" title={userEmail}>
+                {userEmail}
+              </span>
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {createdAt.toLocaleString('vi-VN', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+              {isUrgent && (
+                <Badge variant="outline" className="ml-1 text-[10px] border-amber-300 text-amber-600 px-1 py-0">
+                  {'>'} 24h
+                </Badge>
+              )}
             </span>
           </div>
         </div>
-        <Button asChild>
+        
+        <Button asChild className="shrink-0">
           <Link href={`/admin/review/${report.id}`}>Kiểm duyệt</Link>
         </Button>
       </div>

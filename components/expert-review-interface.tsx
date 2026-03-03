@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
+import { LabelImageGallery } from '@/components/label-image-gallery'
 
 interface ExpertReviewInterfaceProps {
   report: any
@@ -121,7 +121,7 @@ export function ExpertReviewInterface({
               <div>
                 <h1 className="text-xl font-bold">Expert Review</h1>
                 <p className="text-xs text-muted-foreground">
-                  {report.file_name || 'Unnamed Report'}
+                  {report.product_name || report.file_name || 'Unnamed Report'}
                 </p>
               </div>
             </div>
@@ -140,14 +140,19 @@ export function ExpertReviewInterface({
           <div>
             <Card className="p-6 mb-6">
               <h2 className="text-lg font-semibold mb-4">Label Image</h2>
-              <div className="relative aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden">
-                <Image
-                  src={report.file_url || '/placeholder.svg'}
-                  alt="Food label"
-                  fill
-                  className="object-contain"
+              {report.label_image_url === 'manual-entry' ? (
+                <div className="flex items-center justify-center h-48 bg-slate-100 rounded-lg">
+                  <div className="text-center">
+                    <FileText className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">Manual Entry</p>
+                  </div>
+                </div>
+              ) : (
+                <LabelImageGallery
+                  images={report.label_images || []}
+                  fallbackUrl={report.label_image_url}
                 />
-              </div>
+              )}
             </Card>
 
             <Card className="p-6">
