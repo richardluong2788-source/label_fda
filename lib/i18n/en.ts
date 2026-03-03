@@ -345,6 +345,14 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
   upgradeToPro: 'Upgrade to Pro/Business',
   quotaExhaustedUpgrade: 'You have used all your Expert Review credits this month.',
   upgradeForMore: 'Upgrade for unlimited',
+  // Addon purchase translations
+  quotaExhaustedTitle: 'Monthly quota exhausted',
+  quotaExhaustedDesc: 'You have used all your Expert Review credits this month.',
+  buyAddon: (price: string) => `Buy 1 review - ${price}₫`,
+  processingPayment: 'Processing payment...',
+  upgradeToEnterprise: 'Upgrade to Enterprise - Unlimited',
+  addonPurchaseSuccess: 'Expert Review purchased successfully!',
+  addonPurchaseDesc: 'Your request has been submitted. Our expert will review within 48 hours.',
   },
 
   // ─── Advanced Settings (Analyze form) ────────────────

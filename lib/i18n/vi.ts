@@ -345,6 +345,14 @@ export const vi = {
     upgradeToPro: 'Nâng cấp lên Pro/Business',
     quotaExhaustedUpgrade: 'Bạn đã sử dụng hết lượt Expert Review trong tháng này.',
     upgradeForMore: 'Nâng cấp để không giới hạn',
+    // Addon purchase translations
+    quotaExhaustedTitle: 'Đã hết lượt trong tháng',
+    quotaExhaustedDesc: 'Bạn đã sử dụng hết lượt Expert Review trong tháng này.',
+    buyAddon: (price: string) => `Mua thêm 1 lượt - ${price}₫`,
+    processingPayment: 'Đang xử lý thanh toán...',
+    upgradeToEnterprise: 'Nâng cấp Enterprise - Không giới hạn',
+    addonPurchaseSuccess: 'Đã mua Expert Review thành công!',
+    addonPurchaseDesc: 'Yêu cầu của bạn đã được gửi. Chuyên gia sẽ xem xét trong vòng 48 giờ.',
   },
 
   // ─── Advanced Settings (Analyze form) ────────────────

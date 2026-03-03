@@ -39,7 +39,7 @@ async function handleIPN(request: NextRequest) {
   // 2. Find transaction
   const { data: txn, error: txnError } = await supabase
     .from('payment_transactions')
-    .select('id, user_id, plan_id, amount_vnd, status')
+    .select('id, user_id, plan_id, amount_vnd, status, transaction_type, addon_audit_report_id, addon_metadata')
     .eq('vnpay_txn_ref', txnRef)
     .single()
 
@@ -70,27 +70,59 @@ async function handleIPN(request: NextRequest) {
     })
     .eq('id', txn.id)
 
-  // 6. Activate subscription on success
+  // 6. Activate subscription on success OR create addon expert request
   if (success) {
-    const periodStart = new Date()
-    const periodEnd   = new Date(periodStart)
-    periodEnd.setMonth(periodEnd.getMonth() + 1)
+    const isAddonPurchase = txn.transaction_type === 'addon_expert_review'
+    
+    if (isAddonPurchase) {
+      // Handle addon Expert Review purchase
+      const metadata = txn.addon_metadata as { 
+        target_market?: string
+        user_context?: string 
+      } | null
+      
+      // Check if expert request already exists for this transaction (idempotency)
+      const { data: existingRequest } = await supabase
+        .from('expert_review_requests')
+        .select('id')
+        .eq('payment_transaction_id', txn.id)
+        .single()
+      
+      if (!existingRequest) {
+        await supabase
+          .from('expert_review_requests')
+          .insert({
+            audit_report_id: txn.addon_audit_report_id,
+            user_id: txn.user_id,
+            target_market: metadata?.target_market || 'us',
+            user_context: metadata?.user_context || '',
+            status: 'pending',
+            is_addon_purchase: true,
+            payment_transaction_id: txn.id,
+          })
+      }
+    } else {
+      // Standard subscription activation
+      const periodStart = new Date()
+      const periodEnd   = new Date(periodStart)
+      periodEnd.setMonth(periodEnd.getMonth() + 1)
 
-    await supabase
-      .from('user_subscriptions')
-      .upsert(
-        {
-          user_id:                     txn.user_id,
-          plan_id:                     txn.plan_id,
-          status:                      'active',
-          current_period_start:        periodStart.toISOString(),
-          current_period_end:          periodEnd.toISOString(),
-          reports_used:                0,
-          last_payment_at:             new Date().toISOString(),
-          last_payment_amount_vnd:     txn.amount_vnd,
-        },
-        { onConflict: 'user_id' }
-      )
+      await supabase
+        .from('user_subscriptions')
+        .upsert(
+          {
+            user_id:                     txn.user_id,
+            plan_id:                     txn.plan_id,
+            status:                      'active',
+            current_period_start:        periodStart.toISOString(),
+            current_period_end:          periodEnd.toISOString(),
+            reports_used:                0,
+            last_payment_at:             new Date().toISOString(),
+            last_payment_amount_vnd:     txn.amount_vnd,
+          },
+          { onConflict: 'user_id' }
+        )
+    }
   }
 
   return NextResponse.json({ RspCode: '00', Message: 'Confirm success' })

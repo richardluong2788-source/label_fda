@@ -19,6 +19,8 @@ import {
   AlertTriangle,
   Sparkles,
   ArrowRight,
+  CreditCard,
+  Crown,
 } from 'lucide-react'
 
 interface ExpertRequestPanelProps {
@@ -74,6 +76,7 @@ export function ExpertRequestPanel({
   const [error, setError] = useState<string | null>(null)
   const [expertReviewPrice, setExpertReviewPrice] = useState<number>(expertReviewPriceProp ?? 499000)
   const [quotaInfo, setQuotaInfo] = useState<{ canRequest: boolean; used: number; limit: number } | null>(null)
+  const [processingAddon, setProcessingAddon] = useState(false)
 
   useEffect(() => {
     if (needsExpertReview) setExpanded(true)
@@ -171,6 +174,38 @@ export function ExpertRequestPanel({
       setError(err.message)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  // Handle addon purchase checkout
+  const handleAddonCheckout = async () => {
+    setProcessingAddon(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/expert-request/addon-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auditReportId: reportId,
+          targetMarket,
+          userContext: userContext.trim() || '',
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.message || data.error || t.expert.errorSubmitFailed)
+      }
+
+      // Redirect to VNPay
+      if (data.payUrl) {
+        window.location.href = data.payUrl
+      }
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setProcessingAddon(false)
     }
   }
 
@@ -443,10 +478,54 @@ export function ExpertRequestPanel({
               </div>
             </div>
           ) : (
-            <>
+            {/* Pro users with quota exhausted - show 2 options */}
+            {quotaInfo && !quotaInfo.canRequest && quotaInfo.limit > 0 ? (
+              <div className="space-y-3">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-sm text-amber-800 font-medium mb-1">
+                    {t.expert.quotaExhaustedTitle || 'Monthly quota exhausted'}
+                  </p>
+                  <p className="text-xs text-amber-700">
+                    {t.expert.quotaExhaustedDesc || `You have used all ${quotaInfo.limit} Expert Review credits this month.`}
+                  </p>
+                </div>
+                
+                {/* Option A: Buy addon */}
+                <Button
+                  onClick={handleAddonCheckout}
+                  disabled={processingAddon}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                >
+                  {processingAddon ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <CreditCard className="mr-2 h-4 w-4" />
+                  )}
+                  {processingAddon 
+                    ? t.expert.processingPayment || 'Processing...'
+                    : t.expert.buyAddon 
+                      ? t.expert.buyAddon(expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US'))
+                      : `Buy 1 review - ${expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}₫`
+                  }
+                </Button>
+                
+                {/* Option B: Upgrade to Enterprise */}
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+                >
+                  <a href="/pricing?highlight=enterprise#subscription-plans">
+                    <Crown className="mr-2 h-4 w-4" />
+                    {t.expert.upgradeToEnterprise || 'Upgrade to Enterprise - Unlimited'}
+                  </a>
+                </Button>
+              </div>
+            ) : (
+              /* Pro users with quota available */
               <Button
                 onClick={handleSubmit}
-                disabled={submitting || (quotaInfo && !quotaInfo.canRequest)}
+                disabled={submitting}
                 className="w-full"
               >
                 {submitting ? (
@@ -458,17 +537,7 @@ export function ExpertRequestPanel({
                   ? t.expert.submitting
                   : t.expert.submitFreeInPlan}
               </Button>
-              
-              {/* Show quota exhausted message for Pro users who used all credits */}
-              {quotaInfo && !quotaInfo.canRequest && quotaInfo.limit > 0 && (
-                <p className="text-xs text-center text-amber-600">
-                  {t.expert.quotaExhaustedUpgrade || 'You have used all your Expert Review credits this month.'}{' '}
-                  <a href="/pricing?highlight=enterprise#subscription-plans" className="text-primary underline font-medium">
-                    {t.expert.upgradeForMore || 'Upgrade for unlimited'}
-                  </a>
-                </p>
-              )}
-            </>
+            )}
           )}
         </div>
       )}

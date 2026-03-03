@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   // Update transaction record
   const { data: txn, error: txnFetchError } = await supabase
     .from('payment_transactions')
-    .select('id, user_id, plan_id, amount_vnd')
+    .select('id, user_id, plan_id, amount_vnd, transaction_type, addon_audit_report_id, addon_metadata')
     .eq('vnpay_txn_ref', txnRef)
     .single()
 
@@ -56,53 +56,85 @@ export async function GET(request: NextRequest) {
     .eq('vnpay_txn_ref', txnRef)
 
   if (success) {
-    // 1. Activate or upgrade the user's subscription
-    const periodStart = new Date()
-    const periodEnd   = new Date(periodStart)
-    periodEnd.setMonth(periodEnd.getMonth() + 1)
+    const isAddonPurchase = txn.transaction_type === 'addon_expert_review'
+    
+    if (isAddonPurchase) {
+      // Handle addon Expert Review purchase
+      // Create expert_review_request with is_addon_purchase = true
+      const metadata = txn.addon_metadata as { 
+        target_market?: string
+        user_context?: string 
+      } | null
+      
+      const { error: expertError } = await supabase
+        .from('expert_review_requests')
+        .insert({
+          audit_report_id: txn.addon_audit_report_id,
+          user_id: txn.user_id,
+          target_market: metadata?.target_market || 'us',
+          user_context: metadata?.user_context || '',
+          status: 'pending',
+          is_addon_purchase: true,
+          payment_transaction_id: txn.id,
+        })
 
-    const { error: subError } = await supabase
-      .from('user_subscriptions')
-      .upsert(
-        {
-          user_id:                     txn.user_id,
-          plan_id:                     txn.plan_id,
-          status:                      'active',
-          current_period_start:        periodStart.toISOString(),
-          current_period_end:          periodEnd.toISOString(),
-          reports_used:                0,
-          last_payment_at:             new Date().toISOString(),
-          last_payment_amount_vnd:     Number(amountRaw) / 100, // VNPay gửi ×100
-        },
-        { onConflict: 'user_id' }
-      )
+      if (expertError) {
+        console.error('[vnpay-callback] Failed to create addon expert request:', expertError.message)
+      }
+    } else {
+      // Standard subscription payment flow
+      // 1. Activate or upgrade the user's subscription
+      const periodStart = new Date()
+      const periodEnd   = new Date(periodStart)
+      periodEnd.setMonth(periodEnd.getMonth() + 1)
 
-    if (subError) {
-      console.error('[vnpay-callback] Failed to activate subscription:', subError.message)
-    }
+      const { error: subError } = await supabase
+        .from('user_subscriptions')
+        .upsert(
+          {
+            user_id:                     txn.user_id,
+            plan_id:                     txn.plan_id,
+            status:                      'active',
+            current_period_start:        periodStart.toISOString(),
+            current_period_end:          periodEnd.toISOString(),
+            reports_used:                0,
+            last_payment_at:             new Date().toISOString(),
+            last_payment_amount_vnd:     Number(amountRaw) / 100, // VNPay gửi ×100
+          },
+          { onConflict: 'user_id' }
+        )
 
-    // 2. Unlock tất cả audit_reports pending của user này (nếu có)
-    // Model subscription: user đã trả tiền cho gói => tất cả báo cáo đều được unlock
-    const { error: unlockError } = await supabase
-      .from('audit_reports')
-      .update({
-        report_unlocked: true,
-        payment_status:  'paid',
-      })
-      .eq('user_id', txn.user_id)
-      .in('status', ['pending', 'completed', 'needs_review', 'verified'])
-      .eq('report_unlocked', false)
+      if (subError) {
+        console.error('[vnpay-callback] Failed to activate subscription:', subError.message)
+      }
 
-    if (unlockError) {
-      console.error('[vnpay-callback] Failed to unlock reports:', unlockError.message)
+      // 2. Unlock tất cả audit_reports pending của user này (nếu có)
+      // Model subscription: user đã trả tiền cho gói => tất cả báo cáo đều được unlock
+      const { error: unlockError } = await supabase
+        .from('audit_reports')
+        .update({
+          report_unlocked: true,
+          payment_status:  'paid',
+        })
+        .eq('user_id', txn.user_id)
+        .in('status', ['pending', 'completed', 'needs_review', 'verified'])
+        .eq('report_unlocked', false)
+
+      if (unlockError) {
+        console.error('[vnpay-callback] Failed to unlock reports:', unlockError.message)
+      }
     }
   }
 
+  const isAddonPurchase = txn.transaction_type === 'addon_expert_review'
+  
   const params = new URLSearchParams({
     status:  success ? 'success' : 'failed',
     message: encodeURIComponent(message),
     txnRef,
     ...(bankCode ? { bank: bankCode } : {}),
+    ...(isAddonPurchase ? { type: 'addon_expert_review' } : {}),
+    ...(isAddonPurchase && txn.addon_audit_report_id ? { reportId: txn.addon_audit_report_id } : {}),
   })
 
   return NextResponse.redirect(new URL(`/checkout/result?${params}`, request.url))

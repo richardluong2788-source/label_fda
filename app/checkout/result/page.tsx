@@ -13,8 +13,11 @@ function ResultInner() {
   const message = decodeURIComponent(params.get('message') ?? '')
   const bank    = params.get('bank')
   const txnRef  = params.get('txnRef')
+  const type    = params.get('type')
+  const reportId = params.get('reportId')
 
   const isSuccess = status === 'success'
+  const isAddonPurchase = type === 'addon_expert_review'
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -27,9 +30,17 @@ function ResultInner() {
 
         <div>
           <h1 className="text-2xl font-bold mb-2">
-            {isSuccess ? 'Thanh toán thành công!' : 'Thanh toán thất bại'}
+            {isSuccess 
+              ? isAddonPurchase 
+                ? 'Expert Review đã được yêu cầu!' 
+                : 'Thanh toán thành công!' 
+              : 'Thanh toán thất bại'}
           </h1>
-          <p className="text-muted-foreground">{message}</p>
+          <p className="text-muted-foreground">
+            {isAddonPurchase && isSuccess
+              ? 'Yêu cầu của bạn đã được gửi. Chuyên gia Vexim sẽ xem xét trong vòng 48 giờ.'
+              : message}
+          </p>
         </div>
 
         {isSuccess && (
@@ -45,22 +56,39 @@ function ResultInner() {
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Trạng thái gói</span>
-              <span className="font-medium text-green-700">Đã kích hoạt</span>
+              <span className="text-muted-foreground">
+                {isAddonPurchase ? 'Loại giao dịch' : 'Trạng thái gói'}
+              </span>
+              <span className="font-medium text-green-700">
+                {isAddonPurchase ? 'Expert Review (Mua lẻ)' : 'Đã kích hoạt'}
+              </span>
             </div>
           </div>
         )}
 
         <div className="flex flex-col gap-2 pt-2">
           {isSuccess ? (
-            <>
-              <Button asChild>
-                <Link href="/dashboard">Vào Dashboard</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/settings?tab=billing">Xem thông tin gói</Link>
-              </Button>
-            </>
+            isAddonPurchase ? (
+              <>
+                <Button asChild>
+                  <Link href={reportId ? `/audit/${reportId}` : '/history'}>
+                    {reportId ? 'Xem báo cáo' : 'Xem lịch sử'}
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/dashboard">Về Dashboard</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild>
+                  <Link href="/dashboard">Vào Dashboard</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/settings?tab=billing">Xem thông tin gói</Link>
+                </Button>
+              </>
+            )
           ) : (
             <>
               <Button asChild>
