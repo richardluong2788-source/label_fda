@@ -58,10 +58,23 @@ function getRiskColor(score: number): string {
 }
 
 function getRiskLabel(score: number): string {
-  if (score >= 8) return 'CRITICAL'
-  if (score >= 6) return 'HIGH'
-  if (score >= 4) return 'MEDIUM'
-  return 'LOW'
+  if (score >= 8) return 'Cao'
+  if (score >= 6) return 'Trung bình - Cao'
+  if (score >= 4) return 'Trung bình'
+  return 'Thấp'
+}
+
+function getSeverityLabel(severity: string): string {
+  switch (severity) {
+    case 'critical':
+      return 'NGHIÊM TRỌNG'
+    case 'warning':
+      return 'CẢNH BÁO'
+    case 'info':
+      return 'THÔNG TIN'
+    default:
+      return severity.toUpperCase()
+  }
 }
 
 export function generatePDFReportHTML(data: PDFReportData): string {
@@ -124,16 +137,18 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     display: flex;
     flex-direction: column;
     position: relative;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-    color: white;
-    padding: 40mm 25mm;
+    background: #ffffff;
+    color: #0f172a;
+    padding: 25mm;
   }
 
   .cover-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 30mm;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 40px;
   }
 
   .cover-logo {
@@ -145,7 +160,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   .cover-logo-icon {
     width: 48px;
     height: 48px;
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    background: #2563eb;
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -159,56 +174,59 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     font-size: 24px;
     font-weight: 700;
     letter-spacing: -0.5px;
+    color: #0f172a;
   }
 
   .cover-logo-sub {
     font-size: 11px;
-    color: #94a3b8;
+    color: #64748b;
     font-weight: 400;
     letter-spacing: 2px;
     text-transform: uppercase;
   }
 
   .cover-badge {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
     padding: 8px 16px;
     font-size: 11px;
-    color: #cbd5e1;
+    color: #475569;
+    font-weight: 600;
   }
 
   .cover-title {
-    font-size: 36px;
+    font-size: 32px;
     font-weight: 800;
-    line-height: 1.2;
-    margin-bottom: 16px;
-    letter-spacing: -1px;
+    line-height: 1.3;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+    color: #0f172a;
   }
 
   .cover-subtitle {
-    font-size: 18px;
-    color: #94a3b8;
-    font-weight: 400;
-    margin-bottom: 40mm;
+    font-size: 16px;
+    color: #64748b;
+    font-weight: 500;
+    margin-bottom: 40px;
   }
 
   .cover-meta {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-    margin-top: auto;
+    margin-top: 40px;
   }
 
   .cover-meta-item {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
     border-radius: 8px;
     padding: 16px;
   }
 
   .cover-meta-label {
-    font-size: 10px;
+    font-size: 9px;
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 1.5px;
@@ -218,7 +236,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   .cover-meta-value {
     font-size: 14px;
     font-weight: 600;
-    color: #e2e8f0;
+    color: #0f172a;
   }
 
   .cover-footer {
@@ -230,7 +248,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     justify-content: space-between;
     align-items: center;
     padding-top: 16px;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid #e2e8f0;
     font-size: 9px;
     color: #64748b;
   }
@@ -304,12 +322,12 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     color: #0f172a;
     margin-bottom: 16px;
     padding-bottom: 8px;
-    border-bottom: 2px solid #3b82f6;
+    border-bottom: 2px solid #2563eb;
     display: inline-block;
   }
 
   .section-number {
-    color: #3b82f6;
+    color: #2563eb;
     margin-right: 8px;
   }
 
@@ -544,7 +562,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   .relevance-bar-fill {
     height: 100%;
-    background: #3b82f6;
+    background: #2563eb;
     border-radius: 2px;
   }
 
@@ -566,7 +584,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #3b82f6;
+    color: #2563eb;
     margin-bottom: 4px;
   }
 
@@ -670,7 +688,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   }
 
   .verification-badge.verified {
-    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    background: #16a34a;
     color: white;
   }
 
@@ -682,7 +700,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   /* Port of Entry Warning */
   .port-warning {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    background: #FEF3C7;
     border: 1px solid #f59e0b;
     border-left: 4px solid #d97706;
     border-radius: 0 8px 8px 0;
@@ -704,8 +722,8 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   /* CTA Box for upsell */
   .cta-box {
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-    border: 2px dashed #3b82f6;
+    background: #f8fafc;
+    border: 2px dashed #2563eb;
     border-radius: 12px;
     padding: 20px;
     text-align: center;
@@ -721,13 +739,13 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   .cta-box-text {
     font-size: 10px;
-    color: #3b82f6;
+    color: #2563eb;
     margin-bottom: 12px;
   }
 
   .cta-box-link {
     display: inline-block;
-    background: #3b82f6;
+    background: #2563eb;
     color: white;
     padding: 10px 24px;
     border-radius: 6px;
@@ -820,7 +838,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #3b82f6;
+    color: #2563eb;
     margin-bottom: 8px;
   }
 
@@ -892,31 +910,56 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     <div class="cover-badge">CONFIDENTIAL</div>
   </div>
 
-  <div class="cover-title">FDA Compliance<br/>Audit Report</div>
-  <div class="cover-subtitle">${escapeHtml(report.product_name || 'Product Label Analysis')}</div>
+  <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+    <div class="cover-title">Báo Cáo Kiểm Tra Tuân Thủ FDA</div>
+    <div class="cover-subtitle">${escapeHtml(report.product_name || 'Phân Tích Nhãn Sản Phẩm')}</div>
 
-  <div class="cover-meta">
-    <div class="cover-meta-item">
-      <div class="cover-meta-label">Report ID</div>
-      <div class="cover-meta-value">${escapeHtml(report.id.slice(0, 8).toUpperCase())}</div>
+    <div class="cover-meta" style="margin-top: 32px;">
+      <div class="cover-meta-item">
+        <div class="cover-meta-label">Mã Báo Cáo</div>
+        <div class="cover-meta-value">${escapeHtml(report.id.slice(0, 8).toUpperCase())}</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="cover-meta-label">Ngày Tạo</div>
+        <div class="cover-meta-value">${formatDate(generatedAt)}</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="cover-meta-label">Kết Quả</div>
+        <div class="cover-meta-value" style="color: ${report.overall_result === 'pass' ? '#16a34a' : report.overall_result === 'fail' ? '#dc2626' : '#f59e0b'}; font-weight: 700;">${report.overall_result === 'pass' ? 'ĐẠT' : report.overall_result === 'fail' ? 'KHÔNG ĐẠT' : 'CHỜ XÁC MINH'}</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="cover-meta-label">Điểm Rủi Ro</div>
+        <div class="cover-meta-value" style="color: ${getRiskColor(riskScore)}; font-weight: 700;">${riskScore.toFixed(1)} / 10</div>
+      </div>
     </div>
-    <div class="cover-meta-item">
-      <div class="cover-meta-label">Date Generated</div>
-      <div class="cover-meta-value">${formatDate(generatedAt)}</div>
-    </div>
-    <div class="cover-meta-item">
-      <div class="cover-meta-label">Overall Result</div>
-      <div class="cover-meta-value" style="color: ${report.overall_result === 'pass' ? '#4ade80' : report.overall_result === 'fail' ? '#f87171' : '#fbbf24'}">${(report.overall_result || 'PENDING').toUpperCase()}</div>
-    </div>
-    <div class="cover-meta-item">
-      <div class="cover-meta-label">Risk Score</div>
-      <div class="cover-meta-value" style="color: ${getRiskColor(riskScore)}">${riskScore.toFixed(1)} / 10</div>
+
+    <!-- Quick Summary -->
+    <div style="margin-top: 32px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+      <div style="font-size: 11px; font-weight: 700; color: #0f172a; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Tóm Tắt Nhanh</div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+        <div style="text-align: center;">
+          <div style="font-size: 24px; font-weight: 800; color: #dc2626;">${criticalCount}</div>
+          <div style="font-size: 9px; color: #64748b; text-transform: uppercase;">Nghiêm trọng</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 24px; font-weight: 800; color: #f59e0b;">${warningCount}</div>
+          <div style="font-size: 9px; color: #64748b; text-transform: uppercase;">Cảnh báo</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 24px; font-weight: 800; color: #2563eb;">${infoCount}</div>
+          <div style="font-size: 9px; color: #64748b; text-transform: uppercase;">Thông tin</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 24px; font-weight: 800; color: #6366f1;">${totalCitations}</div>
+          <div style="font-size: 9px; color: #64748b; text-transform: uppercase;">Trích dẫn CFR</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="cover-footer">
     <div>${companyInfo.name} | ${companyInfo.website}</div>
-    <div>Prepared by: ${escapeHtml(generatedBy)}</div>
+    <div>Thực hiện bởi: ${escapeHtml(generatedBy)}</div>
   </div>
 </div>
 
@@ -928,30 +971,30 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       <div class="page-header-brand">VEXIM Compliance AI</div>
     </div>
     <div class="page-header-right">
-      Report ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
+      Báo cáo ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
       ${formatDate(generatedAt)}
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title"><span class="section-number">01</span> Executive Summary</div>
+    <div class="section-title"><span class="section-number">01</span> Tổng Quan</div>
     
     <div class="exec-grid">
       <div class="exec-card">
         <div class="exec-card-value" style="color: #DC2626">${criticalCount}</div>
-        <div class="exec-card-label">Critical Issues</div>
+        <div class="exec-card-label">Nghiêm trọng</div>
       </div>
       <div class="exec-card">
         <div class="exec-card-value" style="color: #F59E0B">${warningCount}</div>
-        <div class="exec-card-label">Warnings</div>
+        <div class="exec-card-label">Cảnh báo</div>
       </div>
       <div class="exec-card">
-        <div class="exec-card-value" style="color: #3B82F6">${infoCount}</div>
-        <div class="exec-card-label">Informational</div>
+        <div class="exec-card-value" style="color: #2563eb">${infoCount}</div>
+        <div class="exec-card-label">Thông tin</div>
       </div>
       <div class="exec-card">
         <div class="exec-card-value" style="color: #6366f1">${totalCitations}</div>
-        <div class="exec-card-label">CFR Citations</div>
+        <div class="exec-card-label">Trích dẫn CFR</div>
       </div>
     </div>
 
@@ -962,21 +1005,21 @@ export function generatePDFReportHTML(data: PDFReportData): string {
           ${riskScore.toFixed(1)}
         </div>
         <div class="risk-label" style="color: ${getRiskColor(riskScore)}">${getRiskLabel(riskScore)}</div>
-        <div style="font-size: 8px; color: #94a3b8; margin-top: 4px;">Current Risk</div>
+        <div style="font-size: 8px; color: #94a3b8; margin-top: 4px;">Mức rủi ro</div>
       </div>
       <div class="risk-details">
-        <h4>Risk Assessment</h4>
-        <p>${report.risk_assessment || `This label has a risk score of ${riskScore.toFixed(1)}/10. ${criticalCount > 0 ? 'Critical issues must be resolved before distribution.' : 'No critical issues found, but improvements are recommended.'}`}</p>
+        <h4>Đánh Giá Tổng Thể Từ Vexim AI</h4>
+        <p>${report.risk_assessment || `Nhãn sản phẩm có điểm rủi ro ${riskScore.toFixed(1)}/10. ${criticalCount > 0 ? 'Các vấn đề nghiêm trọng cần được khắc phục trước khi phân phối.' : 'Không phát hiện vấn đề nghiêm trọng, nhưng cần cải thiện một số điểm.'}`}</p>
         
         <div class="risk-bar-container">
-          <div class="risk-bar-label">Current Risk</div>
+          <div class="risk-bar-label">Rủi ro hiện tại</div>
           <div class="risk-bar">
             <div class="risk-bar-fill" style="width: ${riskScore * 10}%; background: ${getRiskColor(riskScore)}"></div>
           </div>
           <div class="risk-bar-value" style="color: ${getRiskColor(riskScore)}">${riskScore.toFixed(1)}</div>
         </div>
         <div class="risk-bar-container">
-          <div class="risk-bar-label">After Fixes</div>
+          <div class="risk-bar-label">Sau khi sửa</div>
           <div class="risk-bar">
             <div class="risk-bar-fill" style="width: ${projectedRisk * 10}%; background: ${getRiskColor(projectedRisk)}"></div>
           </div>
@@ -988,64 +1031,64 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   <!-- Product Information -->
   <div class="section">
-    <div class="section-title"><span class="section-number">02</span> Product Information</div>
+    <div class="section-title"><span class="section-number">02</span> Thông Tin Sản Phẩm</div>
     <table class="info-table">
-      ${report.product_name ? `<tr><td>Product Name</td><td>${escapeHtml(report.product_name)}</td></tr>` : ''}
-      ${report.brand_name ? `<tr><td>Brand</td><td>${escapeHtml(report.brand_name)}</td></tr>` : ''}
-      ${report.product_category ? `<tr><td>Category</td><td>${escapeHtml(report.product_category)}</td></tr>` : ''}
-      ${report.product_type ? `<tr><td>Product Type</td><td>${escapeHtml(report.product_type)}</td></tr>` : ''}
-      ${report.packaging_format ? `<tr><td>Packaging Format</td><td>${escapeHtml(report.packaging_format)}</td></tr>` : ''}
-      ${report.net_content ? `<tr><td>Net Content</td><td>${report.net_content.value} ${report.net_content.unit}</td></tr>` : ''}
-      ${report.pdp_area_square_inches ? `<tr><td>PDP Area</td><td>${report.pdp_area_square_inches.toFixed(2)} sq in</td></tr>` : ''}
-      ${report.manufacturer_info?.company_name ? `<tr><td>Manufacturer</td><td>${escapeHtml(report.manufacturer_info.company_name)}</td></tr>` : ''}
-      ${report.manufacturer_info?.country_of_origin ? `<tr><td>Country of Origin</td><td>${escapeHtml(report.manufacturer_info.country_of_origin)}</td></tr>` : ''}
-      ${report.target_market ? `<tr><td>Target Market</td><td>${escapeHtml(report.target_market)}</td></tr>` : ''}
-      ${report.detected_languages && report.detected_languages.length > 0 ? `<tr><td>Detected Languages</td><td>${report.detected_languages.map((l: string) => escapeHtml(l)).join(', ')}</td></tr>` : ''}
-      <tr><td>Analysis Date</td><td>${formatDate(report.created_at)}</td></tr>
-      <tr><td>AI Confidence</td><td>${report.ocr_confidence ? Math.round(report.ocr_confidence * 100) + '%' : 'N/A'}</td></tr>
+      ${report.product_name ? `<tr><td>Tên sản phẩm</td><td>${escapeHtml(report.product_name)}</td></tr>` : ''}
+      ${report.brand_name ? `<tr><td>Thương hiệu</td><td>${escapeHtml(report.brand_name)}</td></tr>` : ''}
+      ${report.product_category ? `<tr><td>Danh mục</td><td>${escapeHtml(report.product_category)}</td></tr>` : ''}
+      ${report.product_type ? `<tr><td>Loại sản phẩm</td><td>${escapeHtml(report.product_type)}</td></tr>` : ''}
+      ${report.packaging_format ? `<tr><td>Định dạng bao bì</td><td>${escapeHtml(report.packaging_format)}</td></tr>` : ''}
+      ${report.net_content ? `<tr><td>Khối lượng tịnh</td><td>${report.net_content.value} ${report.net_content.unit}</td></tr>` : ''}
+      ${report.pdp_area_square_inches ? `<tr><td>Diện tích PDP</td><td>${report.pdp_area_square_inches.toFixed(2)} sq in</td></tr>` : ''}
+      ${report.manufacturer_info?.company_name ? `<tr><td>Nhà sản xuất</td><td>${escapeHtml(report.manufacturer_info.company_name)}</td></tr>` : ''}
+      ${report.manufacturer_info?.country_of_origin ? `<tr><td>Xuất xứ</td><td>${escapeHtml(report.manufacturer_info.country_of_origin)}</td></tr>` : ''}
+      ${report.target_market ? `<tr><td>Thị trường mục tiêu</td><td>${escapeHtml(report.target_market)}</td></tr>` : ''}
+      ${report.detected_languages && report.detected_languages.length > 0 ? `<tr><td>Ngôn ngữ phát hiện</td><td>${report.detected_languages.map((l: string) => escapeHtml(l)).join(', ')}</td></tr>` : ''}
+      <tr><td>Ngày phân tích</td><td>${formatDate(report.created_at)}</td></tr>
+      <tr><td>Độ tin cậy AI</td><td>${report.ocr_confidence ? Math.round(report.ocr_confidence * 100) + '%' : 'N/A'}</td></tr>
     </table>
   </div>
 
   ${report.allergen_declaration ? `
   <div class="section">
-    <div class="section-title"><span class="section-number">03</span> Allergen Declaration</div>
+    <div class="section-title"><span class="section-number">03</span> Khai Báo Dị Ứng</div>
     <div style="background: #FEF3C7; border: 1px solid #FBBF24; border-radius: 8px; padding: 14px; font-size: 10px; color: #92400E;">
-      <strong>Declared Allergens:</strong> ${escapeHtml(report.allergen_declaration)}
+      <strong>Chất gây dị ứng:</strong> ${escapeHtml(report.allergen_declaration)}
     </div>
   </div>` : ''}
 
   ${report.ingredient_list ? `
   <div class="section no-break">
-    <div class="section-title"><span class="section-number">03b</span> Ingredient List (Extracted)</div>
+    <div class="section-title"><span class="section-number">03b</span> Danh Sách Thành Phần</div>
     <div class="data-box">
-      <div class="data-box-label">Ingredients as detected by AI Vision</div>
+      <div class="data-box-label">Thành phần được phát hiện bởi AI Vision</div>
       ${escapeHtml(report.ingredient_list)}
     </div>
   </div>` : ''}
 
   ${report.nutrition_facts ? `
   <div class="section no-break">
-    <div class="section-title"><span class="section-number">03c</span> Nutrition Facts (Extracted)</div>
+    <div class="section-title"><span class="section-number">03c</span> Thông Tin Dinh Dưỡng</div>
     <div class="data-box">
-      <div class="data-box-label">Nutrition panel as detected by AI Vision</div>
+      <div class="data-box-label">Bảng dinh dưỡng được phát hiện bởi AI Vision</div>
       <table class="info-table" style="margin: 0;">
-        ${report.nutrition_facts.servingSize ? `<tr><td>Serving Size</td><td>${escapeHtml(report.nutrition_facts.servingSize)}</td></tr>` : ''}
-        ${report.nutrition_facts.servingsPerContainer ? `<tr><td>Servings Per Container</td><td>${escapeHtml(String(report.nutrition_facts.servingsPerContainer))}</td></tr>` : ''}
-        ${report.nutrition_facts.calories !== undefined ? `<tr><td>Calories</td><td>${report.nutrition_facts.calories}</td></tr>` : ''}
-        ${report.nutrition_facts.totalFat ? `<tr><td>Total Fat</td><td>${escapeHtml(report.nutrition_facts.totalFat)}</td></tr>` : ''}
-        ${report.nutrition_facts.saturatedFat ? `<tr><td>Saturated Fat</td><td>${escapeHtml(report.nutrition_facts.saturatedFat)}</td></tr>` : ''}
-        ${report.nutrition_facts.transFat ? `<tr><td>Trans Fat</td><td>${escapeHtml(report.nutrition_facts.transFat)}</td></tr>` : ''}
+        ${report.nutrition_facts.servingSize ? `<tr><td>Khẩu phần</td><td>${escapeHtml(report.nutrition_facts.servingSize)}</td></tr>` : ''}
+        ${report.nutrition_facts.servingsPerContainer ? `<tr><td>Số khẩu phần/hộp</td><td>${escapeHtml(String(report.nutrition_facts.servingsPerContainer))}</td></tr>` : ''}
+        ${report.nutrition_facts.calories !== undefined ? `<tr><td>Năng lượng</td><td>${report.nutrition_facts.calories}</td></tr>` : ''}
+        ${report.nutrition_facts.totalFat ? `<tr><td>Chất béo tổng</td><td>${escapeHtml(report.nutrition_facts.totalFat)}</td></tr>` : ''}
+        ${report.nutrition_facts.saturatedFat ? `<tr><td>Chất béo bão hòa</td><td>${escapeHtml(report.nutrition_facts.saturatedFat)}</td></tr>` : ''}
+        ${report.nutrition_facts.transFat ? `<tr><td>Chất béo trans</td><td>${escapeHtml(report.nutrition_facts.transFat)}</td></tr>` : ''}
         ${report.nutrition_facts.cholesterol ? `<tr><td>Cholesterol</td><td>${escapeHtml(report.nutrition_facts.cholesterol)}</td></tr>` : ''}
-        ${report.nutrition_facts.sodium ? `<tr><td>Sodium</td><td>${escapeHtml(report.nutrition_facts.sodium)}</td></tr>` : ''}
-        ${report.nutrition_facts.totalCarbohydrate ? `<tr><td>Total Carbohydrate</td><td>${escapeHtml(report.nutrition_facts.totalCarbohydrate)}</td></tr>` : ''}
-        ${report.nutrition_facts.dietaryFiber ? `<tr><td>Dietary Fiber</td><td>${escapeHtml(report.nutrition_facts.dietaryFiber)}</td></tr>` : ''}
-        ${report.nutrition_facts.totalSugars ? `<tr><td>Total Sugars</td><td>${escapeHtml(report.nutrition_facts.totalSugars)}</td></tr>` : ''}
-        ${report.nutrition_facts.addedSugars ? `<tr><td>Added Sugars</td><td>${escapeHtml(report.nutrition_facts.addedSugars)}</td></tr>` : ''}
+        ${report.nutrition_facts.sodium ? `<tr><td>Natri</td><td>${escapeHtml(report.nutrition_facts.sodium)}</td></tr>` : ''}
+        ${report.nutrition_facts.totalCarbohydrate ? `<tr><td>Carbohydrate tổng</td><td>${escapeHtml(report.nutrition_facts.totalCarbohydrate)}</td></tr>` : ''}
+        ${report.nutrition_facts.dietaryFiber ? `<tr><td>Chất xơ</td><td>${escapeHtml(report.nutrition_facts.dietaryFiber)}</td></tr>` : ''}
+        ${report.nutrition_facts.totalSugars ? `<tr><td>Đường tổng</td><td>${escapeHtml(report.nutrition_facts.totalSugars)}</td></tr>` : ''}
+        ${report.nutrition_facts.addedSugars ? `<tr><td>Đường bổ sung</td><td>${escapeHtml(report.nutrition_facts.addedSugars)}</td></tr>` : ''}
         ${report.nutrition_facts.protein ? `<tr><td>Protein</td><td>${escapeHtml(report.nutrition_facts.protein)}</td></tr>` : ''}
         ${report.nutrition_facts.vitaminD ? `<tr><td>Vitamin D</td><td>${escapeHtml(report.nutrition_facts.vitaminD)}</td></tr>` : ''}
-        ${report.nutrition_facts.calcium ? `<tr><td>Calcium</td><td>${escapeHtml(report.nutrition_facts.calcium)}</td></tr>` : ''}
-        ${report.nutrition_facts.iron ? `<tr><td>Iron</td><td>${escapeHtml(report.nutrition_facts.iron)}</td></tr>` : ''}
-        ${report.nutrition_facts.potassium ? `<tr><td>Potassium</td><td>${escapeHtml(report.nutrition_facts.potassium)}</td></tr>` : ''}
+        ${report.nutrition_facts.calcium ? `<tr><td>Canxi</td><td>${escapeHtml(report.nutrition_facts.calcium)}</td></tr>` : ''}
+        ${report.nutrition_facts.iron ? `<tr><td>Sắt</td><td>${escapeHtml(report.nutrition_facts.iron)}</td></tr>` : ''}
+        ${report.nutrition_facts.potassium ? `<tr><td>Kali</td><td>${escapeHtml(report.nutrition_facts.potassium)}</td></tr>` : ''}
       </table>
     </div>
   </div>` : ''}
@@ -1059,19 +1102,19 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       <div class="page-header-brand">VEXIM Compliance AI</div>
     </div>
     <div class="page-header-right">
-      Report ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
+      Báo cáo ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
       ${formatDate(generatedAt)}
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title"><span class="section-number">04</span> Detailed Findings</div>
+    <div class="section-title"><span class="section-number">04</span> Chi Tiết Phát Hiện</div>
     
     ${sortedViolations.length === 0 ? `
       <div style="text-align: center; padding: 40px; color: #16a34a;">
         <div style="font-size: 48px; margin-bottom: 12px;">&#10003;</div>
-        <div style="font-size: 16px; font-weight: 700;">No Violations Found</div>
-        <div style="font-size: 11px; color: #64748b; margin-top: 8px;">This label meets all tested FDA compliance requirements.</div>
+        <div style="font-size: 16px; font-weight: 700;">Không phát hiện vi phạm</div>
+        <div style="font-size: 11px; color: #64748b; margin-top: 8px;">Nhãn sản phẩm đáp ứng tất cả yêu cầu tuân thủ FDA đã kiểm tra.</div>
       </div>
     ` : sortedViolations.map((v, i) => {
       const colors = getSeverityColor(v.severity)
@@ -1082,7 +1125,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
             ${i + 1}. ${escapeHtml(v.category)}
           </div>
           <span class="severity-badge" style="background: ${colors.text}; color: white;">
-            ${v.severity.toUpperCase()}
+            ${getSeverityLabel(v.severity)}
           </span>
         </div>
         
@@ -1090,38 +1133,38 @@ export function generatePDFReportHTML(data: PDFReportData): string {
         
         ${v.regulation_reference ? `
         <div class="violation-box" style="border-left: 3px solid ${colors.border};">
-          <div class="violation-box-label">Legal Basis</div>
-          <div class="violation-box-value" style="font-family: monospace; color: #3b82f6;">${escapeHtml(v.regulation_reference)}</div>
+          <div class="violation-box-label">Cơ sở pháp lý</div>
+          <div class="violation-box-value" style="font-family: monospace; color: #2563eb;">${escapeHtml(v.regulation_reference)}</div>
           ${v.legal_basis ? `<div class="violation-box-value" style="margin-top: 4px;">${escapeHtml(v.legal_basis)}</div>` : ''}
         </div>` : ''}
         
         ${v.suggested_fix ? `
         <div class="violation-box" style="background: rgba(34, 197, 94, 0.08); border-left: 3px solid #22c55e;">
-          <div class="violation-box-label" style="color: #16a34a;">Recommended Fix</div>
+          <div class="violation-box-label" style="color: #16a34a;">Hướng dẫn khắc phục</div>
           <div class="violation-box-value">${escapeHtml(v.suggested_fix)}</div>
         </div>` : ''}
 
         ${v.enforcement_context ? `
         <div class="violation-box" style="background: rgba(239, 68, 68, 0.05); border-left: 3px solid #ef4444;">
-          <div class="violation-box-label" style="color: #dc2626;">Enforcement History</div>
+          <div class="violation-box-label" style="color: #dc2626;">Lịch sử xử phạt</div>
           <div class="violation-box-value">${escapeHtml(v.enforcement_context)}</div>
         </div>` : ''}
 
         <div class="violation-meta">
-          ${v.confidence_score !== undefined ? `<span>AI Confidence: ${Math.round(v.confidence_score * 100)}%</span>` : ''}
-          ${v.risk_score !== undefined ? `<span>Risk Score: ${v.risk_score.toFixed(1)}/10</span>` : ''}
-          ${v.enforcement_frequency ? `<span>Enforcement Frequency: ${v.enforcement_frequency}x</span>` : ''}
-          ${v.citations?.length ? `<span>Citations: ${v.citations.length}</span>` : ''}
+          ${v.confidence_score !== undefined ? `<span>Độ tin cậy AI: ${Math.round(v.confidence_score * 100)}%</span>` : ''}
+          ${v.risk_score !== undefined ? `<span>Điểm rủi ro: ${v.risk_score.toFixed(1)}/10</span>` : ''}
+          ${v.enforcement_frequency ? `<span>Tần suất xử phạt: ${v.enforcement_frequency}x</span>` : ''}
+          ${v.citations?.length ? `<span>Trích dẫn: ${v.citations.length}</span>` : ''}
         </div>
 
         ${v.citations && v.citations.length > 0 ? `
         <table class="citations-table" style="margin-top: 12px;">
           <thead>
             <tr>
-              <th>CFR Section</th>
-              <th>Citation Text</th>
-              <th>Source</th>
-              <th>Relevance</th>
+              <th>Mục CFR</th>
+              <th>Nội dung trích dẫn</th>
+              <th>Nguồn</th>
+              <th>Độ liên quan</th>
             </tr>
           </thead>
           <tbody>
@@ -1151,17 +1194,17 @@ ${importAlertViolations.length > 0 ? `
       <div class="page-header-brand">VEXIM Compliance AI</div>
     </div>
     <div class="page-header-right">
-      Report ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
+      Báo cáo ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
       ${formatDate(generatedAt)}
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title"><span class="section-number">05</span> Border Enforcement — FDA Import Alerts</div>
+    <div class="section-title"><span class="section-number">05</span> Cảnh Báo Nhập Khẩu FDA</div>
 
-    <div class="port-warning" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left-color: #dc2626; margin-bottom: 20px;">
-      <div class="port-warning-label" style="color: #dc2626;">BORDER ENFORCEMENT RISK (Layer 4 — Risk Context Only)</div>
-      The following FDA Import Alerts were matched to this product or category. Import Alerts authorize FDA to detain shipments at US ports WITHOUT physical examination (DWPE). These are risk signals — not citations — and do not replace regulatory compliance requirements. Products from firms on the Red List are subject to automatic detention at all US ports of entry.
+    <div class="port-warning" style="background: #FEF3C7; border-left-color: #dc2626; margin-bottom: 20px;">
+      <div class="port-warning-label" style="color: #dc2626;">RỦI RO TẠI CẢNG NHẬP KHẨU (Chỉ mang tính tham khảo)</div>
+      Các Cảnh báo Nhập khẩu FDA sau đây đã được khớp với sản phẩm hoặc danh mục này. Import Alerts cho phép FDA giữ hàng tại các cảng Hoa Kỳ KHÔNG cần kiểm tra vật lý (DWPE). Đây là các tín hiệu rủi ro - không phải vi phạm pháp lý - và không thay thế các yêu cầu tuân thủ quy định. Sản phẩm từ các công ty trong Danh sách Đỏ sẽ bị giữ tự động tại tất cả các cảng nhập cảnh Hoa Kỳ.
     </div>
 
     ${importAlertViolations.map((ia, i) => {
@@ -1174,24 +1217,24 @@ ${importAlertViolations.length > 0 ? `
           ${i + 1}. ${escapeHtml(ia.category)}
         </div>
         <span class="severity-badge" style="background: ${isEntityMatch ? '#DC2626' : '#F59E0B'}; color: white;">
-          ${isEntityMatch ? 'DWPE — Red List Match' : 'Category Risk'}
+          ${isEntityMatch ? 'DWPE — Danh sách Đỏ' : 'Rủi ro danh mục'}
         </span>
       </div>
       <div class="violation-description">${escapeHtml(ia.description)}</div>
       ${ia.regulation_reference ? `
       <div class="violation-box" style="border-left: 3px solid ${isEntityMatch ? '#f87171' : '#fbbf24'};">
-        <div class="violation-box-label">Import Alert Reference</div>
-        <div class="violation-box-value" style="font-family: monospace; color: #3b82f6;">${escapeHtml(ia.regulation_reference)}</div>
-        ${ia.import_alert_number ? `<div class="violation-box-value" style="margin-top: 4px; font-size: 9px;"><a href="https://www.accessdata.fda.gov/cms_ia/importalert_${escapeHtml(ia.import_alert_number.replace(/-/g, ''))}.html" style="color: #3b82f6;">View on FDA.gov →</a></div>` : ''}
+        <div class="violation-box-label">Tham chiếu Import Alert</div>
+        <div class="violation-box-value" style="font-family: monospace; color: #2563eb;">${escapeHtml(ia.regulation_reference)}</div>
+        ${ia.import_alert_number ? `<div class="violation-box-value" style="margin-top: 4px; font-size: 9px;"><a href="https://www.accessdata.fda.gov/cms_ia/importalert_${escapeHtml(ia.import_alert_number.replace(/-/g, ''))}.html" style="color: #2563eb;">Xem trên FDA.gov →</a></div>` : ''}
       </div>` : ''}
       ${ia.suggested_fix ? `
       <div class="violation-box" style="background: rgba(34, 197, 94, 0.08); border-left: 3px solid #22c55e;">
-        <div class="violation-box-label" style="color: #16a34a;">Remediation Steps</div>
+        <div class="violation-box-label" style="color: #16a34a;">Các bước khắc phục</div>
         <div class="violation-box-value">${escapeHtml(ia.suggested_fix)}</div>
       </div>` : ''}
       <div class="violation-meta">
-        <span>Match Confidence: ${ia.confidence_score !== undefined ? Math.round(ia.confidence_score * 100) + '%' : 'N/A'}</span>
-        <span style="color: #64748b; font-style: italic;">Risk context only — not a regulatory citation</span>
+        <span>Độ tin cậy khớp: ${ia.confidence_score !== undefined ? Math.round(ia.confidence_score * 100) + '%' : 'N/A'}</span>
+        <span style="color: #64748b; font-style: italic;">Chỉ mang tính tham khảo — không phải vi phạm pháp lý</span>
       </div>
     </div>`
     }).join('')}
@@ -1209,33 +1252,33 @@ ${((report.geometry_violations && report.geometry_violations.length > 0) ||
       <div class="page-header-brand">VEXIM Compliance AI</div>
     </div>
     <div class="page-header-right">
-      Report ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
+      Báo cáo ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
       ${formatDate(generatedAt)}
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title"><span class="section-number">05b</span> Visual &amp; Technical Checks</div>
+    <div class="section-title"><span class="section-number">05b</span> Kiểm Tra Kỹ Thuật &amp; Hình Ảnh</div>
 
     <div class="tech-grid">
       ${report.geometry_violations && report.geometry_violations.length > 0 ? `
       <div class="tech-card">
         <div class="tech-card-title">
-          Geometry &amp; Layout
-          <span class="tech-card-badge">${report.geometry_violations.length} issue${report.geometry_violations.length > 1 ? 's' : ''}</span>
+          Hình học &amp; Bố cục
+          <span class="tech-card-badge">${report.geometry_violations.length} vấn đề</span>
         </div>
         ${report.geometry_violations.map((gv: any) => `
         <div class="tech-item">
           <div class="tech-item-header">
             <span class="tech-item-type">${escapeHtml((gv.type || '').replace(/_/g, ' '))}</span>
-            <span class="severity-badge" style="background: ${getSeverityColor(gv.severity).text}; color: white; font-size: 7px; padding: 2px 6px;">${(gv.severity || '').toUpperCase()}</span>
+            <span class="severity-badge" style="background: ${getSeverityColor(gv.severity).text}; color: white; font-size: 7px; padding: 2px 6px;">${getSeverityLabel(gv.severity || '')}</span>
           </div>
           <div class="tech-item-desc">${escapeHtml(gv.description || '')}</div>
-          ${gv.regulation ? `<div style="font-family: monospace; font-size: 8px; color: #3b82f6; margin-top: 3px;">${escapeHtml(gv.regulation)}</div>` : ''}
+          ${gv.regulation ? `<div style="font-family: monospace; font-size: 8px; color: #2563eb; margin-top: 3px;">${escapeHtml(gv.regulation)}</div>` : ''}
           ${(gv.expected || gv.actual) ? `
           <div class="tech-item-values">
-            ${gv.expected ? `<span style="color: #16a34a;">Required: ${escapeHtml(String(gv.expected))}</span>` : ''}
-            ${gv.actual ? `<span style="color: #dc2626;">Actual: ${escapeHtml(String(gv.actual))}</span>` : ''}
+            ${gv.expected ? `<span style="color: #16a34a;">Yêu cầu: ${escapeHtml(String(gv.expected))}</span>` : ''}
+            ${gv.actual ? `<span style="color: #dc2626;">Thực tế: ${escapeHtml(String(gv.actual))}</span>` : ''}
           </div>` : ''}
         </div>`).join('')}
       </div>` : ''}
@@ -1243,21 +1286,21 @@ ${((report.geometry_violations && report.geometry_violations.length > 0) ||
       ${report.contrast_violations && report.contrast_violations.length > 0 ? `
       <div class="tech-card">
         <div class="tech-card-title">
-          Color Contrast
-          <span class="tech-card-badge">${report.contrast_violations.length} issue${report.contrast_violations.length > 1 ? 's' : ''}</span>
+          Độ tương phản màu
+          <span class="tech-card-badge">${report.contrast_violations.length} vấn đề</span>
         </div>
         ${report.contrast_violations.map((cv: any) => `
         <div class="tech-item">
           <div class="tech-item-desc">${escapeHtml(cv.description || '')}</div>
           ${cv.ratio !== undefined ? `
           <div style="margin-top: 4px; font-size: 9px;">
-            Contrast ratio: <strong style="color: ${cv.ratio >= 4.5 ? '#16a34a' : cv.ratio >= 3 ? '#f59e0b' : '#dc2626'}">${cv.ratio.toFixed(2)}:1</strong>
-            <span style="color: #94a3b8;">(minimum 4.5:1)</span>
+            Tỷ lệ tương phản: <strong style="color: ${cv.ratio >= 4.5 ? '#16a34a' : cv.ratio >= 3 ? '#f59e0b' : '#dc2626'}">${cv.ratio.toFixed(2)}:1</strong>
+            <span style="color: #94a3b8;">(tối thiểu 4.5:1)</span>
           </div>` : ''}
           ${cv.colors ? `
           <div style="margin-top: 4px; font-size: 8px; display: flex; align-items: center; gap: 8px;">
             <span><span class="color-swatch" style="background: ${cv.colors.foreground};"></span>${escapeHtml(cv.colors.foreground)}</span>
-            <span style="color: #94a3b8;">on</span>
+            <span style="color: #94a3b8;">trên</span>
             <span><span class="color-swatch" style="background: ${cv.colors.background};"></span>${escapeHtml(cv.colors.background)}</span>
           </div>` : ''}
           ${cv.recommendation ? `<div style="margin-top: 4px; font-size: 8px; color: #16a34a;">${escapeHtml(cv.recommendation)}</div>` : ''}
@@ -1268,19 +1311,19 @@ ${((report.geometry_violations && report.geometry_violations.length > 0) ||
     ${report.multilanguage_issues && report.multilanguage_issues.length > 0 ? `
     <div class="tech-card" style="margin-bottom: 16px;">
       <div class="tech-card-title">
-        Multi-Language Compliance
-        <span class="tech-card-badge">${report.multilanguage_issues.length} check${report.multilanguage_issues.length > 1 ? 's' : ''}</span>
+        Tuân thủ đa ngôn ngữ
+        <span class="tech-card-badge">${report.multilanguage_issues.length} kiểm tra</span>
       </div>
       ${report.multilanguage_issues.map((ml: any) => `
       <div class="tech-item">
         <div class="tech-item-desc">${escapeHtml(ml.description || '')}</div>
         ${ml.detectedLanguages && ml.detectedLanguages.length > 0 ? `
         <div style="margin-top: 4px; font-size: 8px;">
-          Detected: ${ml.detectedLanguages.map((l: string) => `<span style="background: #f1f5f9; padding: 1px 6px; border-radius: 3px; margin-right: 4px;">${escapeHtml(l)}</span>`).join('')}
+          Đã phát hiện: ${ml.detectedLanguages.map((l: string) => `<span style="background: #f1f5f9; padding: 1px 6px; border-radius: 3px; margin-right: 4px;">${escapeHtml(l)}</span>`).join('')}
         </div>` : ''}
         ${ml.missingFields && ml.missingFields.length > 0 ? `
         <div style="margin-top: 4px; font-size: 8px; color: #dc2626;">
-          Missing translations: ${ml.missingFields.map((f: string) => escapeHtml(f)).join(', ')}
+          Thiếu bản dịch: ${ml.missingFields.map((f: string) => escapeHtml(f)).join(', ')}
         </div>` : ''}
       </div>`).join('')}
     </div>` : ''}
@@ -1296,13 +1339,13 @@ ${report.commercial_summary ? `
       <div class="page-header-brand">VEXIM Compliance AI</div>
     </div>
     <div class="page-header-right">
-      Report ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
+      Báo cáo ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
       ${formatDate(generatedAt)}
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title"><span class="section-number">05c</span> Commercial Analysis Summary</div>
+    <div class="section-title"><span class="section-number">05c</span> Tóm Tắt Phân Tích Thương Mại</div>
     <div class="summary-section">
       ${report.commercial_summary.split('\n').map((line: string) => {
         if (line.startsWith('### ')) return `<div class="summary-subheading">${escapeHtml(line.replace(/^### /, '').replace(/[^a-zA-Z0-9\s.,;:!?()\-\/]/g, '').trim())}</div>`
@@ -1324,64 +1367,64 @@ ${report.commercial_summary ? `
       <div class="page-header-brand">VEXIM Compliance AI</div>
     </div>
     <div class="page-header-right">
-      Report ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
+      Báo cáo ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
       ${formatDate(generatedAt)}
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title"><span class="section-number">06</span> Expert Recommendations</div>
+    <div class="section-title"><span class="section-number">06</span> Khuyến Nghị Chuyên Gia</div>
     
     ${report.expert_tips && report.expert_tips.length > 0 ? `
       ${report.expert_tips.map((tip: string, idx: number) => `
       <div class="expert-tip">
-        <div class="expert-tip-label">Recommendation ${idx + 1}</div>
+        <div class="expert-tip-label">Khuyến nghị ${idx + 1}</div>
         ${escapeHtml(tip)}
       </div>`).join('')}
     ` : `
       <div class="expert-tip">
-        <div class="expert-tip-label">Vexim Expert Advice</div>
+        <div class="expert-tip-label">Lời khuyên từ Vexim</div>
         ${criticalCount > 0 
-          ? 'This label has critical FDA compliance issues that must be resolved before distribution to the US market. Failure to comply may result in Import Alert, product detention at port, or FDA Warning Letter.'
+          ? 'Nhãn sản phẩm này có các vấn đề tuân thủ FDA nghiêm trọng cần được khắc phục trước khi phân phối tại thị trường Hoa Kỳ. Không tuân thủ có thể dẫn đến Import Alert, hàng bị giữ tại cảng, hoặc Thư cảnh báo FDA.'
           : warningCount > 0
-          ? 'This label meets minimum FDA requirements but has areas for improvement. Addressing the warnings will reduce enforcement risk and improve consumer trust.'
-          : 'This label demonstrates strong FDA compliance. Continue to monitor regulatory updates and maintain current labeling standards.'
+          ? 'Nhãn sản phẩm này đáp ứng yêu cầu FDA tối thiểu nhưng có các điểm cần cải thiện. Khắc phục các cảnh báo sẽ giảm rủi ro bị xử phạt và tăng niềm tin của người tiêu dùng.'
+          : 'Nhãn sản phẩm này thể hiện sự tuân thủ FDA tốt. Tiếp tục theo dõi các cập nhật quy định và duy trì các tiêu chuẩn ghi nhãn hiện tại.'
         }
       </div>
     `}
 
     ${criticalCount > 0 ? `
     <div class="port-warning">
-      <div class="port-warning-label">Port of Entry Advisory</div>
-      Products with labeling violations are commonly detained at US ports of entry (especially Long Beach, Los Angeles and Newark). Customs and Border Protection (CBP) collaborates with FDA on import inspections. Correcting all critical issues before shipment is strongly recommended.
+      <div class="port-warning-label">Cảnh báo cảng nhập khẩu</div>
+      Sản phẩm có vi phạm nhãn thường bị giữ tại các cảng nhập cảnh Hoa Kỳ (đặc biệt Long Beach, Los Angeles và Newark). Cục Hải quan và Bảo vệ Biên giới (CBP) phối hợp với FDA trong kiểm tra nhập khẩu. Khắc phục tất cả các vấn đề nghiêm trọng trước khi vận chuyển là rất cần thiết.
     </div>` : ''}
 
     ${report.review_notes ? `
     <div class="expert-tip">
-      <div class="expert-tip-label">Expert Review Notes</div>
+      <div class="expert-tip-label">Ghi chú đánh giá chuyên gia</div>
       ${escapeHtml(report.review_notes)}
     </div>` : ''}
   </div>
 
   <!-- Action Items Summary -->
   <div class="section">
-    <div class="section-title"><span class="section-number">07</span> Action Items Summary</div>
+    <div class="section-title"><span class="section-number">07</span> Danh Sách Hành Động</div>
     <table class="citations-table">
       <thead>
         <tr>
           <th>#</th>
-          <th>Priority</th>
-          <th>Issue</th>
-          <th>Action Required</th>
+          <th>Mức độ</th>
+          <th>Vấn đề</th>
+          <th>Hành động cần thực hiện</th>
         </tr>
       </thead>
       <tbody>
         ${sortedViolations.map((v, i) => `
         <tr>
           <td>${i + 1}</td>
-          <td><span class="severity-badge" style="background: ${getSeverityColor(v.severity).text}; color: white; font-size: 7px; padding: 2px 6px;">${v.severity.toUpperCase()}</span></td>
+          <td><span class="severity-badge" style="background: ${getSeverityColor(v.severity).text}; color: white; font-size: 7px; padding: 2px 6px;">${getSeverityLabel(v.severity)}</span></td>
           <td>${escapeHtml(v.category)}</td>
-          <td>${escapeHtml(v.suggested_fix?.slice(0, 120) || 'See detailed finding')}${(v.suggested_fix?.length || 0) > 120 ? '...' : ''}</td>
+          <td>${escapeHtml(v.suggested_fix?.slice(0, 120) || 'Xem chi tiết')}</td>
         </tr>`).join('')}
       </tbody>
     </table>
@@ -1392,41 +1435,41 @@ ${report.commercial_summary ? `
     ${report.status === 'verified' 
       ? `<div class="verification-badge verified">
           <span style="font-size: 14px;">&#10003;</span>
-          Expert Verified Report
+          Báo cáo đã xác minh bởi chuyên gia
         </div>`
       : `<div class="verification-badge pending">
           <span style="font-size: 14px;">&#9888;</span>
-          Pending Expert Verification
+          Chờ xác minh chuyên gia
         </div>`
     }
   </div>
 
   ${report.status !== 'verified' ? `
   <div class="cta-box">
-    <div class="cta-box-title">Get Expert Verification</div>
+    <div class="cta-box-title">Yêu cầu xác minh chuyên gia</div>
     <div class="cta-box-text">
-      Have a qualified FDA compliance expert review and verify this report.<br/>
-      Expert verification adds credibility and detailed recommendations.
+      Để chuyên gia tuân thủ FDA có năng lực đánh giá và xác minh báo cáo này.<br/>
+      Xác minh chuyên gia tăng độ tin cậy và cung cấp khuyến nghị chi tiết.
     </div>
-    <a href="https://vexim.global/pricing" class="cta-box-link">Request Expert Review</a>
+    <a href="https://vexim.global/pricing" class="cta-box-link">Yêu cầu đánh giá</a>
   </div>` : ''}
 
   <!-- Signature Section -->
   <div class="signature-section">
-    <div style="font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">Certification</div>
+    <div style="font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">Chứng nhận</div>
     <div style="font-size: 9px; color: #64748b; margin-bottom: 16px;">
-      This report was generated by Vexim Compliance AI and ${report.status === 'verified' ? 'verified by a qualified FDA compliance expert' : 'is pending expert verification'}.
-      The findings are based on automated analysis of the submitted label against current FDA regulations (21 CFR) and enforcement precedents.
+      Báo cáo này được tạo bởi Vexim Compliance AI và ${report.status === 'verified' ? 'đã được xác minh bởi chuyên gia tuân thủ FDA' : 'đang chờ xác minh chuyên gia'}.
+      Các phát hiện dựa trên phân tích tự động nhãn đã gửi so với các quy định FDA hiện hành (21 CFR) và tiền lệ xử phạt.
     </div>
     <div class="signature-grid">
       <div class="signature-box">
         <div class="signature-name">${escapeHtml(generatedBy)}</div>
-        <div class="signature-title">${report.status === 'verified' ? 'FDA Compliance Expert' : 'Vexim AI Analysis Engine'}</div>
+        <div class="signature-title">${report.status === 'verified' ? 'Chuyên gia tuân thủ FDA' : 'Hệ thống phân tích Vexim AI'}</div>
         <div class="signature-title">${formatDate(generatedAt)}</div>
       </div>
       <div class="signature-box">
         <div class="signature-name">${companyInfo.name}</div>
-        <div class="signature-title">Cert. ID: ${companyInfo.certificationId}</div>
+        <div class="signature-title">Mã chứng nhận: ${companyInfo.certificationId}</div>
         <div class="signature-title">${companyInfo.website}</div>
       </div>
     </div>
@@ -1434,16 +1477,16 @@ ${report.commercial_summary ? `
 
   <!-- Disclaimer -->
   <div class="disclaimer">
-    <div class="disclaimer-title">Legal Disclaimer</div>
+    <div class="disclaimer-title">Tuyên bố miễn trừ trách nhiệm</div>
     <p>
-      This report is provided for informational purposes only and does not constitute legal advice.
-      While Vexim Compliance AI uses advanced AI technology and comprehensive FDA regulation databases
-      (including 4,064+ regulations, FDA Warning Letters, FDA Recalls, and FDA Import Alerts) to identify potential
-      compliance issues, it should not be used as a substitute for consultation with a qualified
-      FDA regulatory affairs professional. Import Alert findings are risk signals only and do not constitute regulatory violations or legal citations. Vexim Global is not liable for any decisions made based
-      on this report. FDA regulations are subject to change, and it is the responsibility of the
-      label owner to ensure ongoing compliance. This report is valid as of the date of generation
-      and should be reviewed if regulations change.
+      Báo cáo này chỉ được cung cấp cho mục đích thông tin và không cấu thành tư vấn pháp lý.
+      Mặc dù Vexim Compliance AI sử dụng công nghệ AI tiên tiến và cơ sở dữ liệu quy định FDA toàn diện
+      (bao gồm hơn 4.064 quy định, Thư cảnh báo FDA, Thu hồi FDA và Cảnh báo nhập khẩu FDA) để xác định các vấn đề tuân thủ tiềm năng,
+      nó không nên được sử dụng thay thế cho tư vấn với chuyên gia quản lý quy định FDA có trình độ.
+      Các phát hiện Import Alert chỉ là tín hiệu rủi ro và không cấu thành vi phạm quy định hoặc trích dẫn pháp lý.
+      Vexim Global không chịu trách nhiệm cho bất kỳ quyết định nào được đưa ra dựa trên báo cáo này.
+      Các quy định FDA có thể thay đổi, và chủ sở hữu nhãn có trách nhiệm đảm bảo tuân thủ liên tục.
+      Báo cáo này có hiệu lực kể từ ngày tạo và cần được xem xét lại nếu quy định thay đổi.
     </p>
   </div>
 </div>
