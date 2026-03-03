@@ -334,10 +334,17 @@ export const en: TranslationKeys = {
     errorSubmitFailed: 'Failed to submit request',
     viewPricing: 'View pricing',
     submitting: 'Submitting...',
-    submitFreeInPlan: 'Request consultation (Free in plan)',
-    submitWithPrice: (price: string) => `Request consultation — ${price}`,
-    submitDefault: 'Request consultation',
-    proUpgradeNote: 'Business/Pro plans include free Expert Review credits.',
+submitFreeInPlan: 'Request consultation (Free in plan)',
+  submitWithPrice: (price: string) => `Request consultation — ${price}`,
+  submitDefault: 'Request consultation',
+  proUpgradeNote: 'Business/Pro plans include free Expert Review credits.',
+  // Quota-related translations
+  creditsRemaining: 'remaining',
+  upgradeRequired: 'Pro/Business required',
+  upgradeToAccess: 'Upgrade to access Expert Consultation',
+  upgradeToPro: 'Upgrade to Pro/Business',
+  quotaExhaustedUpgrade: 'You have used all your Expert Review credits this month.',
+  upgradeForMore: 'Upgrade for unlimited',
   },
 
   // ─── Advanced Settings (Analyze form) ────────────────

@@ -73,10 +73,32 @@ export function ExpertRequestPanel({
   const [targetMarket, setTargetMarket] = useState('US')
   const [error, setError] = useState<string | null>(null)
   const [expertReviewPrice, setExpertReviewPrice] = useState<number>(expertReviewPriceProp ?? 499000)
+  const [quotaInfo, setQuotaInfo] = useState<{ canRequest: boolean; used: number; limit: number } | null>(null)
 
   useEffect(() => {
     if (needsExpertReview) setExpanded(true)
   }, [needsExpertReview])
+
+  // Fetch quota info to determine if user has access
+  useEffect(() => {
+    const fetchQuota = async () => {
+      try {
+        const res = await fetch('/api/expert-request/quota')
+        const data = await res.json()
+        if (data.can_request !== undefined) {
+          setQuotaInfo({
+            canRequest: data.can_request,
+            used: data.reviews_used ?? 0,
+            limit: data.reviews_limit ?? 0,
+          })
+        }
+      } catch {
+        // If can't fetch quota, assume no access
+        setQuotaInfo({ canRequest: false, used: 0, limit: 0 })
+      }
+    }
+    fetchQuota()
+  }, [])
 
   useEffect(() => {
     if (expertReviewPriceProp !== undefined) return
@@ -326,14 +348,21 @@ export function ExpertRequestPanel({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!expertReviewsIncluded && expertReviewPrice > 0 && (
-            <Badge variant="outline" className="text-xs">
-              {expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}{'₫/'}
-              {locale === 'vi' ? 'lần' : 'time'}
-            </Badge>
-          )}
+          {/* Show "Free in plan" badge for Pro/Business users with quota */}
           {expertReviewsIncluded && (
             <Badge className="text-xs bg-primary text-primary-foreground">{t.expert.freeInPlan}</Badge>
+          )}
+          {/* Show quota remaining for Pro users */}
+          {expertReviewsIncluded && quotaInfo && quotaInfo.limit > 0 && (
+            <Badge variant="outline" className="text-xs text-muted-foreground">
+              {quotaInfo.limit - quotaInfo.used}/{quotaInfo.limit} {t.expert.creditsRemaining || 'remaining'}
+            </Badge>
+          )}
+          {/* Show upgrade prompt for Free/Starter users (no quota) */}
+          {!expertReviewsIncluded && (
+            <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50">
+              {t.expert.upgradeRequired || 'Pro/Business required'}
+            </Badge>
           )}
           {needsExpertReview && (
             <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 border">{t.expert.recommended}</Badge>
@@ -392,32 +421,54 @@ export function ExpertRequestPanel({
             </div>
           )}
 
-          <Button
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="w-full"
-          >
-            {submitting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <MessageCircle className="mr-2 h-4 w-4" />
-            )}
-            {submitting
-              ? t.expert.submitting
-              : expertReviewsIncluded
-              ? t.expert.submitFreeInPlan
-              : expertReviewPrice > 0
-              ? t.expert.submitWithPrice(expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US') + '₫')
-              : t.expert.submitDefault}
-          </Button>
-
-          {!expertReviewsIncluded && (
-            <p className="text-xs text-center text-muted-foreground">
-              {t.expert.proUpgradeNote}{' '}
-              <a href="/pricing?highlight=business#subscription-plans" className="text-primary underline font-medium">
-                {t.expert.viewPricing}
-              </a>
-            </p>
+          {/* Show upgrade CTA for users without quota access */}
+          {!expertReviewsIncluded ? (
+            <div className="space-y-3">
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-amber-800 mb-2">
+                  {t.expert.upgradeToAccess || 'Upgrade to access Expert Consultation'}
+                </p>
+                <p className="text-xs text-amber-700 mb-3">
+                  {t.expert.proUpgradeNote}
+                </p>
+                <Button
+                  asChild
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                >
+                  <a href="/pricing?highlight=business#subscription-plans">
+                    {t.expert.upgradeToPro || 'Upgrade to Pro/Business'}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </a>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Button
+                onClick={handleSubmit}
+                disabled={submitting || (quotaInfo && !quotaInfo.canRequest)}
+                className="w-full"
+              >
+                {submitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                )}
+                {submitting
+                  ? t.expert.submitting
+                  : t.expert.submitFreeInPlan}
+              </Button>
+              
+              {/* Show quota exhausted message for Pro users who used all credits */}
+              {quotaInfo && !quotaInfo.canRequest && quotaInfo.limit > 0 && (
+                <p className="text-xs text-center text-amber-600">
+                  {t.expert.quotaExhaustedUpgrade || 'You have used all your Expert Review credits this month.'}{' '}
+                  <a href="/pricing?highlight=enterprise#subscription-plans" className="text-primary underline font-medium">
+                    {t.expert.upgradeForMore || 'Upgrade for unlimited'}
+                  </a>
+                </p>
+              )}
+            </>
           )}
         </div>
       )}

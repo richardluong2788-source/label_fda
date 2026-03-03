@@ -130,7 +130,7 @@ export const vi = {
     warningLetterTitle: 'Cảnh báo từ FDA Warning Letter',
     recallTitle: 'Liên quan đến sản phẩm bị thu hồi',
     importAlertTitle: 'Cảnh báo nhập khẩu FDA',
-    lowContrastTitle: 'Độ tương phản màu sắc thấp',
+    lowContrastTitle: 'Đ��� tương phản màu sắc thấp',
     fdaReadabilityReq: 'Yêu cầu FDA về độ rõ ràng của nhãn',
     contrastTitle: 'Độ tương phản màu sắc thấp',
     contrastRef: 'Yêu cầu FDA về độ rõ ràng của nhãn',
@@ -338,6 +338,13 @@ export const vi = {
     submitWithPrice: (price: string) => `Gửi yêu cầu tư vấn — ${price}`,
     submitDefault: 'Gửi yêu cầu tư vấn',
     proUpgradeNote: 'Gói Business/Pro có lượt Expert Review miễn phí.',
+    // Quota-related translations
+    creditsRemaining: 'còn lại',
+    upgradeRequired: 'Yêu cầu gói Pro/Business',
+    upgradeToAccess: 'Nâng cấp để sử dụng Tư vấn Chuyên gia',
+    upgradeToPro: 'Nâng cấp lên Pro/Business',
+    quotaExhaustedUpgrade: 'Bạn đã sử dụng hết lượt Expert Review trong tháng này.',
+    upgradeForMore: 'Nâng cấp để không giới hạn',
   },
 
   // ─── Advanced Settings (Analyze form) ────────────────
