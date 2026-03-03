@@ -627,6 +627,7 @@ export function ReportResultView({
                     <div>
                       <p className="text-[11px] text-slate-400 uppercase tracking-wider">
                         {t.report.brand}
+                      </p>
                       <p className="text-sm font-semibold text-slate-800">
                         {(report as any).brand_name}
                       </p>
