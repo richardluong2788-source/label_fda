@@ -77,6 +77,38 @@ function getSeverityLabel(severity: string): string {
   }
 }
 
+// Translate common violation categories to Vietnamese
+function translateCategory(category: string): string {
+  const translations: Record<string, string> = {
+    'Health Claims': 'Tuyên bố sức khỏe',
+    'Ingredient Order': 'Thứ tự nguyên liệu',
+    'Ingredient Listing': 'Danh sách thành phần',
+    'Nutrition Facts': 'Thông tin dinh dưỡng',
+    'Allergen Declaration': 'Khai báo chất gây dị ứng',
+    'Net Content': 'Khối lượng tịnh',
+    'Country of Origin': 'Xuất xứ',
+    'Manufacturer Info': 'Thông tin nhà sản xuất',
+    'Font Size': 'Cỡ chữ',
+    'Label Prominence': 'Độ nổi bật nhãn',
+    'Color Contrast': 'Độ tương phản màu',
+    'Language Requirements': 'Yêu cầu ngôn ngữ',
+    'Missing Required Statement': 'Thiếu tuyên bố bắt buộc',
+    'Prohibited Claims': 'Tuyên bố bị cấm',
+    'Drug Claims': 'Tuyên bố thuốc',
+    'Disease Claims': 'Tuyên bố bệnh',
+    'Structure/Function Claims': 'Tuyên bố cấu trúc/chức năng',
+    'Nutrient Content Claims': 'Tuyên bố hàm lượng dinh dưỡng',
+    'Serving Size': 'Khẩu phần ăn',
+    'Daily Value': 'Giá trị hàng ngày',
+    'Barcode Issues': 'Vấn đề mã vạch',
+    'Packaging Compliance': 'Tuân thủ bao bì',
+    'Import Alert Match': 'Khớp cảnh báo nhập khẩu',
+    'Warning Letter Citation': 'Trích dẫn thư cảnh báo',
+    'Recall Association': 'Liên quan thu hồi',
+  }
+  return translations[category] || category
+}
+
 export function generatePDFReportHTML(data: PDFReportData): string {
   const { report, violations, generatedAt, generatedBy, companyInfo } = data
 
@@ -118,17 +150,23 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   .page {
     width: 210mm;
-    min-height: 297mm;
+    min-height: auto;
     margin: 0 auto;
     padding: 0;
     background: white;
   }
 
   @media print {
-    body { background: white; }
-    .page { margin: 0; padding: 0; width: 100%; box-shadow: none; }
+    body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { margin: 0; padding: 0; width: 100%; box-shadow: none; min-height: auto; }
     .page-break { page-break-before: always; }
     .no-break { page-break-inside: avoid; }
+    .content-page { min-height: auto; }
+  }
+
+  @page {
+    size: A4;
+    margin: 10mm;
   }
 
   /* COVER PAGE */
@@ -255,7 +293,8 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   /* CONTENT PAGES */
   .content-page {
-    padding: 20mm 25mm;
+    padding: 15mm 20mm;
+    min-height: auto;
   }
 
   .page-header {
@@ -313,7 +352,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   /* SECTIONS */
   .section {
-    margin-bottom: 28px;
+    margin-bottom: 20px;
   }
 
   .section-title {
@@ -757,16 +796,24 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   /* TECHNICAL CHECKS */
   .tech-grid {
     display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .tech-grid-two-col {
+    display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 16px;
     margin-bottom: 16px;
   }
 
   .tech-card {
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 14px;
+    padding: 16px;
     page-break-inside: avoid;
+    width: 100%;
   }
 
   .tech-card-title {
@@ -844,35 +891,35 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   /* COMMERCIAL SUMMARY */
   .summary-section {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
   .summary-heading {
     font-size: 12px;
     font-weight: 700;
     color: #0f172a;
-    margin: 16px 0 8px;
+    margin: 10px 0 6px;
   }
 
   .summary-subheading {
     font-size: 11px;
     font-weight: 600;
     color: #334155;
-    margin: 12px 0 6px;
+    margin: 8px 0 4px;
   }
 
   .summary-text {
     font-size: 10px;
     color: #475569;
-    line-height: 1.7;
-    margin-bottom: 6px;
+    line-height: 1.5;
+    margin-bottom: 4px;
   }
 
   .summary-list-item {
     font-size: 10px;
     color: #475569;
     padding-left: 16px;
-    line-height: 1.6;
+    line-height: 1.5;
     position: relative;
   }
 
@@ -1059,7 +1106,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   ${report.ingredient_list ? `
   <div class="section no-break">
-    <div class="section-title"><span class="section-number">03b</span> Danh Sách Thành Phần</div>
+    <div class="section-title"><span class="section-number">${report.allergen_declaration ? '03a' : '03'}</span> Danh Sách Thành Phần</div>
     <div class="data-box">
       <div class="data-box-label">Thành phần được phát hiện bởi AI Vision</div>
       ${escapeHtml(report.ingredient_list)}
@@ -1068,7 +1115,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   ${report.nutrition_facts ? `
   <div class="section no-break">
-    <div class="section-title"><span class="section-number">03c</span> Thông Tin Dinh Dưỡng</div>
+    <div class="section-title"><span class="section-number">${report.allergen_declaration ? (report.ingredient_list ? '03b' : '03a') : (report.ingredient_list ? '03a' : '03')}</span> Thông Tin Dinh Dưỡng</div>
     <div class="data-box">
       <div class="data-box-label">Bảng dinh dưỡng được phát hiện bởi AI Vision</div>
       <table class="info-table" style="margin: 0;">
@@ -1122,7 +1169,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       <div class="violation-card no-break" style="border-color: ${colors.border}; background: ${colors.bg};">
         <div class="violation-header">
           <div class="violation-title" style="color: ${colors.text}">
-            ${i + 1}. ${escapeHtml(v.category)}
+            ${i + 1}. ${escapeHtml(translateCategory(v.category))}
           </div>
           <span class="severity-badge" style="background: ${colors.text}; color: white;">
             ${getSeverityLabel(v.severity)}
@@ -1214,7 +1261,7 @@ ${importAlertViolations.length > 0 ? `
     <div class="violation-card no-break" style="border-color: ${isEntityMatch ? '#f87171' : '#fbbf24'}; background: ${isEntityMatch ? '#FEE2E2' : '#FEF3C7'};">
       <div class="violation-header">
         <div class="violation-title" style="color: ${isEntityMatch ? '#991B1B' : '#92400E'}">
-          ${i + 1}. ${escapeHtml(ia.category)}
+          ${i + 1}. ${escapeHtml(translateCategory(ia.category))}
         </div>
         <span class="severity-badge" style="background: ${isEntityMatch ? '#DC2626' : '#F59E0B'}; color: white;">
           ${isEntityMatch ? 'DWPE — Danh sách Đỏ' : 'Rủi ro danh mục'}
@@ -1258,7 +1305,7 @@ ${((report.geometry_violations && report.geometry_violations.length > 0) ||
   </div>
 
   <div class="section">
-    <div class="section-title"><span class="section-number">05b</span> Kiểm Tra Kỹ Thuật &amp; Hình Ảnh</div>
+    <div class="section-title"><span class="section-number">${importAlertViolations.length > 0 ? '05a' : '05'}</span> Kiểm Tra Kỹ Thuật &amp; Hình Ảnh</div>
 
     <div class="tech-grid">
       ${report.geometry_violations && report.geometry_violations.length > 0 ? `
@@ -1345,15 +1392,15 @@ ${report.commercial_summary ? `
   </div>
 
   <div class="section">
-    <div class="section-title"><span class="section-number">05c</span> Tóm Tắt Phân Tích Thương Mại</div>
+    <div class="section-title"><span class="section-number">${importAlertViolations.length > 0 ? '05b' : '05a'}</span> Tóm Tắt Phân Tích Thương Mại</div>
     <div class="summary-section">
       ${report.commercial_summary.split('\n').map((line: string) => {
-        if (line.startsWith('### ')) return `<div class="summary-subheading">${escapeHtml(line.replace(/^### /, '').replace(/[^a-zA-Z0-9\s.,;:!?()\-\/]/g, '').trim())}</div>`
-        if (line.startsWith('## ')) return `<div class="summary-heading">${escapeHtml(line.replace(/^## /, ''))}</div>`
+        if (line.startsWith('### ')) return `<div class="summary-subheading">${escapeHtml(line.replace(/^### /, '').replace(/\*+/g, '').trim())}</div>`
+        if (line.startsWith('## ')) return `<div class="summary-heading">${escapeHtml(line.replace(/^## /, '').replace(/\*+/g, ''))}</div>`
         if (line.startsWith('**') && line.endsWith('**')) return `<div class="summary-text" style="font-weight: 600;">${escapeHtml(line.replace(/\*\*/g, ''))}</div>`
-        if (line.startsWith('- ')) return `<div class="summary-list-item">${escapeHtml(line.replace(/^- /, ''))}</div>`
+        if (line.startsWith('- ')) return `<div class="summary-list-item">${escapeHtml(line.replace(/^- /, '').replace(/\*+/g, ''))}</div>`
         if (line.trim() === '') return ''
-        return `<div class="summary-text">${escapeHtml(line.replace(/\*\*/g, ''))}</div>`
+        return `<div class="summary-text">${escapeHtml(line.replace(/\*+/g, ''))}</div>`
       }).join('')}
     </div>
   </div>
@@ -1423,7 +1470,7 @@ ${report.commercial_summary ? `
         <tr>
           <td>${i + 1}</td>
           <td><span class="severity-badge" style="background: ${getSeverityColor(v.severity).text}; color: white; font-size: 7px; padding: 2px 6px;">${getSeverityLabel(v.severity)}</span></td>
-          <td>${escapeHtml(v.category)}</td>
+          <td>${escapeHtml(translateCategory(v.category))}</td>
           <td>${escapeHtml(v.suggested_fix?.slice(0, 120) || 'Xem chi tiết')}</td>
         </tr>`).join('')}
       </tbody>
