@@ -19,12 +19,15 @@ import {
   RotateCcw,
   Ship,
   FileText,
+  Languages,
+  RefreshCw,
 } from 'lucide-react'
 import type { AuditReport, Violation, LabelImageEntry } from '@/lib/types'
 import { LabelImageGallery } from '@/components/label-image-gallery'
 import { LabelPreview } from '@/components/label-preview'
 import { getLabelConfig } from '@/lib/label-field-config'
 import { useTranslation } from '@/lib/i18n'
+import { useTranslateViolations } from '@/hooks/use-translate-violations'
 
 // ────────────────────────────────────────────────────────────
 // Risk Score Circular Gauge - Vexim Compliance AI
@@ -509,9 +512,20 @@ export function ReportResultView({
   pdfLoading,
 }: ReportResultViewProps) {
   const router = useRouter()
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
 
-  const allViolations: Violation[] = report.findings || report.violations || []
+  const rawViolations: Violation[] = report.findings || report.violations || []
+  
+  // Use translation hook for AI-generated content
+  const {
+    translatedViolations,
+    isTranslating,
+    translationError,
+    sourceLanguage,
+    retryTranslation,
+  } = useTranslateViolations(rawViolations, locale, report.id)
+  
+  const allViolations = translatedViolations
   
   // Filter violations by source type - these come from real FDA data
   const cfrViolations = allViolations.filter(
@@ -558,6 +572,41 @@ export function ReportResultView({
               <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
               <span className="text-xs text-slate-600 font-medium">FDA Pipeline: Connected</span>
             </div>
+            
+            {/* Translation Status Indicator */}
+            {isTranslating && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200">
+                <Loader2 className="h-3 w-3 text-blue-600 animate-spin" />
+                <span className="text-xs text-blue-600 font-medium">
+                  {t.report.translating || 'Translating...'}
+                </span>
+              </div>
+            )}
+            
+            {translationError && !isTranslating && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200">
+                <Languages className="h-3 w-3 text-amber-600" />
+                <span className="text-xs text-amber-600 font-medium">
+                  {t.report.translationFailed || 'Translation unavailable'}
+                </span>
+                <button
+                  onClick={retryTranslation}
+                  className="ml-1 p-0.5 rounded hover:bg-amber-100 transition-colors"
+                  title={t.report.retry || 'Retry'}
+                >
+                  <RefreshCw className="h-3 w-3 text-amber-600" />
+                </button>
+              </div>
+            )}
+            
+            {sourceLanguage && sourceLanguage !== locale && !isTranslating && !translationError && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-200">
+                <Languages className="h-3 w-3 text-green-600" />
+                <span className="text-xs text-green-600 font-medium">
+                  {t.report.translatedFrom || 'Translated from'} {sourceLanguage === 'vi' ? 'Vietnamese' : 'English'}
+                </span>
+              </div>
+            )}
           </div>
           <Button
             onClick={onDownloadPdf}
