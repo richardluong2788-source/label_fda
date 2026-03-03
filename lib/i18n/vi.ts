@@ -130,7 +130,7 @@ export const vi = {
     warningLetterTitle: 'Cảnh báo từ FDA Warning Letter',
     recallTitle: 'Liên quan đến sản phẩm bị thu hồi',
     importAlertTitle: 'Cảnh báo nhập khẩu FDA',
-    lowContrastTitle: 'Độ tương phản màu sắc thấp',
+    lowContrastTitle: 'Đ����� tương phản màu sắc thấp',
     fdaReadabilityReq: 'Yêu cầu FDA về độ rõ ràng của nhãn',
     contrastTitle: 'Độ tương phản màu sắc thấp',
     contrastRef: 'Yêu cầu FDA về độ rõ ràng của nhãn',

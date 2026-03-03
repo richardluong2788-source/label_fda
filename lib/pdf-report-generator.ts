@@ -132,6 +132,7 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     actionSeverity: 'Mức độ',
     actionIssue: 'Vấn đề',
     actionRequired: 'Hành động cần thực hiện',
+    actionPriority: 'Ưu tiên',
     seeDetails: 'Xem chi tiết',
     reportVerified: 'Báo cáo đã xác minh bởi chuyên gia',
     pendingVerification: 'Chờ xác minh chuyên gia',
@@ -154,7 +155,7 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     defaultRiskLow: (score: string) => `Nhãn sản phẩm có điểm rủi ro ${score}/10. Không phát hiện vấn đề nghiêm trọng, nhưng cần cải thiện một số điểm.`,
     expertTipCritical: 'Nhãn sản phẩm này có các vấn đề tuân thủ FDA nghiêm trọng cần được khắc phục trước khi phân phối tại thị trường Hoa Kỳ. Không tuân thủ có thể dẫn đến Import Alert, hàng bị giữ tại cảng, hoặc Thư cảnh báo FDA.',
     expertTipWarning: 'Nhãn sản phẩm này đáp ứng yêu cầu FDA tối thiểu nhưng có các điểm cần cải thiện. Khắc phục các cảnh báo sẽ giảm rủi ro bị xử phạt và tăng niềm tin của người tiêu dùng.',
-    expertTipPass: 'Nhãn sản phẩm này thể hiện sự tuân thủ FDA tốt. Tiếp tục theo dõi các cập nhật quy định v�� duy trì các tiêu chuẩn ghi nhãn hiện tại.',
+    expertTipPass: 'Nhãn sản phẩm này thể hiện sự tuân thủ FDA tốt. Tiếp tục theo dõi các cập nhật quy định và duy trì các tiêu chuẩn ghi nhãn hiện tại.',
     riskHigh: 'Cao',
     riskMedHigh: 'Trung bình - Cao',
     riskMed: 'Trung bình',
@@ -162,6 +163,27 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     sevCritical: 'NGHIÊM TRỌNG',
     sevWarning: 'CẢNH BÁO',
     sevInfo: 'THÔNG TIN',
+    // New labels
+    tableOfContents: 'Mục Lục',
+    confidenceMetrics: 'Độ Tin Cậy Phân Tích',
+    ocrConfidence: 'OCR (Đọc văn bản)',
+    extractionConfidence: 'Trích xuất dữ liệu',
+    legalConfidence: 'Phân tích pháp lý',
+    healthClaims: 'Tuyên Bố Sức Khỏe',
+    healthClaimsWarning: 'Tuyên bố bệnh bị cấm theo 21 CFR 101.93',
+    specialClaims: 'Tuyên Bố Đặc Biệt',
+    enforcementInsights: 'Xu Hướng Xử Phạt FDA',
+    consequencesTitle: 'HẬU QUẢ NẾU KHÔNG KHẮC PHỤC',
+    consequenceDetention: 'Giữ hàng tại cảng (DWPE)',
+    consequenceDetentionDesc: 'Phí lưu container $150-500/ngày, phí trễ tàu',
+    consequenceRelabeling: 'Chi phí dán nhãn lại',
+    consequenceRelabelingDesc: 'In nhãn mới, dán lại tại Mỹ: $2,000-15,000',
+    consequenceRecall: 'Thu hồi bắt buộc (Recall)',
+    consequenceRecallDesc: 'Thu hồi toàn bộ sản phẩm: $10,000-500,000+',
+    pageFooter: 'Tài liệu mật',
+    priorityImmediate: 'NGAY LẬP TỨC',
+    priorityHigh: 'CAO',
+    priorityMedium: 'TRUNG BÌNH',
     catHealthClaims: 'Tuyên bố sức khỏe',
     catIngredientOrder: 'Thứ tự nguyên liệu',
     catIngredientListing: 'Danh sách thành phần',
@@ -270,8 +292,8 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     viewOnFda: 'View on FDA.gov',
     remediationSteps: 'Remediation steps',
     matchConfidence: 'Match confidence',
-    referenceOnly: 'Reference only — not a legal violation',
-    dwpeRedList: 'DWPE — Red List',
+    referenceOnly: 'Reference only \u2014 not a legal violation',
+    dwpeRedList: 'DWPE \u2014 Red List',
     categoryRisk: 'Category risk',
     technicalChecks: 'Technical & Visual Checks',
     geometryLayout: 'Geometry & Layout',
@@ -297,6 +319,7 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     actionSeverity: 'Severity',
     actionIssue: 'Issue',
     actionRequired: 'Action required',
+    actionPriority: 'Priority',
     seeDetails: 'See details',
     reportVerified: 'Report verified by expert',
     pendingVerification: 'Pending expert verification',
@@ -327,6 +350,27 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     sevCritical: 'CRITICAL',
     sevWarning: 'WARNING',
     sevInfo: 'INFO',
+    // New labels
+    tableOfContents: 'Table of Contents',
+    confidenceMetrics: 'Analysis Confidence',
+    ocrConfidence: 'OCR (Text reading)',
+    extractionConfidence: 'Data extraction',
+    legalConfidence: 'Legal analysis',
+    healthClaims: 'Health Claims',
+    healthClaimsWarning: 'Prohibited disease claims under 21 CFR 101.93',
+    specialClaims: 'Special Claims',
+    enforcementInsights: 'FDA Enforcement Trends',
+    consequencesTitle: 'CONSEQUENCES OF NON-COMPLIANCE',
+    consequenceDetention: 'Port Detention (DWPE)',
+    consequenceDetentionDesc: 'Container storage $150-500/day, demurrage fees',
+    consequenceRelabeling: 'Relabeling Cost',
+    consequenceRelabelingDesc: 'New labels, re-application in US: $2,000-15,000',
+    consequenceRecall: 'Mandatory Recall',
+    consequenceRecallDesc: 'Full product recall: $10,000-500,000+',
+    pageFooter: 'Confidential',
+    priorityImmediate: 'IMMEDIATE',
+    priorityHigh: 'HIGH',
+    priorityMedium: 'MEDIUM',
     catHealthClaims: 'Health Claims',
     catIngredientOrder: 'Ingredient Order',
     catIngredientListing: 'Ingredient Listing',
@@ -355,12 +399,97 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
   },
 }
 
+// ── Utilities ─────────────────────────────────────────────────────────
+
 function escapeHtml(text: string): string {
   return String(text || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+/** Convert markdown text to styled HTML. Handles ## / ### headings, **bold**, *italic*, - bullets, 1. numbered lists. */
+function markdownToHtml(md: string | undefined | null): string {
+  if (!md) return ''
+  const lines = md.split('\n')
+  const out: string[] = []
+  let inUl = false
+  let inOl = false
+
+  const closeList = () => {
+    if (inUl) { out.push('</ul>'); inUl = false }
+    if (inOl) { out.push('</ol>'); inOl = false }
+  }
+
+  const inlineFmt = (t: string): string => {
+    let s = escapeHtml(t)
+    // **bold**
+    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // *italic*
+    s = s.replace(/\*(.+?)\*/g, '<em>$1</em>')
+    return s
+  }
+
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (!line) { closeList(); continue }
+
+    // ### subheading
+    const h3 = line.match(/^###\s+(.+)/)
+    if (h3) {
+      closeList()
+      const txt = h3[1].replace(/#+$/, '').trim()
+      // Detect severity for color coding
+      let style = 'color:#334155;'
+      if (/NGHIÊM TRỌNG|CRITICAL|LỖI NGHIÊM TRỌNG/i.test(txt)) style = 'color:#991B1B;background:#FEE2E2;border:1px solid #F87171;border-radius:6px;padding:6px 10px;'
+      else if (/CẢNH BÁO|WARNING/i.test(txt)) style = 'color:#92400E;background:#FEF3C7;border:1px solid #FBBF24;border-radius:6px;padding:6px 10px;'
+      else if (/THÔNG TIN|INFO/i.test(txt)) style = 'color:#1E40AF;background:#DBEAFE;border:1px solid #60A5FA;border-radius:6px;padding:6px 10px;'
+      else if (/LỜI KHUYÊN|ADVICE|KHUYẾN NGHỊ|RECOMMENDATION/i.test(txt)) style = 'color:#065F46;background:#D1FAE5;border:1px solid #34D399;border-radius:6px;padding:6px 10px;'
+      out.push(`<div style="font-size:11px;font-weight:600;margin:12px 0 6px;${style}">${inlineFmt(txt)}</div>`)
+      continue
+    }
+
+    // ## heading
+    const h2 = line.match(/^##\s+(.+)/)
+    if (h2) {
+      closeList()
+      out.push(`<div style="font-size:12px;font-weight:700;color:#0f172a;margin:14px 0 6px;">${inlineFmt(h2[1].replace(/#+$/, '').trim())}</div>`)
+      continue
+    }
+
+    // # heading
+    const h1 = line.match(/^#\s+(.+)/)
+    if (h1) {
+      closeList()
+      out.push(`<div style="font-size:13px;font-weight:700;color:#0f172a;margin:14px 0 6px;">${inlineFmt(h1[1].replace(/#+$/, '').trim())}</div>`)
+      continue
+    }
+
+    // - bullet
+    const ul = line.match(/^[-*]\s+(.+)/)
+    if (ul) {
+      if (inOl) { out.push('</ol>'); inOl = false }
+      if (!inUl) { out.push('<ul style="margin:4px 0 4px 16px;padding:0;list-style:disc;">'); inUl = true }
+      out.push(`<li style="font-size:10px;color:#475569;line-height:1.6;margin-bottom:2px;">${inlineFmt(ul[1])}</li>`)
+      continue
+    }
+
+    // 1. numbered
+    const ol = line.match(/^\d+[.)]\s+(.+)/)
+    if (ol) {
+      if (inUl) { out.push('</ul>'); inUl = false }
+      if (!inOl) { out.push('<ol style="margin:4px 0 4px 16px;padding:0;list-style:decimal;">'); inOl = true }
+      out.push(`<li style="font-size:10px;color:#475569;line-height:1.6;margin-bottom:2px;">${inlineFmt(ol[1])}</li>`)
+      continue
+    }
+
+    // Regular paragraph
+    closeList()
+    out.push(`<div style="font-size:10px;color:#475569;line-height:1.6;margin-bottom:4px;">${inlineFmt(line)}</div>`)
+  }
+  closeList()
+  return out.join('\n')
 }
 
 function formatDate(dateStr: string, lang: SupportedLang): string {
@@ -441,6 +570,35 @@ function translateCategory(category: string, L: Record<string, string>): string 
   return map[category] || category
 }
 
+function confidenceBar(label: string, value: number | undefined | null): string {
+  if (value === undefined || value === null) return ''
+  const pct = Math.round(value * 100)
+  const color = pct >= 80 ? '#16a34a' : pct >= 60 ? '#f59e0b' : '#dc2626'
+  return `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <div style="font-size:9px;color:#64748b;min-width:120px;">${label}</div>
+      <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:4px;"></div>
+      </div>
+      <div style="font-size:9px;font-weight:600;min-width:32px;text-align:right;color:${color};">${pct}%</div>
+    </div>`
+}
+
+function pageHeader(L: Record<string, string>, reportId: string, dateStr: string): string {
+  return `
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-header-logo">V</div>
+      <div class="page-header-brand">VEXIM Compliance AI</div>
+    </div>
+    <div class="page-header-right">
+      ${L.reportId} ${escapeHtml(reportId)}<br/>${dateStr}
+    </div>
+  </div>`
+}
+
+// ── Main Generator ────────────────────────────────────────────────────
+
 export function generatePDFReportHTML(data: PDFReportData): string {
   const { report, violations, generatedAt, generatedBy, companyInfo, lang = 'vi' } = data
   const L = PDF_LABELS[lang] || PDF_LABELS.vi
@@ -480,7 +638,35 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   const defaultExpertTip = criticalCount > 0 ? L.expertTipCritical : warningCount > 0 ? L.expertTipWarning : L.expertTipPass
 
-  // Keep the SAME CSS (unchanged) — only swap text labels
+  const shortId = report.id.slice(0, 8).toUpperCase()
+  const dateFormatted = formatDate(generatedAt, lang)
+
+  // Data from report (with safe access)
+  const healthClaims = (report as any).health_claims as string[] | undefined
+  const specialClaims = report.special_claims || []
+  const enforcementInsights = report.enforcement_insights || []
+
+  // Dynamic section numbering
+  let sectionNum = 0
+  const nextSection = () => { sectionNum++; return String(sectionNum).padStart(2, '0') }
+
+  // Table of Contents entries
+  const tocEntries: { num: string; label: string }[] = []
+  const toc = (label: string) => { const num = nextSection(); tocEntries.push({ num, label }); return num }
+
+  // Pre-calculate section numbers
+  const secOverview = toc(L.overview)
+  const secProduct = toc(L.productInfo)
+  const secFindings = toc(L.findingsDetail)
+  const secImportAlerts = importAlertViolations.length > 0 ? toc(L.importAlerts) : null
+  const hasTech = (report.geometry_violations && report.geometry_violations.length > 0) ||
+    (report.contrast_violations && report.contrast_violations.length > 0) ||
+    (report.multilanguage_issues && report.multilanguage_issues.length > 0)
+  const secTechnical = hasTech ? toc(L.technicalChecks) : null
+  const secCommercial = report.commercial_summary ? toc(L.commercialSummary) : null
+  const secExpert = toc(L.expertRecommendations)
+  const secAction = toc(L.actionItems)
+
   return `<!DOCTYPE html>
 <html lang="${lang}">
 <head>
@@ -491,6 +677,8 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: #1a1a2e; background: #ffffff; line-height: 1.6; font-size: 10pt; }
+  
+  /* Download bar */
   .download-bar { position: fixed; top: 0; left: 0; right: 0; background: #0f172a; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
   .download-bar-title { color: #ffffff; font-size: 14px; font-weight: 600; }
   .download-btn { display: inline-flex; align-items: center; gap: 8px; background: #2563eb; color: white; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: background 0.2s; }
@@ -498,13 +686,18 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   .download-btn svg { width: 18px; height: 18px; }
   .page-content-wrapper { padding-top: 60px; }
   @media print { .download-bar { display: none !important; } .page-content-wrapper { padding-top: 0; } }
+
+  /* Page layout */
   .page { width: 210mm; min-height: auto; margin: 0 auto; padding: 0; background: white; }
   @media print { body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .page { margin: 0; padding: 0; width: 100%; box-shadow: none; min-height: auto; } .page-break { page-break-before: always; } .no-break { page-break-inside: avoid; } .content-page { min-height: auto; } }
   @page { size: A4; margin: 10mm; }
-  .cover-page { min-height: auto; display: flex; flex-direction: column; position: relative; background: #ffffff; color: #0f172a; padding: 20mm; }
+
+  /* Cover page */
+  .cover-page { min-height: auto; display: flex; flex-direction: column; position: relative; background: #ffffff; color: #0f172a; padding: 20mm; overflow: hidden; }
+  .cover-accent { position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #1e40af 0%, #2563eb 40%, #3b82f6 70%, #60a5fa 100%); }
   .cover-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0; margin-bottom: 40px; }
   .cover-logo { display: flex; align-items: center; gap: 12px; }
-  .cover-logo-icon { width: 48px; height: 48px; background: #2563eb; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; color: white; }
+  .cover-logo-icon { width: 48px; height: 48px; background: #1e40af; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; color: white; }
   .cover-logo-text { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: #0f172a; }
   .cover-logo-sub { font-size: 11px; color: #64748b; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; }
   .cover-badge { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 16px; font-size: 11px; color: #475569; font-weight: 600; }
@@ -515,19 +708,28 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   .cover-meta-label { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
   .cover-meta-value { font-size: 14px; font-weight: 600; color: #0f172a; }
   .cover-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 9px; color: #64748b; }
+
+  /* Content pages */
   .content-page { padding: 15mm 20mm; min-height: auto; }
   .page-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0; margin-bottom: 24px; }
   .page-header-left { display: flex; align-items: center; gap: 8px; }
-  .page-header-logo { width: 28px; height: 28px; background: #1e293b; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; color: white; }
+  .page-header-logo { width: 28px; height: 28px; background: #1e40af; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; color: white; }
   .page-header-brand { font-size: 12px; font-weight: 600; color: #334155; }
   .page-header-right { font-size: 9px; color: #94a3b8; text-align: right; }
+  .page-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 8px; color: #94a3b8; }
+
+  /* Sections */
   .section { margin-bottom: 20px; }
-  .section-title { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #2563eb; display: inline-block; }
-  .section-number { color: #2563eb; margin-right: 8px; }
+  .section-title { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 3px solid #1e40af; display: flex; align-items: center; gap: 8px; }
+  .section-number { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; background: #1e40af; color: white; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+
+  /* Executive summary */
   .exec-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 24px; }
   .exec-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; text-align: center; }
   .exec-card-value { font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
   .exec-card-label { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Risk section */
   .risk-section { display: flex; gap: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
   .risk-gauge { text-align: center; min-width: 120px; }
   .risk-score-circle { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 28px; font-weight: 800; color: white; }
@@ -535,11 +737,8 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   .risk-details { flex: 1; }
   .risk-details h4 { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #334155; }
   .risk-details p { font-size: 10px; color: #64748b; margin-bottom: 6px; }
-  .risk-bar-container { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
-  .risk-bar-label { font-size: 9px; color: #64748b; min-width: 80px; }
-  .risk-bar { flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
-  .risk-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
-  .risk-bar-value { font-size: 9px; font-weight: 600; min-width: 30px; text-align: right; }
+
+  /* Violation cards */
   .violation-card { border: 1px solid; border-radius: 10px; padding: 18px; margin-bottom: 16px; page-break-inside: avoid; }
   .violation-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
   .violation-title { font-size: 13px; font-weight: 700; flex: 1; }
@@ -549,30 +748,38 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   .violation-box-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 4px; }
   .violation-box-value { font-size: 10px; color: #1e293b; line-height: 1.5; }
   .violation-meta { display: flex; gap: 16px; font-size: 9px; color: #64748b; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.06); }
+
+  /* Tables */
   .citations-table { width: 100%; border-collapse: collapse; font-size: 9px; margin-top: 8px; }
   .citations-table th { background: #f1f5f9; padding: 8px 10px; text-align: left; font-weight: 600; color: #334155; border-bottom: 2px solid #e2e8f0; font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
   .citations-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; color: #475569; vertical-align: top; }
   .citations-table tr:nth-child(even) td { background: #fafbfc; }
   .relevance-bar { display: inline-block; width: 40px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden; vertical-align: middle; margin-right: 4px; }
   .relevance-bar-fill { height: 100%; background: #2563eb; border-radius: 2px; }
-  .expert-tip { background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 10px; font-size: 10px; color: #1e40af; line-height: 1.6; }
-  .expert-tip-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #2563eb; margin-bottom: 4px; }
   .info-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
   .info-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 10px; }
   .info-table td:first-child { font-weight: 600; color: #64748b; width: 35%; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .signature-section { margin-top: 40px; padding-top: 24px; border-top: 2px solid #e2e8f0; }
-  .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 16px; }
-  .signature-box { border-top: 2px solid #334155; padding-top: 8px; }
-  .signature-name { font-size: 11px; font-weight: 600; color: #334155; }
-  .signature-title { font-size: 9px; color: #64748b; }
-  .disclaimer { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 8px; color: #64748b; line-height: 1.6; margin-top: 24px; }
-  .disclaimer-title { font-size: 9px; font-weight: 700; color: #334155; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
-  .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 100px; font-weight: 800; color: rgba(0,0,0,0.03); pointer-events: none; z-index: 0; white-space: nowrap; }
-  .verification-badge { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-  .verification-badge.verified { background: #16a34a; color: white; }
-  .verification-badge.pending { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
+
+  /* Callout boxes */
+  .expert-tip { background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 10px; font-size: 10px; color: #1e40af; line-height: 1.6; }
+  .expert-tip-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #2563eb; margin-bottom: 4px; }
   .port-warning { background: #FEF3C7; border: 1px solid #f59e0b; border-left: 4px solid #d97706; border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 10px; font-size: 10px; color: #92400e; line-height: 1.6; }
   .port-warning-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #b45309; margin-bottom: 4px; }
+  .consequence-box { background: #FEF2F2; border: 2px solid #FCA5A5; border-radius: 10px; padding: 20px; margin-bottom: 24px; page-break-inside: avoid; }
+  .consequence-title { font-size: 11px; font-weight: 800; color: #991B1B; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .consequence-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .consequence-item { background: white; border: 1px solid #FECACA; border-radius: 8px; padding: 12px; text-align: center; }
+  .consequence-item-icon { font-size: 20px; margin-bottom: 6px; }
+  .consequence-item-title { font-size: 10px; font-weight: 700; color: #991B1B; margin-bottom: 4px; }
+  .consequence-item-desc { font-size: 8px; color: #64748b; line-height: 1.4; }
+
+  /* Health claims */
+  .health-claim-tag { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 9px; font-weight: 600; margin: 2px 4px 2px 0; }
+  .health-claim-danger { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+  .health-claim-normal { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+  .special-claim-tag { display: inline-block; background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; padding: 3px 10px; border-radius: 4px; font-size: 9px; font-weight: 600; margin: 2px 4px 2px 0; }
+
+  /* Technical checks */
   .tech-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
   .tech-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; page-break-inside: avoid; width: 100%; }
   .tech-card-title { font-size: 10px; font-weight: 700; color: #334155; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
@@ -583,15 +790,38 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   .tech-item-type { font-weight: 600; color: #334155; text-transform: capitalize; }
   .tech-item-desc { color: #64748b; line-height: 1.5; }
   .tech-item-values { display: flex; gap: 12px; margin-top: 4px; font-size: 8px; }
+  .color-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid #d1d5db; vertical-align: middle; margin-right: 4px; }
+
+  /* Data boxes */
   .data-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px; font-size: 10px; line-height: 1.6; color: #334155; }
   .data-box-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #2563eb; margin-bottom: 8px; }
-  .summary-section { margin-bottom: 12px; }
-  .summary-heading { font-size: 12px; font-weight: 700; color: #0f172a; margin: 10px 0 6px; }
-  .summary-subheading { font-size: 11px; font-weight: 600; color: #334155; margin: 8px 0 4px; }
-  .summary-text { font-size: 10px; color: #475569; line-height: 1.5; margin-bottom: 4px; }
-  .summary-list-item { font-size: 10px; color: #475569; padding-left: 16px; line-height: 1.5; position: relative; }
-  .summary-list-item::before { content: "\\2022"; position: absolute; left: 4px; color: #94a3b8; }
-  .color-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid #d1d5db; vertical-align: middle; margin-right: 4px; }
+
+  /* Signature */
+  .signature-section { margin-top: 40px; padding-top: 24px; border-top: 2px solid #e2e8f0; }
+  .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 16px; }
+  .signature-box { border-top: 2px solid #334155; padding-top: 8px; }
+  .signature-name { font-size: 11px; font-weight: 600; color: #334155; }
+  .signature-title { font-size: 9px; color: #64748b; }
+  .disclaimer { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 8px; color: #64748b; line-height: 1.6; margin-top: 24px; }
+  .disclaimer-title { font-size: 9px; font-weight: 700; color: #334155; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Verification */
+  .verification-badge { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .verification-badge.verified { background: #16a34a; color: white; }
+  .verification-badge.pending { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
+
+  /* Watermark */
+  .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 100px; font-weight: 800; color: rgba(0,0,0,0.02); pointer-events: none; z-index: 0; white-space: nowrap; }
+
+  /* TOC */
+  .toc-entry { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+  .toc-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 4px; background: #1e40af; color: white; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+  .toc-label { font-size: 11px; color: #334155; font-weight: 500; }
+
+  /* Action table severity rows */
+  .action-row-critical { background: #FEF2F2; }
+  .action-row-warning { background: #FFFBEB; }
+  .action-row-info { background: #F0F9FF; }
 </style>
 </head>
 <body>
@@ -609,8 +839,9 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
 <div class="page-content-wrapper">
 
-<!-- COVER PAGE -->
+<!-- ═══════════════════════ COVER PAGE ═══════════════════════ -->
 <div class="page cover-page">
+  <div class="cover-accent"></div>
   <div class="cover-header">
     <div class="cover-logo">
       <div class="cover-logo-icon">V</div>
@@ -629,11 +860,11 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     <div class="cover-meta" style="margin-top: 32px;">
       <div class="cover-meta-item">
         <div class="cover-meta-label">${L.reportId}</div>
-        <div class="cover-meta-value">${escapeHtml(report.id.slice(0, 8).toUpperCase())}</div>
+        <div class="cover-meta-value">${escapeHtml(shortId)}</div>
       </div>
       <div class="cover-meta-item">
         <div class="cover-meta-label">${L.dateCreated}</div>
-        <div class="cover-meta-value">${formatDate(generatedAt, lang)}</div>
+        <div class="cover-meta-value">${dateFormatted}</div>
       </div>
       <div class="cover-meta-item">
         <div class="cover-meta-label">${L.result}</div>
@@ -676,6 +907,16 @@ export function generatePDFReportHTML(data: PDFReportData): string {
         </div>`).join('')}
       </div>` : ''}
     </div>
+
+    <!-- Table of Contents -->
+    <div style="margin-top: 24px; padding: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;">
+      <div style="font-size: 11px; font-weight: 700; color: #0f172a; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">${L.tableOfContents}</div>
+      ${tocEntries.map(e => `
+      <div class="toc-entry">
+        <span class="toc-num">${e.num}</span>
+        <span class="toc-label">${escapeHtml(e.label)}</span>
+      </div>`).join('')}
+    </div>
   </div>
 
   <div class="cover-footer">
@@ -684,21 +925,12 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   </div>
 </div>
 
-<!-- EXECUTIVE SUMMARY PAGE -->
+<!-- ═══════════════════════ EXECUTIVE SUMMARY PAGE ═══════════════════════ -->
 <div class="page content-page page-break">
-  <div class="page-header">
-    <div class="page-header-left">
-      <div class="page-header-logo">V</div>
-      <div class="page-header-brand">VEXIM Compliance AI</div>
-    </div>
-    <div class="page-header-right">
-      ${L.reportId} ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>
-      ${formatDate(generatedAt, lang)}
-    </div>
-  </div>
+  ${pageHeader(L, shortId, dateFormatted)}
 
   <div class="section">
-    <div class="section-title"><span class="section-number">01</span> ${L.overview}</div>
+    <div class="section-title"><span class="section-number">${secOverview}</span>${L.overview}</div>
     <div class="exec-grid">
       <div class="exec-card"><div class="exec-card-value" style="color: #DC2626">${criticalCount}</div><div class="exec-card-label">${L.critical}</div></div>
       <div class="exec-card"><div class="exec-card-value" style="color: #F59E0B">${warningCount}</div><div class="exec-card-label">${L.warning}</div></div>
@@ -706,6 +938,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       <div class="exec-card"><div class="exec-card-value" style="color: #6366f1">${totalCitations}</div><div class="exec-card-label">${L.cfrCitations}</div></div>
     </div>
 
+    <!-- Risk Gauge -->
     <div class="risk-section">
       <div class="risk-gauge">
         <div class="risk-score-circle" style="background: ${getRiskColor(riskScore)}">${riskScore.toFixed(1)}</div>
@@ -714,24 +947,67 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       </div>
       <div class="risk-details">
         <h4>${L.overallAssessment}</h4>
-        <p>${report.risk_assessment || defaultAssessment}</p>
-        <div class="risk-bar-container">
-          <div class="risk-bar-label">${L.currentRisk}</div>
-          <div class="risk-bar"><div class="risk-bar-fill" style="width: ${riskScore * 10}%; background: ${getRiskColor(riskScore)}"></div></div>
-          <div class="risk-bar-value" style="color: ${getRiskColor(riskScore)}">${riskScore.toFixed(1)}</div>
+        <p>${escapeHtml(report.risk_assessment || defaultAssessment)}</p>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:12px;">
+          <div style="font-size:9px;color:#64748b;min-width:80px;">${L.currentRisk}</div>
+          <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;"><div style="height:100%;width:${riskScore * 10}%;background:${getRiskColor(riskScore)};border-radius:4px;"></div></div>
+          <div style="font-size:9px;font-weight:600;min-width:30px;text-align:right;color:${getRiskColor(riskScore)};">${riskScore.toFixed(1)}</div>
         </div>
-        <div class="risk-bar-container">
-          <div class="risk-bar-label">${L.afterFix}</div>
-          <div class="risk-bar"><div class="risk-bar-fill" style="width: ${projectedRisk * 10}%; background: ${getRiskColor(projectedRisk)}"></div></div>
-          <div class="risk-bar-value" style="color: ${getRiskColor(projectedRisk)}">${projectedRisk.toFixed(1)}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+          <div style="font-size:9px;color:#64748b;min-width:80px;">${L.afterFix}</div>
+          <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;"><div style="height:100%;width:${projectedRisk * 10}%;background:${getRiskColor(projectedRisk)};border-radius:4px;"></div></div>
+          <div style="font-size:9px;font-weight:600;min-width:30px;text-align:right;color:${getRiskColor(projectedRisk)};">${projectedRisk.toFixed(1)}</div>
         </div>
       </div>
     </div>
+
+    <!-- Confidence Metrics -->
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:24px;">
+      <div style="font-size:10px;font-weight:700;color:#334155;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">${L.confidenceMetrics}</div>
+      ${confidenceBar(L.ocrConfidence, report.ocr_confidence)}
+      ${confidenceBar(L.extractionConfidence, report.extraction_confidence)}
+      ${confidenceBar(L.legalConfidence, report.legal_reasoning_confidence)}
+    </div>
+
+    <!-- Consequences Banner (only if critical issues exist) -->
+    ${criticalCount > 0 ? `
+    <div class="consequence-box">
+      <div class="consequence-title">
+        <span style="font-size:16px;">&#9888;</span>
+        ${L.consequencesTitle}
+      </div>
+      <div class="consequence-grid">
+        <div class="consequence-item">
+          <div class="consequence-item-icon">&#128274;</div>
+          <div class="consequence-item-title">${L.consequenceDetention}</div>
+          <div class="consequence-item-desc">${L.consequenceDetentionDesc}</div>
+        </div>
+        <div class="consequence-item">
+          <div class="consequence-item-icon">&#128196;</div>
+          <div class="consequence-item-title">${L.consequenceRelabeling}</div>
+          <div class="consequence-item-desc">${L.consequenceRelabelingDesc}</div>
+        </div>
+        <div class="consequence-item">
+          <div class="consequence-item-icon">&#9888;</div>
+          <div class="consequence-item-title">${L.consequenceRecall}</div>
+          <div class="consequence-item-desc">${L.consequenceRecallDesc}</div>
+        </div>
+      </div>
+    </div>` : ''}
   </div>
 
-  <!-- Product Information -->
+  <div class="page-footer">
+    <div>${L.pageFooter} | ${companyInfo.name}</div>
+    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ PRODUCT INFO PAGE ═══════════════════════ -->
+<div class="page content-page page-break">
+  ${pageHeader(L, shortId, dateFormatted)}
+
   <div class="section">
-    <div class="section-title"><span class="section-number">02</span> ${L.productInfo}</div>
+    <div class="section-title"><span class="section-number">${secProduct}</span>${L.productInfo}</div>
     <table class="info-table">
       ${report.product_name ? `<tr><td>${L.productName}</td><td>${escapeHtml(report.product_name)}</td></tr>` : ''}
       ${report.brand_name ? `<tr><td>${L.brandName}</td><td>${escapeHtml(report.brand_name)}</td></tr>` : ''}
@@ -745,30 +1021,55 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       ${report.target_market ? `<tr><td>${L.targetMarket}</td><td>${escapeHtml(report.target_market)}</td></tr>` : ''}
       ${report.detected_languages && report.detected_languages.length > 0 ? `<tr><td>${L.detectedLangs}</td><td>${report.detected_languages.map((l: string) => escapeHtml(l)).join(', ')}</td></tr>` : ''}
       <tr><td>${L.analysisDate}</td><td>${formatDate(report.created_at, lang)}</td></tr>
-      <tr><td>${L.aiConfidence}</td><td>${report.ocr_confidence ? Math.round(report.ocr_confidence * 100) + '%' : 'N/A'}</td></tr>
     </table>
   </div>
 
+  <!-- Allergen Declaration -->
   ${report.allergen_declaration ? `
   <div class="section">
-    <div class="section-title"><span class="section-number">03</span> ${L.allergenDeclaration}</div>
+    <div style="font-size:11px;font-weight:700;color:#92400E;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.allergenDeclaration}</div>
     <div style="background: #FEF3C7; border: 1px solid #FBBF24; border-radius: 8px; padding: 14px; font-size: 10px; color: #92400E;">
       <strong>${L.allergens}:</strong> ${escapeHtml(report.allergen_declaration)}
     </div>
   </div>` : ''}
 
+  <!-- Health Claims -->
+  ${healthClaims && healthClaims.length > 0 ? `
+  <div class="section">
+    <div style="font-size:11px;font-weight:700;color:#991B1B;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.healthClaims}</div>
+    <div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;padding:14px;">
+      ${healthClaims.map((claim: string) => {
+        const isDanger = /prevent|cure|treat|disease|diagnos/i.test(claim)
+        return `<span class="health-claim-tag ${isDanger ? 'health-claim-danger' : 'health-claim-normal'}">${isDanger ? '&#9888; ' : ''}${escapeHtml(claim)}</span>`
+      }).join('')}
+      ${healthClaims.some((c: string) => /prevent|cure|treat|disease|diagnos/i.test(c)) ? `
+      <div style="margin-top:10px;font-size:8px;color:#991B1B;font-weight:600;border-top:1px solid #FECACA;padding-top:8px;">&#9888; ${L.healthClaimsWarning}</div>` : ''}
+    </div>
+  </div>` : ''}
+
+  <!-- Special Claims -->
+  ${specialClaims.length > 0 ? `
+  <div class="section">
+    <div style="font-size:11px;font-weight:700;color:#1E40AF;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.specialClaims}</div>
+    <div style="padding:4px 0;">
+      ${specialClaims.map((claim: string) => `<span class="special-claim-tag">${escapeHtml(claim)}</span>`).join('')}
+    </div>
+  </div>` : ''}
+
+  <!-- Ingredient List -->
   ${report.ingredient_list ? `
   <div class="section no-break">
-    <div class="section-title"><span class="section-number">${report.allergen_declaration ? '03a' : '03'}</span> ${L.ingredientList}</div>
+    <div style="font-size:11px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.ingredientList}</div>
     <div class="data-box">
       <div class="data-box-label">${L.ingredientDetected}</div>
       ${escapeHtml(report.ingredient_list)}
     </div>
   </div>` : ''}
 
+  <!-- Nutrition Facts -->
   ${report.nutrition_facts && !isCosmetic ? `
   <div class="section no-break">
-    <div class="section-title"><span class="section-number">${report.allergen_declaration ? (report.ingredient_list ? '03b' : '03a') : (report.ingredient_list ? '03a' : '03')}</span> ${L.nutritionInfo}</div>
+    <div style="font-size:11px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.nutritionInfo}</div>
     <div class="data-box">
       <div class="data-box-label">${L.nutritionDetected}</div>
       <table class="info-table" style="margin: 0;">
@@ -792,17 +1093,19 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       </table>
     </div>
   </div>` : ''}
+
+  <div class="page-footer">
+    <div>${L.pageFooter} | ${companyInfo.name}</div>
+    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
+  </div>
 </div>
 
-<!-- FINDINGS PAGES -->
+<!-- ═══════════════════════ FINDINGS PAGES ═══════════════════════ -->
 <div class="page content-page page-break">
-  <div class="page-header">
-    <div class="page-header-left"><div class="page-header-logo">V</div><div class="page-header-brand">VEXIM Compliance AI</div></div>
-    <div class="page-header-right">${L.reportId} ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>${formatDate(generatedAt, lang)}</div>
-  </div>
+  ${pageHeader(L, shortId, dateFormatted)}
 
   <div class="section">
-    <div class="section-title"><span class="section-number">04</span> ${L.findingsDetail}</div>
+    <div class="section-title"><span class="section-number">${secFindings}</span>${L.findingsDetail}</div>
     ${sortedViolations.length === 0 ? `
       <div style="text-align: center; padding: 40px; color: #16a34a;">
         <div style="font-size: 48px; margin-bottom: 12px;">&#10003;</div>
@@ -827,12 +1130,12 @@ export function generatePDFReportHTML(data: PDFReportData): string {
         ${v.suggested_fix ? `
         <div class="violation-box" style="background: rgba(34, 197, 94, 0.08); border-left: 3px solid #22c55e;">
           <div class="violation-box-label" style="color: #16a34a;">${L.fixGuidance}</div>
-          <div class="violation-box-value">${escapeHtml(v.suggested_fix)}</div>
+          <div class="violation-box-value">${markdownToHtml(v.suggested_fix)}</div>
         </div>` : ''}
         ${v.enforcement_context ? `
         <div class="violation-box" style="background: rgba(239, 68, 68, 0.05); border-left: 3px solid #ef4444;">
           <div class="violation-box-label" style="color: #dc2626;">${L.enforcementHistory}</div>
-          <div class="violation-box-value">${escapeHtml(v.enforcement_context)}</div>
+          <div class="violation-box-value">${markdownToHtml(v.enforcement_context)}</div>
         </div>` : ''}
         <div class="violation-meta">
           ${v.confidence_score !== undefined ? `<span>${L.aiConfidenceLabel}: ${Math.round(v.confidence_score * 100)}%</span>` : ''}
@@ -856,17 +1159,19 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       </div>`
     }).join('')}
   </div>
+
+  <div class="page-footer">
+    <div>${L.pageFooter} | ${companyInfo.name}</div>
+    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
+  </div>
 </div>
 
 ${importAlertViolations.length > 0 ? `
-<!-- IMPORT ALERT PAGE -->
+<!-- ═══════════════════════ IMPORT ALERT PAGE ═══════════════════════ -->
 <div class="page content-page page-break">
-  <div class="page-header">
-    <div class="page-header-left"><div class="page-header-logo">V</div><div class="page-header-brand">VEXIM Compliance AI</div></div>
-    <div class="page-header-right">${L.reportId} ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>${formatDate(generatedAt, lang)}</div>
-  </div>
+  ${pageHeader(L, shortId, dateFormatted)}
   <div class="section">
-    <div class="section-title"><span class="section-number">05</span> ${L.importAlerts}</div>
+    <div class="section-title"><span class="section-number">${secImportAlerts}</span>${L.importAlerts}</div>
     <div class="port-warning" style="background: #FEF3C7; border-left-color: #dc2626; margin-bottom: 20px;">
       <div class="port-warning-label" style="color: #dc2626;">${L.portRiskLabel}</div>
       ${L.portRiskDesc}
@@ -889,7 +1194,7 @@ ${importAlertViolations.length > 0 ? `
       ${ia.suggested_fix ? `
       <div class="violation-box" style="background: rgba(34, 197, 94, 0.08); border-left: 3px solid #22c55e;">
         <div class="violation-box-label" style="color: #16a34a;">${L.remediationSteps}</div>
-        <div class="violation-box-value">${escapeHtml(ia.suggested_fix)}</div>
+        <div class="violation-box-value">${markdownToHtml(ia.suggested_fix)}</div>
       </div>` : ''}
       <div class="violation-meta">
         <span>${L.matchConfidence}: ${ia.confidence_score !== undefined ? Math.round(ia.confidence_score * 100) + '%' : 'N/A'}</span>
@@ -898,19 +1203,18 @@ ${importAlertViolations.length > 0 ? `
     </div>`
     }).join('')}
   </div>
+  <div class="page-footer">
+    <div>${L.pageFooter} | ${companyInfo.name}</div>
+    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
+  </div>
 </div>` : ''}
 
-${((report.geometry_violations && report.geometry_violations.length > 0) ||
-  (report.contrast_violations && report.contrast_violations.length > 0) ||
-  (report.multilanguage_issues && report.multilanguage_issues.length > 0)) ? `
-<!-- TECHNICAL CHECKS PAGE -->
+${hasTech ? `
+<!-- ═══════════════════════ TECHNICAL CHECKS PAGE ═══════════════════════ -->
 <div class="page content-page page-break">
-  <div class="page-header">
-    <div class="page-header-left"><div class="page-header-logo">V</div><div class="page-header-brand">VEXIM Compliance AI</div></div>
-    <div class="page-header-right">${L.reportId} ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>${formatDate(generatedAt, lang)}</div>
-  </div>
+  ${pageHeader(L, shortId, dateFormatted)}
   <div class="section">
-    <div class="section-title"><span class="section-number">${importAlertViolations.length > 0 ? '05a' : '05'}</span> ${L.technicalChecks}</div>
+    <div class="section-title"><span class="section-number">${secTechnical}</span>${L.technicalChecks}</div>
     <div class="tech-grid">
       ${report.geometry_violations && report.geometry_violations.length > 0 ? `
       <div class="tech-card">
@@ -964,57 +1268,39 @@ ${((report.geometry_violations && report.geometry_violations.length > 0) ||
       </div>`).join('')}
     </div>` : ''}
   </div>
+  <div class="page-footer">
+    <div>${L.pageFooter} | ${companyInfo.name}</div>
+    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
+  </div>
 </div>` : ''}
 
 ${report.commercial_summary ? `
-<!-- COMMERCIAL SUMMARY PAGE -->
+<!-- ═══════════════════════ COMMERCIAL SUMMARY PAGE ═══════════════════════ -->
 <div class="page content-page page-break">
-  <div class="page-header">
-    <div class="page-header-left"><div class="page-header-logo">V</div><div class="page-header-brand">VEXIM Compliance AI</div></div>
-    <div class="page-header-right">${L.reportId} ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>${formatDate(generatedAt, lang)}</div>
-  </div>
+  ${pageHeader(L, shortId, dateFormatted)}
   <div class="section">
-    <div class="section-title"><span class="section-number">${importAlertViolations.length > 0 ? '05b' : '05a'}</span> ${L.commercialSummary}</div>
-    <div class="summary-section">
-      ${report.commercial_summary.split('\n').map((line: string) => {
-        if (line.startsWith('### ')) {
-          const headingText = line.replace(/^### /, '').replace(/\*+/g, '').trim()
-          let headingColor = '#334155'; let headingBg = 'transparent'; let headingBorder = 'none'
-          if (headingText.includes('NGHIÊM TRỌNG') || headingText.includes('LỖI NGHIÊM TRỌNG') || headingText.includes('CRITICAL')) {
-            headingColor = '#991B1B'; headingBg = '#FEE2E2'; headingBorder = '2px solid #F87171'
-          } else if (headingText.includes('CẢNH BÁO') || headingText.includes('WARNING')) {
-            headingColor = '#92400E'; headingBg = '#FEF3C7'; headingBorder = '2px solid #FBBF24'
-          } else if (headingText.includes('THÔNG TIN') || headingText.includes('INFO')) {
-            headingColor = '#1E40AF'; headingBg = '#DBEAFE'; headingBorder = '2px solid #60A5FA'
-          } else if (headingText.includes('LỜI KHUYÊN') || headingText.includes('ADVICE')) {
-            headingColor = '#065F46'; headingBg = '#D1FAE5'; headingBorder = '2px solid #34D399'
-          }
-          return `<div class="summary-subheading" style="color: ${headingColor}; background: ${headingBg}; border: ${headingBorder}; border-radius: 6px; padding: 8px 12px; margin-top: 16px;">${escapeHtml(headingText)}</div>`
-        }
-        if (line.startsWith('## ')) return `<div class="summary-heading">${escapeHtml(line.replace(/^## /, '').replace(/\*+/g, ''))}</div>`
-        if (line.startsWith('**') && line.endsWith('**')) return `<div class="summary-text" style="font-weight: 600;">${escapeHtml(line.replace(/\*\*/g, ''))}</div>`
-        if (line.startsWith('- ')) return `<div class="summary-list-item">${escapeHtml(line.replace(/^- /, '').replace(/\*+/g, ''))}</div>`
-        if (line.trim() === '') return ''
-        return `<div class="summary-text">${escapeHtml(line.replace(/\*+/g, ''))}</div>`
-      }).join('')}
+    <div class="section-title"><span class="section-number">${secCommercial}</span>${L.commercialSummary}</div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px;">
+      ${markdownToHtml(report.commercial_summary)}
     </div>
+  </div>
+  <div class="page-footer">
+    <div>${L.pageFooter} | ${companyInfo.name}</div>
+    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
   </div>
 </div>` : ''}
 
-<!-- EXPERT RECOMMENDATIONS & SIGNATURE PAGE -->
+<!-- ═══════════════════════ EXPERT RECOMMENDATIONS PAGE ═══════════════════════ -->
 <div class="page content-page page-break">
-  <div class="page-header">
-    <div class="page-header-left"><div class="page-header-logo">V</div><div class="page-header-brand">VEXIM Compliance AI</div></div>
-    <div class="page-header-right">${L.reportId} ${escapeHtml(report.id.slice(0, 8).toUpperCase())}<br/>${formatDate(generatedAt, lang)}</div>
-  </div>
+  ${pageHeader(L, shortId, dateFormatted)}
 
   <div class="section">
-    <div class="section-title"><span class="section-number">06</span> ${L.expertRecommendations}</div>
+    <div class="section-title"><span class="section-number">${secExpert}</span>${L.expertRecommendations}</div>
     ${report.expert_tips && report.expert_tips.length > 0 ? `
       ${report.expert_tips.map((tip: string, idx: number) => `
       <div class="expert-tip">
         <div class="expert-tip-label">${L.recommendation} ${idx + 1}</div>
-        ${escapeHtml(tip)}
+        ${markdownToHtml(tip)}
       </div>`).join('')}
     ` : `
       <div class="expert-tip">
@@ -1022,6 +1308,16 @@ ${report.commercial_summary ? `
         ${defaultExpertTip}
       </div>
     `}
+
+    <!-- Enforcement Insights -->
+    ${enforcementInsights.length > 0 ? `
+    <div style="margin-top:16px;">
+      <div style="font-size:10px;font-weight:700;color:#b45309;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">${L.enforcementInsights}</div>
+      ${enforcementInsights.map((insight: string) => `
+      <div class="port-warning" style="margin-bottom:8px;">
+        ${markdownToHtml(insight)}
+      </div>`).join('')}
+    </div>` : ''}
 
     ${criticalCount > 0 ? `
     <div class="port-warning">
@@ -1032,23 +1328,39 @@ ${report.commercial_summary ? `
     ${report.review_notes ? `
     <div class="expert-tip">
       <div class="expert-tip-label">${L.expertReviewNotes}</div>
-      ${escapeHtml(report.review_notes)}
+      ${markdownToHtml(report.review_notes)}
     </div>` : ''}
   </div>
 
+  <div class="page-footer">
+    <div>${L.pageFooter} | ${companyInfo.name}</div>
+    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ ACTION ITEMS & SIGNATURE PAGE ═══════════════════════ -->
+<div class="page content-page page-break">
+  ${pageHeader(L, shortId, dateFormatted)}
+
   <!-- Action Items -->
   <div class="section">
-    <div class="section-title"><span class="section-number">07</span> ${L.actionItems}</div>
+    <div class="section-title"><span class="section-number">${secAction}</span>${L.actionItems}</div>
     <table class="citations-table">
-      <thead><tr><th>#</th><th>${L.actionSeverity}</th><th>${L.actionIssue}</th><th>${L.actionRequired}</th></tr></thead>
+      <thead><tr><th>#</th><th>${L.actionPriority}</th><th>${L.actionSeverity}</th><th>${L.actionIssue}</th><th>${L.actionRequired}</th></tr></thead>
       <tbody>
-        ${sortedViolations.map((v, i) => `
-        <tr>
-          <td>${i + 1}</td>
+        ${sortedViolations.map((v, i) => {
+          const rowClass = v.severity === 'critical' ? 'action-row-critical' : v.severity === 'warning' ? 'action-row-warning' : 'action-row-info'
+          const priority = v.severity === 'critical' ? L.priorityImmediate : v.severity === 'warning' ? L.priorityHigh : L.priorityMedium
+          const priorityColor = v.severity === 'critical' ? '#dc2626' : v.severity === 'warning' ? '#f59e0b' : '#2563eb'
+          return `
+        <tr class="${rowClass}">
+          <td style="font-weight:600;">${i + 1}</td>
+          <td><span style="font-size:7px;font-weight:700;color:${priorityColor};text-transform:uppercase;">${priority}</span></td>
           <td><span class="severity-badge" style="background: ${getSeverityColor(v.severity).text}; color: white; font-size: 7px; padding: 2px 6px;">${getSeverityLabel(v.severity, L)}</span></td>
           <td>${escapeHtml(translateCategory(v.category, L))}</td>
-          <td>${escapeHtml(v.suggested_fix?.slice(0, 120) || L.seeDetails)}</td>
-        </tr>`).join('')}
+          <td>${escapeHtml((v.suggested_fix || L.seeDetails).slice(0, 120))}${(v.suggested_fix || '').length > 120 ? '...' : ''}</td>
+        </tr>`
+        }).join('')}
       </tbody>
     </table>
   </div>
@@ -1062,7 +1374,7 @@ ${report.commercial_summary ? `
   </div>
 
   ${report.status !== 'verified' ? `
-  <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 12px; padding: 24px; margin: 24px 0; color: white; text-align: center;">
+  <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 40%, #2563eb 100%); border-radius: 12px; padding: 24px; margin: 24px 0; color: white; text-align: center;">
     <div style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">${L.upgradeTitle}</div>
     <div style="font-size: 11px; opacity: 0.9; margin-bottom: 16px; line-height: 1.6;">${L.upgradeDesc}<br/>${L.upgradeDesc2}</div>
     <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
@@ -1097,6 +1409,11 @@ ${report.commercial_summary ? `
   <div class="disclaimer">
     <div class="disclaimer-title">${L.disclaimer}</div>
     <p>${L.disclaimerText}</p>
+  </div>
+
+  <div class="page-footer">
+    <div>${L.pageFooter} | ${companyInfo.name}</div>
+    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
   </div>
 </div>
 
