@@ -761,6 +761,159 @@ export function ReportResultView({
               </div>
             </Card>
 
+            {/* ── OVERALL ASSESSMENT FROM VEXIM AI ─────────────────── */}
+            <Card className={`overflow-hidden border-2 ${
+              riskScore >= 7 
+                ? 'border-red-200 bg-red-50' 
+                : riskScore >= 2 
+                  ? 'border-amber-200 bg-amber-50' 
+                  : 'border-green-200 bg-green-50'
+            }`}>
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`rounded-full p-2.5 ${
+                    riskScore >= 7 
+                      ? 'bg-red-100' 
+                      : riskScore >= 2 
+                        ? 'bg-amber-100' 
+                        : 'bg-green-100'
+                  }`}>
+                    {riskScore >= 7 ? (
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
+                    ) : riskScore >= 2 ? (
+                      <AlertCircle className="h-5 w-5 text-amber-600" />
+                    ) : (
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    )}
+                  </div>
+                  <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">
+                    Đánh Giá Tổng Thể Từ Vexim AI
+                  </h2>
+                </div>
+
+                {/* Compliance Summary */}
+                <div className="space-y-4">
+                  {/* Regulations Checked */}
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      QUY ĐỊNH ĐÃ KIỂM TRA
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                        21 CFR 101 - Nhãn thực phẩm
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                        21 CFR 701 - Nhãn mỹ phẩm
+                      </span>
+                      <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                        FD&C Act Section 403
+                      </span>
+                      {report.product_category === 'cosmetic' && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                          21 CFR 700-740 - Mỹ phẩm
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Historical Data Check */}
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      KIỂM TRA DỮ LIỆU LỊCH SỬ FDA
+                    </p>
+                    <div className="grid sm:grid-cols-3 gap-3">
+                      <div className={`rounded-lg p-3 ${
+                        wlViolations.length > 0 ? 'bg-orange-100 border border-orange-200' : 'bg-white border border-slate-200'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <Mail className={`h-4 w-4 ${wlViolations.length > 0 ? 'text-orange-600' : 'text-slate-400'}`} />
+                          <span className="text-xs font-medium text-slate-700">Warning Letters</span>
+                        </div>
+                        <p className={`text-lg font-bold mt-1 ${wlViolations.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                          {wlViolations.length > 0 ? `${wlViolations.length} liên quan` : 'Không có'}
+                        </p>
+                      </div>
+                      
+                      <div className={`rounded-lg p-3 ${
+                        recallViolations.length > 0 ? 'bg-purple-100 border border-purple-200' : 'bg-white border border-slate-200'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <RotateCcw className={`h-4 w-4 ${recallViolations.length > 0 ? 'text-purple-600' : 'text-slate-400'}`} />
+                          <span className="text-xs font-medium text-slate-700">Recalls</span>
+                        </div>
+                        <p className={`text-lg font-bold mt-1 ${recallViolations.length > 0 ? 'text-purple-600' : 'text-green-600'}`}>
+                          {recallViolations.length > 0 ? `${recallViolations.length} liên quan` : 'Không có'}
+                        </p>
+                      </div>
+                      
+                      <div className={`rounded-lg p-3 ${
+                        importAlertViolations.length > 0 ? 'bg-cyan-100 border border-cyan-200' : 'bg-white border border-slate-200'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          <Ship className={`h-4 w-4 ${importAlertViolations.length > 0 ? 'text-cyan-600' : 'text-slate-400'}`} />
+                          <span className="text-xs font-medium text-slate-700">Import Alerts</span>
+                        </div>
+                        <p className={`text-lg font-bold mt-1 ${importAlertViolations.length > 0 ? 'text-cyan-600' : 'text-green-600'}`}>
+                          {importAlertViolations.length > 0 ? `${importAlertViolations.length} liên quan` : 'Không có'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Conclusion */}
+                  <div className={`rounded-lg p-4 ${
+                    riskScore >= 7 
+                      ? 'bg-red-100 border border-red-200' 
+                      : riskScore >= 2 
+                        ? 'bg-amber-100 border border-amber-200' 
+                        : 'bg-green-100 border border-green-200'
+                  }`}>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">
+                      KẾT LUẬN
+                    </p>
+                    {riskScore >= 7 ? (
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-red-800">
+                          Nhãn sản phẩm có rủi ro cao về tuân thủ FDA.
+                        </p>
+                        <p className="text-sm text-red-700 leading-relaxed">
+                          Vexim AI phát hiện {criticalCount > 0 ? `${criticalCount} vi phạm nghiêm trọng` : ''}{criticalCount > 0 && warningCount > 0 ? ' và ' : ''}{warningCount > 0 ? `${warningCount} cảnh báo` : ''} cần được khắc phục ngay. 
+                          {wlViolations.length > 0 && ` Có ${wlViolations.length} trường hợp tương tự đã bị FDA gửi Warning Letter.`}
+                          {recallViolations.length > 0 && ` Có ${recallViolations.length} sản phẩm tương tự đã bị thu hồi.`}
+                          {importAlertViolations.length > 0 && ` Có ${importAlertViolations.length} cảnh báo nhập khẩu liên quan.`}
+                          {' '}Khuyến nghị: Sửa các lỗi được liệt kê bên dưới trước khi phân phối tại thị trường Hoa Kỳ.
+                        </p>
+                      </div>
+                    ) : riskScore >= 2 ? (
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-amber-800">
+                          Nhãn sản phẩm có một số điểm cần cải thiện.
+                        </p>
+                        <p className="text-sm text-amber-700 leading-relaxed">
+                          Vexim AI phát hiện {warningCount > 0 ? `${warningCount} cảnh báo` : 'một số điểm'} nên được xem xét để tối ưu hóa tuân thủ.
+                          {wlViolations.length === 0 && recallViolations.length === 0 && importAlertViolations.length === 0 && 
+                            ' Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA.'}
+                          {' '}Khuyến nghị: Xem xét các cảnh báo bên dưới để giảm thiểu rủi ro bị FDA kiểm tra.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-green-800">
+                          Nhãn sản phẩm tuân thủ tốt các quy định FDA.
+                        </p>
+                        <p className="text-sm text-green-700 leading-relaxed">
+                          Vexim AI không phát hiện vi phạm nghiêm trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR.
+                          {wlViolations.length === 0 && recallViolations.length === 0 && importAlertViolations.length === 0 && 
+                            ' Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA.'}
+                          {' '}Sản phẩm có thể được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
+
             {/* ── CFR VIOLATIONS SECTION ───────────────────────── */}
             <div>
               <div className="flex items-center gap-2 mb-4">
