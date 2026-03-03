@@ -307,8 +307,24 @@ function ReportCard({ report }: { report: any }) {
   const criticalCount = findings.filter((f: any) => f.severity === 'critical').length
   const warningCount = findings.filter((f: any) => f.severity === 'warning').length
   
-  // Get product display name (priority: product_name > brand_name > file_name)
-  const productName = report.product_name || report.brand_name || report.file_name || 'Sản phẩm không tên'
+  // Get product display name with multiple fallbacks
+  // Priority: product_name > brand_name > parse from file_name > report ID
+  let productName = report.product_name || report.brand_name
+  
+  if (!productName && report.file_name) {
+    // Try to extract meaningful name from file_name (remove extension and clean up)
+    const cleanName = report.file_name
+      .replace(/\.[^.]+$/, '') // Remove extension
+      .replace(/[-_]/g, ' ')   // Replace dashes/underscores with spaces
+      .replace(/\d{10,}/g, '') // Remove long number sequences (timestamps)
+      .trim()
+    productName = cleanName || null
+  }
+  
+  // Final fallback with report ID for uniqueness
+  if (!productName) {
+    productName = `Báo cáo #${report.id?.slice(0, 8) || 'N/A'}`
+  }
   
   // Get user info 
   const userEmail = report.user_email || 'Unknown user'
@@ -325,7 +341,12 @@ function ReportCard({ report }: { report: any }) {
         <div className="flex-1 min-w-0">
           {/* Product name and badges */}
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h3 className="font-semibold truncate" title={productName}>{productName}</h3>
+            <div className="flex flex-col">
+              <h3 className="font-semibold truncate" title={productName}>{productName}</h3>
+              {report.brand_name && report.product_name && (
+                <span className="text-xs text-muted-foreground">by {report.brand_name}</span>
+              )}
+            </div>
             {report.needs_expert_review && (
               <Badge variant="destructive" className="text-xs shrink-0">
                 Cần kiểm duyệt
