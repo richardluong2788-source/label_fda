@@ -24,7 +24,7 @@ import { useTranslation } from '@/lib/i18n'
 export default function AuditPage() {
   const params = useParams()
   const router = useRouter()
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const a = t.audit
 
   const [report, setReport] = useState<AuditReport | null>(null)
@@ -51,7 +51,7 @@ export default function AuditPage() {
     if (!params.id) return
     setPdfLoading(true)
     try {
-      const res = await fetch(`/api/audit/${params.id}/pdf`)
+      const res = await fetch(`/api/audit/${params.id}/pdf?lang=${locale}`)
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.error || a.cannotCreateReport)

@@ -85,6 +85,10 @@ export async function GET(
 
     const violations = report.findings || report.violations || []
 
+    // Determine language from query param (default: vi for backward compat)
+    const langParam = request.nextUrl.searchParams.get('lang')
+    const lang = (langParam === 'en' ? 'en' : 'vi') as 'vi' | 'en'
+
     // Determine who generated this
     let generatedBy = 'Vexim Compliance AI'
     if (report.reviewed_by) {
@@ -111,6 +115,7 @@ export async function GET(
       generatedAt: new Date().toISOString(),
       generatedBy,
       companyInfo: VEXIM_COMPANY_INFO,
+      lang,
     })
 
     // Return as downloadable HTML file that opens as print-ready PDF layout
