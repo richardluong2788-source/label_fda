@@ -304,21 +304,35 @@ export function ExpertRequestPanel({
   const isHighRisk = overallResult === 'fail' || needsExpertReview
 
   return (
-    <Card className={`border-2 ${isHighRisk ? 'border-amber-300' : 'border-primary/20'}`}>
+    <Card className={`border-2 ${isHighRisk ? 'border-amber-300' : 'border-slate-200'}`}>
+      {/* Question Banner */}
+      <div className={`p-4 rounded-t-lg ${isHighRisk ? 'bg-amber-50 border-b border-amber-200' : 'bg-slate-50 border-b border-slate-200'}`}>
+        <div className="flex items-center gap-3">
+          <div className={`rounded-full p-2.5 ${isHighRisk ? 'bg-amber-100' : 'bg-blue-100'}`}>
+            <MessageCircle className={`h-5 w-5 ${isHighRisk ? 'text-amber-600' : 'text-blue-600'}`} />
+          </div>
+          <div className="flex-1">
+            <p className={`font-bold text-base ${isHighRisk ? 'text-amber-800' : 'text-slate-800'}`}>
+              Bạn có cần hỗ trợ từ chuyên gia Vexim không?
+            </p>
+            <p className="text-sm text-slate-600 mt-0.5">
+              {isHighRisk
+                ? 'AI phát hiện một số điểm cần chuyên gia xem xét kỹ hơn để đảm bảo tuân thủ FDA.'
+                : 'Chuyên gia sẽ giúp bạn hiểu rõ hơn về kết quả và tối ưu hóa nhãn sản phẩm.'}
+            </p>
+          </div>
+        </div>
+      </div>
+      
       <div
-        className="flex items-center justify-between p-5 cursor-pointer"
+        className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-3">
-          <div className={`rounded-full p-2 ${isHighRisk ? 'bg-amber-100' : 'bg-primary/10'}`}>
-            <MessageCircle className={`h-5 w-5 ${isHighRisk ? 'text-amber-600' : 'text-primary'}`} />
-          </div>
           <div>
-            <p className="font-semibold text-sm">Tư vấn chuyên gia Vexim</p>
+            <p className="font-semibold text-sm text-slate-700">Tư vấn chuyên gia Vexim</p>
             <p className="text-xs text-muted-foreground">
-              {needsExpertReview
-                ? 'AI phát hiện điểm cần chuyên gia xem xét'
-                : 'Nhận hướng dẫn sửa chi tiết + wording chính xác'}
+              Nhận hướng dẫn sửa chi tiết + wording chính xác từ chuyên gia pháp lý FDA
             </p>
           </div>
         </div>
@@ -329,7 +343,7 @@ export function ExpertRequestPanel({
             </Badge>
           )}
           {expertReviewsIncluded && (
-            <Badge className="text-xs bg-primary text-primary-foreground">Included</Badge>
+            <Badge className="text-xs bg-primary text-primary-foreground">Miễn phí trong gói</Badge>
           )}
           {needsExpertReview && (
             <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 border">Khuyến nghị</Badge>
