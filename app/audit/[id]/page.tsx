@@ -53,11 +53,14 @@ export default function AuditPage() {
         throw new Error(err.error || 'Không thể tạo file báo cáo')
       }
       const html = await res.text()
+      
+      // Open in new tab with download button
       const blob = new Blob([html], { type: 'text/html' })
       const url = URL.createObjectURL(blob)
       const win = window.open(url, '_blank')
       if (win) win.focus()
-      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+      // Clean up blob URL after some time
+      setTimeout(() => URL.revokeObjectURL(url), 120000)
     } catch (err: any) {
       console.error('[v0] PDF download error:', err)
       alert(err.message || 'Không thể tải báo cáo. Vui lòng thử lại.')
@@ -296,7 +299,7 @@ export default function AuditPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted-foreground">Đang tải báo cáo...</p>
@@ -307,7 +310,7 @@ export default function AuditPage() {
 
   if (!report) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center">
         <Card className="p-8 text-center">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Không tìm thấy báo cáo</h2>
