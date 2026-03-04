@@ -212,6 +212,7 @@ export const en: TranslationKeys = {
       'Font Size': 'Font Size',
       'Allergen Warning': 'Allergen Warning',
       'Nutrition Facts': 'Nutrition Facts',
+      'Country of Origin Marking': 'Country of Origin Marking (19 CFR §134.11)',
     } as Record<string, string>,
     sections: {
       cfrViolations: '21 CFR Violations',
