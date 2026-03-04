@@ -6,9 +6,9 @@ if (!process.env.RESEND_API_KEY) {
 
 export const resend = new Resend(process.env.RESEND_API_KEY)
 
-export const EMAIL_FROM = process.env.EMAIL_FROM || 'FDA Label Checker <noreply@fdalachecker.com>'
+export const EMAIL_FROM = process.env.EMAIL_FROM || 'AI Label Pro <noreply@ailabelpro.com>'
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || ''
-export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://fdalachecker.com'
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://ailabelpro.com'
 
 /**
  * Safe send — never throws, logs errors instead so API routes never crash.
