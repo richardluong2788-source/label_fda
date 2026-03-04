@@ -701,7 +701,6 @@ export const vi = {
 
   // ─── Landing Page ────��───────────────────────────────
   landing: {
-landing: {
     // Phần Badge nhỏ phía trên tiêu đề để tạo bằng chứng số liệu
     heroBadge: 'Đối soát trực tiếp dữ liệu từ 5.346 vi phạm thực tế của FDA',
     
