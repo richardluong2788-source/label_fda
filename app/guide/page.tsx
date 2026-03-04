@@ -247,7 +247,7 @@ export default function GuidePage() {
             {IMAGE_TYPES.map((type) => {
               const Icon = type.icon
               return (
-                <Card key={type.id} className={`border-2 ${type.borderColor} overflow-hidden`}>
+                <Card key={type.id} id={type.id} className={`border-2 ${type.borderColor} overflow-hidden scroll-mt-8`}>
                   <div className={`${type.bgColor} px-6 py-4 flex items-start gap-4`}>
                     <div className={`rounded-lg bg-background p-2 shadow-sm`}>
                       <Icon className={`h-6 w-6 ${type.color}`} />

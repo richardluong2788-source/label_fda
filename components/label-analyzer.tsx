@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { Upload, AlertCircle, CheckCircle2, ImagePlus, X, Shield, AlertTriangle, ChevronDown, Settings } from 'lucide-react'
+import { Upload, AlertCircle, CheckCircle2, ImagePlus, X, Shield, AlertTriangle, ChevronDown, Settings, BookOpen, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { AdvancedSettings } from '@/components/advanced-settings'
 import { useTranslation } from '@/lib/i18n'
 
@@ -320,6 +321,25 @@ export function LabelAnalyzer() {
         </p>
       </div>
 
+      {/* Guide Banner */}
+      <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg bg-blue-50 border border-blue-200">
+        <div className="flex items-start gap-3">
+          <BookOpen className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-blue-900">Lần đầu sử dụng?</p>
+            <p className="text-xs text-blue-700 mt-0.5 leading-relaxed">
+              Đọc hướng dẫn upload ảnh đúng cách để AI phân tích chính xác hơn — đặc biệt là yêu cầu cho từng loại ảnh.
+            </p>
+          </div>
+        </div>
+        <Link href="/guide" target="_blank" className="shrink-0">
+          <Button variant="outline" size="sm" className="border-blue-300 text-blue-700 hover:bg-blue-100 hover:border-blue-400 gap-1.5 whitespace-nowrap">
+            Xem hướng dẫn
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </Link>
+      </div>
+
       {/* Upload Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {Object.entries(IMAGE_TYPES_I18N).map(([key, info]) => {
@@ -340,6 +360,14 @@ export function LabelAnalyzer() {
                 <div>
                   <h3 className="font-bold text-gray-900">{info.label}</h3>
                   <p className="text-xs text-gray-500 mt-0.5">{info.description}</p>
+                  <Link
+                    href={`/guide#${key}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 mt-1"
+                  >
+                    <BookOpen className="h-3 w-3" />
+                    Yêu cầu ảnh
+                  </Link>
                 </div>
                 <div className="flex items-center gap-1 ml-2">
                   {info.required && !imageOfThisType && (
