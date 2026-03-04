@@ -333,13 +333,6 @@ function ViolationIcon({ severity, type }: { severity: string; type?: string }) 
       </div>
     )
   }
-  if (type === 'cbp_regulation') {
-    return (
-      <div className="rounded-full bg-orange-100 p-2.5 shrink-0">
-        <Landmark className="h-5 w-5 text-orange-600" />
-      </div>
-    )
-  }
   if (severity === 'critical') {
     return (
       <div className="rounded-full bg-red-100 p-2.5 shrink-0">
@@ -821,11 +814,9 @@ export function ReportResultView({
   const cfrViolations = allViolations.filter(
     (v) =>
       v.source_type !== 'import_alert' &&
-      v.source_type !== 'warning_letter' &&
-      v.source_type !== 'recall' &&
-      v.source_type !== 'cbp_regulation'
+  v.source_type !== 'warning_letter' &&
+  v.source_type !== 'recall'
   )
-  const cbpViolations = allViolations.filter((v) => v.source_type === 'cbp_regulation')
   const wlViolations = allViolations.filter((v) => v.source_type === 'warning_letter')
   const recallViolations = allViolations.filter((v) => v.source_type === 'recall')
   const importAlertViolations = allViolations.filter((v) => v.source_type === 'import_alert')
@@ -1525,43 +1516,6 @@ export function ReportResultView({
                 </div>
               )}
             </div>
-
-            {/* ── CBP / 19 CFR VIOLATIONS SECTION ──────────────── */}
-            {cbpViolations.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Landmark className="h-4 w-4 text-orange-500" />
-                  <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                    {locale === 'vi'
-                      ? `Quy định Hải quan CBP (19 CFR) — ${cbpViolations.length} vi phạm`
-                      : `CBP Customs Regulations (19 CFR) — ${cbpViolations.length} violation${cbpViolations.length > 1 ? 's' : ''}`}
-                  </h2>
-                </div>
-                <div className="rounded-lg bg-orange-50 border-l-4 border-orange-400 p-3.5 mb-4">
-                  <p className="text-sm font-semibold text-orange-900 mb-1">
-                    {locale === 'vi'
-                      ? 'Yêu cầu nhập khẩu vào Hoa Kỳ (CBP — Customs and Border Protection)'
-                      : 'US Import Requirements (CBP — Customs and Border Protection)'}
-                  </p>
-                  <p className="text-sm text-orange-800 leading-relaxed">
-                    {locale === 'vi'
-                      ? 'Các quy định này do CBP (hải quan Mỹ) thực thi, độc lập với FDA. Vi phạm có thể dẫn đến hàng bị giữ tại cảng, yêu cầu dán nhãn lại và phạt tiền.'
-                      : 'These regulations are enforced by US Customs and Border Protection (CBP), independent of FDA. Violations may result in port detention, mandatory re-labeling, and financial penalties.'}
-                  </p>
-                </div>
-                <div className="space-y-5">
-                  {cbpViolations.map((violation, index) => (
-                    <ViolationCard
-                      key={`cbp-${index}`}
-                      violation={violation}
-                      index={index}
-                      t={t}
-                      showExpertCta={false}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* ── GEOMETRY VIOLATIONS SECTION (NEW) ────────────── */}
             {geometryViolations.length > 0 && (
