@@ -21,6 +21,21 @@ import {
 const ECFR_RENDERER_BASE = 'https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-21'
 const ECFR_VERSIONER_BASE = 'https://www.ecfr.gov/api/versioner/v1/versions/title-21'
 
+// 19 CFR (CBP) endpoints — used for import compliance parts (e.g. Part 134)
+const ECFR_19_RENDERER_BASE = 'https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-19'
+const ECFR_19_VERSIONER_BASE = 'https://www.ecfr.gov/api/versioner/v1/versions/title-19'
+
+// Map special part keys to their actual title + part number
+// Key format: "<title>_<part>" for non-21 CFR parts
+const SPECIAL_PART_MAP: Record<string, { title: string; part: string; rendererBase: string; versioner: string }> = {
+  '19_134': {
+    title: '19',
+    part:  '134',
+    rendererBase: ECFR_19_RENDERER_BASE,
+    versioner:    ECFR_19_VERSIONER_BASE,
+  },
+}
+
 // Vercel functions time out at 60s on hobby / 300s on pro.
 // We process one part at a time and stream progress via JSON lines.
 export const maxDuration = 300
@@ -62,11 +77,19 @@ export async function POST(request: Request) {
         for (const part of parts) {
           send({ type: 'start', part, message: `Dang xu ly Part ${part}...` })
 
+          // Resolve special parts (e.g. 19_134 → title-19, part=134)
+          const specialPart = SPECIAL_PART_MAP[part]
+          const actualPart    = specialPart ? specialPart.part  : part
+          const rendererBase  = specialPart ? specialPart.rendererBase : ECFR_RENDERER_BASE
+          const versionerBase = specialPart ? specialPart.versioner    : ECFR_VERSIONER_BASE
+          // Use actualPart for DB metadata filtering (stores "134", not "19_134")
+          const dbPartKey = actualPart
+
           try {
             // ── 1. Check eCFR versioner for lastAmendedDate ───────────────
             let lastAmendedDate: string | null = null
             try {
-              const vRes = await fetch(`${ECFR_VERSIONER_BASE}?part=${part}`)
+              const vRes = await fetch(`${versionerBase}?part=${actualPart}`)
               if (vRes.ok) {
                 const vData = await vRes.json()
                 const versions = vData.content_versions ?? vData.versions ?? []
@@ -83,9 +106,9 @@ export async function POST(request: Request) {
               const { count } = await supabase
                 .from('compliance_knowledge')
                 .select('*', { count: 'exact', head: true })
-                .filter('metadata->>part_number', 'eq', part)
+                .filter('metadata->>part_number', 'eq', dbPartKey)
               if ((count ?? 0) > 0) {
-                send({ type: 'skip', part, message: `Part ${part} da co trong DB (${count} chunks), bo qua.` })
+                send({ type: 'skip', part, message: `Part ${actualPart} da co trong DB (${count} chunks), bo qua.` })
                 results.push({ part, status: 'skipped', chunks: count })
                 continue
               }
@@ -96,14 +119,14 @@ export async function POST(request: Request) {
               const { error: delErr } = await supabase
                 .from('compliance_knowledge')
                 .delete()
-                .filter('metadata->>part_number', 'eq', part)
+                .filter('metadata->>part_number', 'eq', dbPartKey)
               if (delErr) throw new Error(`Khong the xoa du lieu cu: ${delErr.message}`)
-              send({ type: 'info', part, message: `Da xoa chunks cu cua Part ${part}.` })
+              send({ type: 'info', part, message: `Da xoa chunks cu cua Part ${actualPart}.` })
             }
 
             // ── 4. Fetch HTML from eCFR ───────────────────────────────────
-            send({ type: 'info', part, message: `Dang fetch eCFR API cho Part ${part}...` })
-            const url = `${ECFR_RENDERER_BASE}?part=${part}`
+            send({ type: 'info', part, message: `Dang fetch eCFR API cho Part ${actualPart}...` })
+            const url = `${rendererBase}?part=${actualPart}`
             const res = await fetch(url, {
               headers: { 'Accept': 'text/html', 'User-Agent': 'VeximGlobal/1.0' },
               signal: AbortSignal.timeout(30000),
@@ -117,7 +140,7 @@ export async function POST(request: Request) {
             send({ type: 'info', part, message: `Parse xong: ${sections.length} sections. Dang tao embeddings...` })
 
             if (sections.length === 0) {
-              send({ type: 'warn', part, message: `Khong tim thay section nao trong Part ${part}.` })
+              send({ type: 'warn', part, message: `Khong tim thay section nao trong Part ${actualPart}.` })
               results.push({ part, status: 'empty', chunks: 0 })
               continue
             }
@@ -127,6 +150,10 @@ export async function POST(request: Request) {
             let totalInserted = 0
 
             const allChunks: Array<{ content: string; metadata: any }> = []
+
+            // For 19 CFR parts, use the special key (e.g. "19_134") so buildCorrectMetadata
+            // picks up the correct industry/category from CFR_PART_MAP
+            const metadataPartKey = specialPart ? part : actualPart
 
             for (const sec of sections) {
               if (!sec.content || sec.content.trim().length < 50) continue
@@ -147,7 +174,7 @@ export async function POST(request: Request) {
                 }
                 allChunks.push({
                   content: chunks[i],
-                  metadata: buildCorrectMetadata(chunks[i], part, base),
+                  metadata: buildCorrectMetadata(chunks[i], metadataPartKey, base),
                 })
               }
             }
