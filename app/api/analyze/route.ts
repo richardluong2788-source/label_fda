@@ -803,6 +803,55 @@ export async function POST(request: Request) {
       console.log('[v0] Import alert risk signals added to violations')
     }
 
+    // COUNTRY OF ORIGIN CHECK (19 CFR Part 134)
+    // Hard rule: Every product imported into the US must declare its country of origin
+    // per 19 CFR 134.11. This is a CBP (Customs) requirement, separate from FDA.
+    // Check applies to ALL product categories — food, cosmetic, device, supplement.
+    console.log('[v0] Checking Country of Origin marking (19 CFR Part 134)...')
+    const allLabelText = visionResult.textElements.allText || ''
+    const allLabelTextLower = allLabelText.toLowerCase()
+
+    // Detect explicit COO patterns: "Made in X", "Product of X", "Country of Origin: X",
+    // "Produced in X", "Manufactured in X", "Imported from X", "Assembled in X"
+    const cooPatterns = [
+      /made\s+in\b/i,
+      /product\s+of\b/i,
+      /country\s+of\s+origin\b/i,
+      /produced\s+in\b/i,
+      /manufactured\s+in\b/i,
+      /imported\s+from\b/i,
+      /assembled\s+in\b/i,
+      /origin\s*:\s*\w+/i,
+    ]
+    const hasCooStatement = cooPatterns.some(pattern => pattern.test(allLabelText))
+
+    if (!hasCooStatement) {
+      // No COO found — flag as critical violation
+      // Citation from KB if 19 CFR Part 134 has been synced
+      const cooKbCitation = realCitations.find(c =>
+        (c.source || '').includes('19 CFR') ||
+        (c.regulation_id || '').includes('134')
+      )
+
+      violations.push({
+        category: 'Country of Origin Marking',
+        severity: 'critical' as const,
+        description:
+          'No Country of Origin (COO) statement detected on the label. Per 19 CFR §134.11 (CBP), every article of foreign origin imported into the United States must be legibly marked with the English name of its country of origin. Required format: "Made in [Country]", "Product of [Country]", or equivalent. Failure to mark COO may result in CBP detention, refusal of entry, and re-marking penalties.',
+        regulation_reference: '19 CFR §134.11',
+        suggested_fix:
+          'Add a clear Country of Origin statement in English, e.g., "Made in Vietnam" or "Product of [Country]". The marking must be conspicuous, legible, and permanent. See 19 CFR §134.14 for acceptable placement on containers.',
+        citations: cooKbCitation ? [cooKbCitation] : [],
+        confidence_score: 0.90,
+        source_type: 'cbp_regulation',
+      })
+
+      console.log('[v0] COO violation flagged — no "Made in" or equivalent found')
+    } else {
+      console.log('[v0] COO statement detected — 19 CFR 134.11 satisfied')
+    }
+    // ── END COUNTRY OF ORIGIN CHECK ────────────────────────────────────────
+
     // Check allergen declarations
     // FIX: Detecting allergens on the label means the label IS declaring them (which is good).
     // Only flag a violation if the declaration FORMAT is wrong (missing "Contains:" prefix)

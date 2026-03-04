@@ -25,6 +25,10 @@ export interface CfrPartInfo {
 
 // Master mapping table — add new parts here as needed
 const CFR_PART_MAP: Record<string, Omit<CfrPartInfo, 'partNumber'>> = {
+  // ── Customs / Country of Origin (Title 19, Chapter I) ────────────────────
+  // NOTE: These are 19 CFR (CBP) parts — industry/category uses 'import_compliance'
+  // to separate them from 21 CFR FDA regulations in RAG filtering.
+  '19_134': { source: '19 CFR Part 134', regulation: '19 CFR Part 134', industry: 'Import Compliance', category: 'import_compliance', documentType: 'CBP Regulation' }, // Country of Origin Marking
   // ── General Administrative (Title 21, Chapter I, Parts 1–99) ─────────────
   '1':   { source: '21 CFR Part 1',   regulation: '21 CFR Part 1',   industry: 'Food & Beverages',    category: 'food',       documentType: 'FDA Regulation' }, // Registration, Prior Notice, FSVP
   '7':   { source: '21 CFR Part 7',   regulation: '21 CFR Part 7',   industry: 'Food & Beverages',    category: 'food',       documentType: 'FDA Regulation' }, // Recalls/Enforcement
