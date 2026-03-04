@@ -705,17 +705,17 @@ export const vi = {
     heroBadge: 'Đối soát trực tiếp dữ liệu từ 5.346 vi phạm thực tế của FDA',
     
     // Tiêu đề chính: Ngắn gọn, đánh thẳng vào thời gian và tiền bạc
-    heroTitle: '2 Phút Kiểm Tra Nhãn Dán -',
-    heroTitleHighlight: 'Tiết Kiệm $50.000 Phí Rủi Ro',
+    heroTitle: 'Kiểm tra tuân thủ nhãn FDA theo 21 CFR -',
+    heroTitleHighlight: 'Phát hiện lỗi trước khi hàng rời cảng',
     
-    // Phần mô tả: Chia nhỏ để dễ dàng bôi đậm các ý quan trọng
+   // Phần mô tả: Logic, chặt chẽ và đánh trúng nỗi đau tài chính
     heroDesc1: 'Bạn có chắc nhãn sản phẩm không nằm trong danh sách ',
     heroDesc2: 'Warning Letters của FDA',
-    heroDesc3: '? Vexim AI tự động hóa quy trình thẩm định phức tạp bằng cách đối soát ',
+    heroDesc3: '? Vexim AI tự động hóa quy trình thẩm định phức tạp bằng cách đối soát với ',
     heroDesc4: '5.346 vi phạm thực tế',
-    heroDesc5: '. Chúng tôi tìm thấy những ',
-    heroDesc6: 'lỗi mà mắt thường không thể thấy',
-    heroDesc7: ', giúp doanh nghiệp tiết kiệm hàng tỷ đồng phí lưu kho và thu hồi.',
+    heroDesc5: '. Chúng tôi phát hiện những ',
+    heroDesc6: 'lỗi mà mắt thường dễ dàng bỏ sót',
+    heroDesc7: ', giúp doanh nghiệp loại bỏ rủi ro lưu kho bãi và chi phí thu hồi hàng tỷ đồng.',
     heroDesc8: '.',
     ctaCheckLabel: 'Kiểm tra nhãn của bạn ngay',
     ctaViewCases: 'Xem các trường hợp vi phạm thực tế',

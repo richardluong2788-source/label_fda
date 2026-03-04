@@ -703,18 +703,18 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     // Hero Badge: Focus on data authority
     heroBadge: 'Cross-referenced with 5,346 Real-world FDA Violations',
     
-    // Hero Title: Time vs. Money (Standard English marketing hook)
-    heroTitle: '2 Minute Label Check -',
-    heroTitleHighlight: 'Save $50,000 in Compliance Risks',
-    
-    // Description: Professional, clear, and punchy
+    // Hero Title: Nhấn mạnh tính tuân thủ và phòng ngừa rủi ro
+    heroTitle: 'FDA Label Compliance Audit (21 CFR) -',
+    heroTitleHighlight: 'Detect Errors Before Cargo Departure',
+
+    // Hero Description: Chặt chẽ, đánh vào chi phí và sự an toàn
     heroDesc1: 'Are you certain your product labels are clear of ',
     heroDesc2: 'FDA Warning Letters',
     heroDesc3: '? Vexim AI automates complex compliance audits by cross-referencing ',
     heroDesc4: '5,346 real-world violations',
-    heroDesc5: '. We uncover ',
+    heroDesc5: '. We detect ',
     heroDesc6: 'hidden non-compliance issues',
-    heroDesc7: ' that manual reviews miss, saving your business billions in detention and recall costs.',
+    heroDesc7: ' that manual reviews often miss, protecting your business from detention and multi-billion recall costs.',
     heroDesc8: '.',
     ctaCheckLabel: 'Check your label now',
     ctaViewCases: 'View real violation cases',
