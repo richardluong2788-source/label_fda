@@ -1,4 +1,5 @@
-import { emailLayout, button, badge, divider, infoRow, APP_URL } from './layout'
+import { emailLayout, button, badge, divider, infoRow } from './layout'
+import { APP_URL } from './client'
 
 type Lang = 'vi' | 'en'
 
@@ -293,7 +294,7 @@ export function adminNewExpertRequestTemplate({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 6. VNPAY PAYMENT CONFIRMATION — xác nhận thanh toán thành công
-// ─────────────────────────────────────────────────────────────────────────────
+// ──────────────���──────────────────────────────────────────────────────────────
 export function paymentSuccessTemplate({
   email,
   planName,
