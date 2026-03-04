@@ -27,6 +27,7 @@ export const vi = {
     analyze: 'Phân tích',
     history: 'Lịch sử',
     settings: 'Cài đặt',
+    guide: 'Hướng dẫn',
     knowledgeBase: 'Knowledge Base',
     revenue: 'Doanh thu',
     pricing: 'Giá gói',
@@ -462,6 +463,99 @@ export const vi = {
     roleImporter: 'Nhà nhập khẩu',
   },
 
+  // ─── Guide Page ──────────────────────────────────────
+  guide: {
+    pageTitle: 'Hướng dẫn sử dụng | FDA Label Checker',
+    pageDesc: 'Hướng dẫn upload ảnh nhãn sản phẩm đúng cách để AI phân tích tuân thủ FDA chính xác nhất.',
+    breadcrumb: 'Hướng dẫn sử dụng',
+    backToDashboard: 'Quay lại Dashboard',
+    badge: 'Hướng dẫn sử dụng',
+    heroTitle: 'Upload ảnh nhãn đúng cách để AI phân tích chính xác',
+    heroDesc: 'AI phân tích nhãn bằng OCR (nhận dạng ký tự quang học). Chất lượng ảnh đầu vào quyết định trực tiếp độ chính xác của kết quả. Đọc hướng dẫn dưới đây trước khi bắt đầu.',
+    howItWorksTitle: 'Hệ thống hoạt động như thế nào?',
+    howItWorksDesc: 'Hiểu cách AI đọc nhãn giúp bạn chuẩn bị ảnh tốt hơn.',
+    steps: [
+      { step: '01', title: 'Phân tích từng ảnh riêng biệt', desc: 'Mỗi ảnh được AI GPT-4o Vision xử lý độc lập. Ảnh PDP trích xuất Brand/Product/Net Weight. Ảnh Nutrition Facts trích xuất tất cả giá trị dinh dưỡng. Ảnh Ingredients trích xuất danh sách thành phần và allergens.' },
+      { step: '02', title: 'Ghép dữ liệu từ tất cả ảnh', desc: 'Hệ thống tổng hợp thông tin từ tất cả ảnh bạn upload. Ảnh nào thiếu sẽ dẫn đến thiếu dữ liệu phân tích — đặc biệt là PDP và Nutrition Facts là hai ảnh bắt buộc không thể thiếu.' },
+      { step: '03', title: 'Đối chiếu với Knowledge Base FDA', desc: 'Dữ liệu trích xuất được so sánh với cơ sở dữ liệu gồm 21 CFR, Warning Letters thực tế, Recalls và Import Alerts để phát hiện vi phạm và đề xuất cách sửa.' },
+    ],
+    imageTypesTitle: '4 loại ảnh cần upload',
+    imageTypesDesc: 'Hệ thống chia nhãn thành 4 khu vực. Mỗi khu vực phục vụ mục đích phân tích khác nhau.',
+    mustHaveLabel: 'Ảnh phải có đủ',
+    avoidLabel: 'Tránh những lỗi này',
+    imageTypes: [
+      {
+        id: 'pdp', label: 'Mặt trước (PDP)', subtitle: 'Principal Display Panel', badge: 'Bắt buộc',
+        description: 'Mặt chính của bao bì sản phẩm, phần người tiêu dùng nhìn thấy đầu tiên khi mua hàng.',
+        mustHave: ['Tên thương hiệu (Brand Name) rõ ràng', 'Tên sản phẩm (Product Name)', 'Khối lượng tịnh / Net Weight — ví dụ: "Net Wt 2 oz (56g)"', 'Toàn bộ mặt trước, không bị che khuất'],
+        avoid: ['Ảnh chụp nghiêng, méo hoặc cong', 'Góc chụp cắt mất phần Net Weight', 'Ảnh bị bóng sáng chói lên chữ'],
+        tip: 'AI dùng ảnh này để xác định Brand Name, Product Name và Net Quantity Statement — 3 yếu tố bắt buộc theo 21 CFR 101.105.',
+      },
+      {
+        id: 'nutrition', label: 'Bảng Nutrition Facts', subtitle: 'Nutrition Facts Panel', badge: 'Bắt buộc',
+        description: 'Bảng thông tin dinh dưỡng tiêu chuẩn FDA — toàn bộ bảng phải hiển thị đầy đủ trong 1 ảnh.',
+        mustHave: ['Toàn bộ bảng Nutrition Facts từ đầu đến cuối', 'Chữ phải đủ sắc nét để đọc được từng con số', 'Serving Size, Calories, tất cả dòng dinh dưỡng đều trong khung hình', 'Không bị che bởi tay, nhãn phụ, hoặc băng keo'],
+        avoid: ['Chụp cận quá, cắt mất dòng đầu hoặc cuối bảng', 'Ảnh mờ khiến số bị nhòe (AI sẽ đọc sai giá trị)', 'Bảng bị nhăn, gấp khiến chữ cong'],
+        tip: 'AI đọc từng con số trong bảng bằng OCR. Nếu ảnh mờ hoặc cắt mất dòng, giá trị dinh dưỡng sẽ bị trích xuất sai → kết quả phân tích không chính xác.',
+      },
+      {
+        id: 'ingredients', label: 'Thành phần & Allergens', subtitle: 'Ingredient List + Allergen Statement', badge: 'Khuyến nghị',
+        description: 'Danh sách thành phần và cảnh báo dị ứng. Upload để AI kiểm tra đầy đủ 9 allergen bắt buộc theo FALCPA.',
+        mustHave: ['Toàn bộ danh sách Ingredients (tất cả các dòng)', 'Phần "Contains:" hoặc "Allergen warning" nếu có', 'Chữ đủ rõ để AI nhận diện từng thành phần'],
+        avoid: ['Chỉ chụp một phần danh sách (AI sẽ bỏ sót thành phần cuối)', 'Ảnh quá tối hoặc contrast thấp'],
+        tip: 'Nếu Ingredient List nằm chung bảng Nutrition Facts, bạn không cần upload riêng — AI tự trích xuất từ ảnh Nutrition.',
+      },
+      {
+        id: 'other', label: 'Mặt khác', subtitle: 'Other Panels / Back / Side', badge: 'Tùy chọn',
+        description: 'Các mặt còn lại của bao bì có chứa health claims, warning statements hoặc thông tin bổ sung.',
+        mustHave: ['Mặt sau hoặc mặt bên nếu có health claims ("High in Protein", "Low Fat"...)', 'Phần "Supplement Facts" nếu là thực phẩm bổ sung', '"Drug Facts" panel nếu là OTC drug'],
+        avoid: ['Upload ảnh trùng lặp cùng một mặt nhiều lần'],
+        tip: 'Health claims như "Fat Free", "Low Sodium", "Excellent Source of..." đều được kiểm tra theo 21 CFR Part 101. Nếu có claims, nhất định phải upload mặt này.',
+      },
+    ],
+    qualityTitle: 'Tiêu chuẩn chất lượng ảnh',
+    qualityDesc: 'Áp dụng cho tất cả các loại ảnh upload lên hệ thống.',
+    doLabel: 'Nên làm',
+    dontLabel: 'Tránh làm',
+    doDont: [
+      { good: 'Ảnh chụp thẳng, vuông góc với bề mặt nhãn', bad: 'Ảnh chụp nghiêng, bị méo hình thang' },
+      { good: 'Ánh sáng đều, không có bóng đổ lên chữ', bad: 'Đèn flash chói tạo vùng sáng trắng trên bảng số' },
+      { good: 'Độ phân giải tối thiểu 800×800px', bad: 'Ảnh zoom từ xa, chữ bé hơn 1mm trên màn hình' },
+      { good: 'Toàn bộ mặt nhãn nằm trong khung hình', bad: 'Cạnh nhãn bị cắt mất góc' },
+      { good: 'Tên file không dấu, không khoảng trắng: label-front.jpg', bad: 'Tên file tiếng Việt có dấu: ảnh nhãn trước.jpg' },
+    ],
+    advancedTitle: 'Tùy chọn nâng cao để tăng độ chính xác',
+    advancedDesc: 'Những thông tin bổ sung này giúp AI áp dụng đúng bộ quy định cho sản phẩm của bạn.',
+    advancedTips: [
+      { title: 'Chọn đúng danh mục sản phẩm', desc: 'Vào "Tùy chọn nâng cao" và chọn đúng Product Category (Food, Beverage, Dietary Supplement, Cosmetic...). AI sẽ áp dụng bộ quy định FDA đúng với loại sản phẩm của bạn thay vì dùng mặc định.' },
+      { title: 'Nhập kích thước vật lý của nhãn', desc: 'Đo chiều rộng × chiều cao của bề mặt nhãn (cm) và nhập vào ô Kích thước vật lý. AI dùng thông tin này để kiểm tra font size có đạt chuẩn tối thiểu 21 CFR 101.105 hay không.' },
+      { title: 'Khai báo ngôn ngữ phụ', desc: 'Nếu nhãn có song ngữ (Anh + Việt), bật "Nhãn này có chữ ngoài tiếng Anh" và chọn ngôn ngữ. AI sẽ kiểm tra xem tất cả thông tin bắt buộc đã dịch đầy đủ chưa theo 21 CFR 101.15.' },
+      { title: 'Cách chụp ảnh chất lượng cao', desc: 'Đặt sản phẩm lên nền trắng, chụp bằng điện thoại ở chế độ ban ngày tự nhiên hoặc đèn trắng. Giữ điện thoại song song với mặt nhãn. Không dùng zoom số.' },
+    ],
+    mistakesTitle: 'Lỗi phổ biến khiến kết quả không chính xác',
+    mistakes: [
+      { issue: 'Upload 1 ảnh duy nhất chụp toàn bộ hộp sản phẩm', fix: 'Tách riêng từng mặt: mặt trước PDP và bảng Nutrition Facts phải là 2 ảnh riêng. AI phân tích tốt nhất khi mỗi ảnh chỉ chứa 1 loại thông tin.' },
+      { issue: 'Ảnh Nutrition Facts bị cắt mất dòng đầu hoặc dòng cuối', fix: 'Toàn bộ bảng từ dòng "Nutrition Facts" đến dòng cuối cùng (thường là Vitamin/Mineral) phải nằm trong một ảnh. Lùi máy ảnh ra xa hơn nếu cần.' },
+      { issue: 'Không upload ảnh Ingredients riêng khi ingredient list ở mặt khác bảng Nutrition', fix: 'Nếu danh sách thành phần nằm ở mặt sau hoặc mặt bên, upload thêm 1 ảnh phân loại "Thành phần & Allergens". Không upload = AI không kiểm tra được allergen.' },
+      { issue: 'Để mặc định không chọn Product Category', fix: 'Bật "Tùy chọn nâng cao" và chọn đúng danh mục. Beverage, Dietary Supplement, Infant Food đều có bộ quy định CFR riêng — AI sẽ kiểm tra sai nếu để mặc định.' },
+      { issue: 'Ảnh tên file có dấu tiếng Việt (ảnh nhãn.jpg)', fix: 'Đổi tên file về không dấu trước khi upload: label-front.jpg, nutrition-facts.jpg. Hệ thống đã tự xử lý nhưng để chắc chắn nên đổi tên từ trước.' },
+    ],
+    checklistTitle: 'Checklist trước khi nhấn Phân tích',
+    checklistItems: [
+      'Ảnh PDP (mặt trước) đã upload — thấy rõ Brand Name, Product Name, Net Weight',
+      'Ảnh Nutrition Facts đã upload — toàn bộ bảng nằm trong 1 ảnh, không bị cắt',
+      'Nếu Ingredients ở mặt riêng: đã upload ảnh "Thành phần & Allergens"',
+      'Nếu có Health Claims trên nhãn: đã upload ảnh "Mặt khác" chứa claims đó',
+      'Đã chọn đúng Product Category trong Tùy chọn nâng cao',
+      'Ảnh đủ sáng, không mờ, chữ đọc được rõ ràng',
+      'Nhãn song ngữ: đã bật và khai báo ngôn ngữ phụ',
+    ],
+    ctaStat: 'Upload đúng = Kết quả phân tích chính xác hơn đến 40%',
+    ctaTitle: 'Sẵn sàng kiểm tra nhãn?',
+    ctaDesc: 'Áp dụng hướng dẫn trên rồi bắt đầu upload nhãn để AI phân tích tuân thủ FDA.',
+    ctaButton: 'Bắt đầu kiểm tra nhãn',
+  },
+
   // ─── Dashboard ───────────────────────────────────────
   dashboard: {
     title: 'Tổng quan',
@@ -605,7 +699,7 @@ export const vi = {
     statusPendingPayment: 'Chờ thanh toán',
   },
 
-  // ─── Landing Page ────────────────────────────────────
+  // ─── Landing Page ────��───────────────────────────────
   landing: {
     heroBadge: 'FDA đã ban hành 5.346 Warning Letters & Recall trong 5 năm gần nhất',
     heroTitle: 'Lô hàng của bạn',

@@ -34,7 +34,7 @@ export function AppHeader({ email, isAdmin, showAuth = true }: AppHeaderProps) {
     { href: '/dashboard', label: t.nav.home,           icon: Home,       exact: true },
     { href: '/analyze',   label: t.nav.analyze,        icon: ScanLine,   exact: false },
     { href: '/history',   label: t.nav.history,        icon: History,    exact: false },
-    { href: '/guide',     label: 'Hướng dẫn',          icon: BookOpen,   exact: false },
+    { href: '/guide',     label: t.nav.guide,          icon: BookOpen,   exact: false },
     { href: '/settings',  label: t.nav.settings,       icon: Settings,   exact: false },
     ...(isAdmin
       ? [
