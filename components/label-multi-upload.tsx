@@ -164,7 +164,14 @@ export function LabelMultiUpload() {
       const uploadedUrls: { type: string; url: string }[] = []
       
       for (const image of images) {
-        const fileName = `${user.id}/${Date.now()}-${image.type}-${image.file.name}`
+        // Sanitize file name: remove accents, spaces, and special characters
+        const sanitizedName = image.file.name
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-zA-Z0-9._-]/g, '-')
+          .replace(/-+/g, '-')
+
+        const fileName = `${user.id}/${Date.now()}-${image.type}-${sanitizedName}`
         const { error: uploadError } = await supabase.storage
           .from('label-images')
           .upload(fileName, image.file)
