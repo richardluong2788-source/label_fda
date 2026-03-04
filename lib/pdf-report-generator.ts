@@ -676,7 +676,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: #1a1a2e; background: #ffffff; line-height: 1.6; font-size: 10pt; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; color: #1a1a2e; background: #ffffff; line-height: 1.6; font-size: 10pt; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
   
   /* Download bar */
   .download-bar { position: fixed; top: 0; left: 0; right: 0; background: #0f172a; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
@@ -688,90 +688,90 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   @media print { .download-bar { display: none !important; } .page-content-wrapper { padding-top: 0; } }
 
   /* Page layout */
-  .page { width: 210mm; min-height: auto; margin: 0 auto; padding: 0; background: white; }
-  @media print { body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .page { margin: 0; padding: 0; width: 100%; box-shadow: none; min-height: auto; } .page-break { page-break-before: always; } .no-break { page-break-inside: avoid; } .content-page { min-height: auto; } }
-  @page { size: A4; margin: 10mm; }
+  .page { width: 210mm; min-height: auto; margin: 0 auto; padding: 0; background: white; overflow: hidden; }
+  @media print { body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .page { margin: 0; padding: 0; width: 100%; box-shadow: none; min-height: auto; overflow: hidden; } .page-break { page-break-before: always; } .no-break { page-break-inside: avoid; } .content-page { min-height: auto; } }
+  @page { size: A4; margin: 12mm 15mm; }
 
   /* Cover page */
-  .cover-page { min-height: auto; display: flex; flex-direction: column; position: relative; background: #ffffff; color: #0f172a; padding: 20mm; overflow: hidden; }
+  .cover-page { min-height: auto; display: flex; flex-direction: column; position: relative; background: #ffffff; color: #0f172a; padding: 15mm 20mm; overflow: hidden; }
   .cover-accent { position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #1e40af 0%, #2563eb 40%, #3b82f6 70%, #60a5fa 100%); }
-  .cover-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0; margin-bottom: 40px; }
+  .cover-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 2px solid #e2e8f0; margin-bottom: 24px; }
   .cover-logo { display: flex; align-items: center; gap: 12px; }
   .cover-logo-icon { width: 48px; height: 48px; background: #1e40af; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; color: white; }
   .cover-logo-text { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: #0f172a; }
   .cover-logo-sub { font-size: 11px; color: #64748b; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; }
   .cover-badge { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 16px; font-size: 11px; color: #475569; font-weight: 600; }
-  .cover-title { font-size: 32px; font-weight: 800; line-height: 1.3; margin-bottom: 12px; letter-spacing: -0.5px; color: #0f172a; }
-  .cover-subtitle { font-size: 16px; color: #64748b; font-weight: 500; margin-bottom: 40px; }
-  .cover-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 40px; }
-  .cover-meta-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
-  .cover-meta-label { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
-  .cover-meta-value { font-size: 14px; font-weight: 600; color: #0f172a; }
-  .cover-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 9px; color: #64748b; }
+  .cover-title { font-size: 28px; font-weight: 800; line-height: 1.3; margin-bottom: 10px; letter-spacing: -0.5px; color: #0f172a; overflow-wrap: break-word; }
+  .cover-subtitle { font-size: 15px; color: #64748b; font-weight: 500; margin-bottom: 30px; overflow-wrap: break-word; }
+  .cover-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 30px; }
+  .cover-meta-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; overflow: hidden; }
+  .cover-meta-label { font-size: 8px; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
+  .cover-meta-value { font-size: 13px; font-weight: 600; color: #0f172a; overflow-wrap: break-word; }
+  .cover-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 8px; color: #64748b; }
 
   /* Content pages */
-  .content-page { padding: 15mm 20mm; min-height: auto; }
+  .content-page { padding: 12mm 18mm; min-height: auto; overflow: hidden; }
   .page-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0; margin-bottom: 24px; }
   .page-header-left { display: flex; align-items: center; gap: 8px; }
   .page-header-logo { width: 28px; height: 28px; background: #1e40af; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; color: white; }
   .page-header-brand { font-size: 12px; font-weight: 600; color: #334155; }
   .page-header-right { font-size: 9px; color: #94a3b8; text-align: right; }
-  .page-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 8px; color: #94a3b8; }
+  .page-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 7.5px; color: #94a3b8; }
 
   /* Sections */
-  .section { margin-bottom: 20px; }
-  .section-title { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 3px solid #1e40af; display: flex; align-items: center; gap: 8px; }
-  .section-number { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; background: #1e40af; color: white; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .section { margin-bottom: 16px; }
+  .section-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 14px; padding-bottom: 6px; border-bottom: 3px solid #1e40af; display: flex; align-items: center; gap: 8px; }
+  .section-number { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background: #1e40af; color: white; font-size: 10px; font-weight: 700; flex-shrink: 0; }
 
   /* Executive summary */
-  .exec-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 24px; }
-  .exec-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; text-align: center; }
-  .exec-card-value { font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
-  .exec-card-label { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+  .exec-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .exec-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; text-align: center; }
+  .exec-card-value { font-size: 24px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .exec-card-label { font-size: 8px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
 
   /* Risk section */
-  .risk-section { display: flex; gap: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
-  .risk-gauge { text-align: center; min-width: 120px; }
-  .risk-score-circle { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 28px; font-weight: 800; color: white; }
-  .risk-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-  .risk-details { flex: 1; }
-  .risk-details h4 { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #334155; }
-  .risk-details p { font-size: 10px; color: #64748b; margin-bottom: 6px; }
+  .risk-section { display: flex; gap: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+  .risk-gauge { text-align: center; min-width: 100px; }
+  .risk-score-circle { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 24px; font-weight: 800; color: white; }
+  .risk-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .risk-details { flex: 1; min-width: 0; }
+  .risk-details h4 { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #334155; }
+  .risk-details p { font-size: 9.5px; color: #64748b; margin-bottom: 6px; overflow-wrap: break-word; }
 
   /* Violation cards */
-  .violation-card { border: 1px solid; border-radius: 10px; padding: 18px; margin-bottom: 16px; page-break-inside: avoid; }
-  .violation-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
-  .violation-title { font-size: 13px; font-weight: 700; flex: 1; }
-  .severity-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 4px 10px; border-radius: 4px; white-space: nowrap; }
-  .violation-description { font-size: 10px; color: #334155; margin-bottom: 12px; line-height: 1.6; }
-  .violation-box { background: rgba(255,255,255,0.8); border-radius: 6px; padding: 12px; margin-bottom: 10px; }
+  .violation-card { border: 1px solid; border-radius: 10px; padding: 16px; margin-bottom: 14px; page-break-inside: avoid; overflow: hidden; }
+  .violation-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+  .violation-title { font-size: 12px; font-weight: 700; flex: 1; min-width: 0; overflow-wrap: break-word; }
+  .severity-badge { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 3px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+  .violation-description { font-size: 9.5px; color: #334155; margin-bottom: 10px; line-height: 1.6; overflow-wrap: break-word; word-break: break-word; }
+  .violation-box { background: rgba(255,255,255,0.8); border-radius: 6px; padding: 10px; margin-bottom: 8px; overflow: hidden; }
   .violation-box-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 4px; }
-  .violation-box-value { font-size: 10px; color: #1e293b; line-height: 1.5; }
-  .violation-meta { display: flex; gap: 16px; font-size: 9px; color: #64748b; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.06); }
+  .violation-box-value { font-size: 9.5px; color: #1e293b; line-height: 1.5; overflow-wrap: break-word; word-break: break-word; }
+  .violation-meta { display: flex; gap: 12px; font-size: 8px; color: #64748b; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.06); flex-wrap: wrap; }
 
   /* Tables */
-  .citations-table { width: 100%; border-collapse: collapse; font-size: 9px; margin-top: 8px; }
-  .citations-table th { background: #f1f5f9; padding: 8px 10px; text-align: left; font-weight: 600; color: #334155; border-bottom: 2px solid #e2e8f0; font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .citations-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; color: #475569; vertical-align: top; }
+  .citations-table { width: 100%; border-collapse: collapse; font-size: 8px; margin-top: 8px; table-layout: fixed; }
+  .citations-table th { background: #f1f5f9; padding: 6px 8px; text-align: left; font-weight: 600; color: #334155; border-bottom: 2px solid #e2e8f0; font-size: 7px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .citations-table td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; color: #475569; vertical-align: top; overflow-wrap: break-word; word-break: break-word; }
   .citations-table tr:nth-child(even) td { background: #fafbfc; }
-  .relevance-bar { display: inline-block; width: 40px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden; vertical-align: middle; margin-right: 4px; }
+  .relevance-bar { display: inline-block; width: 30px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden; vertical-align: middle; margin-right: 3px; }
   .relevance-bar-fill { height: 100%; background: #2563eb; border-radius: 2px; }
-  .info-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-  .info-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 10px; }
-  .info-table td:first-child { font-weight: 600; color: #64748b; width: 35%; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .info-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; table-layout: fixed; }
+  .info-table td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; font-size: 9.5px; overflow-wrap: break-word; word-break: break-word; }
+  .info-table td:first-child { font-weight: 600; color: #64748b; width: 32%; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.5px; }
 
   /* Callout boxes */
-  .expert-tip { background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 10px; font-size: 10px; color: #1e40af; line-height: 1.6; }
+  .expert-tip { background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; padding: 12px 14px; margin-bottom: 10px; font-size: 9.5px; color: #1e40af; line-height: 1.6; overflow-wrap: break-word; word-break: break-word; }
   .expert-tip-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #2563eb; margin-bottom: 4px; }
-  .port-warning { background: #FEF3C7; border: 1px solid #f59e0b; border-left: 4px solid #d97706; border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 10px; font-size: 10px; color: #92400e; line-height: 1.6; }
+  .port-warning { background: #FEF3C7; border: 1px solid #f59e0b; border-left: 4px solid #d97706; border-radius: 0 8px 8px 0; padding: 12px 14px; margin-bottom: 10px; font-size: 9.5px; color: #92400e; line-height: 1.6; overflow-wrap: break-word; word-break: break-word; }
   .port-warning-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #b45309; margin-bottom: 4px; }
-  .consequence-box { background: #FEF2F2; border: 2px solid #FCA5A5; border-radius: 10px; padding: 20px; margin-bottom: 24px; page-break-inside: avoid; }
-  .consequence-title { font-size: 11px; font-weight: 800; color: #991B1B; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-  .consequence-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-  .consequence-item { background: white; border: 1px solid #FECACA; border-radius: 8px; padding: 12px; text-align: center; }
-  .consequence-item-icon { font-size: 20px; margin-bottom: 6px; }
-  .consequence-item-title { font-size: 10px; font-weight: 700; color: #991B1B; margin-bottom: 4px; }
-  .consequence-item-desc { font-size: 8px; color: #64748b; line-height: 1.4; }
+  .consequence-box { background: #FEF2F2; border: 2px solid #FCA5A5; border-radius: 10px; padding: 16px; margin-bottom: 20px; page-break-inside: avoid; }
+  .consequence-title { font-size: 10px; font-weight: 800; color: #991B1B; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .consequence-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .consequence-item { background: white; border: 1px solid #FECACA; border-radius: 8px; padding: 10px; text-align: center; }
+  .consequence-item-icon { font-size: 18px; margin-bottom: 4px; }
+  .consequence-item-title { font-size: 9px; font-weight: 700; color: #991B1B; margin-bottom: 3px; }
+  .consequence-item-desc { font-size: 7.5px; color: #64748b; line-height: 1.4; }
 
   /* Health claims */
   .health-claim-tag { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 9px; font-weight: 600; margin: 2px 4px 2px 0; }
@@ -780,30 +780,30 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   .special-claim-tag { display: inline-block; background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; padding: 3px 10px; border-radius: 4px; font-size: 9px; font-weight: 600; margin: 2px 4px 2px 0; }
 
   /* Technical checks */
-  .tech-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
-  .tech-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; page-break-inside: avoid; width: 100%; }
-  .tech-card-title { font-size: 10px; font-weight: 700; color: #334155; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-  .tech-card-badge { font-size: 8px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: #f1f5f9; color: #64748b; }
-  .tech-item { padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 9px; }
+  .tech-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 14px; }
+  .tech-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; page-break-inside: avoid; width: 100%; overflow: hidden; }
+  .tech-card-title { font-size: 9.5px; font-weight: 700; color: #334155; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .tech-card-badge { font-size: 7.5px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #64748b; }
+  .tech-item { padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 8.5px; }
   .tech-item:last-child { border-bottom: none; }
-  .tech-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .tech-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
   .tech-item-type { font-weight: 600; color: #334155; text-transform: capitalize; }
-  .tech-item-desc { color: #64748b; line-height: 1.5; }
-  .tech-item-values { display: flex; gap: 12px; margin-top: 4px; font-size: 8px; }
+  .tech-item-desc { color: #64748b; line-height: 1.5; overflow-wrap: break-word; }
+  .tech-item-values { display: flex; gap: 10px; margin-top: 3px; font-size: 7.5px; }
   .color-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid #d1d5db; vertical-align: middle; margin-right: 4px; }
 
   /* Data boxes */
-  .data-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px; font-size: 10px; line-height: 1.6; color: #334155; }
-  .data-box-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #2563eb; margin-bottom: 8px; }
+  .data-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 14px; font-size: 9.5px; line-height: 1.6; color: #334155; overflow-wrap: break-word; word-break: break-word; overflow: hidden; }
+  .data-box-label { font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #2563eb; margin-bottom: 6px; }
 
   /* Signature */
-  .signature-section { margin-top: 40px; padding-top: 24px; border-top: 2px solid #e2e8f0; }
+  .signature-section { margin-top: 24px; padding-top: 16px; border-top: 2px solid #e2e8f0; }
   .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 16px; }
   .signature-box { border-top: 2px solid #334155; padding-top: 8px; }
   .signature-name { font-size: 11px; font-weight: 600; color: #334155; }
   .signature-title { font-size: 9px; color: #64748b; }
-  .disclaimer { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; font-size: 8px; color: #64748b; line-height: 1.6; margin-top: 24px; }
-  .disclaimer-title { font-size: 9px; font-weight: 700; color: #334155; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+  .disclaimer { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; font-size: 7.5px; color: #64748b; line-height: 1.6; margin-top: 20px; overflow-wrap: break-word; word-break: break-word; }
+  .disclaimer-title { font-size: 8px; font-weight: 700; color: #334155; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
 
   /* Verification */
   .verification-badge { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -853,11 +853,11 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     <div class="cover-badge">CONFIDENTIAL</div>
   </div>
 
-  <div style="margin-top: 20px;">
+  <div style="margin-top: 10px;">
     <div class="cover-title">${L.coverTitle}</div>
     <div class="cover-subtitle">${escapeHtml(report.product_name || L.defaultProduct)}</div>
 
-    <div class="cover-meta" style="margin-top: 32px;">
+    <div class="cover-meta" style="margin-top: 24px;">
       <div class="cover-meta-item">
         <div class="cover-meta-label">${L.reportId}</div>
         <div class="cover-meta-value">${escapeHtml(shortId)}</div>
@@ -877,40 +877,40 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     </div>
 
     <!-- Quick Summary -->
-    <div style="margin-top: 32px; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
-      <div style="font-size: 11px; font-weight: 700; color: #0f172a; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">${L.quickSummary}</div>
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px;">
+    <div style="margin-top: 24px; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+      <div style="font-size: 10px; font-weight: 700; color: #0f172a; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">${L.quickSummary}</div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px;">
         <div style="text-align: center;">
-          <div style="font-size: 24px; font-weight: 800; color: #dc2626;">${criticalCount}</div>
-          <div style="font-size: 9px; color: #64748b; text-transform: uppercase;">${L.critical}</div>
+          <div style="font-size: 20px; font-weight: 800; color: #dc2626;">${criticalCount}</div>
+          <div style="font-size: 8px; color: #64748b; text-transform: uppercase;">${L.critical}</div>
         </div>
         <div style="text-align: center;">
-          <div style="font-size: 24px; font-weight: 800; color: #f59e0b;">${warningCount}</div>
-          <div style="font-size: 9px; color: #64748b; text-transform: uppercase;">${L.warning}</div>
+          <div style="font-size: 20px; font-weight: 800; color: #f59e0b;">${warningCount}</div>
+          <div style="font-size: 8px; color: #64748b; text-transform: uppercase;">${L.warning}</div>
         </div>
         <div style="text-align: center;">
-          <div style="font-size: 24px; font-weight: 800; color: #2563eb;">${infoCount}</div>
-          <div style="font-size: 9px; color: #64748b; text-transform: uppercase;">${L.info}</div>
+          <div style="font-size: 20px; font-weight: 800; color: #2563eb;">${infoCount}</div>
+          <div style="font-size: 8px; color: #64748b; text-transform: uppercase;">${L.info}</div>
         </div>
         <div style="text-align: center;">
-          <div style="font-size: 24px; font-weight: 800; color: #6366f1;">${totalCitations}</div>
-          <div style="font-size: 9px; color: #64748b; text-transform: uppercase;">${L.cfrCitations}</div>
+          <div style="font-size: 20px; font-weight: 800; color: #6366f1;">${totalCitations}</div>
+          <div style="font-size: 8px; color: #64748b; text-transform: uppercase;">${L.cfrCitations}</div>
         </div>
       </div>
       ${sortedViolations.length > 0 ? `
-      <div style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
-        <div style="font-size: 9px; font-weight: 600; color: #64748b; margin-bottom: 8px; text-transform: uppercase;">${L.mainReasons}</div>
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 10px;">
+        <div style="font-size: 8px; font-weight: 600; color: #64748b; margin-bottom: 6px; text-transform: uppercase;">${L.mainReasons}</div>
         ${sortedViolations.slice(0, 3).map(v => `
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-          <span style="width: 6px; height: 6px; border-radius: 50%; background: ${v.severity === 'critical' ? '#dc2626' : v.severity === 'warning' ? '#f59e0b' : '#2563eb'};"></span>
-          <span style="font-size: 10px; color: #334155;">${escapeHtml(translateCategory(v.category, L))}</span>
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+          <span style="width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; background: ${v.severity === 'critical' ? '#dc2626' : v.severity === 'warning' ? '#f59e0b' : '#2563eb'};"></span>
+          <span style="font-size: 9px; color: #334155;">${escapeHtml(translateCategory(v.category, L))}</span>
         </div>`).join('')}
       </div>` : ''}
     </div>
 
     <!-- Table of Contents -->
-    <div style="margin-top: 24px; padding: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;">
-      <div style="font-size: 11px; font-weight: 700; color: #0f172a; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">${L.tableOfContents}</div>
+    <div style="margin-top: 20px; padding: 14px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;">
+      <div style="font-size: 10px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">${L.tableOfContents}</div>
       ${tocEntries.map(e => `
       <div class="toc-entry">
         <span class="toc-num">${e.num}</span>
@@ -962,7 +962,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     </div>
 
     <!-- Confidence Metrics -->
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:24px;">
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:20px;">
       <div style="font-size:10px;font-weight:700;color:#334155;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">${L.confidenceMetrics}</div>
       ${confidenceBar(L.ocrConfidence, report.ocr_confidence)}
       ${confidenceBar(L.extractionConfidence, report.extraction_confidence)}
@@ -1027,8 +1027,8 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   <!-- Allergen Declaration -->
   ${report.allergen_declaration ? `
   <div class="section">
-    <div style="font-size:11px;font-weight:700;color:#92400E;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.allergenDeclaration}</div>
-    <div style="background: #FEF3C7; border: 1px solid #FBBF24; border-radius: 8px; padding: 14px; font-size: 10px; color: #92400E;">
+    <div style="font-size:10px;font-weight:700;color:#92400E;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.allergenDeclaration}</div>
+    <div style="background: #FEF3C7; border: 1px solid #FBBF24; border-radius: 8px; padding: 12px; font-size: 9.5px; color: #92400E; overflow-wrap: break-word;">
       <strong>${L.allergens}:</strong> ${escapeHtml(report.allergen_declaration)}
     </div>
   </div>` : ''}
@@ -1036,9 +1036,8 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   <!-- Health Claims -->
   ${healthClaims && healthClaims.length > 0 ? `
   <div class="section">
-    <div style="font-size:11px;font-weight:700;color:#991B1B;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.healthClaims}</div>
-    <div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;padding:14px;">
-      ${healthClaims.map((claim: string) => {
+    <div style="font-size:10px;font-weight:700;color:#991B1B;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.healthClaims}</div>
+    <div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;padding:12px;overflow-wrap:break-word;">${healthClaims.map((claim: string) => {
         const isDanger = /prevent|cure|treat|disease|diagnos/i.test(claim)
         return `<span class="health-claim-tag ${isDanger ? 'health-claim-danger' : 'health-claim-normal'}">${isDanger ? '&#9888; ' : ''}${escapeHtml(claim)}</span>`
       }).join('')}
@@ -1050,7 +1049,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   <!-- Special Claims -->
   ${specialClaims.length > 0 ? `
   <div class="section">
-    <div style="font-size:11px;font-weight:700;color:#1E40AF;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.specialClaims}</div>
+    <div style="font-size:10px;font-weight:700;color:#1E40AF;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.specialClaims}</div>
     <div style="padding:4px 0;">
       ${specialClaims.map((claim: string) => `<span class="special-claim-tag">${escapeHtml(claim)}</span>`).join('')}
     </div>
@@ -1058,8 +1057,8 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   <!-- Ingredient List -->
   ${report.ingredient_list ? `
-  <div class="section no-break">
-    <div style="font-size:11px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.ingredientList}</div>
+  <div class="section">
+    <div style="font-size:10px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.ingredientList}</div>
     <div class="data-box">
       <div class="data-box-label">${L.ingredientDetected}</div>
       ${escapeHtml(report.ingredient_list)}
@@ -1068,8 +1067,8 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   <!-- Nutrition Facts -->
   ${report.nutrition_facts && !isCosmetic ? `
-  <div class="section no-break">
-    <div style="font-size:11px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.nutritionInfo}</div>
+  <div class="section">
+    <div style="font-size:10px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.nutritionInfo}</div>
     <div class="data-box">
       <div class="data-box-label">${L.nutritionDetected}</div>
       <table class="info-table" style="margin: 0;">
@@ -1124,7 +1123,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
         ${v.regulation_reference ? `
         <div class="violation-box" style="border-left: 3px solid ${colors.border};">
           <div class="violation-box-label">${L.legalBasis}</div>
-          <div class="violation-box-value" style="font-family: monospace; color: #2563eb;">${escapeHtml(v.regulation_reference)}</div>
+          <div class="violation-box-value" style="font-family: monospace; color: #2563eb; font-size: 9px; overflow-wrap: break-word;">${escapeHtml(v.regulation_reference)}</div>
           ${v.legal_basis ? `<div class="violation-box-value" style="margin-top: 4px;">${escapeHtml(v.legal_basis)}</div>` : ''}
         </div>` : ''}
         ${v.suggested_fix ? `
@@ -1144,14 +1143,20 @@ export function generatePDFReportHTML(data: PDFReportData): string {
           ${v.citations?.length ? `<span>${L.citationsLabel}: ${v.citations.length}</span>` : ''}
         </div>
         ${v.citations && v.citations.length > 0 ? `
-        <table class="citations-table" style="margin-top: 12px;">
+        <table class="citations-table" style="margin-top: 10px; table-layout: fixed; width: 100%;">
+          <colgroup>
+            <col style="width:18%;" />
+            <col style="width:48%;" />
+            <col style="width:18%;" />
+            <col style="width:16%;" />
+          </colgroup>
           <thead><tr><th>${L.cfrSection}</th><th>${L.citationContent}</th><th>${L.source}</th><th>${L.relevance}</th></tr></thead>
           <tbody>
             ${v.citations.map((c: Citation) => `
             <tr>
-              <td style="font-family: monospace; white-space: nowrap;">${escapeHtml(c.section)}</td>
-              <td>${escapeHtml(c.text.slice(0, 200))}${c.text.length > 200 ? '...' : ''}</td>
-              <td>${escapeHtml(c.source)}</td>
+              <td style="font-family: monospace; font-size: 7.5px; overflow-wrap: break-word;">${escapeHtml(c.section)}</td>
+              <td style="overflow-wrap: break-word; word-break: break-word;">${escapeHtml(c.text.slice(0, 150))}${c.text.length > 150 ? '...' : ''}</td>
+              <td style="overflow-wrap: break-word;">${escapeHtml(c.source)}</td>
               <td><span class="relevance-bar"><span class="relevance-bar-fill" style="width: ${Math.round(c.relevance_score * 100)}%"></span></span>${Math.round(c.relevance_score * 100)}%</td>
             </tr>`).join('')}
           </tbody>
@@ -1280,7 +1285,7 @@ ${report.commercial_summary ? `
   ${pageHeader(L, shortId, dateFormatted)}
   <div class="section">
     <div class="section-title"><span class="section-number">${secCommercial}</span>${L.commercialSummary}</div>
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px;">
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;overflow-wrap:break-word;word-break:break-word;">
       ${markdownToHtml(report.commercial_summary)}
     </div>
   </div>
@@ -1345,7 +1350,14 @@ ${report.commercial_summary ? `
   <!-- Action Items -->
   <div class="section">
     <div class="section-title"><span class="section-number">${secAction}</span>${L.actionItems}</div>
-    <table class="citations-table">
+    <table class="citations-table" style="table-layout:fixed;width:100%;">
+      <colgroup>
+        <col style="width:5%;" />
+        <col style="width:10%;" />
+        <col style="width:12%;" />
+        <col style="width:20%;" />
+        <col style="width:53%;" />
+      </colgroup>
       <thead><tr><th>#</th><th>${L.actionPriority}</th><th>${L.actionSeverity}</th><th>${L.actionIssue}</th><th>${L.actionRequired}</th></tr></thead>
       <tbody>
         ${sortedViolations.map((v, i) => {
@@ -1357,8 +1369,8 @@ ${report.commercial_summary ? `
           <td style="font-weight:600;">${i + 1}</td>
           <td><span style="font-size:7px;font-weight:700;color:${priorityColor};text-transform:uppercase;">${priority}</span></td>
           <td><span class="severity-badge" style="background: ${getSeverityColor(v.severity).text}; color: white; font-size: 7px; padding: 2px 6px;">${getSeverityLabel(v.severity, L)}</span></td>
-          <td>${escapeHtml(translateCategory(v.category, L))}</td>
-          <td>${escapeHtml((v.suggested_fix || L.seeDetails).slice(0, 120))}${(v.suggested_fix || '').length > 120 ? '...' : ''}</td>
+          <td style="overflow-wrap:break-word;word-break:break-word;">${escapeHtml(translateCategory(v.category, L))}</td>
+          <td style="overflow-wrap:break-word;word-break:break-word;">${escapeHtml((v.suggested_fix || L.seeDetails).slice(0, 100))}${(v.suggested_fix || '').length > 100 ? '...' : ''}</td>
         </tr>`
         }).join('')}
       </tbody>
@@ -1366,7 +1378,7 @@ ${report.commercial_summary ? `
   </div>
 
   <!-- Verification Status -->
-  <div style="display: flex; justify-content: center; margin: 20px 0;">
+  <div style="display: flex; justify-content: center; margin: 14px 0;">
     ${report.status === 'verified'
       ? `<div class="verification-badge verified"><span style="font-size: 14px;">&#10003;</span>${L.reportVerified}</div>`
       : `<div class="verification-badge pending"><span style="font-size: 14px;">&#9888;</span>${L.pendingVerification}</div>`
@@ -1374,20 +1386,20 @@ ${report.commercial_summary ? `
   </div>
 
   ${report.status !== 'verified' ? `
-  <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 40%, #2563eb 100%); border-radius: 12px; padding: 24px; margin: 24px 0; color: white; text-align: center;">
-    <div style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">${L.upgradeTitle}</div>
-    <div style="font-size: 11px; opacity: 0.9; margin-bottom: 16px; line-height: 1.6;">${L.upgradeDesc}<br/>${L.upgradeDesc2}</div>
-    <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
-      <a href="https://vexim.global/pricing" style="display: inline-block; background: white; color: #1e40af; padding: 12px 24px; border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none;">${L.requestVerification}</a>
-      <a href="mailto:support@vexim.global" style="display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 12px 24px; border-radius: 8px; font-size: 12px; font-weight: 600; text-decoration: none; border: 1px solid rgba(255,255,255,0.3);">${L.contactConsulting}</a>
+  <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 40%, #2563eb 100%); border-radius: 12px; padding: 20px; margin: 16px 0; color: white; text-align: center;">
+    <div style="font-size: 14px; font-weight: 700; margin-bottom: 6px;">${L.upgradeTitle}</div>
+    <div style="font-size: 10px; opacity: 0.9; margin-bottom: 12px; line-height: 1.6;">${L.upgradeDesc}<br/>${L.upgradeDesc2}</div>
+    <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+      <a href="https://vexim.global/pricing" style="display: inline-block; background: white; color: #1e40af; padding: 10px 20px; border-radius: 8px; font-size: 11px; font-weight: 700; text-decoration: none;">${L.requestVerification}</a>
+      <a href="mailto:support@vexim.global" style="display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 10px 20px; border-radius: 8px; font-size: 11px; font-weight: 600; text-decoration: none; border: 1px solid rgba(255,255,255,0.3);">${L.contactConsulting}</a>
     </div>
-    <div style="margin-top: 12px; font-size: 10px; opacity: 0.8;">Hotline: +1 (555) 123-4567 | Email: support@vexim.global</div>
+    <div style="margin-top: 8px; font-size: 9px; opacity: 0.8;">Hotline: +1 (555) 123-4567 | Email: support@vexim.global</div>
   </div>` : ''}
 
   <!-- Signature Section -->
   <div class="signature-section">
-    <div style="font-size: 11px; font-weight: 600; color: #334155; margin-bottom: 4px;">${L.certification}</div>
-    <div style="font-size: 9px; color: #64748b; margin-bottom: 16px;">
+    <div style="font-size: 10px; font-weight: 600; color: #334155; margin-bottom: 4px;">${L.certification}</div>
+    <div style="font-size: 8px; color: #64748b; margin-bottom: 12px; overflow-wrap: break-word;">
       ${L.certificationDesc} ${report.status === 'verified' ? L.verifiedByExpert : L.pendingExpertVerification}.
       ${L.certificationDesc2}
     </div>
