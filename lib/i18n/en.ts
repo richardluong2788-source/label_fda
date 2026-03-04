@@ -700,16 +700,21 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
 
   // ─── Landing Page ────────────────────────────────────
   landing: {
-    heroBadge: 'FDA issued 5,346 Warning Letters & Recalls in the last 5 years',
-    heroTitle: 'Will your shipment',
-    heroTitleHighlight: 'pass FDA inspection?',
-    heroDesc1: '85% of Vietnamese businesses',
-    heroDesc2: ' exporting for the first time face detention due to labeling errors. Vexim cross-references your product label against ',
-    heroDesc3: '5,346 real FDA violations',
-    heroDesc4: ' - delivering results in ',
-    heroDesc5: '2 minutes',
-    heroDesc6: ', helping you catch errors before losing ',
-    heroDesc7: '$15,000-50,000 USD per shipment',
+    // Hero Badge: Focus on data authority
+    heroBadge: 'Cross-referenced with 5,346 Real-world FDA Violations',
+    
+    // Hero Title: Time vs. Money (Standard English marketing hook)
+    heroTitle: '2 Minute Label Check -',
+    heroTitleHighlight: 'Save $50,000 in Compliance Risks',
+    
+    // Description: Professional, clear, and punchy
+    heroDesc1: 'Are you certain your product labels are clear of ',
+    heroDesc2: 'FDA Warning Letters',
+    heroDesc3: '? Vexim AI automates complex compliance audits by cross-referencing ',
+    heroDesc4: '5,346 real-world violations',
+    heroDesc5: '. We uncover ',
+    heroDesc6: 'hidden non-compliance issues',
+    heroDesc7: ' that manual reviews miss, saving your business billions in detention and recall costs.',
     heroDesc8: '.',
     ctaCheckLabel: 'Check your label now',
     ctaViewCases: 'View real violation cases',

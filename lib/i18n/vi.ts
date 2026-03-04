@@ -701,16 +701,22 @@ export const vi = {
 
   // ─── Landing Page ────��───────────────────────────────
   landing: {
-    heroBadge: 'FDA đã ban hành 5.346 Warning Letters & Recall trong 5 năm gần nhất',
-    heroTitle: 'Lô hàng của bạn',
-    heroTitleHighlight: 'có vượt qua FDA không?',
-    heroDesc1: '85% doanh nghiệp Việt Nam',
-    heroDesc2: ' xuất khẩu lần đầu bị detention vì lỗi nhãn dán. Vexim đối chiếu nhãn sản phẩm với ',
-    heroDesc3: '5.346 vi phạm thực tế từ FDA',
-    heroDesc4: ' — trả kết quả trong ',
-    heroDesc5: '2 phút',
-    heroDesc6: ', giúp bạn phát hiện lỗi trước khi mất ',
-    heroDesc7: '15.000-50.000 USD mỗi lô hàng',
+landing: {
+    // Phần Badge nhỏ phía trên tiêu đề để tạo bằng chứng số liệu
+    heroBadge: 'Đối soát trực tiếp dữ liệu từ 5.346 vi phạm thực tế của FDA',
+    
+    // Tiêu đề chính: Ngắn gọn, đánh thẳng vào thời gian và tiền bạc
+    heroTitle: '2 Phút Kiểm Tra Nhãn Dán -',
+    heroTitleHighlight: 'Tiết Kiệm $50.000 Phí Rủi Ro',
+    
+    // Phần mô tả: Chia nhỏ để dễ dàng bôi đậm các ý quan trọng
+    heroDesc1: 'Bạn có chắc nhãn sản phẩm không nằm trong danh sách ',
+    heroDesc2: 'Warning Letters của FDA',
+    heroDesc3: '? Vexim AI tự động hóa quy trình thẩm định phức tạp bằng cách đối soát ',
+    heroDesc4: '5.346 vi phạm thực tế',
+    heroDesc5: '. Chúng tôi tìm thấy những ',
+    heroDesc6: 'lỗi mà mắt thường không thể thấy',
+    heroDesc7: ', giúp doanh nghiệp tiết kiệm hàng tỷ đồng phí lưu kho và thu hồi.',
     heroDesc8: '.',
     ctaCheckLabel: 'Kiểm tra nhãn của bạn ngay',
     ctaViewCases: 'Xem các trường hợp vi phạm thực tế',
