@@ -117,14 +117,31 @@ export function KnowledgeManagement({ userId, userRole, userEmail }: Props) {
 
   const loadEntries = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('compliance_knowledge')
-      .select('*')
-      .order('created_at', { ascending: false })
 
-    if (data) {
-      setEntries(data)
+    // Fetch all records in pages of 1000 (Supabase default limit) to avoid truncation
+    const PAGE_SIZE = 1000
+    let allData: any[] = []
+    let from = 0
+    let hasMore = true
+
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from('compliance_knowledge')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE_SIZE - 1)
+
+      if (error) break
+      if (data && data.length > 0) {
+        allData = [...allData, ...data]
+        from += PAGE_SIZE
+        hasMore = data.length === PAGE_SIZE
+      } else {
+        hasMore = false
+      }
     }
+
+    setEntries(allData)
     setLoading(false)
   }
 
