@@ -51,7 +51,7 @@ const CFR_PART_LABELS: Record<string, string> = {
 
 // All Parts Vexim needs — mirrors fetch-ecfr-to-json.mjs --all
 const ALL_VEXIM_PARTS = [
-  '1','7','101','102','111','112','117',
+  '1','7','101','102','111','112','117','123',
   '131','145','146','161','170','172','182','184',
   '700','701','710','720','740',
   '801','807','820',
