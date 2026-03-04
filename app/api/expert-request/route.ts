@@ -1,5 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import {
+  sendEmail,
+  ADMIN_EMAIL,
+  expertRequestConfirmTemplate,
+  adminNewExpertRequestTemplate,
+} from '@/lib/email'
 
 // GET: Lấy trạng thái request của 1 báo cáo
 export async function GET(request: Request) {
@@ -131,6 +137,40 @@ export async function POST(request: Request) {
         .eq('user_id', user.id)
         .eq('status', 'active')
     }
+
+    // ── EMAIL NOTIFICATIONS (fire-and-forget) ──────────────────────────────
+    // Lấy thêm thông tin cần thiết cho email
+    const { data: reportData } = await supabase
+      .from('audit_reports')
+      .select('product_name')
+      .eq('id', reportId)
+      .maybeSingle()
+
+    const productName = reportData?.product_name || 'Unknown Product'
+    const userLang = (body.lang as 'vi' | 'en') || 'en'
+
+    // 1. Xác nhận cho user
+    const confirmEmail = expertRequestConfirmTemplate({
+      email: user.email!,
+      productName,
+      requestId: newRequest.id,
+      isPaid,
+      lang: userLang,
+    })
+    sendEmail({ to: user.email!, subject: confirmEmail.subject, html: confirmEmail.html })
+
+    // 2. Alert cho admin
+    if (ADMIN_EMAIL) {
+      const adminEmail = adminNewExpertRequestTemplate({
+        userEmail: user.email!,
+        productName,
+        requestId: newRequest.id,
+        isPaid,
+        planId,
+      })
+      sendEmail({ to: ADMIN_EMAIL, subject: adminEmail.subject, html: adminEmail.html })
+    }
+    // ── END EMAIL NOTIFICATIONS ─────────────────────────────────────────────
 
     return NextResponse.json({ success: true, request: newRequest }, { status: 201 })
   } catch (error: any) {

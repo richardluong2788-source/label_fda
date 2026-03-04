@@ -1,5 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import {
+  sendEmail,
+  expertReviewCompleteTemplate,
+  expertReviewCancelledTemplate,
+} from '@/lib/email'
 
 // GET — Admin lấy danh sách requests
 export async function GET(request: Request) {
@@ -74,10 +79,10 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'request_id and action required' }, { status: 400 })
     }
 
-    // Lấy request hiện tại
+    // Lấy request hiện tại (kèm user_id và product info cho email)
     const { data: reviewReq, error: reqError } = await supabase
       .from('expert_review_requests')
-      .select('id, audit_report_id, status')
+      .select('id, audit_report_id, status, user_id')
       .eq('id', request_id)
       .single()
 
@@ -137,6 +142,34 @@ export async function PATCH(request: Request) {
         })
         .eq('id', reviewReq.audit_report_id)
 
+      // Send completion email to user (fire-and-forget)
+      if (reviewReq.user_id) {
+        const { data: reportInfo } = await supabase
+          .from('audit_reports')
+          .select('product_name')
+          .eq('id', reviewReq.audit_report_id)
+          .maybeSingle()
+
+        const { data: userInfo } = await supabase
+          .from('profiles')
+          .select('email, language')
+          .eq('id', reviewReq.user_id)
+          .maybeSingle()
+
+        if (userInfo?.email) {
+          const lang = (userInfo.language as 'vi' | 'en') || 'en'
+          const completeEmail = expertReviewCompleteTemplate({
+            email: userInfo.email,
+            productName: reportInfo?.product_name || 'Your Product',
+            reportId: reviewReq.audit_report_id,
+            expertName: signOffName,
+            expertSummary: expertSummary,
+            lang,
+          })
+          sendEmail({ to: userInfo.email, subject: completeEmail.subject, html: completeEmail.html })
+        }
+      }
+
       return NextResponse.json({ success: true, action: 'completed' })
     }
 
@@ -151,6 +184,31 @@ export async function PATCH(request: Request) {
         .from('audit_reports')
         .update({ expert_review_status: null })
         .eq('id', reviewReq.audit_report_id)
+
+      // Send cancellation email to user (fire-and-forget)
+      if (reviewReq.user_id) {
+        const { data: reportInfo } = await supabase
+          .from('audit_reports')
+          .select('product_name')
+          .eq('id', reviewReq.audit_report_id)
+          .maybeSingle()
+
+        const { data: userInfo } = await supabase
+          .from('profiles')
+          .select('email, language')
+          .eq('id', reviewReq.user_id)
+          .maybeSingle()
+
+        if (userInfo?.email) {
+          const lang = (userInfo.language as 'vi' | 'en') || 'en'
+          const cancelEmail = expertReviewCancelledTemplate({
+            email: userInfo.email,
+            productName: reportInfo?.product_name || 'Your Product',
+            lang,
+          })
+          sendEmail({ to: userInfo.email, subject: cancelEmail.subject, html: cancelEmail.html })
+        }
+      }
 
       return NextResponse.json({ success: true, action: 'cancelled' })
     }

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { sendEmail, lowCreditsTemplate } from '@/lib/email'
 import { NutritionValidator } from '@/lib/nutrition-validator'
 import { VisualGeometryAnalyzer } from '@/lib/visual-geometry-analyzer'
 import { DimensionConverter } from '@/lib/dimension-converter'
@@ -84,6 +85,29 @@ export async function POST(request: Request) {
           },
           { status: 402 }
         )
+      } else if (quotaData?.has_quota) {
+        // Gửi cảnh báo khi còn đúng 2 lượt (chỉ gửi 1 lần tại ngưỡng này)
+        const remaining = (quotaData.reports_limit - quotaData.reports_used) - 1 // -1 vì lượt này sắp dùng
+        if (remaining === 2) {
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('email, language')
+            .eq('id', user.id)
+            .maybeSingle()
+
+          if (userProfile?.email) {
+            const lang = (userProfile.language as 'vi' | 'en') || 'en'
+            const lowEmail = lowCreditsTemplate({
+              email: userProfile.email,
+              reportsUsed: quotaData.reports_used + 1,
+              reportsLimit: quotaData.reports_limit,
+              planName: quotaData.plan_name,
+              periodEnd: quotaData.period_end,
+              lang,
+            })
+            sendEmail({ to: userProfile.email, subject: lowEmail.subject, html: lowEmail.html })
+          }
+        }
       }
     }
     // ── END QUOTA ENFORCEMENT ───────────────────────────────────────────────────
