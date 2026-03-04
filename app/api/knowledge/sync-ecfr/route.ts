@@ -21,20 +21,8 @@ import {
 const ECFR_RENDERER_BASE = 'https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-21'
 const ECFR_VERSIONER_BASE = 'https://www.ecfr.gov/api/versioner/v1/versions/title-21'
 
-// 19 CFR (CBP) endpoints — used for import compliance parts (e.g. Part 134)
-const ECFR_19_RENDERER_BASE = 'https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-19'
-const ECFR_19_VERSIONER_BASE = 'https://www.ecfr.gov/api/versioner/v1/versions/title-19'
-
-// Map special part keys to their actual title + part number
-// Key format: "<title>_<part>" for non-21 CFR parts
-const SPECIAL_PART_MAP: Record<string, { title: string; part: string; rendererBase: string; versioner: string }> = {
-  '19_134': {
-    title: '19',
-    part:  '134',
-    rendererBase: ECFR_19_RENDERER_BASE,
-    versioner:    ECFR_19_VERSIONER_BASE,
-  },
-}
+// Map special part keys to their actual title + part number (reserved for future non-21 CFR parts)
+const SPECIAL_PART_MAP: Record<string, { title: string; part: string; rendererBase: string; versioner: string }> = {}
 
 // Vercel functions time out at 60s on hobby / 300s on pro.
 // We process one part at a time and stream progress via JSON lines.
@@ -77,12 +65,11 @@ export async function POST(request: Request) {
         for (const part of parts) {
           send({ type: 'start', part, message: `Dang xu ly Part ${part}...` })
 
-          // Resolve special parts (e.g. 19_134 → title-19, part=134)
+          // Resolve any special parts from SPECIAL_PART_MAP
           const specialPart = SPECIAL_PART_MAP[part]
           const actualPart    = specialPart ? specialPart.part  : part
           const rendererBase  = specialPart ? specialPart.rendererBase : ECFR_RENDERER_BASE
           const versionerBase = specialPart ? specialPart.versioner    : ECFR_VERSIONER_BASE
-          // Use actualPart for DB metadata filtering (stores "134", not "19_134")
           const dbPartKey = actualPart
 
           try {
@@ -151,8 +138,7 @@ export async function POST(request: Request) {
 
             const allChunks: Array<{ content: string; metadata: any }> = []
 
-            // For 19 CFR parts, use the special key (e.g. "19_134") so buildCorrectMetadata
-            // picks up the correct industry/category from CFR_PART_MAP
+            // Use the special key if provided so buildCorrectMetadata can look up the correct metadata
             const metadataPartKey = specialPart ? part : actualPart
 
             for (const sec of sections) {

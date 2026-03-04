@@ -16,8 +16,6 @@ import {
 } from 'lucide-react'
 // Human-readable labels — inlined to avoid circular/missing export during build
 const CFR_PART_LABELS: Record<string, string> = {
-  // 19 CFR — CBP / Customs
-  '19_134': 'Country of Origin Marking',
   // 21 CFR — FDA
   '1':   'Registration / Prior Notice / FSVP',
   '7':   'Recalls & Enforcement',
@@ -52,15 +50,8 @@ const CFR_PART_LABELS: Record<string, string> = {
   '820': 'Quality System Regulation',
 }
 
-// Source prefix for display — show "19 CFR" badge for customs parts
-const PART_SOURCE_PREFIX: Record<string, string> = {
-  '19_134': '19 CFR',
-}
-
 // All Parts Vexim needs — mirrors fetch-ecfr-to-json.mjs --all
 const ALL_VEXIM_PARTS = [
-  // 19 CFR (CBP)
-  '19_134',
   // 21 CFR (FDA)
   '1','7','101','102','111','112','117','123',
   '131','145','146','161','170','172','182','184',
@@ -332,10 +323,7 @@ export function EcfrSyncPanel({ onComplete }: Props) {
                     {/* Part info */}
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-semibold leading-none mb-0.5 flex items-center gap-1">
-                        {PART_SOURCE_PREFIX[part] && (
-                          <span className="text-[10px] bg-orange-100 text-orange-700 rounded px-1 py-0 font-normal leading-tight">{PART_SOURCE_PREFIX[part]}</span>
-                        )}
-                        Part {part === '19_134' ? '134' : part}
+                        Part {part}
                       </div>
                       <div className="text-xs text-muted-foreground truncate leading-tight">{label}</div>
                       {status?.state === 'done' && status.chunks !== undefined && (

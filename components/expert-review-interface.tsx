@@ -188,7 +188,7 @@ const FDA_CHECKLIST = [
   { id: 'manufacturer', label: 'Manufacturer/distributor info present', cfr: '21 CFR 101.5', hint: 'Name and address of manufacturer, packer, or distributor' },
   { id: 'warnings', label: 'Required warnings present (if applicable)', cfr: 'Various', hint: 'Juice HACCP, phenylalanine (aspartame), FD&C Yellow No. 5, sulfites' },
   { id: 'font_size', label: 'Font size minimums met', cfr: '21 CFR 101.2', hint: 'Minimum 1/16 inch for most text, varies by PDP area' },
-  { id: 'country_origin', label: 'Country of origin declared (if imported)', cfr: '19 CFR 134', hint: 'Required on all imported food products entering the US' },
+  { id: 'country_origin', label: 'Country of origin declared (if imported)', cfr: 'US Customs / COOL', hint: 'Required on all imported food products entering the US' },
 ]
 
 // ────────────────────────────────────────────────────────────
