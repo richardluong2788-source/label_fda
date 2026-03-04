@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   FileText, Home, Database, BarChart3, TrendingUp, Tag,
-  History, ScanLine, Settings, Menu,
+  History, ScanLine, Settings, Menu, BookOpen,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -34,6 +34,7 @@ export function AppHeader({ email, isAdmin, showAuth = true }: AppHeaderProps) {
     { href: '/dashboard', label: t.nav.home,           icon: Home,       exact: true },
     { href: '/analyze',   label: t.nav.analyze,        icon: ScanLine,   exact: false },
     { href: '/history',   label: t.nav.history,        icon: History,    exact: false },
+    { href: '/guide',     label: 'Hướng dẫn',          icon: BookOpen,   exact: false },
     { href: '/settings',  label: t.nav.settings,       icon: Settings,   exact: false },
     ...(isAdmin
       ? [
