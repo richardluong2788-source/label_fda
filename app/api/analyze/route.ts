@@ -803,16 +803,14 @@ export async function POST(request: Request) {
       console.log('[v0] Import alert risk signals added to violations')
     }
 
-    // COUNTRY OF ORIGIN CHECK (19 CFR Part 134)
-    // Hard rule: Every product imported into the US must declare its country of origin
-    // per 19 CFR 134.11. This is a CBP (Customs) requirement, separate from FDA.
-    // Check applies to ALL product categories — food, cosmetic, device, supplement.
-    console.log('[v0] Checking Country of Origin marking (19 CFR Part 134)...')
+    // ── COUNTRY OF ORIGIN CHECK (19 CFR Part 134) ────────────────────────────
+    // Hard rule: Every product imported into the US must declare its country of origin.
+    // CBP requirement — independent of FDA. Applies to ALL product categories.
+    // outer_carton gets stricter checks: §134.22 (container marking) + §134.46 (nearby geo names).
+    const isOuterCarton = packagingFormat === 'outer_carton'
     const allLabelText = visionResult.textElements.allText || ''
-    const allLabelTextLower = allLabelText.toLowerCase()
 
-    // Detect explicit COO patterns: "Made in X", "Product of X", "Country of Origin: X",
-    // "Produced in X", "Manufactured in X", "Imported from X", "Assembled in X"
+    // Detect explicit COO patterns
     const cooPatterns = [
       /made\s+in\b/i,
       /product\s+of\b/i,
@@ -825,30 +823,62 @@ export async function POST(request: Request) {
     ]
     const hasCooStatement = cooPatterns.some(pattern => pattern.test(allLabelText))
 
+    // Find 19 CFR citation from KB if Part 134 has been synced
+    const cooKbCitation = realCitations.find(c =>
+      (c.source || '').includes('19 CFR') ||
+      (c.regulation_id || '').includes('134')
+    )
+
     if (!hasCooStatement) {
-      // No COO found — flag as critical violation
-      // Citation from KB if 19 CFR Part 134 has been synced
-      const cooKbCitation = realCitations.find(c =>
-        (c.source || '').includes('19 CFR') ||
-        (c.regulation_id || '').includes('134')
-      )
-
-      violations.push({
-        category: 'Country of Origin Marking',
-        severity: 'critical' as const,
-        description:
-          'No Country of Origin (COO) statement detected on the label. Per 19 CFR §134.11 (CBP), every article of foreign origin imported into the United States must be legibly marked with the English name of its country of origin. Required format: "Made in [Country]", "Product of [Country]", or equivalent. Failure to mark COO may result in CBP detention, refusal of entry, and re-marking penalties.',
-        regulation_reference: '19 CFR §134.11',
-        suggested_fix:
-          'Add a clear Country of Origin statement in English, e.g., "Made in Vietnam" or "Product of [Country]". The marking must be conspicuous, legible, and permanent. See 19 CFR §134.14 for acceptable placement on containers.',
-        citations: cooKbCitation ? [cooKbCitation] : [],
-        confidence_score: 0.90,
-        source_type: 'cbp_regulation',
-      })
-
-      console.log('[v0] COO violation flagged — no "Made in" or equivalent found')
-    } else {
-      console.log('[v0] COO statement detected — 19 CFR 134.11 satisfied')
+      if (isOuterCarton) {
+        // Outer carton: §134.22 — this is the FIRST container CBP inspects at port
+        violations.push({
+          category: 'Country of Origin Marking',
+          severity: 'critical' as const,
+          description:
+            'No Country of Origin (COO) statement detected on the outer carton. Per 19 CFR §134.22 (CBP), the outermost container reaching customs must be marked with the English name of the country of origin. The outer shipping carton is the FIRST item CBP inspectors examine at the port of entry — missing COO here will result in immediate detention of the entire shipment, mandatory re-marking at importer\'s expense, and possible refusal of entry.',
+          regulation_reference: '19 CFR §134.22; 19 CFR §134.11',
+          suggested_fix:
+            'Print "Made in [Country]" or "Product of [Country]" prominently on the outside of the carton. Marking must be in English, legible, and permanent (not easily removable). Placement: typically bottom-left or near the distributor info block per §134.14.',
+          citations: cooKbCitation ? [cooKbCitation] : [],
+          confidence_score: 0.92,
+          source_type: 'cbp_regulation',
+        })
+      } else {
+        // Retail label / inner package: §134.11 standard requirement
+        violations.push({
+          category: 'Country of Origin Marking',
+          severity: 'critical' as const,
+          description:
+            'No Country of Origin (COO) statement detected on the label. Per 19 CFR §134.11 (CBP), every article of foreign origin imported into the United States must be legibly marked with the English name of its country of origin. Required format: "Made in [Country]", "Product of [Country]", or equivalent. Failure to mark COO may result in CBP detention, refusal of entry, and re-marking penalties.',
+          regulation_reference: '19 CFR §134.11',
+          suggested_fix:
+            'Add a clear Country of Origin statement in English, e.g., "Made in Vietnam" or "Product of [Country]". The marking must be conspicuous, legible, and permanent. See 19 CFR §134.14 for acceptable placement.',
+          citations: cooKbCitation ? [cooKbCitation] : [],
+          confidence_score: 0.90,
+          source_type: 'cbp_regulation',
+        })
+      }
+    } else if (isOuterCarton) {
+      // COO present on outer carton — also check §134.46:
+      // If any US geographic name appears (distributor address, city, state), COO must be nearby
+      const hasUsGeoName = /\b(USA|U\.S\.A\.|United States|California|New York|Texas|Florida|CA|NY|TX|FL|Chicago|Los Angeles|Seattle|Boston)\b/i.test(allLabelText)
+      if (hasUsGeoName) {
+        // Verify COO appears close to the US geo name (heuristic: both in same text block)
+        // Since we can't check spatial proximity from text alone, flag as warning for review
+        violations.push({
+          category: 'Country of Origin Marking',
+          severity: 'warning' as const,
+          description:
+            'A US geographic name or address was detected on the outer carton (e.g., distributor city/state). Per 19 CFR §134.46 (CBP), when a US place name appears on the label, the Country of Origin statement ("Made in [Country]") MUST appear in close proximity — in the same type size and with equal prominence — to avoid implying US origin.',
+          regulation_reference: '19 CFR §134.46',
+          suggested_fix:
+            'Ensure "Made in [Country]" appears immediately adjacent to, or on the same panel as, any US address or city name. Both must have the same font size. Example: "Distributed by XYZ Corp, Los Angeles, CA. Made in Vietnam."',
+          citations: cooKbCitation ? [cooKbCitation] : [],
+          confidence_score: 0.82,
+          source_type: 'cbp_regulation',
+        })
+      }
     }
     // ── END COUNTRY OF ORIGIN CHECK ────────────────────────────────────────
 
