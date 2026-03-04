@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { verifyCallbackSignature, decodeResponseCode } from '@/lib/vnpay'
+import { sendEmail, paymentSuccessTemplate } from '@/lib/email'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -126,8 +127,49 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ── PAYMENT CONFIRMATION EMAIL ──────────────────────────────────────────
+  if (success) {
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('email, language')
+      .eq('id', txn.user_id)
+      .maybeSingle()
+
+    if (userProfile?.email) {
+      const lang = (userProfile.language as 'vi' | 'en') || 'en'
+      const isAddonEmail = txn.transaction_type === 'addon_expert_review'
+
+      // Lấy tên gói
+      const { data: planData } = await supabase
+        .from('subscription_plans')
+        .select('name')
+        .eq('id', txn.plan_id)
+        .maybeSingle()
+
+      // Lấy period_end từ subscription
+      const { data: subData } = await supabase
+        .from('user_subscriptions')
+        .select('current_period_end')
+        .eq('user_id', txn.user_id)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      const paymentEmail = paymentSuccessTemplate({
+        email: userProfile.email,
+        planName: planData?.name || txn.plan_id,
+        amountVnd: Number(amountRaw) / 100,
+        txnRef,
+        periodEnd: subData?.current_period_end,
+        isAddon: isAddonEmail,
+        lang,
+      })
+      sendEmail({ to: userProfile.email, subject: paymentEmail.subject, html: paymentEmail.html })
+    }
+  }
+  // ── END PAYMENT EMAIL ────────────────────────────────────────────────────
+
   const isAddonPurchase = txn.transaction_type === 'addon_expert_review'
-  
+
   const params = new URLSearchParams({
     status:  success ? 'success' : 'failed',
     message: encodeURIComponent(message),

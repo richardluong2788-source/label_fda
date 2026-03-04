@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { gateway } from '@ai-sdk/gateway'
+import { createOpenAI } from '@ai-sdk/openai'
 import { generateText } from 'ai'
+
+const openai = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
 
 export const runtime = 'edge'
 
@@ -90,7 +94,7 @@ ${JSON.stringify(texts, null, 2)}
 Output (JSON array only):`
 
     const { text: response } = await generateText({
-      model: gateway('openai/gpt-4o-mini'),
+      model: openai('gpt-4o-mini'),
       prompt,
       temperature: 0.3, // Low temperature for consistent translations
       maxTokens: 4000,

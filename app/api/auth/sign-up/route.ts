@@ -4,6 +4,7 @@ import { validatePassword } from '@/lib/password-validation'
 import { isDisposableEmail } from '@/lib/disposable-email'
 import { verifyTurnstileToken } from '@/lib/turnstile'
 import { NextRequest, NextResponse } from 'next/server'
+import { sendEmail, welcomeEmailTemplate } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -139,6 +140,11 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Send welcome email (fire-and-forget — never block sign-up)
+    const lang = (body.lang as 'vi' | 'en') || 'en'
+    const { subject, html } = welcomeEmailTemplate({ email: normalizedEmail, lang })
+    sendEmail({ to: normalizedEmail, subject, html })
 
     return NextResponse.json({ success: true })
   } catch {

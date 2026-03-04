@@ -103,8 +103,15 @@ export function LabelUpload() {
         throw new Error('You must be logged in to upload files')
       }
 
+      // Sanitize file name: remove accents, spaces, and special characters
+      const sanitizedName = file.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9._-]/g, '-')
+        .replace(/-+/g, '-')
+
       // Upload to storage
-      const fileName = `${user.id}/${Date.now()}-${file.name}`
+      const fileName = `${user.id}/${Date.now()}-${sanitizedName}`
       const { error: uploadError } = await supabase.storage
         .from('label-images')
         .upload(fileName, file)
