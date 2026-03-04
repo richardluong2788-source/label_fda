@@ -68,8 +68,12 @@ export async function POST(request: Request) {
         .rpc('check_quota', { p_user_id: user.id })
 
       if (quotaError) {
-        console.error('[v0] Quota check failed:', quotaError.message)
-        // Fail open — không block user nếu quota check lỗi
+        console.error('Quota check failed:', quotaError.message)
+        // Fail closed — block user nếu quota check lỗi để tránh bypass
+        return NextResponse.json(
+          { error: 'quota_check_failed', message: 'Không thể kiểm tra quota. Vui lòng thử lại.' },
+          { status: 503 }
+        )
       } else if (quotaData && !quotaData.has_quota) {
         return NextResponse.json(
           {
