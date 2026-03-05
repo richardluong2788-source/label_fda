@@ -59,13 +59,18 @@ export class SmartCitationFormatter {
           `Hướng sửa đổi: Thay đổi giá trị từ ${v.detectedValue} thành ${v.requiredValue} theo quy tắc làm tròn FDA.`
       },
       net_weight: {
-        summary: (v: ViolationMapping) => `Phát hiện thiếu khai báo khối lượng tịnh (net weight)`,
-        legalBasis: (v: ViolationMapping, reg: KnowledgeSearchResult | null) => 
-          `Căn cứ theo ${v.regulationSection}, nhãn thực phẩm xuất khẩu Mỹ phải có cả đơn vị Metric và Imperial`,
+        summary: (v: ViolationMapping) => `Ph\u00e1t hi\u1ec7n thi\u1ebfu khai b\u00e1o kh\u1ed1i l\u01b0\u1ee3ng t\u1ecbnh (net weight)`,
+        legalBasis: (v: ViolationMapping, reg: KnowledgeSearchResult | null) => {
+          if (v.regulationSection.includes('701.13'))
+            return `C\u0103n c\u1ee9 theo ${v.regulationSection}, nh\u00e3n m\u1ef9 ph\u1ea9m ph\u00e2n ph\u1ed1i t\u1ea1i M\u1ef9 ph\u1ea3i c\u00f3 c\u1ea3 \u0111\u01a1n v\u1ecb Metric v\u00e0 Imperial`
+          if (v.regulationSection.includes('201.51'))
+            return `C\u0103n c\u1ee9 theo ${v.regulationSection}, nh\u00e3n d\u01b0\u1ee3c ph\u1ea9m OTC ph\u00e2n ph\u1ed1i t\u1ea1i M\u1ef9 ph\u1ea3i c\u00f3 c\u1ea3 \u0111\u01a1n v\u1ecb Metric v\u00e0 Imperial`
+          return `C\u0103n c\u1ee9 theo ${v.regulationSection}, nh\u00e3n th\u1ef1c ph\u1ea9m xu\u1ea5t kh\u1ea9u M\u1ef9 ph\u1ea3i c\u00f3 c\u1ea3 \u0111\u01a1n v\u1ecb Metric v\u00e0 Imperial`
+        },
         expertLogic: (v: ViolationMapping) => 
-          `Hệ thống phát hiện Net Weight hiện tại: "${v.detectedValue}". Theo quy định, bạn cần khai báo đồng thời cả hai đơn vị đo lường: Metric (g, ml) và Imperial (oz, fl oz). Ví dụ chuẩn: "Net Wt. 24 oz (680g)".`,
+          `H\u1ec7 th\u1ed1ng ph\u00e1t hi\u1ec7n Net Weight hi\u1ec7n t\u1ea1i: "${v.detectedValue}". Theo quy \u0111\u1ecbnh, b\u1ea1n c\u1ea7n khai b\u00e1o \u0111\u1ed3ng th\u1eddi c\u1ea3 hai \u0111\u01a1n v\u1ecb \u0111o l\u01b0\u1eddng: Metric (g, ml) v\u00e0 Imperial (oz, fl oz). V\u00ed d\u1ee5 chu\u1ea9n: "Net Wt. 24 oz (680g)".`,
         remediation: (v: ViolationMapping) => 
-          `Hướng sửa đổi: Thêm cả hai đơn vị đo lường. Ví dụ: nếu sản phẩm là 500g thì ghi "Net Wt. 17.6 oz (500g)".`
+          `H\u01b0\u1edbng s\u1eeda \u0111\u1ed5i: Th\u00eam c\u1ea3 hai \u0111\u01a1n v\u1ecb \u0111o l\u01b0\u1eddng. V\u00ed d\u1ee5: n\u1ebfu s\u1ea3n ph\u1ea9m l\u00e0 500g th\u00ec ghi "Net Wt. 17.6 oz (500g)".`
       },
       ingredient_order: {
         summary: (v: ViolationMapping) => {

@@ -616,7 +616,7 @@ export async function POST(request: Request) {
 
     // Contrast checking with REAL colors from AI vision
     console.log('[v0] Step 5: Checking color contrast with extracted colors...')
-    const contrastViolations = []
+    const contrastViolations: any[] = []
     
     // Check contrast for each text element with extracted colors
     const elementsToCheck = [
@@ -625,8 +625,27 @@ export async function POST(request: Request) {
       { name: 'Net Quantity', element: visionResult.textElements.netQuantity }
     ]
     
+    // Track unique color pairs to avoid duplicate contrast warnings
+    // When AI extracts the same fg/bg colors for multiple elements, show one combined warning
+    const seenColorPairs = new Set<string>()
+    
     for (const { name, element } of elementsToCheck) {
       if (element?.colors) {
+        // Deduplicate by color pair key
+        const pairKey = `${element.colors.foreground}/${element.colors.background}`.toLowerCase()
+        if (seenColorPairs.has(pairKey)) {
+          // Same color pair already checked — append element name to existing violation
+          const existing = contrastViolations.find(
+            cv => cv.colors?.foreground?.toLowerCase() === element.colors.foreground.toLowerCase() &&
+                  cv.colors?.background?.toLowerCase() === element.colors.background.toLowerCase()
+          )
+          if (existing) {
+            existing.description = existing.description.replace(/^([^:]+):/, `$1, ${name}:`)
+          }
+          continue
+        }
+        seenColorPairs.add(pairKey)
+        
         try {
           const foreground = ContrastChecker.hexToRgb(element.colors.foreground)
           const background = ContrastChecker.hexToRgb(element.colors.background)

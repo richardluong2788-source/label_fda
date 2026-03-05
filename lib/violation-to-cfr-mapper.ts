@@ -88,22 +88,34 @@ export class ViolationToCFRMapper {
 
   /**
    * Map net weight violations (dual declaration required)
+   * Domain-aware: food/supplement → 21 CFR 101.105, cosmetic → 21 CFR 701.13
    */
   static mapNetWeightViolation(
     netQuantityText: string,
-    regulation: KnowledgeSearchResult | null
+    regulation: KnowledgeSearchResult | null,
+    domain: ProductDomain = 'food'
   ): ViolationMapping | null {
-    const hasMetric = /\d+\s*(g|kg|ml|l)/i.test(netQuantityText)
-    const hasImperial = /\d+\s*(oz|lb|fl oz)/i.test(netQuantityText)
+    // Improved regex: handles parenthetical notation like "(6mL)", "(680g)", 
+    // optional spaces, and period-containing units like "FL. OZ."
+    const hasMetric = /\d+\.?\d*\s*(g|kg|ml|mL|l|L)\b/i.test(netQuantityText)
+    const hasImperial = /\d+\.?\d*\s*(oz|lb|lbs|fl\.?\s*oz)/i.test(netQuantityText)
 
     if (!hasMetric || !hasImperial) {
+      // Domain-aware CFR reference
+      const domainCfrMap: Record<ProductDomain, string> = {
+        food:       '21 CFR 101.105',
+        supplement: '21 CFR 101.105',
+        cosmetic:   '21 CFR 701.13',
+        drug_otc:   '21 CFR 201.51',
+        device:     '21 CFR 801',
+      }
       return {
         type: 'net_weight',
         severity: 'critical',
         detectedValue: netQuantityText,
         requiredValue: 'Both metric (g/ml) and imperial (oz/fl oz) units',
-        regulationSection: regulation?.regulation_id || '21 CFR 101.105',
-        logicCondition: '!hasMetric OR !hasImperial'
+        regulationSection: regulation?.regulation_id || domainCfrMap[domain] || '21 CFR 101.105',
+        logicCondition: `!hasMetric(${hasMetric}) OR !hasImperial(${hasImperial})`
       }
     }
 
@@ -312,10 +324,10 @@ export class ViolationToCFRMapper {
       }
     }
 
-    // Check net weight dual declaration
+    // Check net weight dual declaration (domain-aware CFR)
     const netQty = visionResult.textElements.netQuantity
     if (netQty) {
-      const violation = this.mapNetWeightViolation(netQty.text, netWeightReg || null)
+      const violation = this.mapNetWeightViolation(netQty.text, netWeightReg || null, domain)
       if (violation) violations.push(violation)
     }
 
