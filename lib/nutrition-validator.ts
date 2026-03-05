@@ -1,9 +1,20 @@
 import type { NutritionFact, NutritionValidationResult } from './types'
+import type { ProductDomain } from './packaging-format-config'
 
 /**
  * FDA Nutrition Facts Rounding Rules Validator
- * Implements 21 CFR 101.9(c) rounding requirements
+ * 
+ * IMPORTANT: Different product types have different regulations:
+ * - Conventional foods: 21 CFR 101.9(c) rounding rules apply
+ * - Infant formula: 21 CFR 107 applies - NO standard rounding rules
+ *   (Infant formula requires HIGHER precision as it's the sole nutrition source for infants)
+ * - Dietary supplements: 21 CFR 101.36 applies
+ * 
+ * Reference: 21 CFR 101.9, 21 CFR 107, Infant Formula Act (IFA)
  */
+
+// Product types exempt from 21 CFR 101.9(c) rounding rules
+const ROUNDING_EXEMPT_DOMAINS: ProductDomain[] = ['infant_formula', 'supplement']
 
 export class NutritionValidator {
   /**
@@ -75,10 +86,29 @@ export class NutritionValidator {
 
   /**
    * Comprehensive validation of nutrition facts
+   * 
+   * @param facts - Array of nutrition facts to validate
+   * @param productDomain - Product domain (e.g., 'food', 'infant_formula', 'supplement')
+   *                        Infant formula and supplements are EXEMPT from 21 CFR 101.9(c) rounding rules
    */
-  static validateNutritionFacts(facts: NutritionFact[]): NutritionValidationResult {
+  static validateNutritionFacts(
+    facts: NutritionFact[],
+    productDomain?: ProductDomain
+  ): NutritionValidationResult {
     const errors: string[] = []
     const warnings: string[] = []
+
+    // CRITICAL: Infant formula (21 CFR 107) and dietary supplements (21 CFR 101.36)
+    // are NOT subject to 21 CFR 101.9(c) rounding rules.
+    // Infant formula REQUIRES higher precision because it's the sole nutrition source for infants.
+    if (productDomain && ROUNDING_EXEMPT_DOMAINS.includes(productDomain)) {
+      // Return valid with no errors - these products use their own precision rules
+      return {
+        isValid: true,
+        errors: [],
+        warnings: [],
+      }
+    }
 
     for (const fact of facts) {
       const name = fact.name.toLowerCase()

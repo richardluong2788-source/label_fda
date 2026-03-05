@@ -5,13 +5,14 @@
  * Rules vary by PRODUCT DOMAIN (food, supplement, cosmetic) AND packaging tier.
  *
  * Supported domains:
- *   - food         -> 21 CFR Part 101 (Nutrition Facts, FALCPA allergens)
- *   - supplement   -> 21 CFR 101.36 / DSHEA (Supplement Facts, disclaimer)
- *   - cosmetic     -> 21 CFR 701/740 (INCI ingredient list, warnings)
- *   - drug_otc     -> 21 CFR 201 (Drug Facts - future)
- *   - device       -> 21 CFR 801 (UDI labeling - future)
+ *   - food           -> 21 CFR Part 101 (Nutrition Facts, FALCPA allergens)
+ *   - infant_formula -> 21 CFR 107 (Infant Formula Act - special precision rules)
+ *   - supplement     -> 21 CFR 101.36 / DSHEA (Supplement Facts, disclaimer)
+ *   - cosmetic       -> 21 CFR 701/740 (INCI ingredient list, warnings)
+ *   - drug_otc       -> 21 CFR 201 (Drug Facts - future)
+ *   - device         -> 21 CFR 801 (UDI labeling - future)
  *
- * Reference: 21 CFR 101, 21 CFR 101.36, 21 CFR 701, FDA CPG, FALCPA, MoCRA 2022
+ * Reference: 21 CFR 101, 21 CFR 101.36, 21 CFR 107, 21 CFR 701, FDA CPG, FALCPA, MoCRA 2022
  */
 
 // ============================================
@@ -20,7 +21,7 @@
 
 export type PackagingFormatId = 'outer_carton' | 'retail_box' | 'individual_unit' | 'multipack_wrapper' | 'single_package'
 
-export type ProductDomain = 'food' | 'supplement' | 'cosmetic' | 'drug_otc' | 'device'
+export type ProductDomain = 'food' | 'infant_formula' | 'supplement' | 'cosmetic' | 'drug_otc' | 'device'
 
 export interface PackagingFormatRule {
   minFontSize: number
@@ -536,26 +537,32 @@ export function mapProductTypeToDomain(productType?: string): ProductDomain {
   if (!productType) return 'food'
   
   const mapping: Record<string, ProductDomain> = {
-    'food': 'food',
-    'conventional-foods': 'food',
-    'beverage': 'food',
-    'infant_formula': 'food',
-    'medical_food': 'food',
-    'dietary_supplement': 'supplement',
-    'dietary-supplements': 'supplement',
-    'supplement': 'supplement',
-    'cosmetic': 'cosmetic',
-    'cosmetics': 'cosmetic',
-    'skincare': 'cosmetic',
-    'makeup': 'cosmetic',
-    'drug_otc': 'drug_otc',
-    'otc_drug': 'drug_otc',
-    'device': 'device',
-    'medical_device': 'device',
+  'food': 'food',
+  'conventional-foods': 'food',
+  'beverage': 'food',
+  // Infant formula has its own domain - regulated under 21 CFR 107, NOT 21 CFR 101.9
+  'infant_formula': 'infant_formula',
+  'infant-formula': 'infant_formula',
+  'infant_food': 'infant_formula', // Vision AI returns this for infant products
+  'baby_formula': 'infant_formula',
+  'baby_food': 'infant_formula',
+  'sữa công thức trẻ em': 'infant_formula',
+  'medical_food': 'food',
+  'dietary_supplement': 'supplement',
+  'dietary-supplements': 'supplement',
+  'supplement': 'supplement',
+  'cosmetic': 'cosmetic',
+  'cosmetics': 'cosmetic',
+  'skincare': 'cosmetic',
+  'makeup': 'cosmetic',
+  'drug_otc': 'drug_otc',
+  'otc_drug': 'drug_otc',
+  'device': 'device',
+  'medical_device': 'device',
   }
   
   return mapping[productType] || 'food'
-}
+  }
 
 // ============================================
 // CORE FUNCTIONS - DOMAIN-AWARE
