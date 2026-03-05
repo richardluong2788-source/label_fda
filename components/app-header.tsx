@@ -2,10 +2,9 @@
 
 import { useState } from 'react'
 import {
-  Home, Database, BarChart3, TrendingUp, Tag,
+  FileText, Home, Database, BarChart3, TrendingUp, Tag,
   History, ScanLine, Settings, Menu, BookOpen,
 } from 'lucide-react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -64,7 +63,9 @@ export function AppHeader({ email, isAdmin, showAuth = true }: AppHeaderProps) {
             <SheetContent side="left" className="w-72 p-0">
               <SheetHeader className="p-4 border-b">
                 <SheetTitle className="flex items-center gap-3">
-                  <Image src="/logo.png" alt="Vexim Compliance AI Logo" width={36} height={36} className="rounded-lg shrink-0" />
+                  <div className="rounded-lg bg-primary p-2">
+                    <FileText className="h-4 w-4 text-primary-foreground" />
+                  </div>
                   <div>
                     <div className="text-sm font-bold leading-tight">Vexim Compliance AI</div>
                     <div className="text-xs text-muted-foreground leading-tight">FDA Market - US</div>
@@ -121,7 +122,9 @@ export function AppHeader({ email, isAdmin, showAuth = true }: AppHeaderProps) {
 
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-3 shrink-0">
-            <Image src="/logo.png" alt="Vexim Compliance AI Logo" width={36} height={36} className="rounded-lg shrink-0" />
+            <div className="rounded-lg bg-primary p-2">
+              <FileText className="h-5 w-5 text-primary-foreground" />
+            </div>
             <div className="hidden sm:block">
               <h1 className="text-base font-bold leading-tight">Vexim Compliance AI</h1>
               <p className="text-xs text-muted-foreground leading-tight">FDA Market - US</p>
