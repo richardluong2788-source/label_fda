@@ -87,7 +87,7 @@ export interface AuditReport {
     metric_value?: number
     imperial_value?: number
   }
-  product_type?: 'food' | 'dietary_supplement' | 'beverage' | 'infant_formula' | 'medical_food'
+  product_type?: 'food' | 'dietary_supplement' | 'beverage' | 'infant_formula' | 'medical_food' | 'cosmetic' | 'drug_otc'
   target_audience?: 'adults' | 'children' | 'infants' | 'elderly'
   special_claims?: string[] // ['organic', 'non-GMO', 'gluten-free', etc.]
   manufacturer_info?: {
