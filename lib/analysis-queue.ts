@@ -77,6 +77,73 @@ export async function enqueueJob(params: {
   return data as QueueJob
 }
 
+// ── Claim Specific Job ───────────────────────────────────────
+
+/**
+ * Atomically claim a specific job by ID.
+ * Used when /submit fires-and-forgets with a known jobId to avoid race conditions.
+ * Returns null if the job doesn't exist, isn't queued, or has exhausted attempts.
+ */
+export async function claimSpecificJob(jobId: string): Promise<QueueJob | null> {
+  const supabase = createAdminClient()
+
+  // Check current concurrency first
+  const { count } = await supabase
+    .from('analysis_queue')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'processing')
+
+  if ((count ?? 0) >= MAX_CONCURRENT) {
+    console.log(`[queue] Concurrency cap reached (${count}/${MAX_CONCURRENT}). Cannot claim job ${jobId}.`)
+    return null
+  }
+
+  // Fetch the specific job
+  const { data: job } = await supabase
+    .from('analysis_queue')
+    .select('*')
+    .eq('id', jobId)
+    .maybeSingle()
+
+  if (!job) {
+    console.log(`[queue] Job ${jobId} not found`)
+    return null
+  }
+
+  // Check if already processing or completed
+  if (job.status !== 'queued') {
+    console.log(`[queue] Job ${jobId} is not queued (status: ${job.status})`)
+    return null
+  }
+
+  // Check attempts
+  if (job.attempts >= job.max_attempts) {
+    console.log(`[queue] Job ${jobId} has exhausted attempts (${job.attempts}/${job.max_attempts})`)
+    return null
+  }
+
+  // Atomically mark as processing
+  const { data: updated, error } = await supabase
+    .from('analysis_queue')
+    .update({
+      status:     'processing',
+      started_at: new Date().toISOString(),
+      attempts:   job.attempts + 1,
+    })
+    .eq('id', jobId)
+    .eq('status', 'queued') // guard against race condition
+    .select('*')
+    .maybeSingle()
+
+  if (error || !updated) {
+    console.log(`[queue] Failed to claim job ${jobId} - race condition or error:`, error?.message)
+    return null
+  }
+
+  console.log(`[queue] Successfully claimed specific job ${jobId}`)
+  return updated as QueueJob
+}
+
 // ── Dequeue (for /api/analyze/process) ──────────────────────
 
 /**
