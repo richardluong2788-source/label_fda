@@ -65,46 +65,49 @@ export function LabelImageGallery({
     <div className="space-y-3">
       {/* Main Image */}
       <div className="relative rounded-lg overflow-hidden bg-slate-100">
-        <img
-          src={activeImage.url || '/placeholder.svg'}
-          alt={`Label - ${typeConfig.label}`}
-          className="w-full h-auto"
-        />
+        {/* Fixed aspect-ratio container: prevents stretching/shrinking with different image sizes */}
+        <div className="relative w-full" style={{ paddingBottom: '75%' }}>
+          <img
+            src={activeImage.url || '/placeholder.svg'}
+            alt={`Label - ${typeConfig.label}`}
+            className="absolute inset-0 w-full h-full object-contain"
+          />
 
-        {/* Type Badge on active image */}
-        <div className="absolute top-3 left-3">
-          <Badge variant="outline" className={cn('text-xs font-medium border backdrop-blur-sm', typeConfig.color)}>
-            {typeConfig.label}
-          </Badge>
+          {/* Type Badge on active image */}
+          <div className="absolute top-3 left-3 z-10">
+            <Badge variant="outline" className={cn('text-xs font-medium border backdrop-blur-sm', typeConfig.color)}>
+              {typeConfig.label}
+            </Badge>
+          </div>
+
+          {/* Scanning overlay */}
+          {scanning && (
+            <>
+              <div
+                className="absolute inset-0 bg-gradient-to-b from-primary/20 via-transparent to-transparent pointer-events-none"
+                style={{
+                  top: `${scanPosition}%`,
+                  height: '20%',
+                  transition: 'top 0.03s linear',
+                }}
+              />
+              <div
+                className="absolute left-0 right-0 h-0.5 bg-primary shadow-lg shadow-primary/50 pointer-events-none"
+                style={{
+                  top: `${scanPosition}%`,
+                  transition: 'top 0.03s linear',
+                }}
+              />
+              {/* Scanning status badge */}
+              <div className="absolute top-3 right-3 z-10">
+                <Badge className="bg-primary/90 backdrop-blur-sm text-xs">
+                  <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                  {t.gallery.scanning}
+                </Badge>
+              </div>
+            </>
+          )}
         </div>
-
-        {/* Scanning overlay */}
-        {scanning && (
-          <>
-            <div
-              className="absolute inset-0 bg-gradient-to-b from-primary/20 via-transparent to-transparent pointer-events-none"
-              style={{
-                top: `${scanPosition}%`,
-                height: '20%',
-                transition: 'top 0.03s linear',
-              }}
-            />
-            <div
-              className="absolute left-0 right-0 h-0.5 bg-primary shadow-lg shadow-primary/50 pointer-events-none"
-              style={{
-                top: `${scanPosition}%`,
-                transition: 'top 0.03s linear',
-              }}
-            />
-            {/* Scanning status badge */}
-            <div className="absolute top-3 right-3">
-              <Badge className="bg-primary/90 backdrop-blur-sm text-xs">
-                <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                {t.gallery.scanning}
-              </Badge>
-            </div>
-          </>
-        )}
       </div>
 
       {/* Thumbnail Strip (only show when multiple images) */}
