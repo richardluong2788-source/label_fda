@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     // ===================================================================
 
     // 3a. Rate limit by IP: max 5 sign-ups per hour
-    const ipLimit = rateLimit(
+    const ipLimit = await rateLimit(
       `signup:ip:${ip}`,
       AUTH_RATE_LIMITS.signUpByIp
     )
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 3b. Rate limit by email: max 1 sign-up per day per email address
-    const emailLimit = rateLimit(
+    const emailLimit = await rateLimit(
       `signup:email:${normalizedEmail}`,
       AUTH_RATE_LIMITS.signUpByEmail
     )

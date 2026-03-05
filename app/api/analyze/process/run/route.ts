@@ -1,0 +1,604 @@
+import { createAdminClient } from '@/lib/supabase/admin'
+import { NextResponse } from 'next/server'
+import { updateJobProgress, completeJob } from '@/lib/analysis-queue'
+import { NutritionValidator } from '@/lib/nutrition-validator'
+import { VisualGeometryAnalyzer } from '@/lib/visual-geometry-analyzer'
+import { DimensionConverter } from '@/lib/dimension-converter'
+import { ContrastChecker } from '@/lib/contrast-checker'
+import { ClaimsValidator } from '@/lib/claims-validator'
+import { getRelevantContext, getWarningLetterContext, getRecallContext, getImportAlertContext } from '@/lib/embedding-utils'
+import { checkKnowledgeBaseStatus } from '@/lib/knowledge-base-check'
+import { analyzeLabel } from '@/lib/ai-vision-analyzer'
+import { ViolationToCFRMapper } from '@/lib/violation-to-cfr-mapper'
+import { SmartCitationFormatter } from '@/lib/smart-citation-formatter'
+import { getPackagingFormat, getResolvedRules, getExemptFields, buildPackagingFormatPrompt, canUseSimplifiedLabeling, getMinFontSize, mapProductTypeToDomain, type PackagingFormatId, type ProductDomain } from '@/lib/packaging-format-config'
+import type { Citation } from '@/lib/types'
+
+/**
+ * POST /api/analyze/process/run
+ * ──────────────────────────────
+ * Internal-only endpoint: performs the full Vision + RAG + GPT analysis
+ * for a queued job. Called exclusively by /api/analyze/process with a
+ * trusted x-process-token header.
+ *
+ * This route contains the same heavy logic as the original /api/analyze,
+ * but:
+ *  - It uses the admin Supabase client (no user cookie required)
+ *  - It reads job context from custom headers (user_id, report_id, job_id)
+ *  - It updates analysis_queue.progress at each step
+ */
+export const maxDuration = 300
+
+export async function POST(request: Request) {
+  // ── Internal auth guard ────────────────────────────────────
+  const processToken = request.headers.get('x-process-token') ?? ''
+  const expectedToken = process.env.PROCESS_SECRET_TOKEN ?? ''
+  if (expectedToken && processToken !== expectedToken) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const jobId      = request.headers.get('x-internal-job-id')      ?? ''
+  const userId     = request.headers.get('x-internal-user-id')     ?? ''
+  const reportId   = request.headers.get('x-internal-report-id')   ?? ''
+
+  if (!jobId || !userId || !reportId) {
+    return NextResponse.json({ error: 'Missing internal headers' }, { status: 400 })
+  }
+
+  const { phase = 'full', visionDataConfirmed = false } = await request.json().catch(() => ({}))
+
+  const supabase = createAdminClient()
+
+  try {
+    // ── Fetch report ───────────────────────────────────────────
+    const { data: report, error: reportError } = await supabase
+      .from('audit_reports')
+      .select('*')
+      .eq('id', reportId)
+      .single()
+
+    if (reportError || !report) {
+      return NextResponse.json({ error: 'Report not found' }, { status: 404 })
+    }
+
+    // ── Fetch user language ────────────────────────────────────
+    const { data: userLangProfile } = await supabase
+      .from('profiles')
+      .select('language')
+      .eq('id', userId)
+      .maybeSingle()
+    const userLang = (userLangProfile?.language as 'vi' | 'en') || 'en'
+
+    // ── Resolve packaging / domain ─────────────────────────────
+    const packagingFormat = report.packaging_format as PackagingFormatId | undefined
+    let productDomain: ProductDomain = mapProductTypeToDomain(report.product_type || report.product_category)
+
+    // ── Step 1: Vision analysis ────────────────────────────────
+    await updateJobProgress(jobId, 'Extracting text from image', 15)
+
+    let visionResult: any
+    let totalTokensUsed = 0
+    const isManualEntry = report.label_image_url === 'manual-entry'
+
+    if (isManualEntry) {
+      visionResult = {
+        nutritionFacts: report.nutrition_facts || [],
+        textElements: {
+          brandName:   { text: '', boundingBox: { confidence: 1.0 } },
+          productName: { text: '', boundingBox: { confidence: 1.0 } },
+          netQuantity: { text: '', boundingBox: { confidence: 1.0 } },
+          allText: `${report.ingredient_list || ''} ${report.allergen_declaration || ''}`,
+        },
+        detectedClaims: [],
+        ingredients: report.ingredient_list ? [report.ingredient_list] : [],
+        allergens: report.allergen_declaration ? report.allergen_declaration.split(',').map((a: string) => a.trim()) : [],
+        warnings: [],
+        detectedLanguages: ['English'],
+        tokensUsed: 0,
+        overallConfidence: 1.0,
+      }
+    } else {
+      try {
+        const labelImages = report.label_images || [{ type: 'main', url: report.label_image_url }]
+        const packagingFormatCtx = packagingFormat ? buildPackagingFormatPrompt(packagingFormat, productDomain) : undefined
+
+        const visionResults = await Promise.all(
+          labelImages.map(async (img: { type: string; url: string }) => {
+            const result = await analyzeLabel(img.url, packagingFormatCtx)
+            return { type: img.type, result }
+          })
+        )
+
+        const imageAnalyses: any = {}
+        for (const { type, result } of visionResults) {
+          imageAnalyses[type] = result
+          totalTokensUsed += result.tokensUsed
+        }
+
+        const pdpData         = imageAnalyses.pdp || imageAnalyses.main || {}
+        const nutritionData   = imageAnalyses.nutrition || imageAnalyses.supplementFacts || imageAnalyses.drugFacts || imageAnalyses.main || {}
+        const ingredientsData = imageAnalyses.ingredients || imageAnalyses.inciIngredients || imageAnalyses.main || {}
+        const supplementData  = imageAnalyses.supplementFacts || {}
+        const drugData        = imageAnalyses.drugFacts || {}
+        const inciData        = imageAnalyses.inciIngredients || {}
+
+        visionResult = {
+          nutritionFacts: nutritionData.nutritionFacts || pdpData.nutritionFacts || [],
+          textElements: {
+            brandName:   pdpData.textElements?.brandName   || { text: '', boundingBox: { confidence: 0 } },
+            productName: pdpData.textElements?.productName || { text: '', boundingBox: { confidence: 0 } },
+            netQuantity: pdpData.textElements?.netQuantity || { text: '', boundingBox: { confidence: 0 } },
+            allText: [
+              pdpData.textElements?.allText,
+              nutritionData.textElements?.allText,
+              ingredientsData.textElements?.allText,
+              supplementData.textElements?.allText,
+              drugData.textElements?.allText,
+              inciData.textElements?.allText,
+            ].filter(Boolean).join(' '),
+          },
+          detectedClaims:    [...(pdpData.detectedClaims || []), ...(nutritionData.detectedClaims || [])],
+          ingredients:       ingredientsData.ingredients || inciData.ingredients || pdpData.ingredients || [],
+          allergens:         ingredientsData.allergens || pdpData.allergens || [],
+          warnings:          [...(pdpData.warnings || []), ...(nutritionData.warnings || []), ...(ingredientsData.warnings || []), ...(drugData.warnings || [])],
+          detectedLanguages: pdpData.detectedLanguages || ['English'],
+          tokensUsed:        totalTokensUsed,
+          overallConfidence: Math.max(pdpData.overallConfidence || 0, nutritionData.overallConfidence || 0, ingredientsData.overallConfidence || 0),
+          validationWarnings: [
+            ...(pdpData.validationWarnings || []).map((w: string) => `[PDP] ${w}`),
+            ...(nutritionData.validationWarnings || []).map((w: string) => `[Nutrition] ${w}`),
+            ...(ingredientsData.validationWarnings || []).map((w: string) => `[Ingredients] ${w}`),
+          ].filter(Boolean),
+        }
+
+        totalTokensUsed = visionResult.tokensUsed
+
+        // Auto-detect product domain from vision
+        const userChoseProductType = !!(report.product_type || report.product_category)
+        const allTextLow = visionResult.textElements.allText?.toLowerCase() || ''
+        if (!userChoseProductType) {
+          const isInfantFormula = allTextLow.includes('infant formula') || (allTextLow.includes('infant') && allTextLow.includes('formula'))
+          if (isInfantFormula) { (productDomain as any) = 'infant_formula' }
+          else if (allTextLow.includes('drug facts') || allTextLow.includes('active ingredient')) { (productDomain as any) = 'drug_otc' }
+          else if (allTextLow.includes('supplement facts')) { (productDomain as any) = 'supplement' }
+          else if (!allTextLow.includes('nutrition facts') && !allTextLow.includes('calories') && allTextLow.includes('inci')) { (productDomain as any) = 'cosmetic' }
+        }
+      } catch (error: any) {
+        const isValidationError = error.isValidationError === true
+        await supabase
+          .from('audit_reports')
+          .update({ status: 'error', error_message: `AI analysis failed: ${error.message}` })
+          .eq('id', reportId)
+        return NextResponse.json({
+          error: isValidationError ? 'vision_validation_failed' : 'vision_system_error',
+          message: error.message,
+        }, { status: isValidationError ? 422 : 503 })
+      }
+    }
+
+    // ── Step 2: Knowledge base + RAG ───────────────────────────
+    await updateJobProgress(jobId, 'Searching regulatory database (RAG)', 30)
+
+    const kbStatus = await checkKnowledgeBaseStatus()
+    if (!kbStatus.available) {
+      await supabase.from('audit_reports').update({ status: 'kb_unavailable' }).eq('id', reportId)
+      return NextResponse.json({ error: 'knowledge_base_empty' }, { status: 503 })
+    }
+
+    const productCategory = report.product_category || report.product_type || productDomain || 'food'
+    const labelText = visionResult.textElements.allText
+    const manufacturerInfo = report.manufacturer_info || {}
+
+    const [regulatoryContext, warningLetterContext, recallContext, importAlertContext] = await Promise.all([
+      getRelevantContext(labelText, productCategory),
+      getWarningLetterContext(labelText, productCategory),
+      getRecallContext(labelText, productCategory),
+      getImportAlertContext(labelText, productCategory, manufacturerInfo.company_name, manufacturerInfo.country_of_origin),
+    ])
+
+    const regulationsOnly = regulatoryContext.filter(ctx => {
+      const docType = (ctx.metadata?.document_type || '').toLowerCase()
+      const cat     = (ctx.metadata?.category      || '').toLowerCase()
+      const src     = (ctx.metadata?.source        || '').toLowerCase()
+      const reg     = (ctx.metadata?.regulation    || '').toLowerCase()
+      if (docType === 'fda warning letter') return false
+      if (docType === 'fda recall')         return false
+      if (docType === 'cbp regulation')     return false
+      if (cat === 'import_compliance')      return false
+      if (src.includes('19 cfr'))           return false
+      if (reg.includes('19 cfr'))           return false
+      return true
+    })
+
+    const realCitations: Citation[] = regulationsOnly.map(ctx => ({
+      regulation_id: ctx.metadata?.regulation_id || ctx.section,
+      section:       ctx.section,
+      text:          ctx.content.substring(0, 200) + '...',
+      source:        ctx.metadata?.source || 'FDA Regulations',
+      relevance_score: ctx.similarity,
+    }))
+
+    // ── Step 2.5: Smart violation detection ───────────────────
+    await updateJobProgress(jobId, 'Analyzing nutritional information', 45)
+
+    // PDP area
+    let panelAreaSquareInches = 20
+    let resolvedWidthCm: number | null = null
+    let resolvedHeightCm: number | null = null
+
+    if (report.pdp_dimensions?.width && report.pdp_dimensions?.height) {
+      const unit = report.pdp_dimensions.unit || 'in'
+      const rawW = report.pdp_dimensions.width
+      const rawH = report.pdp_dimensions.height
+      if (unit === 'cm') {
+        resolvedWidthCm = rawW; resolvedHeightCm = rawH
+        panelAreaSquareInches = (rawW / 2.54) * (rawH / 2.54)
+      } else {
+        resolvedWidthCm = rawW * 2.54; resolvedHeightCm = rawH * 2.54
+        panelAreaSquareInches = rawW * rawH
+      }
+    } else if (report.physical_width_cm && report.physical_height_cm) {
+      resolvedWidthCm = report.physical_width_cm; resolvedHeightCm = report.physical_height_cm
+      panelAreaSquareInches = (report.physical_width_cm / 2.54) * (report.physical_height_cm / 2.54)
+    }
+
+    const formatConfig     = packagingFormat ? getPackagingFormat(packagingFormat) : null
+    const exemptFields     = packagingFormat ? getExemptFields(packagingFormat, productDomain) : []
+    const isSimplifiedAllowed = packagingFormat ? canUseSimplifiedLabeling(packagingFormat, panelAreaSquareInches, productDomain) : false
+    const minFontSize      = packagingFormat ? getMinFontSize(packagingFormat, panelAreaSquareInches, productDomain) : 6
+    const packagingFormatPrompt = packagingFormat ? buildPackagingFormatPrompt(packagingFormat, productDomain) : ''
+
+    const detectedViolations = ViolationToCFRMapper.detectViolations(
+      visionResult, panelAreaSquareInches, regulationsOnly, packagingFormat, productDomain
+    )
+
+    // ── Step 3: Nutrition + geometry + claims ──────────────────
+    await updateJobProgress(jobId, 'Validating FDA rounding rules', 60)
+
+    const extractedNutritionFacts = visionResult.nutritionFacts
+    const nutritionValidation = NutritionValidator.validateNutritionFacts(extractedNutritionFacts, productDomain)
+
+    const textElements = {
+      brandName:           visionResult.textElements.brandName,
+      productName:         visionResult.textElements.productName,
+      netQuantity:         visionResult.textElements.netQuantity,
+      panelAreaSquareInches,
+    }
+    const geometryViolations = VisualGeometryAnalyzer.analyzeLabel(textElements)
+
+    let conversionResult
+    let dimensionViolations: any[] = []
+    if (resolvedWidthCm && resolvedHeightCm && report.pixel_width && report.pixel_height) {
+      conversionResult = DimensionConverter.calculateConversionRatios(
+        { width: resolvedWidthCm, height: resolvedHeightCm, unit: 'cm' },
+        { width: report.pixel_width, height: report.pixel_height }
+      )
+      const netQtyVal = DimensionConverter.validateTextSize(25, conversionResult, 'net_quantity')
+      if (!netQtyVal.isValid && netQtyVal.violation) {
+        dimensionViolations.push({
+          category: 'Dimension Compliance',
+          severity: 'critical' as const,
+          description: netQtyVal.violation,
+          regulation_reference: netQtyVal.regulation,
+          suggested_fix: `Increase font size to at least ${(netQtyVal.requiredInches * conversionResult.pixelsPerInch).toFixed(0)} pixels`,
+          citations: [],
+          confidence_score: 1.0,
+        })
+      }
+    }
+
+    // Contrast checks
+    await updateJobProgress(jobId, 'Checking ingredient compliance', 75)
+
+    const contrastViolations: any[] = []
+    const elementsToCheck = [
+      { name: 'Brand Name',   element: visionResult.textElements.brandName,   role: 'brand'       as const },
+      { name: 'Product Name', element: visionResult.textElements.productName, role: 'brand'       as const },
+      { name: 'Net Quantity', element: visionResult.textElements.netQuantity, role: 'regulatory'  as const },
+    ]
+    const seenColorPairs = new Set<string>()
+    for (const { name, element, role } of elementsToCheck) {
+      if (!element?.colors) continue
+      const isDefaultFallback = element.colors.foreground?.toUpperCase() === '#000000' && element.colors.background?.toUpperCase() === '#FFFFFF'
+      if (!element.text?.trim()) continue
+      if (element.colors.isFallback || (isDefaultFallback && element.boundingBox?.confidence < 0.7)) continue
+      const pairKey = `${element.colors.foreground}/${element.colors.background}`.toLowerCase()
+      if (seenColorPairs.has(pairKey)) {
+        const existing = contrastViolations.find(cv =>
+          cv.colors?.foreground?.toLowerCase() === element.colors.foreground.toLowerCase() &&
+          cv.colors?.background?.toLowerCase() === element.colors.background.toLowerCase()
+        )
+        if (existing) existing.description = existing.description.replace(/^([^:]+):/, `$1, ${name}:`)
+        continue
+      }
+      seenColorPairs.add(pairKey)
+      try {
+        const foreground = ContrastChecker.hexToRgb(element.colors.foreground)
+        const background = ContrastChecker.hexToRgb(element.colors.background)
+        const fontSizePt = element.fontSize || 0
+        const isBold = element.fontWeight === 'bold' || element.fontWeight === '700'
+        const textSize: 'normal' | 'large' = (fontSizePt >= 24 || (isBold && fontSizePt >= 18)) ? 'large' : 'normal'
+        const contrastResult = ContrastChecker.validateContrast(foreground, background, textSize, role)
+        if (!contrastResult.isReadable) {
+          contrastViolations.push({
+            type: 'contrast',
+            severity: role === 'regulatory' ? 'warning' as const : 'info' as const,
+            description: `${name}: ${contrastResult.warning || 'Poor color contrast detected'}`,
+            ratio: contrastResult.ratio,
+            requiredMinRatio: textSize === 'large' ? 3 : 4.5,
+            textSize,
+            elementRole: role,
+            recommendation: contrastResult.recommendation,
+            colors: { foreground: element.colors.foreground, background: element.colors.background },
+          })
+        }
+      } catch {}
+    }
+
+    // Claims
+    const claimViolations = ClaimsValidator.validateClaims(
+      labelText + ' ' + visionResult.detectedClaims.join(' '),
+      productDomain as import('@/lib/claims-validator').ProductDomain
+    )
+
+    // Multi-language
+    let multiLanguageIssues = null
+    const detectedLanguages = visionResult.detectedLanguages || []
+    if (detectedLanguages.length > 1 || report.has_foreign_language) {
+      const missingTranslations = detectedLanguages.length === 1 && report.has_foreign_language
+        ? ['Required information may not be translated to all declared languages']
+        : []
+      if (missingTranslations.length > 0 || detectedLanguages.includes('Vietnamese')) {
+        multiLanguageIssues = {
+          hasIssue: missingTranslations.length > 0,
+          description: missingTranslations.length > 0 ? 'Some mandatory information may be missing translations' : 'Multi-language label detected - verify all mandatory fields are translated',
+          detectedLanguages,
+          missingFields: missingTranslations,
+        }
+      }
+    }
+
+    const productType = report.product_category?.includes('supplement') ? 'supplement' : 'conventional'
+    const hasClaims = claimViolations.length > 0
+    const disclaimers = ClaimsValidator.generateRequiredDisclaimers(productType, hasClaims)
+
+    // ── Step 4: Build violations ───────────────────────────────
+    await updateJobProgress(jobId, 'Validating allergen declarations', 85)
+
+    let violations: any[] = []
+
+    // Professional findings from smart mapper
+    const professionalFindings = detectedViolations.map(violation => {
+      const relevantReg = regulationsOnly.find(r => r.regulation_id === violation.regulationSection || r.section.includes(violation.regulationSection))
+      return SmartCitationFormatter.formatProfessionalFinding(violation, relevantReg || null, userLang)
+    })
+    for (const finding of professionalFindings) {
+      const relevantCitations = realCitations.filter(c => {
+        const findingRef = finding.cfr_reference.toLowerCase()
+        return findingRef.includes(c.section.toLowerCase()) || (c.regulation_id + ' ' + c.section).toLowerCase().includes(finding.cfr_reference.split(' ')[2]?.split('(')[0] || '')
+      })
+      violations.push({
+        category: finding.summary,
+        severity: finding.severity,
+        description: finding.expert_logic,
+        regulation_reference: finding.cfr_reference,
+        suggested_fix: finding.remediation,
+        citations: relevantCitations.length > 0 ? relevantCitations : realCitations.slice(0, 3),
+        confidence_score: finding.confidence_score,
+        legal_basis: finding.legal_basis,
+      })
+    }
+
+    // Warning letter matches
+    const labelTextLower = labelText.toLowerCase()
+    for (const warning of warningLetterContext) {
+      const meta = warning.metadata || {}
+      const matchedKeywords = ((meta.problematic_keywords || []) as string[]).filter((kw: string) => labelTextLower.includes(kw.toLowerCase()))
+      if (matchedKeywords.length > 0) {
+        violations.push({
+          category: `Warning Letter Pattern: ${meta.violation_type?.[0] || 'Risky Language'}`,
+          severity: meta.severity === 'Critical' ? 'critical' : meta.severity === 'Major' ? 'warning' : 'info',
+          description: `Label contains language similar to FDA Warning Letter ${meta.letter_id || ''}. Flagged phrases: "${matchedKeywords.join('", "')}". Original issue: ${meta.why_problematic || 'See warning letter details.'}`,
+          regulation_reference: meta.regulation_violated?.[0] || 'See FDA Warning Letter',
+          suggested_fix: meta.correction_required || 'Review and revise or remove flagged language to ensure FDA compliance.',
+          citations: [{ regulation_id: meta.regulation_violated?.[0] || 'FDA Warning Letter', section: meta.violation_type?.[0] || 'Warning Letter Violation', text: `FDA Warning Letter ${meta.letter_id || ''}: "${meta.problematic_claim || ''}" - ${meta.why_problematic || warning.content.slice(0, 150)}`, source: `FDA Warning Letter ${meta.letter_id || ''} (${meta.issue_date || ''})`, relevance_score: warning.similarity }],
+          confidence_score: Math.min(0.95, 0.5 + matchedKeywords.length * 0.15),
+          source_type: 'warning_letter',
+          warning_letter_id: meta.letter_id,
+        })
+      }
+    }
+
+    // Recall matches
+    for (const recall of recallContext) {
+      const meta = recall.metadata || {}
+      const matchedKeywords = ((meta.problematic_keywords || []) as string[]).filter((kw: string) => labelTextLower.includes(kw.toLowerCase()))
+      if (matchedKeywords.length > 0) {
+        violations.push({
+          category: `Recall Pattern: ${meta.recall_issue_type || 'Risk Factor'}`,
+          severity: meta.recall_classification === 'Class I' ? 'critical' : meta.recall_classification === 'Class II' ? 'warning' : 'info',
+          description: `Label contains elements similar to FDA-recalled products. Recall ${meta.recall_number || 'N/A'}: ${meta.why_recalled || 'See recall details.'}. Keywords: "${matchedKeywords.join('", "')}".`,
+          regulation_reference: meta.regulation_related || 'See FDA Recall Database',
+          suggested_fix: meta.preventive_action || 'Review and address flagged elements to reduce recall risk.',
+          citations: [{ regulation_id: meta.regulation_related || 'FDA Recall', section: meta.recall_issue_type || 'Recall Pattern', text: `FDA Recall ${meta.recall_number || ''} (Class ${meta.recall_classification || 'N/A'}): "${meta.why_recalled || recall.content.slice(0, 150)}"`, source: `FDA Recall ${meta.recall_number || ''} - ${meta.recalling_firm || ''}`, relevance_score: recall.similarity }],
+          confidence_score: Math.min(0.95, 0.5 + matchedKeywords.length * 0.15),
+          source_type: 'recall',
+        })
+      }
+    }
+
+    // Import alert signals
+    for (const ia of importAlertContext) {
+      const isEntityMatch = ia.match_method === 'entity'
+      const activeEntities = (ia.red_list_entities || []).filter((e: any) => e.is_active)
+      violations.push({
+        category: `Import Alert: ${ia.action_type} Risk (${ia.alert_number})`,
+        severity: isEntityMatch ? 'critical' as const : 'warning' as const,
+        description: isEntityMatch
+          ? `BORDER WARNING: Product may be subject to FDA Import Alert ${ia.alert_number} (${ia.action_type}). Reason: ${ia.reason_for_alert.slice(0, 300)}. ${activeEntities.length > 0 ? `${activeEntities.length} entities currently on Red List.` : ''}`
+          : `FDA Import Alert ${ia.alert_number} targets ${ia.industry_type} products. Reason: ${ia.reason_for_alert.slice(0, 300)}.`,
+        regulation_reference: `FDA Import Alert ${ia.alert_number}`,
+        suggested_fix: isEntityMatch ? 'Submit corrective action documents to FDA DIOD to be removed from the Red List.' : `Ensure full compliance with Import Alert ${ia.alert_number} requirements.`,
+        citations: [],
+        confidence_score: isEntityMatch ? 0.90 : 0.60,
+        source_type: 'import_alert',
+        import_alert_number: ia.alert_number,
+      })
+    }
+
+    // Allergen check
+    if (visionResult.allergens.length > 0) {
+      const allergenCitation = realCitations.find(c => c.regulation_id.includes('FALCPA') || c.section.toLowerCase().includes('allergen'))
+      const allTextLower = visionResult.textElements.allText.toLowerCase()
+      const hasProperDeclaration = allTextLower.includes('contains:') || allTextLower.includes('contains ') || allTextLower.includes('allergen') || allTextLower.includes('allergy')
+      if (!hasProperDeclaration) {
+        violations.push({ category: 'Allergen Declaration', severity: 'critical' as const, description: `Detected allergens: ${visionResult.allergens.join(', ')}. No "Contains:" statement found.`, regulation_reference: allergenCitation?.regulation_id || 'FALCPA Section 203', suggested_fix: 'Add "Contains: [allergens]" statement immediately after ingredient list.', citations: allergenCitation ? [allergenCitation] : [], confidence_score: allergenCitation ? allergenCitation.relevance_score : 0.8 })
+      }
+    }
+
+    // Ingredient list presence
+    if (visionResult.ingredients.length === 0 && visionResult.textElements.allText.length > 200) {
+      const allTextLow = visionResult.textElements.allText.toLowerCase()
+      const inlinePattern = /ingredients:\s*[a-z0-9]|contains:\s*[a-z0-9]/i
+      if (!inlinePattern.test(visionResult.textElements.allText)) {
+        const headingIdx = allTextLow.indexOf('ingredients:') !== -1 ? allTextLow.indexOf('ingredients:') : allTextLow.indexOf('contains:')
+        if (headingIdx !== -1) {
+          const headingWord = allTextLow.indexOf('ingredients:') !== -1 ? 'ingredients:' : 'contains:'
+          const afterHeading = allTextLow.slice(headingIdx + headingWord.length).trim()
+          if (afterHeading.replace(/\s+/g, '').length < 3) {
+            const ingredientCitation = realCitations.find(c => c.regulation_id.includes('101.4') || c.section.toLowerCase().includes('ingredient'))
+            violations.push({ category: 'Ingredient List', severity: 'critical' as const, description: 'Ingredient list heading detected but no ingredient text follows it.', regulation_reference: ingredientCitation?.regulation_id || '21 CFR 101.4', suggested_fix: 'Add a complete ingredient list in descending order by weight.', citations: ingredientCitation ? [ingredientCitation] : [], confidence_score: 0.8 })
+          }
+        }
+      }
+    }
+
+    // Nutrition validation errors
+    if (!nutritionValidation.isValid) {
+      for (const error of nutritionValidation.errors) {
+        violations.push({ category: 'Nutrition Facts Validation', severity: 'critical' as const, description: error, regulation_reference: '21 CFR 101.9(c)', suggested_fix: 'Correct the value according to FDA rounding rules', citations: [], confidence_score: 1.0 })
+      }
+    }
+
+    violations.push(...dimensionViolations)
+
+    for (const claimViolation of claimViolations) {
+      violations.push({ category: 'Health Claims', severity: claimViolation.severity, description: claimViolation.description, regulation_reference: claimViolation.regulation, suggested_fix: claimViolation.recommendation, citations: [], confidence_score: 1.0 })
+    }
+
+    // Format-based filtering
+    if (exemptFields.length > 0) {
+      violations = violations.filter(v => {
+        const desc = (v.description || '').toLowerCase()
+        const cat  = (v.category || '').toLowerCase()
+        if (exemptFields.includes('nutrition_facts') && (cat.includes('nutrition') || desc.includes('nutrition facts'))) return false
+        if (exemptFields.includes('ingredient_list') && (cat.includes('ingredient') || desc.includes('ingredient list'))) return false
+        if (exemptFields.includes('detailed_nutrition') && desc.includes('detailed nutrition')) return false
+        return true
+      })
+    }
+
+    // Format-specific additions
+    if (formatConfig && packagingFormat) {
+      const resolvedRules = getResolvedRules(packagingFormat, productDomain)
+      if (resolvedRules.requiresTotalCount) {
+        const allTextV = visionResult.textElements.allText.toLowerCase()
+        const hasTotalCount = /\d+\s*(x|packets?|packs?|units?|count|pieces?|sachets?|bags?|pouches?)/i.test(allTextV)
+        if (!hasTotalCount) {
+          violations.push({ category: 'Multi-pack Declaration', severity: 'critical' as const, description: `This is a ${formatConfig.nameVi}. FDA requires total unit count declaration.`, regulation_reference: '21 CFR 101.105(g)', suggested_fix: 'Add total unit count on the outer packaging.', citations: [], confidence_score: 0.85 })
+        }
+      }
+      if (packagingFormat === 'outer_carton' && !visionResult.textElements.productName?.text) {
+        violations.push({ category: 'Outer Carton - Product Identity', severity: 'critical' as const, description: 'Outer carton must display the product name per 21 CFR 101.3.', regulation_reference: '21 CFR 101.3', suggested_fix: 'Add product name/identity statement on the outer carton.', citations: [], confidence_score: 0.9 })
+      }
+      if (packagingFormat === 'individual_unit' && isSimplifiedAllowed) {
+        violations.push({ category: 'Small Package Format (Info)', severity: 'info' as const, description: `Small individual package. Per 21 CFR 101.9(j)(13), simplified Nutrition Facts format is acceptable for packages with < 40 sq in PDP area (current: ${panelAreaSquareInches.toFixed(1)} sq in).`, regulation_reference: '21 CFR 101.9(j)(13)', suggested_fix: 'Linear Nutrition Facts format is acceptable for this package size.', citations: [], confidence_score: 1.0 })
+      }
+    }
+
+    // ── Step 5: Risk scoring ───────────────────────────────────
+    await updateJobProgress(jobId, 'Finalizing audit report', 90)
+
+    const needsExpertReview = violations.some(v => (v.confidence_score ?? 1) < 0.8 || v.citations.length === 0)
+    const citationCount = violations.reduce((sum: number, v: any) => sum + v.citations.length, 0)
+    const extractionConfidence = isManualEntry ? 1.0 : visionResult.overallConfidence || 0
+    const avgCitationSimilarity = citationCount > 0 ? violations.reduce((sum: number, v: any) => { const avg = v.citations.reduce((s: number, c: any) => s + c.relevance_score, 0) / (v.citations.length || 1); return sum + avg }, 0) / violations.length : 0
+    const legalReasoningConfidence = citationCount > 0 ? Math.min(0.95, avgCitationSimilarity * 0.8 + 0.2) : 0.5
+
+    const { calculateOverallRisk, generateRiskSummary } = await import('@/lib/risk-engine')
+    const riskResult = calculateOverallRisk({ violations, warningLetterMatches: warningLetterContext, recallMatches: recallContext, importAlertMatches: importAlertContext, extractionConfidence, legalReasoningConfidence })
+    violations = riskResult.violationsWithRisk
+
+    const hasCritical = violations.some((v: any) => v.severity === 'critical')
+    const hasWarning  = violations.some((v: any) => v.severity === 'warning')
+    const overallResult = hasCritical ? 'fail' : hasWarning ? 'warning' : 'pass'
+    const finalStatus = needsExpertReview ? 'ai_completed' : 'verified'
+
+    // Commercial summary
+    const additionalFindings = violations
+      .filter((v: any) => !professionalFindings.some(pf => pf.cfr_reference === v.regulation_reference || pf.summary.includes(v.category)))
+      .map((v: any) => ({ summary: v.category, legal_basis: v.regulation_reference ? `Per ${v.regulation_reference}` : '', expert_logic: v.description, remediation: v.suggested_fix || 'See finding details', severity: v.severity, cfr_reference: v.regulation_reference || '', confidence_score: v.confidence_score ?? 0.8 }))
+    const allFindingsForSummary = [...professionalFindings, ...additionalFindings]
+    const commercialSummary = SmartCitationFormatter.createReportSummary(allFindingsForSummary, userLang)
+    const expertTips = SmartCitationFormatter.generateExpertTips(allFindingsForSummary, userLang)
+
+    // ── Save results ───────────────────────────────────────────
+    const { error: updateError } = await supabase
+      .from('audit_reports')
+      .update({
+        status:                  finalStatus,
+        overall_result:          overallResult,
+        findings:                violations,
+        violations:              violations,
+        geometry_violations:     geometryViolations,
+        contrast_violations:     contrastViolations,
+        claim_violations:        claimViolations,
+        multilanguage_issues:    multiLanguageIssues ? [multiLanguageIssues] : [],
+        needs_expert_review:     needsExpertReview,
+        citation_count:          citationCount,
+        required_disclaimers:    disclaimers,
+        pixels_per_inch:         conversionResult?.pixelsPerInch,
+        pdp_area_square_inches:  conversionResult?.pdpAreaSquareInches || (panelAreaSquareInches !== 20 ? panelAreaSquareInches : null),
+        ai_tokens_used:          totalTokensUsed,
+        ai_cost_usd:             (totalTokensUsed / 1000) * 0.005,
+        commercial_summary:      commercialSummary,
+        expert_tips:             expertTips,
+        nutrition_facts:         visionResult.nutritionFacts || [],
+        ingredient_list:         visionResult.ingredients?.join(', ') || null,
+        allergen_declaration:    visionResult.allergens?.join(', ') || null,
+        health_claims:           visionResult.detectedClaims || [],
+        detected_languages:      visionResult.detectedLanguages || ['English'],
+        brand_name:              visionResult.textElements?.brandName?.text || null,
+        product_name:            visionResult.textElements?.productName?.text || null,
+        net_quantity:            visionResult.textElements?.netQuantity?.text || null,
+        ocr_confidence:          visionResult.overallConfidence || null,
+        overall_risk_score:      riskResult.overallRiskScore,
+        projected_risk_score:    riskResult.projectedRiskScore,
+        risk_assessment:         riskResult.riskAssessment,
+        enforcement_risk_score:  riskResult.enforcementRiskScore,
+        warning_letter_weight:   riskResult.warningLetterWeight,
+        recall_heat_index:       riskResult.recallHeatIndex,
+        import_alert_heat_index: riskResult.importAlertHeatIndex,
+        report_unlocked:         true,
+      })
+      .eq('id', reportId)
+
+    if (updateError) throw updateError
+
+    // Increment usage counter
+    if (phase !== 'vision_only' || visionDataConfirmed) {
+      await supabase.rpc('increment_reports_used', { p_user_id: userId })
+    }
+
+    await completeJob(jobId)
+
+    return NextResponse.json({ success: true, overallResult, violations })
+  } catch (error: any) {
+    console.error('[process/run] Error:', error)
+    await supabase
+      .from('audit_reports')
+      .update({ status: 'error', error_message: error?.message ?? 'Analysis failed' })
+      .eq('id', reportId)
+    return NextResponse.json({ error: 'Failed to analyze label', message: error?.message }, { status: 500 })
+  }
+}

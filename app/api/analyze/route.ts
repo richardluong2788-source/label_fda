@@ -1,6 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { sendEmail, lowCreditsTemplate } from '@/lib/email'
+import { rateLimit, AUTH_RATE_LIMITS } from '@/lib/rate-limit'
+import { sendEmail, lowCreditsTemplate, quotaExhaustedTemplate } from '@/lib/email'
+
+// Allow up to 300s for heavy AI analysis (Vercel Pro/Enterprise)
+export const maxDuration = 300
 import { NutritionValidator } from '@/lib/nutrition-validator'
 import { VisualGeometryAnalyzer } from '@/lib/visual-geometry-analyzer'
 import { DimensionConverter } from '@/lib/dimension-converter'
@@ -49,6 +53,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // ── RATE LIMITING (per-user, distributed via Upstash Redis) ────────────────
+    const rl = await rateLimit(`analyze:${user.id}`, AUTH_RATE_LIMITS.analyze)
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'rate_limited', message: 'Too many analysis requests. Please wait a moment and try again.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil(rl.resetMs / 1000)) } }
+      )
+    }
+    // ── END RATE LIMITING ──────────────────────────────────────────────────────
+
     // ── QUOTA ENFORCEMENT ──────────────────────────────────────────────────────
     // Admin users (có record trong admin_users) được bypass hoàn toàn — không giới hạn lượt.
     const { data: adminRecord } = await supabase
@@ -75,6 +89,33 @@ export async function POST(request: Request) {
           { status: 503 }
         )
       } else if (quotaData && !quotaData.has_quota) {
+        // ── SEND QUOTA EXHAUSTED EMAIL ──────────────────────────────────────
+        // Gửi email thông báo khi user hết quota hoàn toàn
+        try {
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('email, language')
+            .eq('id', user.id)
+            .maybeSingle()
+
+          if (userProfile?.email) {
+            const lang = (userProfile.language as 'vi' | 'en') || 'en'
+            const exhaustedEmail = quotaExhaustedTemplate({
+              email: userProfile.email,
+              reportsUsed: quotaData.reports_used,
+              reportsLimit: quotaData.reports_limit,
+              planName: quotaData.plan_name,
+              periodEnd: quotaData.period_end,
+              lang,
+            })
+            // Fire-and-forget — don't block the response
+            sendEmail({ to: userProfile.email, subject: exhaustedEmail.subject, html: exhaustedEmail.html })
+          }
+        } catch (emailErr) {
+          console.error('[email] Failed to send quota exhausted email:', emailErr)
+        }
+        // ── END QUOTA EXHAUSTED EMAIL ───────────────────────────────────────
+
         return NextResponse.json(
           {
             error: 'quota_exceeded',
@@ -90,26 +131,36 @@ export async function POST(request: Request) {
           { status: 402 }
         )
       } else if (quotaData?.has_quota) {
-        // Gửi cảnh báo khi còn đúng 2 lượt (chỉ gửi 1 lần tại ngưỡng này)
-        const remaining = (quotaData.reports_limit - quotaData.reports_used) - 1 // -1 vì lượt này sắp dùng
-        if (remaining === 2) {
-          const { data: userProfile } = await supabase
-            .from('profiles')
-            .select('email, language')
-            .eq('id', user.id)
-            .maybeSingle()
+        // Gửi cảnh báo khi sắp hết lượt
+        // - Với gói có >= 5 lượt: gửi khi còn đúng 2 lượt (sau khi dùng lượt này)
+        // - Với gói có < 5 lượt (ví dụ Free Trial 1 lượt): gửi khi đây là lượt cuối cùng
+        const remainingAfterThis = (quotaData.reports_limit - quotaData.reports_used) - 1
+        const shouldSendLowCredits = quotaData.reports_limit >= 5
+          ? remainingAfterThis === 2        // Gói lớn: cảnh báo khi còn 2 lượt
+          : remainingAfterThis === 0        // Gói nhỏ: cảnh báo khi đây là lượt cuối
 
-          if (userProfile?.email) {
-            const lang = (userProfile.language as 'vi' | 'en') || 'en'
-            const lowEmail = lowCreditsTemplate({
-              email: userProfile.email,
-              reportsUsed: quotaData.reports_used + 1,
-              reportsLimit: quotaData.reports_limit,
-              planName: quotaData.plan_name,
-              periodEnd: quotaData.period_end,
-              lang,
-            })
-            sendEmail({ to: userProfile.email, subject: lowEmail.subject, html: lowEmail.html })
+        if (shouldSendLowCredits) {
+          try {
+            const { data: userProfile } = await supabase
+              .from('profiles')
+              .select('email, language')
+              .eq('id', user.id)
+              .maybeSingle()
+
+            if (userProfile?.email) {
+              const lang = (userProfile.language as 'vi' | 'en') || 'en'
+              const lowEmail = lowCreditsTemplate({
+                email: userProfile.email,
+                reportsUsed: quotaData.reports_used + 1,
+                reportsLimit: quotaData.reports_limit,
+                planName: quotaData.plan_name,
+                periodEnd: quotaData.period_end,
+                lang,
+              })
+              sendEmail({ to: userProfile.email, subject: lowEmail.subject, html: lowEmail.html })
+            }
+          } catch (emailErr) {
+            console.error('[email] Failed to send low credits email:', emailErr)
           }
         }
       }
@@ -185,15 +236,23 @@ export async function POST(request: Request) {
         const labelImages = report.label_images || [{ type: 'main', url: report.label_image_url }]
         console.log('[v0] Images to analyze:', labelImages.length)
         
-        // Analyze each image type separately
+        // Analyze each image type in PARALLEL (major speed improvement)
         const imageAnalyses: any = {}
         // Build packaging format context for AI vision if format is specified (domain-aware)
         const packagingFormatCtx = packagingFormat ? buildPackagingFormatPrompt(packagingFormat, productDomain) : undefined
         
-        for (const img of labelImages) {
-          console.log(`[v0] Analyzing ${img.type} image...`)
-          const result = await analyzeLabel(img.url, packagingFormatCtx)
-          imageAnalyses[img.type] = result
+        console.log(`[v0] Analyzing ${labelImages.length} images in parallel...`)
+        const visionResults = await Promise.all(
+          labelImages.map(async (img: { type: string; url: string }) => {
+            console.log(`[v0] Starting parallel analysis for ${img.type} image...`)
+            const result = await analyzeLabel(img.url, packagingFormatCtx)
+            console.log(`[v0] Completed ${img.type} image analysis (${result.tokensUsed} tokens)`)
+            return { type: img.type, result }
+          })
+        )
+        
+        for (const { type, result } of visionResults) {
+          imageAnalyses[type] = result
           totalTokensUsed += result.tokensUsed
         }
         
@@ -1347,7 +1406,7 @@ export async function POST(request: Request) {
         overall_risk_score: riskResult.overallRiskScore,
         projected_risk_score: riskResult.projectedRiskScore,
         risk_assessment: riskResult.riskAssessment,
-        // ── Enforcement Risk Decomposition (Vấn đề 3) ──────────────────────
+        // ── Enforcement Risk Decomposition (Vấn đề 3) ─���────────────────────
         // Three independent enforcement signals stored for display in risk panel.
         enforcement_risk_score: riskResult.enforcementRiskScore,
         warning_letter_weight: riskResult.warningLetterWeight,

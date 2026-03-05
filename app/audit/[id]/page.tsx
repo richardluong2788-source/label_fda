@@ -139,7 +139,7 @@ export default function AuditPage() {
         return
       }
 
-      if (data.status === 'pending') {
+      if (data.status === 'pending' || data.status === 'queued') {
         startAnalysis()
       }
     } catch (error) {
@@ -149,31 +149,23 @@ export default function AuditPage() {
     }
   }
 
-  // ── Start Analysis ────────────────────────────────────────
+  // ── Start Analysis (async queue + polling) ───────────────
   const startAnalysis = async () => {
     setAnalyzing(true)
     setCurrentStepIndex(0)
-
-    const stepInterval = setInterval(() => {
-      setCurrentStepIndex((prev) => {
-        if (prev < ANALYSIS_STEPS.length - 1) {
-          setProgress(ANALYSIS_STEPS[prev + 1].progress)
-          return prev + 1
-        }
-        return prev
-      })
-    }, 3000)
+    setProgress(5)
 
     try {
-      const res = await fetch('/api/analyze', {
+      // Step 1: Submit the job to the async queue (fast — returns immediately)
+      const submitRes = await fetch('/api/analyze/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reportId: params.id }),
       })
 
-      if (res.status === 402) {
-        const errData = await res.json().catch(() => ({}))
-        clearInterval(stepInterval)
+      // Handle submit-time errors (quota, rate limit, etc.)
+      if (submitRes.status === 402) {
+        const errData = await submitRes.json().catch(() => ({}))
         setAnalyzing(false)
         setLoading(false)
         setQuotaError({
@@ -185,53 +177,99 @@ export default function AuditPage() {
         return
       }
 
-      if (res.status === 503) {
-        const errData = await res.json().catch(() => ({}))
-        if (errData.error === 'knowledge_base_empty') {
-          clearInterval(stepInterval)
-          setAnalyzing(false)
-          setLoading(false)
-          setKbError({
-            message: errData.message || a.kbNotReady,
-            totalDocuments: errData.kbStatus?.totalDocuments ?? 0,
-          })
-          return
-        }
-        // Vision system error (API/network issue)
-        clearInterval(stepInterval)
+      if (submitRes.status === 429) {
+        const errData = await submitRes.json().catch(() => ({}))
         setAnalyzing(false)
         setLoading(false)
         setVisionError({
-          message: errData.message || a.visionSystemError,
-          errorCode: errData.error || 'vision_system_error',
+          message: errData.message || 'Too many requests. Please wait a moment and try again.',
+          errorCode: 'rate_limited',
         })
         return
       }
 
-      if (res.status === 422) {
-        // Vision validation error - user can take action
-        const errData = await res.json().catch(() => ({}))
-        clearInterval(stepInterval)
-        setAnalyzing(false)
-        setLoading(false)
-        setVisionError({
-          message: errData.message || a.visionValidationFailed,
-          errorCode: errData.error || 'vision_validation_failed',
-          details: errData.details?.validationErrors || [],
-        })
-        return
+      if (!submitRes.ok) {
+        const errData = await submitRes.json().catch(() => ({}))
+        throw new Error(errData.message || 'Failed to submit analysis')
       }
 
-      if (!res.ok) throw new Error('Analysis failed')
+      // Step 2: Poll /api/analyze/status every 2 s until completed/failed
+      const POLL_INTERVAL_MS = 2000
+      const MAX_POLLS = 180 // 6 min max (180 × 2s)
+      let pollCount = 0
 
-      setProgress(100)
-      clearInterval(stepInterval)
+      await new Promise<void>((resolve, reject) => {
+        const pollInterval = setInterval(async () => {
+          pollCount++
 
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+          if (pollCount > MAX_POLLS) {
+            clearInterval(pollInterval)
+            reject(new Error('Analysis timed out. Please try again.'))
+            return
+          }
+
+          try {
+            const statusRes = await fetch(`/api/analyze/status?id=${params.id}`)
+            if (!statusRes.ok) return // transient error — keep polling
+
+            const statusData = await statusRes.json()
+
+            // Update UI progress from server-driven step
+            const serverProgress = statusData.progress ?? 0
+            if (serverProgress > 0) {
+              setProgress(serverProgress)
+              // Map server progress to step index
+              const stepIdx = ANALYSIS_STEPS.findIndex(s => s.progress >= serverProgress)
+              if (stepIdx >= 0) setCurrentStepIndex(stepIdx)
+            }
+
+            // Terminal states
+            if (statusData.status === 'completed' || ['verified', 'ai_completed'].includes(statusData.reportStatus)) {
+              clearInterval(pollInterval)
+              setProgress(100)
+              setCurrentStepIndex(ANALYSIS_STEPS.length - 1)
+              resolve()
+              return
+            }
+
+            if (statusData.status === 'failed') {
+              clearInterval(pollInterval)
+              const errMsg = statusData.error || 'Analysis failed'
+
+              // Map known error codes to the right UI state
+              if (errMsg.includes('knowledge_base_empty')) {
+                setKbError({ message: a.kbNotReady, totalDocuments: 0 })
+              } else if (errMsg.includes('vision_validation_failed') || errMsg.includes('422')) {
+                setVisionError({ message: errMsg, errorCode: 'vision_validation_failed' })
+              } else {
+                setVisionError({ message: errMsg, errorCode: 'vision_system_error' })
+              }
+              reject(new Error(errMsg))
+              return
+            }
+
+            // If report directly has terminal status (legacy direct analyze fallback)
+            if (['error', 'kb_unavailable'].includes(statusData.reportStatus)) {
+              clearInterval(pollInterval)
+              reject(new Error(statusData.reportStatus))
+            }
+          } catch {
+            // Network error on poll — keep retrying
+          }
+        }, POLL_INTERVAL_MS)
+      })
+
+      await new Promise((resolve) => setTimeout(resolve, 500))
       await loadReport()
-    } catch (error) {
+    } catch (error: any) {
       console.error('[v0] Analysis error:', error)
-      clearInterval(stepInterval)
+      // Only set generic vision error if no specific error was already set
+      if (!quotaError && !kbError && !visionError) {
+        setVisionError({
+          message: error?.message || a.visionSystemError || 'Analysis failed. Please try again.',
+          errorCode: 'vision_system_error',
+        })
+      }
     } finally {
       setAnalyzing(false)
     }
@@ -410,7 +448,7 @@ export default function AuditPage() {
 
   // ── Analysis in Progress ──────────────────────────────────
 
-  if (analyzing || report.status === 'pending') {
+  if (analyzing || ['pending', 'queued', 'processing'].includes(report.status)) {
     return (
       <AnalysisProgressView
         report={report}

@@ -294,7 +294,7 @@ export function adminNewExpertRequestTemplate({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 6. VNPAY PAYMENT CONFIRMATION — xác nhận thanh toán thành công
-// ──────────────���──────────────────────────────────────────────────────────────
+// ─────���────────���──────────────────────────────────────────────────────────────
 export function paymentSuccessTemplate({
   email,
   planName,
@@ -378,7 +378,109 @@ export function paymentSuccessTemplate({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 7. LOW CREDITS WARNING — sắp hết lượt phân tích
+// 7a. QUOTA EXHAUSTED — đã hết lượt phân tích hoàn toàn
+// ─────────────────────────────────────────────────────────────────────────────
+export function quotaExhaustedTemplate({
+  email,
+  reportsUsed,
+  reportsLimit,
+  planName,
+  periodEnd,
+  lang = 'en',
+}: {
+  email: string
+  reportsUsed: number
+  reportsLimit: number
+  planName: string
+  periodEnd: string
+  lang?: Lang
+}) {
+  const formattedDate = new Date(periodEnd).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  })
+
+  const t = {
+    en: {
+      subject: 'Analysis Credits Exhausted — Upgrade to Continue',
+      preview: `You have used all ${reportsLimit} label analyses on your ${planName} plan.`,
+      heading: 'Your Analysis Credits Are Used Up',
+      p1: `You have used all <strong>${reportsLimit} of ${reportsLimit}</strong> label analyses on your <strong>${planName}</strong> plan this month. To continue analyzing labels, please upgrade your plan.`,
+      quota: `${reportsUsed}/${reportsLimit} used (100%)`,
+      resetLabel: 'Quota resets on',
+      upgradeTitle: 'Upgrade Options',
+      upgradeDesc: 'Get more analyses with our paid plans:',
+      starterDesc: '<strong>Starter</strong> — 5 analyses/month',
+      proDesc: '<strong>Pro</strong> — 20 analyses/month',
+      enterpriseDesc: '<strong>Enterprise</strong> — Unlimited analyses',
+      cta: 'View Upgrade Plans',
+      ctaSecondary: 'Go to Dashboard',
+      note: `Your quota will automatically reset on ${formattedDate}. Upgrade now if you need immediate access.`,
+    },
+    vi: {
+      subject: 'Đã hết lượt phân tích — Nâng cấp để tiếp tục',
+      preview: `Bạn đã dùng hết ${reportsLimit} lượt phân tích nhãn trong gói ${planName}.`,
+      heading: 'Đã hết lượt phân tích',
+      p1: `Bạn đã sử dụng hết <strong>${reportsLimit}/${reportsLimit}</strong> lượt phân tích nhãn trong gói <strong>${planName}</strong> tháng này. Để tiếp tục phân tích, vui lòng nâng cấp gói.`,
+      quota: `${reportsUsed}/${reportsLimit} đã dùng (100%)`,
+      resetLabel: 'Quota reset vào',
+      upgradeTitle: 'Gói nâng cấp',
+      upgradeDesc: 'Nhận thêm lượt phân tích với các gói trả phí:',
+      starterDesc: '<strong>Starter</strong> — 5 lượt/tháng',
+      proDesc: '<strong>Pro</strong> — 20 lượt/tháng',
+      enterpriseDesc: '<strong>Enterprise</strong> — Không giới hạn',
+      cta: 'Xem các gói nâng cấp',
+      ctaSecondary: 'Về Dashboard',
+      note: `Quota sẽ tự động reset vào ${formattedDate}. Nâng cấp ngay nếu bạn cần phân tích thêm.`,
+    },
+  }[lang]
+
+  const progressBar = /* html */ `
+<div style="margin:20px 0;background-color:#e2e8f0;border-radius:100px;height:8px;overflow:hidden;">
+  <div style="width:100%;background-color:#ef4444;height:8px;border-radius:100px;"></div>
+</div>
+<p style="margin:0 0 4px;color:#ef4444;font-size:13px;font-weight:600;">${t.quota}</p>
+<p style="margin:0;color:#94a3b8;font-size:12px;">${t.resetLabel}: ${formattedDate}</p>`
+
+  const body = /* html */ `
+    <div style="margin-bottom:20px;">${badge(lang === 'vi' ? 'Het luot' : 'Exhausted', 'red')}</div>
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;letter-spacing:-0.5px;">${t.heading}</h1>
+    <p style="margin:0 0 20px;color:#64748b;font-size:14px;">${email}</p>
+    <p style="margin:0 0 20px;color:#334155;font-size:15px;line-height:1.7;">${t.p1}</p>
+
+    ${progressBar}
+
+    <div style="margin-top:24px;padding:20px;background-color:#fef2f2;border:1px solid #fecaca;border-radius:8px;margin-bottom:24px;">
+      <p style="margin:0 0 8px;color:#991b1b;font-size:13px;font-weight:600;">${t.upgradeTitle}</p>
+      <p style="margin:0 0 8px;color:#7f1d1d;font-size:13px;">${t.upgradeDesc}</p>
+      <ul style="margin:0;padding-left:20px;color:#7f1d1d;font-size:13px;line-height:2;">
+        <li>${t.starterDesc}</li>
+        <li>${t.proDesc}</li>
+        <li>${t.enterpriseDesc}</li>
+      </ul>
+    </div>
+
+    <table cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;">
+      <tr>
+        <td style="background-color:#0f172a;border-radius:8px;">
+          <a href="${APP_URL}/pricing" style="display:inline-block;padding:14px 28px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">${t.cta}</a>
+        </td>
+        <td style="padding-left:12px;">
+          <a href="${APP_URL}/dashboard" style="color:#0f172a;font-size:14px;font-weight:500;text-decoration:underline;">${t.ctaSecondary}</a>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin-top:24px;color:#94a3b8;font-size:13px;line-height:1.6;">${t.note}</p>
+  `
+
+  return {
+    subject: t.subject,
+    html: emailLayout({ title: t.subject, previewText: t.preview, body, lang }),
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7b. LOW CREDITS WARNING — sắp hết lượt phân tích
 // ─────────────────────────────────────────────────────────────────────────────
 export function lowCreditsTemplate({
   email,

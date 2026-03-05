@@ -6,5 +6,6 @@ export {
   expertReviewCancelledTemplate,
   adminNewExpertRequestTemplate,
   paymentSuccessTemplate,
+  quotaExhaustedTemplate,
   lowCreditsTemplate,
 } from './templates'

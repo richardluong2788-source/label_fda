@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       request.headers.get('x-real-ip') ??
       'unknown'
 
-    const rl = rateLimit(`login:${ip}`, AUTH_RATE_LIMITS.login)
+    const rl = await rateLimit(`login:${ip}`, AUTH_RATE_LIMITS.login)
 
     if (!rl.success) {
       const retryAfterSeconds = Math.ceil(rl.resetMs / 1000)
