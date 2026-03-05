@@ -343,7 +343,7 @@ export async function POST(request: Request) {
     } else {
       console.log('[v0] Full RAG coverage confirmed: CFR + Warning Letters + Recalls + Import Alerts loaded.')
     }
-    // ── END KB CHECK ─────────────────────────────────────────────────────────
+    // ── END KB CHECK ────────────────────────────────────────���────────────────
 
     // Step 2: Retrieve relevant regulations AND warning letters from Knowledge Base using DUAL-QUERY RAG
     console.log('[v0] Step 2: Retrieving regulatory context + warning letters from Knowledge Base...')
@@ -871,9 +871,12 @@ export async function POST(request: Request) {
       if (hasIngredientHeading) {
         // Check whether there is meaningful text immediately after the heading.
         // "Meaningful" = at least 3 non-whitespace characters following the colon.
-        const headingIdx = ingredientsHeadingIdx !== -1 ? ingredientsHeadingIdx : containsHeadingIdx
-        const afterHeading = visionResult.textElements.allText.slice(headingIdx + 'ingredients:'.length).trim()
-        const hasIngredientsAfterHeading = afterHeading.length >= 3
+        // IMPORTANT: Use the lowercased allText for slicing (same source as indexOf)
+        // to avoid off-by-one errors from mixed-case OCR output like "Ingredients:".
+        const headingIdx  = ingredientsHeadingIdx !== -1 ? ingredientsHeadingIdx : containsHeadingIdx
+        const headingWord = ingredientsHeadingIdx !== -1 ? 'ingredients:' : 'contains:'
+        const afterHeading = allTextLowerForIngredients.slice(headingIdx + headingWord.length).trim()
+        const hasIngredientsAfterHeading = afterHeading.replace(/\s+/g, '').length >= 3
 
         if (!hasIngredientsAfterHeading) {
           // Heading visible but nothing follows — genuine missing ingredient list

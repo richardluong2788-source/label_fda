@@ -45,14 +45,43 @@ export class ClaimsValidator {
    * Terms that constitute prohibited drug/disease claims for FOOD and SUPPLEMENTS.
    * Reference: 21 CFR 101.93, FD&C Act Section 403(r)
    *
-   * NOTE: "prevent" is included here because FDA prohibits food/supplement labels
-   * from claiming the product prevents a disease (e.g. "prevents heart disease").
+   * IMPORTANT DESIGN NOTES:
+   *
+   * 1. "prevent" alone is NOT included — it is too generic and causes false positives:
+   *    - "prevents spoilage" → safe food handling claim, not a disease claim
+   *    - "prevents contamination" → food safety claim
+   *    - "prevents sticking" → culinary claim
+   *    Instead, disease-specific prevent phrases are caught here:
+   *    "prevent cancer", "prevent diabetes", etc.
+   *
+   * 2. Disease names like "cancer", "diabetes", "heart disease" CAN appear
+   *    legitimately in FDA Qualified Health Claims. The isPartOfQualifiedHealthClaim()
+   *    check below will skip those authorized contexts.
+   *
+   * 3. "prevent" + disease combos that are always prohibited (no QHC exception):
+   *    e.g. "prevents cancer", "prevents diabetes" — these have NO FDA-approved QHC.
    */
   private static FOOD_SUPPLEMENT_PROHIBITED_DISEASE_CLAIMS = [
+    // Therapeutic drug action terms — always prohibited on food/supplement
     'cure',
     'treat',
-    'prevent',
     'diagnose',
+
+    // Disease-specific "prevent" combos — no FDA QHC exists for these
+    'prevent cancer',
+    'prevents cancer',
+    'prevent diabetes',
+    'prevents diabetes',
+    'prevent alzheimer',
+    'prevents alzheimer',
+    'prevent arthritis',
+    'prevents arthritis',
+    'prevent hypertension',
+    'prevents hypertension',
+    'prevent hiv',
+    'prevent aids',
+
+    // Standalone disease names — will be skipped if found inside a valid QHC
     'cancer',
     'diabetes',
     'heart disease',
@@ -208,6 +237,15 @@ export class ClaimsValidator {
     'some evidence suggests',
     'emerging evidence suggests',
     'not been evaluated by',
+
+    // ── DSHEA mandatory disclaimer — disease terms here are NOT a violation ──
+    // 21 CFR 101.93(f): "This product is not intended to diagnose, treat, cure,
+    // or prevent any disease." Disease names in this disclaimer context are safe.
+    'not intended to diagnose',
+    'not intended to treat',
+    'not intended to cure',
+    'not intended to prevent any disease',
+    'these statements have not been evaluated',
 
     // ── FDA Authorized Health Claim standard boilerplate (21 CFR 101.7x) ──
     'as part of a diet low in saturated fat and cholesterol',
