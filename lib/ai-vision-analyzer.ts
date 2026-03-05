@@ -4,6 +4,8 @@ import type { NutritionFact, TextElement } from './types'
 export interface ColorInfo {
   foreground: string // Hex color code
   background: string // Hex color code
+  /** True when colors are default fallback, not actually extracted by AI */
+  isFallback?: boolean
 }
 
 export interface TextElementWithColor extends TextElement {
@@ -260,9 +262,9 @@ FONT SIZE CHART (use these values):
     const normalized: VisionAnalysisResult = {
       nutritionFacts: Array.isArray(parsed.nutritionFacts) ? parsed.nutritionFacts : [],
       textElements: {
-        brandName: parsed.textElements?.brandName || { text: '', fontSize: 0, x: 0, y: 0, width: 0, height: 0, colors: { foreground: '#000000', background: '#FFFFFF' }, boundingBox: { x: 0, y: 0, width: 0, height: 0, confidence: 0 } },
-        productName: parsed.textElements?.productName || { text: '', fontSize: 0, x: 0, y: 0, width: 0, height: 0, colors: { foreground: '#000000', background: '#FFFFFF' }, boundingBox: { x: 0, y: 0, width: 0, height: 0, confidence: 0 } },
-        netQuantity: parsed.textElements?.netQuantity || { text: '', fontSize: 0, x: 0, y: 0, width: 0, height: 0, colors: { foreground: '#000000', background: '#FFFFFF' }, boundingBox: { x: 0, y: 0, width: 0, height: 0, confidence: 0 } },
+        brandName: parsed.textElements?.brandName || { text: '', fontSize: 0, x: 0, y: 0, width: 0, height: 0, colors: { foreground: '#000000', background: '#FFFFFF', isFallback: true }, boundingBox: { x: 0, y: 0, width: 0, height: 0, confidence: 0 } },
+        productName: parsed.textElements?.productName || { text: '', fontSize: 0, x: 0, y: 0, width: 0, height: 0, colors: { foreground: '#000000', background: '#FFFFFF', isFallback: true }, boundingBox: { x: 0, y: 0, width: 0, height: 0, confidence: 0 } },
+        netQuantity: parsed.textElements?.netQuantity || { text: '', fontSize: 0, x: 0, y: 0, width: 0, height: 0, colors: { foreground: '#000000', background: '#FFFFFF', isFallback: true }, boundingBox: { x: 0, y: 0, width: 0, height: 0, confidence: 0 } },
         allText: parsed.textElements?.allText || ''
       },
       detectedClaims: Array.isArray(parsed.detectedClaims) ? parsed.detectedClaims : [],

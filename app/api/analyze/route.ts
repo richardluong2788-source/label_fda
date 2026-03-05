@@ -619,54 +619,83 @@ export async function POST(request: Request) {
     const contrastViolations: any[] = []
     
     // Check contrast for each text element with extracted colors
+    // Each element carries its role (brand = advisory, regulatory = strict) and
+    // its fontSize so we can apply the correct WCAG threshold (large vs normal).
     const elementsToCheck = [
-      { name: 'Brand Name', element: visionResult.textElements.brandName },
-      { name: 'Product Name', element: visionResult.textElements.productName },
-      { name: 'Net Quantity', element: visionResult.textElements.netQuantity }
+      { name: 'Brand Name', element: visionResult.textElements.brandName, role: 'brand' as const },
+      { name: 'Product Name', element: visionResult.textElements.productName, role: 'brand' as const },
+      { name: 'Net Quantity', element: visionResult.textElements.netQuantity, role: 'regulatory' as const }
     ]
     
     // Track unique color pairs to avoid duplicate contrast warnings
     // When AI extracts the same fg/bg colors for multiple elements, show one combined warning
     const seenColorPairs = new Set<string>()
     
-    for (const { name, element } of elementsToCheck) {
-      if (element?.colors) {
-        // Deduplicate by color pair key
-        const pairKey = `${element.colors.foreground}/${element.colors.background}`.toLowerCase()
-        if (seenColorPairs.has(pairKey)) {
-          // Same color pair already checked — append element name to existing violation
-          const existing = contrastViolations.find(
-            cv => cv.colors?.foreground?.toLowerCase() === element.colors.foreground.toLowerCase() &&
-                  cv.colors?.background?.toLowerCase() === element.colors.background.toLowerCase()
-          )
-          if (existing) {
-            existing.description = existing.description.replace(/^([^:]+):/, `$1, ${name}:`)
-          }
-          continue
+    for (const { name, element, role } of elementsToCheck) {
+      if (!element?.colors) continue
+
+      // --- FIX 3: Skip contrast check when AI returned no real text or defaulted colors ---
+      // If text is empty or colors are the default fallback (#000000/#FFFFFF), the AI
+      // didn't actually detect this element, so checking contrast is meaningless.
+      const isDefaultFallback =
+        element.colors.foreground.toUpperCase() === '#000000' &&
+        element.colors.background.toUpperCase() === '#FFFFFF'
+      if (!element.text || element.text.trim().length === 0) {
+        console.log(`[v0] Skipping contrast for ${name}: no text detected`)
+        continue
+      }
+      if (element.colors.isFallback || (isDefaultFallback && (!element.boundingBox || element.boundingBox.confidence < 0.7))) {
+        console.log(`[v0] Skipping contrast for ${name}: fallback colors — AI did not extract real colors`)
+        continue
+      }
+
+      // Deduplicate by color pair key
+      const pairKey = `${element.colors.foreground}/${element.colors.background}`.toLowerCase()
+      if (seenColorPairs.has(pairKey)) {
+        // Same color pair already checked — append element name to existing violation
+        const existing = contrastViolations.find(
+          cv => cv.colors?.foreground?.toLowerCase() === element.colors!.foreground.toLowerCase() &&
+                cv.colors?.background?.toLowerCase() === element.colors!.background.toLowerCase()
+        )
+        if (existing) {
+          existing.description = existing.description.replace(/^([^:]+):/, `$1, ${name}:`)
         }
-        seenColorPairs.add(pairKey)
+        continue
+      }
+      seenColorPairs.add(pairKey)
+      
+      try {
+        const foreground = ContrastChecker.hexToRgb(element.colors.foreground)
+        const background = ContrastChecker.hexToRgb(element.colors.background)
+
+        // --- FIX 1: Determine text size from actual fontSize ---
+        // WCAG defines "large" text as >= 18pt bold OR >= 24pt normal.
+        // AI returns fontSize in pt — use it to pick the right threshold.
+        const fontSizePt = element.fontSize || 0
+        const isBold = element.fontWeight === 'bold' || element.fontWeight === '700'
+        const isLargeText = fontSizePt >= 24 || (isBold && fontSizePt >= 18)
+        const textSize: 'normal' | 'large' = isLargeText ? 'large' : 'normal'
+
+        console.log(`[v0] Contrast check for ${name}: fontSize=${fontSizePt}pt, bold=${isBold}, textSize=${textSize}, role=${role}`)
+
+        // --- FIX 2: Pass elementRole so brand text gets advisory severity ---
+        const contrastResult = ContrastChecker.validateContrast(foreground, background, textSize, role)
         
-        try {
-          const foreground = ContrastChecker.hexToRgb(element.colors.foreground)
-          const background = ContrastChecker.hexToRgb(element.colors.background)
-          const contrastResult = ContrastChecker.validateContrast(foreground, background, 'normal')
-          
-          if (!contrastResult.isReadable) {
-            contrastViolations.push({
-              type: 'contrast',
-              severity: 'warning' as const,
-              description: `${name}: ${contrastResult.warning || 'Poor color contrast detected'}`,
-              ratio: contrastResult.ratio,
-              recommendation: contrastResult.recommendation,
-              colors: {
-                foreground: element.colors.foreground,
-                background: element.colors.background
-              }
-            })
-          }
-        } catch (error) {
-          console.error(`[v0] Error checking contrast for ${name}:`, error)
+        if (!contrastResult.isReadable) {
+          contrastViolations.push({
+            type: 'contrast',
+            severity: role === 'regulatory' ? 'warning' as const : 'info' as const,
+            description: `${name}: ${contrastResult.warning || 'Poor color contrast detected'}`,
+            ratio: contrastResult.ratio,
+            recommendation: contrastResult.recommendation,
+            colors: {
+              foreground: element.colors.foreground,
+              background: element.colors.background
+            }
+          })
         }
+      } catch (error) {
+        console.error(`[v0] Error checking contrast for ${name}:`, error)
       }
     }
 
@@ -1232,7 +1261,7 @@ export async function POST(request: Request) {
     if (phase !== 'vision_only' || visionDataConfirmed) {
       await supabase.rpc('increment_reports_used', { p_user_id: user.id })
     }
-    // ── END INCREMENT ──────────────────────────────────────────────────────────
+    // ── END INCREMENT ─────────────────────────────���────────────────────────────
 
     return NextResponse.json({
       success: true,

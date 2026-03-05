@@ -60,12 +60,18 @@ export class ContrastChecker {
 
   /**
    * Validate contrast for FDA label readability
-   * FDA expects "conspicuous" labeling - we use WCAG AA as minimum
+   * FDA expects "conspicuous" labeling — we use WCAG AA as minimum guideline
+   * 
+   * @param textSize 'normal' (body text <18pt) or 'large' (headings >=18pt bold / >=24pt normal)
+   * @param elementRole Which label element this is, affects severity interpretation:
+   *   - 'regulatory': Mandatory text (net weight, ingredients) — strict checking
+   *   - 'brand': Decorative/brand text — advisory only (intentional design choice)
    */
   static validateContrast(
     foreground: RGBColor,
     background: RGBColor,
-    textSize: 'normal' | 'large' = 'normal'
+    textSize: 'normal' | 'large' = 'normal',
+    elementRole: 'regulatory' | 'brand' = 'regulatory'
   ): ContrastResult {
     const ratio = this.calculateContrastRatio(foreground, background)
 
@@ -88,15 +94,23 @@ export class ContrastChecker {
       isReadable = true
     } else if (ratio >= 3) {
       wcagLevel = 'A'
-      isReadable = false
-      warning = 'Contrast ratio is below industry best practices for readability (WCAG AA). FDA may consider this insufficient for "conspicuous" labeling.'
-      recommendation = 'Increase contrast to at least 4.5:1 for normal text to meet WCAG AA standards'
+      // For brand/decorative text at large sizes, ratio >= 3 is acceptable
+      if (elementRole === 'brand' && textSize === 'large') {
+        isReadable = true
+      } else {
+        isReadable = false
+        warning = elementRole === 'brand'
+          ? `Contrast ratio ${ratio.toFixed(2)}:1 is below WCAG AA (${minRatioAA}:1). This is brand/decorative text — may be an intentional design choice, but FDA requires all text be "conspicuous".`
+          : `Contrast ratio is below industry best practices for readability (WCAG AA). FDA may consider this insufficient for "conspicuous" labeling.`
+        recommendation = `Current ratio ${ratio.toFixed(2)}:1 — increase to at least ${minRatioAA}:1 (${textSize} text, WCAG AA) for optimal readability`
+      }
     } else {
       wcagLevel = 'Fail'
       isReadable = false
-      warning =
-        'CRITICAL: Text contrast is very low and may not meet FDA "conspicuous" labeling requirements. This could result in regulatory action.'
-      recommendation = `Current ratio ${ratio.toFixed(2)}:1 - increase to at least ${minRatioAA}:1 (WCAG AA standard) for proper readability`
+      warning = elementRole === 'brand'
+        ? `CRITICAL: Brand text contrast ${ratio.toFixed(2)}:1 is very low. Even for decorative text, this may not meet FDA "conspicuous" labeling requirements (21 CFR 701.11 / 101.15).`
+        : 'CRITICAL: Text contrast is very low and may not meet FDA "conspicuous" labeling requirements. This could result in regulatory action.'
+      recommendation = `Current ratio ${ratio.toFixed(2)}:1 — increase to at least ${minRatioAA}:1 (WCAG AA standard for ${textSize} text) for proper readability`
     }
 
     return {
