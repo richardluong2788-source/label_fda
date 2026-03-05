@@ -65,12 +65,31 @@ export function calculateViolationRisk(
   let riskScore = 0
 
   // Base risk by severity
+  // For warnings, distinguish between confirmed violations (4.0) and
+  // verification-needed / order-check advisories (3.0).
+  // Verification warnings are identifiable by AI confidence < 0.7 or
+  // description keywords that indicate uncertainty ("verify", "check", "order").
   const severityWeights = {
     critical: 8.0,
     warning: 4.0,
     info: 1.5,
   }
   riskScore = severityWeights[violation.severity]
+
+  // Soften warning score when the violation is a verification advisory
+  // (not a confirmed defect) — e.g., ingredient order checks where AI
+  // cannot confirm the actual formulation proportions.
+  if (violation.severity === 'warning') {
+    const desc = violation.description.toLowerCase()
+    const isVerificationWarning =
+      desc.includes('thứ tự') || desc.includes('order') ||
+      desc.includes('verify') || desc.includes('kiểm tra') ||
+      desc.includes('xác nhận') || desc.includes('check')
+    const aiConfidence = violation.confidence_score ?? 1.0
+    if (isVerificationWarning || aiConfidence < 0.7) {
+      riskScore = 3.0  // Low-Medium instead of Medium
+    }
+  }
 
   // Boost risk if found in warning letters (enforcement precedent)
   let enforcementFrequency = 0
