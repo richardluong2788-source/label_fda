@@ -1066,6 +1066,7 @@ export async function POST(request: Request) {
       violations,
       warningLetterMatches: warningLetterContext,
       recallMatches: recallContext,
+      importAlertMatches: importAlertContext,
       extractionConfidence,
       legalReasoningConfidence,
     })
@@ -1077,6 +1078,12 @@ export async function POST(request: Request) {
     console.log('[v0] Risk Assessment:', riskResult.riskAssessment)
     console.log('[v0] Projected Risk (after fixes):', riskResult.projectedRiskScore, '/ 10')
     console.log('[v0] Enforcement Insights:', riskResult.enforcementInsights.length)
+    // ── Enforcement Risk Decomposition (Vấn đề 3 fix) ──────────────────────
+    console.log('[v0] ── Enforcement Risk Engine ──')
+    console.log('[v0]   Enforcement Risk Score (blended):', riskResult.enforcementRiskScore, '/ 10')
+    console.log('[v0]   Warning Letter Weight:', riskResult.warningLetterWeight, '/ 10')
+    console.log('[v0]   Recall Heat Index:', riskResult.recallHeatIndex, '/ 10')
+    console.log('[v0]   Import Alert Heat Index:', riskResult.importAlertHeatIndex, '/ 10')
 
     // Determine overall result and status
     const hasCritical = violations.some((v) => v.severity === 'critical')
@@ -1171,6 +1178,12 @@ export async function POST(request: Request) {
         overall_risk_score: riskResult.overallRiskScore,
         projected_risk_score: riskResult.projectedRiskScore,
         risk_assessment: riskResult.riskAssessment,
+        // ── Enforcement Risk Decomposition (Vấn đề 3) ──────────────────────
+        // Three independent enforcement signals stored for display in risk panel.
+        enforcement_risk_score: riskResult.enforcementRiskScore,
+        warning_letter_weight: riskResult.warningLetterWeight,
+        recall_heat_index: riskResult.recallHeatIndex,
+        import_alert_heat_index: riskResult.importAlertHeatIndex,
         violations: violations, // Redundant with `findings` — kept for backward compatibility (see note above)
         // Automatically unlock the report for the owner after a successful analysis.
         // This applies to all plans (Free Trial, Starter, Pro, Enterprise).

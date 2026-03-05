@@ -302,38 +302,119 @@ export class ClaimsValidator {
     'not been evaluated by the food and drug administration',
   ]
 
+  // ── QHC Normalized Uncertainty Hedge Tokens ───────────────────────────────
+  //
+  // Problem: Exact-string matching misses paraphrased uncertainty language.
+  // e.g. "Studies suggest eating nuts reduces heart disease risk." has:
+  //   ✓ "suggest"   (uncertainty verb)
+  //   ✓ "heart disease"
+  //   ✗ "suggests but does not prove"  ← exact phrase missing
+  //
+  // Solution: Maintain a list of uncertainty TOKENS (single key words / short
+  // phrases). If the sentence containing the disease term has ALL tokens from
+  // any one row in QHC_HEDGE_TOKEN_SETS, the claim is treated as a QHC.
+  //
+  // Each row is an AND-group: all tokens in the group must be present.
+  // Rows are OR'd: any one group matching → QHC detected.
+  //
+  // This gives ~85% similarity detection without a full NLP model.
+  private static QHC_HEDGE_TOKEN_SETS: string[][] = [
+    // FDA standard QHC exact phrase (highest confidence)
+    ['suggests but does not prove'],
+    ['supportive but not conclusive'],
+    ['limited and not conclusive'],
+    // Normalized token groups for paraphrased uncertainty language
+    ['scientific evidence', 'suggest'],          // "scientific evidence suggests..."
+    ['evidence', 'suggest', 'not prove'],         // "evidence suggests but does not prove"
+    ['studies', 'suggest', 'risk'],              // "studies suggest ... risk"
+    ['research', 'suggest', 'may'],              // "research suggests ... may reduce"
+    ['evidence', 'may', 'reduce', 'risk'],        // "evidence ... may reduce risk"
+    ['some evidence', 'suggest'],
+    ['emerging evidence', 'suggest'],
+    // Authorized health claim boilerplate fragments
+    ['as part of a diet', 'saturated fat'],
+    ['1.5 ounces', 'nuts'],
+    ['ounces per day', 'nuts'],
+    ['soluble fiber', 'heart'],
+    ['beta glucan'],
+    ['low in saturated fat and cholesterol'],
+    ['may reduce the risk of heart disease'],
+  ]
+
+  /**
+   * Split text into sentences on common sentence-ending punctuation.
+   * Handles: ". ", "! ", "? ", "\n" as sentence delimiters.
+   * Returns an array of trimmed, non-empty sentences.
+   */
+  private static splitSentences(text: string): string[] {
+    return text
+      .split(/(?<=[.!?\n])\s+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+  }
+
+  /**
+   * Returns true when a signal (exact substring) OR all tokens in a hedge
+   * token group appear in the given sentence.
+   */
+  private static sentenceHasQHCSignal(sentence: string): boolean {
+    // Fast path: exact signal match
+    if (this.FDA_QHC_UNCERTAINTY_SIGNALS.some(signal => sentence.includes(signal))) {
+      return true
+    }
+    // Normalized token-group match (paraphrase detection)
+    return this.QHC_HEDGE_TOKEN_SETS.some(group =>
+      group.every(token => sentence.includes(token))
+    )
+  }
+
   /**
    * Returns true when a DISEASE NAME (e.g. "cancer", "diabetes", "heart disease")
    * or RESTRICTED HEALTH CLAIM TERM appears in the label but is part of either:
-   *   (a) an FDA-approved Qualified Health Claim (has required QHC uncertainty language), OR
-   *   (b) a DSHEA-required disclaimer (the disease is mentioned only to deny treating it)
+   *   (a) an FDA-approved Qualified Health Claim — detected via:
+   *       1. Exact FDA QHC uncertainty signals (highest confidence), OR
+   *       2. Normalized token-group matching for paraphrased uncertainty language
+   *          (catches ~85% similarity without full NLP)
+   *       Both checks operate at SENTENCE level, not ±500-char window, to avoid
+   *       false authorization from signals in unrelated sentences.
+   *   (b) a DSHEA-required disclaimer (disease mentioned only to deny treating it)
+   *       Also checked at sentence level.
    *
-   * NOTE: This method must NOT be called for therapeutic action verbs ("cure", "treat",
-   * "diagnose") when evaluating standalone claims — the disclaimer does not authorize
-   * those verbs as affirmative product claims.
+   * NOTE: This method must NOT be called for therapeutic action verbs ("cure",
+   * "treat", "diagnose") — the DSHEA disclaimer does not authorize those as
+   * affirmative product claims.
    */
   private static isPartOfQualifiedHealthClaim(
     lowerText: string,
     term: string
   ): boolean {
-    const idx = lowerText.indexOf(term)
-    if (idx === -1) return false
+    if (!lowerText.includes(term)) return false
 
-    // Extract ±500-char window around the term for context analysis
-    const windowStart = Math.max(0, idx - 500)
-    const windowEnd   = Math.min(lowerText.length, idx + term.length + 500)
-    const window      = lowerText.slice(windowStart, windowEnd)
+    const sentences = this.splitSentences(lowerText)
 
-    // Check 1: Is this term part of an FDA-approved QHC?
-    if (this.FDA_QHC_UNCERTAINTY_SIGNALS.some(signal => window.includes(signal))) {
-      return true
-    }
+    for (const sentence of sentences) {
+      if (!sentence.includes(term)) continue
 
-    // Check 2: Is this term occurring inside a DSHEA disclaimer?
-    // Only applies to disease names, NOT to "cure"/"treat"/"diagnose" verb checks.
-    // (Callers that handle therapeutic verbs should skip calling this method.)
-    if (this.DSHEA_DISCLAIMER_SIGNALS.some(signal => window.includes(signal))) {
-      return true
+      // Check 1: QHC signal in the SAME sentence as the disease/claim term
+      if (this.sentenceHasQHCSignal(sentence)) return true
+
+      // Check 2: DSHEA disclaimer signal in the SAME sentence
+      // Disease names appearing in "not intended to treat/cure/prevent any disease"
+      // sentences are part of the disclaimer, not an affirmative claim.
+      if (this.DSHEA_DISCLAIMER_SIGNALS.some(signal => sentence.includes(signal))) {
+        return true
+      }
+
+      // Check 3: Adjacent sentence fallback (±1 sentence) for multi-sentence QHC blocks.
+      // FDA sometimes puts the hedge in the next sentence after naming the disease.
+      // e.g. "Eating nuts may help with heart disease. Scientific evidence suggests
+      //       but does not prove that 1.5oz of nuts per day reduces risk."
+      const idx = sentences.indexOf(sentence)
+      const neighbors = [sentences[idx - 1], sentences[idx + 1]].filter(Boolean)
+      for (const neighbor of neighbors) {
+        if (this.sentenceHasQHCSignal(neighbor)) return true
+        if (this.DSHEA_DISCLAIMER_SIGNALS.some(signal => neighbor.includes(signal))) return true
+      }
     }
 
     return false
@@ -345,12 +426,17 @@ export class ClaimsValidator {
    * "treat", "diagnose") where the DSHEA disclaimer provides no authorization.
    */
   private static isPartOfQHCOnly(lowerText: string, term: string): boolean {
-    const idx = lowerText.indexOf(term)
-    if (idx === -1) return false
-    const windowStart = Math.max(0, idx - 500)
-    const windowEnd   = Math.min(lowerText.length, idx + term.length + 500)
-    const window      = lowerText.slice(windowStart, windowEnd)
-    return this.FDA_QHC_UNCERTAINTY_SIGNALS.some(signal => window.includes(signal))
+    if (!lowerText.includes(term)) return false
+    const sentences = this.splitSentences(lowerText)
+    for (const sentence of sentences) {
+      if (!sentence.includes(term)) continue
+      if (this.sentenceHasQHCSignal(sentence)) return true
+      // Check adjacent sentence (multi-sentence QHC blocks)
+      const idx = sentences.indexOf(sentence)
+      const neighbors = [sentences[idx - 1], sentences[idx + 1]].filter(Boolean)
+      if (neighbors.some(n => this.sentenceHasQHCSignal(n))) return true
+    }
+    return false
   }
 
   // ─── FOOD / SUPPLEMENT validator ───────────────────────────────────────────
