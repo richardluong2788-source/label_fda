@@ -5,6 +5,10 @@
       "schedule": "0 2 * * *"
     },
     {
+      "path": "/api/cron/cleanup-expired-reports",
+      "schedule": "0 3 * * *"
+    },
+    {
       "path": "/api/cron/fetch-warning-letters",
       "schedule": "0 6 * * *"
     },
