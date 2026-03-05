@@ -30,22 +30,30 @@ import type { Citation } from '@/lib/types'
 export const maxDuration = 300
 
 export async function POST(request: Request) {
+  // ── Parse body first (auth token is in body to avoid header stripping) ───
+  const body = await request.json().catch(() => ({}))
+  
   // ── Internal auth guard ────────────────────────────────────
-  const processToken = request.headers.get('x-process-token') ?? ''
+  // Check both header and body for process token (headers may be stripped on redirects)
+  const processTokenHeader = request.headers.get('x-process-token') ?? ''
+  const processTokenBody = (body._processToken as string) ?? ''
+  const processToken = processTokenHeader || processTokenBody
   const expectedToken = process.env.PROCESS_SECRET_TOKEN ?? ''
+  
   if (expectedToken && processToken !== expectedToken) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const jobId      = request.headers.get('x-internal-job-id')      ?? ''
-  const userId     = request.headers.get('x-internal-user-id')     ?? ''
-  const reportId   = request.headers.get('x-internal-report-id')   ?? ''
+  // Read job context from headers OR body
+  const jobId = request.headers.get('x-internal-job-id') || (body._internal_job_id as string) || ''
+  const userId = request.headers.get('x-internal-user-id') || (body._internal_user_id as string) || ''
+  const reportId = request.headers.get('x-internal-report-id') || (body.reportId as string) || ''
 
   if (!jobId || !userId || !reportId) {
-    return NextResponse.json({ error: 'Missing internal headers' }, { status: 400 })
+    return NextResponse.json({ error: 'Missing internal context' }, { status: 400 })
   }
 
-  const { phase = 'full', visionDataConfirmed = false } = await request.json().catch(() => ({}))
+  const { phase = 'full', visionDataConfirmed = false } = body
 
   const supabase = createAdminClient()
 

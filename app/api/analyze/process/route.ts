@@ -22,16 +22,28 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export const maxDuration = 300
 
 export async function POST(request: Request) {
+  // ── Parse body first to get auth tokens (headers get stripped on redirects) ───
+  let body: Record<string, unknown> = {}
+  try {
+    body = await request.json()
+  } catch {
+    // Body may be empty for cron calls
+  }
+
   // ── Auth guard ─────────────────────────────────────────────
-  const processToken = request.headers.get('x-process-token') ?? ''
+  // Check headers first (for cron), then body (for internal calls)
+  const processTokenHeader = request.headers.get('x-process-token') ?? ''
+  const processTokenBody = (body._processToken as string) ?? ''
+  const processToken = processTokenHeader || processTokenBody
+  
   const cronSig = request.headers.get('x-vercel-cron-signature') ?? ''
   const expectedToken = process.env.PROCESS_SECRET_TOKEN ?? ''
   
-  // Check for internal service call header (set by submit route)
-  const internalServiceKey = request.headers.get('x-internal-service-key') ?? ''
+  // Check for internal service call (from submit route via body)
+  const internalServiceKeyHeader = request.headers.get('x-internal-service-key') ?? ''
+  const internalServiceKeyBody = (body._internalServiceKey as string) ?? ''
+  const internalServiceKey = internalServiceKeyHeader || internalServiceKeyBody
   const expectedServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(-32) ?? ''
-
-
 
   // Allow: correct process token, cron call, internal service key, or dev mode
   const isAuthorized =
@@ -43,6 +55,9 @@ export async function POST(request: Request) {
   if (!isAuthorized) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
+  
+  // Extract jobId from body (already parsed above)
+  const jobId = body.jobId as string | undefined
 
   // ── Dequeue ────────────────────────────────────────────────
   const job = await dequeueNextJob()
@@ -111,16 +126,20 @@ export async function POST(request: Request) {
     // Update progress before the long-running call
     await updateJobProgress(job.id, 'Running AI Vision analysis', 20)
 
+    // Send auth token in body to avoid header stripping on redirects
+    const runBody = {
+      reportId:            job.report_id,
+      phase:               payload.phase ?? 'full',
+      visionDataConfirmed: payload.visionDataConfirmed ?? false,
+      _internal_job_id:    job.id,
+      _internal_user_id:   job.user_id,
+      _processToken:       expectedToken,
+    }
+
     const analyzeRes = await fetch(`${appUrl}/api/analyze/process/run`, {
       method: 'POST',
-      headers: {
-        'Content-Type':             'application/json',
-        'x-process-token':          expectedToken,
-        'x-internal-job-id':        job.id,
-        'x-internal-user-id':       job.user_id,
-        'x-internal-report-id':     job.report_id,
-      },
-      body: syntheticBody,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(runBody),
     })
 
     if (!analyzeRes.ok) {

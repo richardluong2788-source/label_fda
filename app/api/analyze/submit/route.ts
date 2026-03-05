@@ -191,18 +191,18 @@ export async function POST(request: Request) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL 
       || `${requestUrl.protocol}//${requestUrl.host}`
 
+    // Send auth tokens in body instead of headers (headers get stripped on redirects)
     const processToken = process.env.PROCESS_SECRET_TOKEN ?? ''
-    // Fallback internal key: use last 32 chars of service role key as internal auth
     const internalServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(-32) ?? ''
     
     fetch(`${baseUrl}/api/analyze/process`, {
       method: 'POST',
-      headers: {
-        'Content-Type':           'application/json',
-        'x-process-token':        processToken,
-        'x-internal-service-key': internalServiceKey,
-      },
-      body: JSON.stringify({ jobId: job.id }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        jobId: job.id,
+        _processToken: processToken,
+        _internalServiceKey: internalServiceKey,
+      }),
     }).catch(err => console.error('[submit] Failed to trigger process:', err))
 
     return NextResponse.json({
