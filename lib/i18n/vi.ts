@@ -276,7 +276,7 @@ export const vi = {
     riskScoreLabel: 'Điểm rủi ro',
     citationsCount: (count: number) => `${count} trích dẫn quy định`,
     enforcementFrequency: (count: number) => `FDA đã xử phạt ${count} lần vì lỗi tương tự`,
-    criticalNeedsExpert: 'Vi phạm này cần chuyên gia xem xét',
+    criticalNeedsExpert: 'Vi phạm này cần chuyên gia xem x��t',
     getExpertHelp: 'Liên hệ chuyên gia Vexim',
     // Geometry violations
     actualValue: 'GIÁ TRỊ THỰC TẾ',
@@ -530,7 +530,7 @@ export const vi = {
     advancedTips: [
       { title: 'Chọn đúng danh mục sản phẩm', desc: 'Vào "Tùy chọn nâng cao" và chọn đúng Product Category (Food, Beverage, Dietary Supplement, Cosmetic...). AI sẽ áp dụng bộ quy định FDA đúng với loại sản phẩm của bạn thay vì dùng mặc định.' },
       { title: 'Nhập kích thước vật lý của nhãn', desc: 'Đo chiều rộng × chiều cao của bề mặt nhãn (cm) và nhập vào ô Kích thước vật lý. AI dùng thông tin này để kiểm tra font size có đạt chuẩn tối thiểu 21 CFR 101.105 hay không.' },
-      { title: 'Khai báo ngôn ngữ phụ', desc: 'Nếu nhãn có song ngữ (Anh + Việt), "Nhãn này có chữ ngoài tiếng Anh" và chọn ngôn ngữ. AI sẽ kiểm tra xem tất cả thông tin bắt buộc đã dịch đầy đủ chưa theo 21 CFR 101.15.' },
+      { title: 'Khai báo ngôn ngữ phụ', desc: 'Nếu nhãn có song ngữ (Anh + Việt), b��t "Nhãn này có chữ ngoài tiếng Anh" và chọn ngôn ngữ. AI sẽ kiểm tra xem tất cả thông tin bắt buộc đã dịch đầy đủ chưa theo 21 CFR 101.15.' },
       { title: 'Cách chụp ảnh chất lượng cao', desc: 'Đặt sản phẩm lên nền trắng, chụp bằng điện thoại ở chế độ ban ngày tự nhiên hoặc đèn trắng. Giữ điện thoại song song với mặt nhãn. Không dùng zoom số.' },
     ],
     mistakesTitle: 'Lỗi phổ biến khiến kết quả không chính xác',
