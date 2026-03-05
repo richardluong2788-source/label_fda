@@ -265,6 +265,7 @@ export async function POST(request: Request) {
             // Vision also says food — refine via content signals with strict priority:
             //
             // Priority order (highest → lowest):
+            //   0. INFANT FORMULA signals → infant_formula (21 CFR 107, NOT 21 CFR 101.9)
             //   1. "Drug Facts" or "Active Ingredient" → drug_otc  (always OTC drug, no exception)
             //   2. "Supplement Facts" → supplement
             //   3. "Nutrition Facts" or "Calories" → force FOOD — do NOT reclassify as cosmetic
@@ -274,7 +275,20 @@ export async function POST(request: Request) {
             // This prevents food multipack labels (e.g. pistachios with Nutrition Facts panel)
             // from being misclassified as cosmetics due to the generic "ingredients" keyword.
             const allText = visionResult.textElements.allText?.toLowerCase() || ''
-            if (allText.includes('drug facts') || allText.includes('active ingredient')) {
+            
+            // INFANT FORMULA DETECTION: Check for infant formula specific signals
+            // Infant formula is regulated under 21 CFR 107, NOT 21 CFR 101.9
+            const isInfantFormula = 
+              allText.includes('infant formula') ||
+              allText.includes('0-12 month') ||
+              allText.includes('0 to 12 month') ||
+              allText.includes('nutrients per 100 calories') || // Unique to infant formula format
+              (allText.includes('infant') && allText.includes('formula')) ||
+              (allText.includes('baby') && allText.includes('formula'))
+            
+            if (isInfantFormula) {
+              ;(productDomain as any) = 'infant_formula'
+            } else if (allText.includes('drug facts') || allText.includes('active ingredient')) {
               ;(productDomain as any) = 'drug_otc'
             } else if (allText.includes('supplement facts')) {
               ;(productDomain as any) = 'supplement'
@@ -290,7 +304,18 @@ export async function POST(request: Request) {
         } else if (!userChoseProductType) {
           // No Vision detectedProductType at all — still apply content-signal refinement
           const allText = visionResult.textElements.allText?.toLowerCase() || ''
-          if (allText.includes('drug facts') || allText.includes('active ingredient')) {
+          
+          // Check for infant formula FIRST
+          const isInfantFormula = 
+            allText.includes('infant formula') ||
+            allText.includes('0-12 month') ||
+            allText.includes('0 to 12 month') ||
+            allText.includes('nutrients per 100 calories') ||
+            (allText.includes('infant') && allText.includes('formula'))
+          
+          if (isInfantFormula) {
+            ;(productDomain as any) = 'infant_formula'
+          } else if (allText.includes('drug facts') || allText.includes('active ingredient')) {
             ;(productDomain as any) = 'drug_otc'
           } else if (allText.includes('supplement facts')) {
             ;(productDomain as any) = 'supplement'
@@ -637,8 +662,11 @@ export async function POST(request: Request) {
     const extractedNutritionFacts = visionResult.nutritionFacts
 
     // Apply FDA rounding rules validation
+    // NOTE: Infant formula (21 CFR 107) and supplements (21 CFR 101.36) are exempt
+    // from standard 21 CFR 101.9(c) rounding rules - they require higher precision
     const nutritionValidation = NutritionValidator.validateNutritionFacts(
-      extractedNutritionFacts
+      extractedNutritionFacts,
+      productDomain
     )
 
     // Step 3: Visual geometry analysis using AI-extracted text elements and REAL dimensions
