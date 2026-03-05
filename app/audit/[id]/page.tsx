@@ -196,7 +196,11 @@ export default function AuditPage() {
       // Step 2: Poll /api/analyze/status every 2 s until completed/failed
       const POLL_INTERVAL_MS = 2000
       const MAX_POLLS = 180 // 6 min max (180 × 2s)
+      // After this many polls with status still 'queued', re-trigger the process
+      // endpoint in case the fire-and-forget was killed (no Cron safety net)
+      const STALE_QUEUED_RETRIGGER_POLLS = 5 // ~10 s
       let pollCount = 0
+      let retriggered = false
 
       await new Promise<void>((resolve, reject) => {
         const pollInterval = setInterval(async () => {
@@ -213,6 +217,21 @@ export default function AuditPage() {
             if (!statusRes.ok) return // transient error — keep polling
 
             const statusData = await statusRes.json()
+
+            // Re-trigger process if job is stuck in 'queued' after ~10 s
+            // (fire-and-forget may have been killed before the process route ran)
+            if (
+              !retriggered &&
+              statusData.status === 'queued' &&
+              pollCount >= STALE_QUEUED_RETRIGGER_POLLS
+            ) {
+              retriggered = true
+              fetch('/api/analyze/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reportId: params.id }),
+              }).catch(() => {}) // fire-and-forget, ignore errors
+            }
 
             // Update UI progress from server-driven step
             const serverProgress = statusData.progress ?? 0
