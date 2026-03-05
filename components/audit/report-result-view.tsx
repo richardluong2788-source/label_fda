@@ -285,11 +285,18 @@ function IngredientTags({ ingredientList }: { ingredientList: string }) {
 // Severity Badge (NGHIEM TRONG / CANH BAO)
 // ────────────────────────────────────────────────────────────
 
-function SeverityBadge({ severity, t }: { severity: string; t: ReturnType<typeof useTranslation>['t'] }) {
+  function SeverityBadge({ severity, t }: { severity: string; t: ReturnType<typeof useTranslation>['t'] }) {
   if (severity === 'critical') {
     return (
       <span className="inline-flex items-center px-3 py-1 rounded text-xs font-bold uppercase tracking-wide bg-red-500 text-white">
         {t.report.critical}
+      </span>
+    )
+  }
+  if (severity === 'info') {
+    return (
+      <span className="inline-flex items-center px-3 py-1 rounded text-xs font-bold uppercase tracking-wide bg-blue-500 text-white">
+        {t.report.advisoryBadge}
       </span>
     )
   }
@@ -298,7 +305,7 @@ function SeverityBadge({ severity, t }: { severity: string; t: ReturnType<typeof
       {t.report.warning}
     </span>
   )
-}
+  }
 
 // ────────────────────────────────────────────────────────────
 // Violation Icon
@@ -660,14 +667,18 @@ function ContrastViolationCard({
     severity: 'critical' | 'warning' | 'info'
     description: string
     ratio?: number
+    requiredMinRatio?: number
+    textSize?: 'normal' | 'large'
+    elementRole?: 'regulatory' | 'brand'
     recommendation?: string
     colors?: { foreground: string; background: string }
   }
   t: ReturnType<typeof useTranslation>['t']
-}) {
+  }) {
   const ratioText = violation.ratio
-    ? t.report.contrastRatio(violation.ratio)
+    ? t.report.contrastRatio(violation.ratio, violation.requiredMinRatio)
     : violation.description
+  const isBrandText = violation.elementRole === 'brand'
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -688,7 +699,7 @@ function ContrastViolationCard({
             </div>
           </div>
         </div>
-        <SeverityBadge severity={violation.severity === 'critical' ? 'critical' : 'warning'} t={t} />
+        <SeverityBadge severity={violation.severity} t={t} />
       </div>
 
       {/* A/B Comparison Grid */}
@@ -840,7 +851,11 @@ export function ReportResultView({
     contrastViolations.filter((v) => v.severity === 'critical').length
   const warningCount =
     allViolations.filter((v) => v.severity === 'warning').length +
-    contrastViolations.filter((v) => v.severity === 'warning' || v.severity === 'info').length
+    contrastViolations.filter((v) => v.severity === 'warning').length
+
+  const infoCount =
+    allViolations.filter((v) => v.severity === 'info').length +
+    contrastViolations.filter((v) => v.severity === 'info').length
 
   const descParts: string[] = []
   if (criticalCount > 0) descParts.push(`${criticalCount} ${t.report.criticalViolations}`)
@@ -1202,8 +1217,12 @@ export function ReportResultView({
                     </span>
                   </h2>
                   <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                    {descParts.length > 0
-                      ? t.report.riskDescWithIssues(descParts.join(` ${t.report.andWord} `))
+                {descParts.length > 0 && infoCount > 0
+                  ? t.report.riskDescWithAdvisory(descParts.join(` ${t.report.andWord} `), `${infoCount} ${t.report.advisoryNotes}`)
+                  : descParts.length > 0
+                    ? t.report.riskDescWithIssues(descParts.join(` ${t.report.andWord} `))
+                    : infoCount > 0
+                      ? t.report.riskDescAdvisoryOnly(`${infoCount} ${t.report.advisoryNotes}`)
                       : t.report.riskDescCompliant}
                   </p>
                   {projectedRiskScore !== undefined && projectedRiskScore !== null && projectedRiskScore < riskScore && (

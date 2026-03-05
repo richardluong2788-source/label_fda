@@ -641,11 +641,9 @@ export async function POST(request: Request) {
         element.colors.foreground.toUpperCase() === '#000000' &&
         element.colors.background.toUpperCase() === '#FFFFFF'
       if (!element.text || element.text.trim().length === 0) {
-        console.log(`[v0] Skipping contrast for ${name}: no text detected`)
         continue
       }
       if (element.colors.isFallback || (isDefaultFallback && (!element.boundingBox || element.boundingBox.confidence < 0.7))) {
-        console.log(`[v0] Skipping contrast for ${name}: fallback colors — AI did not extract real colors`)
         continue
       }
 
@@ -676,17 +674,21 @@ export async function POST(request: Request) {
         const isLargeText = fontSizePt >= 24 || (isBold && fontSizePt >= 18)
         const textSize: 'normal' | 'large' = isLargeText ? 'large' : 'normal'
 
-        console.log(`[v0] Contrast check for ${name}: fontSize=${fontSizePt}pt, bold=${isBold}, textSize=${textSize}, role=${role}`)
-
-        // --- FIX 2: Pass elementRole so brand text gets advisory severity ---
+        // Pass elementRole so brand text gets advisory severity
         const contrastResult = ContrastChecker.validateContrast(foreground, background, textSize, role)
         
+        // For large brand text, WCAG AA minimum is 3:1; for normal text it's 4.5:1
+        const requiredMinRatio = textSize === 'large' ? 3 : 4.5
+
         if (!contrastResult.isReadable) {
           contrastViolations.push({
             type: 'contrast',
             severity: role === 'regulatory' ? 'warning' as const : 'info' as const,
             description: `${name}: ${contrastResult.warning || 'Poor color contrast detected'}`,
             ratio: contrastResult.ratio,
+            requiredMinRatio,
+            textSize,
+            elementRole: role,
             recommendation: contrastResult.recommendation,
             colors: {
               foreground: element.colors.foreground,

@@ -1247,8 +1247,8 @@ ${hasTech ? `
           <div class="tech-item-desc">${escapeHtml(cv.description || '')}</div>
           ${cv.ratio !== undefined ? `
           <div style="margin-top: 4px; font-size: 9px;">
-            ${L.contrastRatio}: <strong style="color: ${cv.ratio >= 4.5 ? '#16a34a' : cv.ratio >= 3 ? '#f59e0b' : '#dc2626'}">${cv.ratio.toFixed(2)}:1</strong>
-            <span style="color: #94a3b8;">(${L.minimum} 4.5:1)</span>
+            ${L.contrastRatio}: <strong style="color: ${cv.ratio >= (cv.requiredMinRatio || 4.5) ? '#16a34a' : cv.ratio >= 3 ? '#f59e0b' : '#dc2626'}">${cv.ratio.toFixed(2)}:1</strong>
+            <span style="color: #94a3b8;">(${L.minimum} ${(cv.requiredMinRatio || 4.5).toFixed(1)}:1${cv.textSize === 'large' ? ' — large text' : ''}${cv.elementRole === 'brand' ? ' — brand/decorative' : ''})</span>
           </div>` : ''}
           ${cv.colors ? `
           <div style="margin-top: 4px; font-size: 8px; display: flex; align-items: center; gap: 8px;">
