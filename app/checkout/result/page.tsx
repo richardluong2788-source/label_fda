@@ -16,8 +16,21 @@ function ResultInner() {
   const type    = params.get('type')
   const reportId = params.get('reportId')
 
-  const isSuccess = status === 'success'
+  const isSuccess       = status === 'success'
   const isAddonPurchase = type === 'addon_expert_review'
+  const isSingleReport  = type === 'single_report'
+
+  const successTitle = isAddonPurchase
+    ? 'Expert Review đã được yêu cầu!'
+    : isSingleReport
+    ? 'Báo cáo đã được mở khóa!'
+    : 'Thanh toán thành công!'
+
+  const successSubtitle = isAddonPurchase
+    ? 'Yêu cầu của bạn đã được gửi. Chuyên gia sẽ xem xét trong vòng 48 giờ.'
+    : isSingleReport
+    ? 'Bạn có thể xem đầy đủ báo cáo kiểm tra ngay bây giờ.'
+    : message
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -30,16 +43,10 @@ function ResultInner() {
 
         <div>
           <h1 className="text-2xl font-bold mb-2">
-            {isSuccess 
-              ? isAddonPurchase 
-                ? 'Expert Review đã được yêu cầu!' 
-                : 'Thanh toán thành công!' 
-              : 'Thanh toán thất bại'}
+            {isSuccess ? successTitle : 'Thanh toán thất bại'}
           </h1>
           <p className="text-muted-foreground">
-            {isAddonPurchase && isSuccess
-              ? 'Yêu cầu của bạn đã được gửi. Chuyên gia Vexim sẽ xem xét trong vòng 48 giờ.'
-              : message}
+            {isSuccess ? successSubtitle : message}
           </p>
         </div>
 
@@ -57,10 +64,14 @@ function ResultInner() {
             )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">
-                {isAddonPurchase ? 'Loại giao dịch' : 'Trạng thái gói'}
+                {isAddonPurchase ? 'Loại giao dịch' : isSingleReport ? 'Loại giao dịch' : 'Trạng thái gói'}
               </span>
               <span className="font-medium text-green-700">
-                {isAddonPurchase ? 'Expert Review (Mua lẻ)' : 'Đã kích hoạt'}
+                {isAddonPurchase
+                  ? 'Expert Review (Mua lẻ)'
+                  : isSingleReport
+                  ? 'Mở khóa báo cáo'
+                  : 'Đã kích hoạt'}
               </span>
             </div>
           </div>
@@ -68,7 +79,7 @@ function ResultInner() {
 
         <div className="flex flex-col gap-2 pt-2">
           {isSuccess ? (
-            isAddonPurchase ? (
+            isAddonPurchase || isSingleReport ? (
               <>
                 <Button asChild>
                   <Link href={reportId ? `/audit/${reportId}` : '/history'}>

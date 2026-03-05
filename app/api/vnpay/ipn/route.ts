@@ -32,7 +32,7 @@ async function handleIPN(request: NextRequest) {
   const bankCode     = query.vnp_BankCode ?? ''
   const transactionNo = query.vnp_TransactionNo ?? ''
 
-  const { success } = decodeResponseCode(responseCode)
+  decodeResponseCode(responseCode)  // parse but use vnp_TransactionStatus for final decision
 
   const supabase = await createClient()
 
@@ -52,29 +52,44 @@ async function handleIPN(request: NextRequest) {
     return NextResponse.json({ RspCode: '02', Message: 'Order already confirmed' })
   }
 
-  // 4. Verify amount matches
+  // 4. Verify amount matches (VNPay gửi số tiền × 100, ví dụ 100.000đ → 10000000)
   const expectedAmount = txn.amount_vnd * 100
   if (Number(amountRaw) !== expectedAmount) {
-    return NextResponse.json({ RspCode: '04', Message: 'Invalid amount' })
+    return NextResponse.json({ RspCode: '04', Message: 'invalid amount' })
   }
 
   // 5. Update transaction
+  // Theo spec VNPay: giao dịch thành công khi cả vnp_ResponseCode='00' VÀ vnp_TransactionStatus='00'
+  const transactionStatus = query.vnp_TransactionStatus ?? '99'
+  const isSuccess = responseCode === '00' && transactionStatus === '00'
+
   await supabase
     .from('payment_transactions')
     .update({
-      status:               success ? 'completed' : 'failed',
+      status:               isSuccess ? 'completed' : 'failed',
       vnpay_response_code:  responseCode,
       vnpay_bank_code:      bankCode,
       vnpay_transaction_no: transactionNo,
-      completed_at:         success ? new Date().toISOString() : null,
+      completed_at:         isSuccess ? new Date().toISOString() : null,
     })
     .eq('id', txn.id)
 
-  // 6. Activate subscription on success OR create addon expert request
-  if (success) {
-    const isAddonPurchase = txn.transaction_type === 'addon_expert_review'
+  // 6. Activate subscription on success OR create addon expert request OR unlock single report
+  if (isSuccess) {
+    const isAddonPurchase  = txn.transaction_type === 'addon_expert_review'
+    const isSingleReport   = txn.transaction_type === 'single_report'
     
-    if (isAddonPurchase) {
+    if (isSingleReport) {
+      // Mở khóa báo cáo kiểm tra đơn lẻ
+      await supabase
+        .from('audit_reports')
+        .update({
+          report_unlocked: true,
+          payment_status:  'paid',
+        })
+        .eq('id', txn.addon_audit_report_id)
+        .eq('user_id', txn.user_id)
+    } else if (isAddonPurchase) {
       // Handle addon Expert Review purchase
       const metadata = txn.addon_metadata as { 
         target_market?: string

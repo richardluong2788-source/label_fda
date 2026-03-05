@@ -1,14 +1,21 @@
 /**
  * VNPay Payment Gateway Helper
- * Docs: https://sandbox.vnpayment.vn/apis/docs/
+ * Docs: https://sandbox.vnpayment.vn/apis/docs/thanh-toan-pay/pay.html
  *
- * Set these env vars when you get credentials:
- *   VNPAY_TMN_CODE      – Terminal/Merchant code from VNPay dashboard
- *   VNPAY_HASH_SECRET   – Hash secret key from VNPay dashboard
- *   NEXT_PUBLIC_APP_URL – Public URL of this app (e.g. https://yourapp.vercel.app)
+ * Cấu hình environment variables:
+ *   VNPAY_TMN_CODE      – Mã TmnCode từ VNPay dashboard
+ *   VNPAY_HASH_SECRET   – Hash secret key từ VNPay dashboard
+ *   NEXT_PUBLIC_APP_URL – URL công khai của app (e.g. https://yourapp.vercel.app)
+ *   VNPAY_PAY_URL       – (Tùy chọn) Mặc định sandbox; đặt thành production khi go-live
  *
- * Until credentials are set, the helper operates in DEMO mode and returns a
- * simulated QR / payment URL so the rest of the UI can be developed/tested.
+ * Khi chưa có credentials, helper chạy ở DEMO MODE và trả về URL giả lập.
+ *
+ * ─── QUAN TRỌNG (theo spec VNPay) ───────────────────────────────────────────
+ * 1. signData được build bằng cách sắp xếp key theo alphabet, sau đó nối
+ *    "key=value" KHÔNG encode, rồi ký bằng HMAC-SHA512.
+ * 2. URL thanh toán dùng encodeURIComponent cho value (thay %20 → +).
+ * 3. vnp_Amount = số tiền VND × 100 (bỏ phần thập phân).
+ * 4. IPN phản hồi JSON { RspCode, Message } — không redirect.
  */
 
 import crypto from 'crypto'
@@ -19,7 +26,6 @@ export const VNPAY_CONFIG = {
   tmnCode:    process.env.VNPAY_TMN_CODE    ?? '',
   hashSecret: process.env.VNPAY_HASH_SECRET ?? '',
   /**
-   * Switch between sandbox (dev/testing) and production when you have live creds.
    * Sandbox:    https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
    * Production: https://pay.vnpay.vn/vpcpay.html
    */
@@ -30,6 +36,8 @@ export const VNPAY_CONFIG = {
   command:   'pay',
   currCode:  'VND',
   locale:    'vn',
+  /** Expire time in minutes (VNPay recommends 15 minutes) */
+  expireMinutes: 15,
 }
 
 export const IS_DEMO_MODE = !VNPAY_CONFIG.tmnCode || !VNPAY_CONFIG.hashSecret
@@ -37,27 +45,29 @@ export const IS_DEMO_MODE = !VNPAY_CONFIG.tmnCode || !VNPAY_CONFIG.hashSecret
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface CreatePaymentParams {
-  txnRef:       string   // Unique transaction reference (max 20 chars)
-  amount:       number   // Amount in VND (no decimals)
-  orderInfo:    string   // Order description shown to user
-  ipAddr:       string   // User's IP address
-  bankCode?:    string   // Optional: pre-select bank (e.g. 'NCB', 'VCB')
-  orderType?:   string   // Order type (default 'other')
+  txnRef:       string   // Mã tham chiếu giao dịch, duy nhất trong ngày (max 100 chars)
+  amount:       number   // Số tiền VND (không có phần thập phân, chưa nhân 100)
+  orderInfo:    string   // Nội dung thanh toán — tiếng Việt không dấu, không ký tự đặc biệt
+  ipAddr:       string   // IP của khách hàng
+  bankCode?:    string   // Tùy chọn: VNPAYQR | VNBANK | INTCARD hoặc mã ngân hàng cụ thể
+  orderType?:   string   // Danh mục hàng hóa (default: 'other')
+  locale?:      'vn' | 'en'  // Ngôn ngữ giao diện VNPay (default: 'vn')
 }
 
 export interface VNPayCallbackParams {
-  vnp_Amount:           string
-  vnp_BankCode:         string
-  vnp_BankTranNo:       string
-  vnp_CardType:         string
-  vnp_OrderInfo:        string
-  vnp_PayDate:          string
-  vnp_ResponseCode:     string
-  vnp_TmnCode:          string
-  vnp_TransactionNo:    string
+  vnp_Amount:            string
+  vnp_BankCode:          string
+  vnp_BankTranNo:        string
+  vnp_CardType:          string
+  vnp_OrderInfo:         string
+  vnp_PayDate:           string
+  vnp_ResponseCode:      string
+  vnp_TmnCode:           string
+  vnp_TransactionNo:     string
   vnp_TransactionStatus: string
-  vnp_TxnRef:           string
-  vnp_SecureHash:       string
+  vnp_TxnRef:            string
+  vnp_SecureHash:        string
+  vnp_SecureHashType?:   string
 }
 
 export interface PaymentResult {
@@ -68,121 +78,169 @@ export interface PaymentResult {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Sort object keys alphabetically and build query string for signing */
-function sortedQueryString(params: Record<string, string>): string {
-  return Object.keys(params)
+/**
+ * Sắp xếp object theo key alphabet.
+ * Theo spec VNPay: "Dữ liệu checksum được thành lập dựa trên việc sắp xếp
+ * tăng dần của tên tham số (QueryString)"
+ */
+function sortObject(params: Record<string, string>): Record<string, string> {
+  const sorted: Record<string, string> = {}
+  Object.keys(params)
     .sort()
-    .map((k) => `${k}=${encodeURIComponent(params[k]).replace(/%20/g, '+')}`)
+    .forEach((key) => { sorted[key] = params[key] })
+  return sorted
+}
+
+/**
+ * Build signData string — KHÔNG encode key hay value.
+ * Đây là chuỗi dùng để tính HMAC-SHA512.
+ * Theo NodeJS sample của VNPay: qs.stringify(vnp_Params, { encode: false })
+ */
+function buildSignData(params: Record<string, string>): string {
+  return Object.entries(sortObject(params))
+    .map(([k, v]) => `${k}=${v}`)
     .join('&')
 }
 
-/** HMAC-SHA512 signature as required by VNPay */
+/**
+ * Build query string cho URL thanh toán — encode value theo chuẩn URL.
+ * Theo NodeJS sample: qs.stringify(vnp_Params, { encode: false }) + hash
+ * Tuy nhiên khi gắn vào URL thực tế, value cần được encode.
+ */
+function buildQueryString(params: Record<string, string>): string {
+  return Object.entries(sortObject(params))
+    .map(([k, v]) => `${k}=${encodeURIComponent(v).replace(/%20/g, '+')}`)
+    .join('&')
+}
+
+/** HMAC-SHA512 signature theo yêu cầu của VNPay */
 export function createHmac512(data: string, secret: string): string {
   return crypto.createHmac('sha512', secret).update(Buffer.from(data, 'utf-8')).digest('hex')
 }
 
-/** Format date as yyyyMMddHHmmss (VNPay format) */
+/** Format date as yyyyMMddHHmmss theo timezone GMT+7 (VNPay format) */
 function formatDate(date: Date): string {
+  // Chuyển sang GMT+7
+  const gmt7 = new Date(date.getTime() + 7 * 60 * 60 * 1000)
   const pad = (n: number) => String(n).padStart(2, '0')
   return (
-    `${date.getFullYear()}` +
-    `${pad(date.getMonth() + 1)}` +
-    `${pad(date.getDate())}` +
-    `${pad(date.getHours())}` +
-    `${pad(date.getMinutes())}` +
-    `${pad(date.getSeconds())}`
+    `${gmt7.getUTCFullYear()}` +
+    `${pad(gmt7.getUTCMonth() + 1)}` +
+    `${pad(gmt7.getUTCDate())}` +
+    `${pad(gmt7.getUTCHours())}` +
+    `${pad(gmt7.getUTCMinutes())}` +
+    `${pad(gmt7.getUTCSeconds())}`
   )
 }
 
 // ─── Core Functions ───────────────────────────────────────────────────────────
 
 /**
- * Build a VNPay payment URL.
- * In DEMO mode, returns a fake URL so the app can be tested without credentials.
+ * Tạo VNPay payment URL.
+ * DEMO mode: trả URL nội bộ để test mà không cần credentials.
+ * LIVE mode: tạo URL hợp lệ theo đúng spec VNPay 2.1.0.
  */
 export function createPaymentUrl(params: CreatePaymentParams): PaymentResult {
-  const { txnRef, amount, orderInfo, ipAddr, bankCode, orderType } = params
+  const { txnRef, amount, orderInfo, ipAddr, bankCode, orderType, locale } = params
 
   if (IS_DEMO_MODE) {
     const demoUrl =
-      `/checkout/demo?txnRef=${txnRef}` +
+      `/checkout/demo?txnRef=${encodeURIComponent(txnRef)}` +
       `&amount=${amount}` +
       `&orderInfo=${encodeURIComponent(orderInfo)}`
     return { payUrl: demoUrl, txnRef, isDemoMode: true }
   }
 
-  const now       = new Date()
-  const expireAt  = new Date(now.getTime() + 15 * 60 * 1000) // 15 min window
+  const now      = new Date()
+  const expireAt = new Date(now.getTime() + VNPAY_CONFIG.expireMinutes * 60 * 1000)
 
   const vnpParams: Record<string, string> = {
-    vnp_Version:       VNPAY_CONFIG.version,
-    vnp_Command:       VNPAY_CONFIG.command,
-    vnp_TmnCode:       VNPAY_CONFIG.tmnCode,
-    vnp_Amount:        String(amount * 100),           // VNPay expects amount × 100
-    vnp_CurrCode:      VNPAY_CONFIG.currCode,
-    vnp_TxnRef:        txnRef,
-    vnp_OrderInfo:     orderInfo,
-    vnp_OrderType:     orderType ?? 'other',
-    vnp_Locale:        VNPAY_CONFIG.locale,
-    vnp_ReturnUrl:     VNPAY_CONFIG.returnUrl,
-    vnp_IpAddr:        ipAddr,
-    vnp_CreateDate:    formatDate(now),
-    vnp_ExpireDate:    formatDate(expireAt),
+    vnp_Version:    VNPAY_CONFIG.version,
+    vnp_Command:    VNPAY_CONFIG.command,
+    vnp_TmnCode:    VNPAY_CONFIG.tmnCode,
+    vnp_Amount:     String(amount * 100),       // VNPay yêu cầu nhân 100 để bỏ phần thập phân
+    vnp_CurrCode:   VNPAY_CONFIG.currCode,
+    vnp_TxnRef:     txnRef,
+    vnp_OrderInfo:  orderInfo,
+    vnp_OrderType:  orderType ?? 'other',
+    vnp_Locale:     locale ?? VNPAY_CONFIG.locale,
+    vnp_ReturnUrl:  VNPAY_CONFIG.returnUrl,
+    vnp_IpAddr:     ipAddr,
+    vnp_CreateDate: formatDate(now),
+    vnp_ExpireDate: formatDate(expireAt),
   }
 
+  // vnp_BankCode tùy chọn: nếu không gửi, VNPay hiển thị trang chọn ngân hàng
   if (bankCode) vnpParams.vnp_BankCode = bankCode
 
-  const signData = sortedQueryString(vnpParams)
+  // Bước 1: Build signData KHÔNG encode (theo spec VNPay)
+  const signData   = buildSignData(vnpParams)
   const secureHash = createHmac512(signData, VNPAY_CONFIG.hashSecret)
 
-  const finalQuery = sortedQueryString(vnpParams) + `&vnp_SecureHash=${secureHash}`
-  const payUrl = `${VNPAY_CONFIG.payUrl}?${finalQuery}`
+  // Bước 2: Build URL với value được encode
+  const queryString = buildQueryString(vnpParams) + `&vnp_SecureHash=${secureHash}`
+  const payUrl      = `${VNPAY_CONFIG.payUrl}?${queryString}`
 
   return { payUrl, txnRef, isDemoMode: false }
 }
 
 /**
- * Verify VNPay callback / IPN signature.
- * Returns true if the hash is valid (i.e. data was not tampered with).
+ * Xác minh chữ ký từ VNPay callback / IPN.
+ * Trả về true nếu hash hợp lệ (dữ liệu không bị giả mạo).
+ *
+ * Theo spec VNPay:
+ * - Loại bỏ vnp_SecureHash và vnp_SecureHashType khỏi tập tham số
+ * - Sắp xếp key theo alphabet
+ * - Build signData KHÔNG encode
+ * - So sánh HMAC-SHA512
  */
 export function verifyCallbackSignature(query: Record<string, string>): boolean {
   if (IS_DEMO_MODE) return true
 
-  const { vnp_SecureHash, ...rest } = query
-  // Remove any extra secure hash fields VNPay may add
-  delete rest.vnp_SecureHashType
+  const params = { ...query }
+  const receivedHash = params['vnp_SecureHash'] ?? ''
 
-  const signData   = sortedQueryString(rest)
+  // Xóa các tham số hash trước khi tính lại
+  delete params['vnp_SecureHash']
+  delete params['vnp_SecureHashType']
+
+  // Build signData KHÔNG encode — đúng theo spec VNPay
+  const signData   = buildSignData(params)
   const checkHash  = createHmac512(signData, VNPAY_CONFIG.hashSecret)
-  return checkHash === vnp_SecureHash
+
+  return checkHash.toLowerCase() === receivedHash.toLowerCase()
 }
 
 /**
- * Decode VNPay response code into human-readable message.
+ * Giải mã mã phản hồi VNPay thành thông báo tiếng Việt.
+ * Tham khảo: https://sandbox.vnpayment.vn/apis/docs/bang-ma-loi/
  */
 export function decodeResponseCode(code: string): { success: boolean; message: string } {
   const codes: Record<string, string> = {
     '00': 'Giao dịch thành công',
-    '07': 'Trừ tiền thành công nhưng nghi ngờ giao dịch (liên quan đến gian lận)',
-    '09': 'Thẻ/Tài khoản chưa đăng ký dịch vụ InternetBanking',
-    '10': 'Xác thực thông tin thẻ/TK không đúng quá 3 lần',
-    '11': 'Đã hết hạn chờ thanh toán — vui lòng thực hiện lại giao dịch',
-    '12': 'Thẻ/Tài khoản bị khóa',
-    '13': 'Mã OTP không chính xác — vui lòng thực hiện lại giao dịch',
-    '24': 'Giao dịch bị hủy bởi khách hàng',
-    '51': 'Tài khoản không đủ số dư',
-    '65': 'Tài khoản vượt hạn mức giao dịch trong ngày',
-    '75': 'Ngân hàng đang bảo trì',
-    '79': 'Sai mật khẩu thanh toán quá số lần quy định',
-    '99': 'Lỗi không xác định',
+    '07': 'Trừ tiền thành công. Giao dịch bị nghi ngờ (liên quan đến gian lận, giao dịch bất thường)',
+    '09': 'Giao dịch không thành công do: Thẻ/Tài khoản của khách hàng chưa đăng ký dịch vụ InternetBanking tại ngân hàng',
+    '10': 'Giao dịch không thành công do: Khách hàng xác thực thông tin thẻ/tài khoản không đúng quá 3 lần',
+    '11': 'Giao dịch không thành công do: Đã hết hạn chờ thanh toán. Xin quý khách vui lòng thực hiện lại giao dịch',
+    '12': 'Giao dịch không thành công do: Thẻ/Tài khoản của khách hàng bị khóa',
+    '13': 'Giao dịch không thành công do Quý khách nhập sai mật khẩu xác thực giao dịch (OTP). Xin quý khách vui lòng thực hiện lại giao dịch',
+    '24': 'Giao dịch không thành công do: Khách hàng hủy giao dịch',
+    '51': 'Giao dịch không thành công do: Tài khoản của quý khách không đủ số dư để thực hiện giao dịch',
+    '65': 'Giao dịch không thành công do: Tài khoản của Quý khách đã vượt quá hạn mức giao dịch trong ngày',
+    '75': 'Ngân hàng thanh toán đang bảo trì',
+    '79': 'Giao dịch không thành công do: KH nhập sai mật khẩu thanh toán quá số lần quy định. Xin quý khách vui lòng thực hiện lại giao dịch',
+    '99': 'Các lỗi khác (lỗi còn lại, không có trong danh sách mã lỗi đã liệt kê)',
   }
   return {
     success: code === '00',
-    message: codes[code] ?? `Mã lỗi không xác định: ${code}`,
+    message: codes[code] ?? `Lỗi không xác định. Mã lỗi: ${code}`,
   }
 }
 
-/** Generate a unique transaction reference (max 20 chars, only alphanumeric) */
+/**
+ * Tạo mã tham chiếu giao dịch duy nhất.
+ * VNPay yêu cầu: alphanumeric, không trùng lặp trong ngày, max 100 chars.
+ */
 export function generateTxnRef(prefix = 'SUB'): string {
   const timestamp = Date.now().toString(36).toUpperCase()
   const random    = Math.random().toString(36).substring(2, 6).toUpperCase()

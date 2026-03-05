@@ -13,8 +13,10 @@ export async function GET(request: NextRequest) {
   const query: Record<string, string> = {}
   searchParams.forEach((value, key) => { query[key] = value })
 
-  const txnRef      = query.vnp_TxnRef
+  const txnRef       = query.vnp_TxnRef
   const responseCode = query.vnp_ResponseCode ?? '99'
+  // Theo spec VNPay: giao dịch thành công khi cả vnp_ResponseCode='00' VÀ vnp_TransactionStatus='00'
+  const transactionStatus = query.vnp_TransactionStatus ?? '99'
   const bankCode    = query.vnp_BankCode ?? ''
   const transactionNo = query.vnp_TransactionNo ?? ''
   const amountRaw   = query.vnp_Amount ?? '0'
@@ -27,7 +29,8 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const { success, message } = decodeResponseCode(responseCode)
+  const isSuccess = responseCode === '00' && transactionStatus === '00'
+  const { message } = decodeResponseCode(responseCode)
 
   const supabase = await createClient()
 
@@ -48,18 +51,26 @@ export async function GET(request: NextRequest) {
   await supabase
     .from('payment_transactions')
     .update({
-      status:                success ? 'completed' : 'failed',
+      status:                isSuccess ? 'completed' : 'failed',
       vnpay_response_code:   responseCode,
       vnpay_bank_code:       bankCode,
       vnpay_transaction_no:  transactionNo,
-      completed_at:          success ? new Date().toISOString() : null,
+      completed_at:          isSuccess ? new Date().toISOString() : null,
     })
     .eq('vnpay_txn_ref', txnRef)
 
-  if (success) {
+  if (isSuccess) {
     const isAddonPurchase = txn.transaction_type === 'addon_expert_review'
-    
-    if (isAddonPurchase) {
+    const isSingleReport  = txn.transaction_type === 'single_report'
+
+    if (isSingleReport) {
+      // Mở khóa báo cáo kiểm tra đơn lẻ
+      await supabase
+        .from('audit_reports')
+        .update({ report_unlocked: true, payment_status: 'paid' })
+        .eq('id', txn.addon_audit_report_id)
+        .eq('user_id', txn.user_id)
+    } else if (isAddonPurchase) {
       // Handle addon Expert Review purchase
       // Create expert_review_request with is_addon_purchase = true
       const metadata = txn.addon_metadata as { 
@@ -128,7 +139,7 @@ export async function GET(request: NextRequest) {
   }
 
   // ── PAYMENT CONFIRMATION EMAIL ──────────────────────────────────────────
-  if (success) {
+  if (isSuccess) {
     const { data: userProfile } = await supabase
       .from('profiles')
       .select('email, language')
@@ -169,14 +180,17 @@ export async function GET(request: NextRequest) {
   // ── END PAYMENT EMAIL ────────────────────────────────────────────────────
 
   const isAddonPurchase = txn.transaction_type === 'addon_expert_review'
+  const isSingleReport  = txn.transaction_type === 'single_report'
 
   const params = new URLSearchParams({
-    status:  success ? 'success' : 'failed',
+    status:  isSuccess ? 'success' : 'failed',
     message: encodeURIComponent(message),
     txnRef,
     ...(bankCode ? { bank: bankCode } : {}),
     ...(isAddonPurchase ? { type: 'addon_expert_review' } : {}),
     ...(isAddonPurchase && txn.addon_audit_report_id ? { reportId: txn.addon_audit_report_id } : {}),
+    ...(isSingleReport ? { type: 'single_report' } : {}),
+    ...(isSingleReport && txn.addon_audit_report_id ? { reportId: txn.addon_audit_report_id } : {}),
   })
 
   return NextResponse.redirect(new URL(`/checkout/result?${params}`, request.url))
