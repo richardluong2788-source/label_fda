@@ -199,6 +199,15 @@ export async function POST(request: Request) {
     processUrl.searchParams.set('_token', processToken)
     processUrl.searchParams.set('_skey', internalServiceKey)
     
+    console.log('[v0] submit triggering process:', {
+      url: processUrl.toString().replace(/(_token|_skey)=[^&]*/g, '$1=***'),
+      hasProcessToken: !!processToken,
+      processTokenLen: processToken.length,
+      hasServiceKey: !!internalServiceKey,
+      serviceKeyLen: internalServiceKey.length,
+      baseUrl,
+    })
+    
     fetch(processUrl.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

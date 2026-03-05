@@ -57,6 +57,23 @@ export async function POST(request: Request) {
     (expectedServiceKey && internalServiceKey === expectedServiceKey) ||
     (!expectedToken && process.env.NODE_ENV === 'development')
 
+  console.log('[v0] process auth debug:', {
+    queryToken: queryToken ? `${queryToken.slice(0,3)}...(${queryToken.length})` : 'EMPTY',
+    queryServiceKey: queryServiceKey ? `${queryServiceKey.slice(0,3)}...(${queryServiceKey.length})` : 'EMPTY',
+    bodyToken: processTokenBody ? `${processTokenBody.slice(0,3)}...(${processTokenBody.length})` : 'EMPTY',
+    headerToken: processTokenHeader ? 'SET' : 'EMPTY',
+    resolvedToken: processToken ? `${processToken.slice(0,3)}...(${processToken.length})` : 'EMPTY',
+    expectedToken: expectedToken ? `${expectedToken.slice(0,3)}...(${expectedToken.length})` : 'EMPTY',
+    tokenMatch: processToken === expectedToken,
+    cronSig: cronSig ? 'SET' : 'EMPTY',
+    internalKey: internalServiceKey ? `len=${internalServiceKey.length}` : 'EMPTY',
+    expectedKey: expectedServiceKey ? `len=${expectedServiceKey.length}` : 'EMPTY',
+    keyMatch: expectedServiceKey && internalServiceKey === expectedServiceKey,
+    isAuthorized,
+    bodyKeys: Object.keys(body),
+    url: request.url,
+  })
+
   if (!isAuthorized) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
