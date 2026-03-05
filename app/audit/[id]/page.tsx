@@ -220,17 +220,16 @@ export default function AuditPage() {
 
             // Re-trigger process if job is stuck in 'queued' after ~10 s
             // (fire-and-forget may have been killed before the process route ran)
+            // We ask the status endpoint to do this server-side because
+            // the process secret token is not available in the browser.
             if (
               !retriggered &&
               statusData.status === 'queued' &&
               pollCount >= STALE_QUEUED_RETRIGGER_POLLS
             ) {
               retriggered = true
-              fetch('/api/analyze/process', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reportId: params.id }),
-              }).catch(() => {}) // fire-and-forget, ignore errors
+              fetch(`/api/analyze/status?id=${params.id}&retrigger=1`)
+                .catch(() => {}) // fire-and-forget
             }
 
             // Update UI progress from server-driven step

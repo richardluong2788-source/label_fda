@@ -3,11 +3,15 @@ import { NextResponse } from 'next/server'
 import { getJobByReportId } from '@/lib/analysis-queue'
 
 /**
- * GET /api/analyze/status?id=<reportId>
+ * GET /api/analyze/status?id=<reportId>&retrigger=1
  * ──────────────────────────────────────
  * Lightweight polling endpoint used by the frontend every 2 s.
  * Returns queue job state + the audit_report status so the UI can
  * decide when to display the final results.
+ *
+ * When `retrigger=1` is passed and the job is stuck in 'queued',
+ * the server will re-trigger /api/analyze/process with proper auth
+ * (the client cannot do this because the process secret is server-only).
  *
  * Response shape:
  * {
@@ -22,6 +26,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const reportId = searchParams.get('id')
+    const shouldRetrigger = searchParams.get('retrigger') === '1'
 
     if (!reportId) {
       return NextResponse.json({ error: 'Report ID is required' }, { status: 400 })
@@ -70,6 +75,31 @@ export async function GET(request: Request) {
 
     const isFailed = job.status === 'failed' ||
       ['error', 'kb_unavailable'].includes(report.status)
+
+    // ── Server-side retrigger for stuck jobs ──────────────────
+    // The client requests this when polling detects the job has been
+    // 'queued' for too long. We do the call here because the process
+    // secret token is server-only and can't be sent from the browser.
+    if (shouldRetrigger && job.status === 'queued' && !isCompleted && !isFailed) {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+        || `https://${request.headers.get('host')}`
+      const processToken = process.env.PROCESS_SECRET_TOKEN ?? ''
+      const internalServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(-32) ?? ''
+
+      const processUrl = new URL(`${baseUrl}/api/analyze/process`)
+      processUrl.searchParams.set('_token', processToken)
+      processUrl.searchParams.set('_skey', internalServiceKey)
+
+      fetch(processUrl.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobId: job.id,
+          _processToken: processToken,
+          _internalServiceKey: internalServiceKey,
+        }),
+      }).catch(() => {}) // fire-and-forget
+    }
 
     return NextResponse.json({
       jobId:        job.id,
