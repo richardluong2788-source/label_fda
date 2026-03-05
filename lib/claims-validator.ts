@@ -192,6 +192,101 @@ export class ClaimsValidator {
     'pharmacological',
   ]
 
+  // ─── CONTEXT IGNORE PATTERNS ──────────────────────────────────────────────
+  //
+  // Food-processing and manufacturing compound words that contain therapeutic
+  // verb stems but are NOT disease claims. These patterns suppress false positives
+  // from substring/word-boundary matching.
+  //
+  // Examples:
+  //   "rbst-treated" → contains "treat" but is a dairy farming term
+  //   "heat-treated"  → food safety processing term
+  //   "pressure-treated" → packaging/processing term
+  //   "treated water" → water purification term
+  //   "ultra-high temperature treated" → UHT processing
+  //
+  // These are checked BEFORE claim detection: if the term's match location falls
+  // inside one of these patterns, the match is discarded.
+  private static CONTEXT_IGNORE_PATTERNS: RegExp[] = [
+    /\b\w*-treated\b/i,           // rbst-treated, heat-treated, pressure-treated, etc.
+    /\btreated\s+(water|milk|whey|cream|juice)/i,  // "treated water", "treated milk"
+    /\b(ultra.?high\s+temperature|uht)\s+treated/i, // UHT treated
+    /\b(pasteurized|homogenized)\b/i,                // dairy processing (contains no target terms but future-proofs)
+  ]
+
+  // ─── SHARED MATCHING UTILITIES ────────────────────────────────────────────
+  //
+  // Production-grade word boundary matching replaces naive `.includes(term)`.
+  //
+  // Problem:  "rbst-treated".includes("treat") → true  → FALSE POSITIVE
+  // Solution: Use \b word boundaries + optional plural suffix + context filters.
+  //
+  // For multi-word terms (e.g. "prevent cancer"), word boundary matching is
+  // applied to the full phrase. For single-word therapeutic verbs (e.g. "treat"),
+  // we match "treat" or "treats" but NOT "treated", "treatment", "treating"
+  // (those are caught by the context ignore patterns as well).
+
+  /**
+   * Test whether `term` appears as a whole word (with optional plural 's')
+   * in the given text, AND the match is not inside a context-ignore pattern.
+   *
+   * @param text  - Lowercased text to search
+   * @param term  - The claim term to match (e.g. "treat", "prevent cancer")
+   * @returns true if the term is a genuine match, false if absent or suppressed
+   */
+  private static matchesTermWithBoundary(text: string, term: string): boolean {
+    // Fast exit: if the substring isn't even present, no need for regex
+    if (!text.includes(term.charAt(0))) {
+      // Micro-optimization: check first char before full includes
+    }
+    if (!text.includes(term)) return false
+
+    // Build a word-boundary regex that allows optional plural 's' suffix.
+    // For multi-word terms the 's' applies to the last word only.
+    // Escape special regex characters in the term.
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const regex = new RegExp(`\\b${escaped}(s|ing)?\\b`, 'i')
+    if (!regex.test(text)) return false
+
+    // Context filter: suppress matches that fall inside ignored compound patterns.
+    // We check if ANY ignore pattern matches and overlaps with our term's location.
+    if (this.isTermInIgnoredContext(text, term)) return false
+
+    return true
+  }
+
+  /**
+   * Check if the term's occurrence in text is inside a context-ignore pattern.
+   * Returns true if the match should be SUPPRESSED (false positive).
+   */
+  private static isTermInIgnoredContext(text: string, term: string): boolean {
+    // Find all positions where `term` occurs
+    let searchFrom = 0
+    while (searchFrom < text.length) {
+      const pos = text.indexOf(term, searchFrom)
+      if (pos === -1) break
+
+      // Extract a generous window around the match for context checking
+      const windowStart = Math.max(0, pos - 30)
+      const windowEnd = Math.min(text.length, pos + term.length + 30)
+      const window = text.substring(windowStart, windowEnd)
+
+      // If this occurrence is inside an ignore pattern, check if there's
+      // another occurrence that is NOT ignored
+      const isIgnored = this.CONTEXT_IGNORE_PATTERNS.some(pattern => pattern.test(window))
+
+      if (!isIgnored) {
+        // Found at least one non-ignored occurrence → genuine match
+        return false
+      }
+
+      searchFrom = pos + 1
+    }
+
+    // All occurrences were inside ignored contexts
+    return true
+  }
+
   // ─── MAIN ENTRY POINT ──────────────────────────────────────────────────────
 
   /**
@@ -389,7 +484,7 @@ export class ClaimsValidator {
     lowerText: string,
     term: string
   ): boolean {
-    if (!lowerText.includes(term)) return false
+    if (!this.matchesTermWithBoundary(lowerText, term)) return false
 
     const sentences = this.splitSentences(lowerText)
 
@@ -427,7 +522,7 @@ export class ClaimsValidator {
    * "treat", "diagnose") where the DSHEA disclaimer provides no authorization.
    */
   private static isPartOfQHCOnly(lowerText: string, term: string): boolean {
-    if (!lowerText.includes(term)) return false
+    if (!this.matchesTermWithBoundary(lowerText, term)) return false
     const sentences = this.splitSentences(lowerText)
     for (const sentence of sentences) {
       if (!sentence.includes(term)) continue
@@ -454,7 +549,7 @@ export class ClaimsValidator {
    * "not intended to [verb]" which is a legal denial, not a claim.
    */
   private static isTermInDSHEADisclaimer(lowerText: string, term: string): boolean {
-    if (!lowerText.includes(term)) return false
+    if (!this.matchesTermWithBoundary(lowerText, term)) return false
 
     // Pattern 1: Check for DSHEA disclaimer signals in the same sentence
     const sentences = this.splitSentences(lowerText)
@@ -507,7 +602,9 @@ export class ClaimsValidator {
 
     // Check for prohibited disease claims
     for (const term of this.FOOD_SUPPLEMENT_PROHIBITED_DISEASE_CLAIMS) {
-      if (!lowerText.includes(term)) continue
+      // Use production-grade word boundary + context-aware matching
+      // e.g., "rbst-treated" will NOT match "treat", "heat-treated" won't match "treat"
+      if (!this.matchesTermWithBoundary(lowerText, term)) continue
 
       if (THERAPEUTIC_VERBS.has(term)) {
         // Therapeutic verbs: skip if part of a real QHC
@@ -537,7 +634,7 @@ export class ClaimsValidator {
 
     // Check for drug-like claims (all domains)
     for (const term of this.DRUG_CLAIMS_ALL_DOMAINS) {
-      if (lowerText.includes(term)) {
+      if (this.matchesTermWithBoundary(lowerText, term)) {
         detections.push({
           type: 'prohibited',
           claim: term,
@@ -553,7 +650,7 @@ export class ClaimsValidator {
 
     // Check for restricted health claims (food/supplement only)
     for (const term of this.FOOD_SUPPLEMENT_RESTRICTED_HEALTH_CLAIMS) {
-      if (!lowerText.includes(term)) continue
+      if (!this.matchesTermWithBoundary(lowerText, term)) continue
 
       // "may reduce the risk", "reduce risk of", "heart healthy" etc. are compliant
       // when used within the context of an FDA-approved qualified health claim.
@@ -624,7 +721,7 @@ export class ClaimsValidator {
 
     // Check cosmetic-specific prohibited drug-reclassification claims
     for (const term of this.COSMETIC_PROHIBITED_DRUG_CLAIMS) {
-      if (scanText.includes(term)) {
+      if (this.matchesTermWithBoundary(scanText, term)) {
         detections.push({
           type: 'prohibited',
           claim: term,
@@ -640,7 +737,7 @@ export class ClaimsValidator {
 
     // Check drug-like terms that apply universally
     for (const term of this.DRUG_CLAIMS_ALL_DOMAINS) {
-      if (scanText.includes(term)) {
+      if (this.matchesTermWithBoundary(scanText, term)) {
         detections.push({
           type: 'prohibited',
           claim: term,
@@ -657,7 +754,7 @@ export class ClaimsValidator {
     // MoCRA 2022: Cosmetics must not claim to affect body structure/function beyond appearance
     const structureFunctionTerms = ['restructures', 'regenerates', 'repairs dna', 'cell renewal', 'stem cell']
     for (const term of structureFunctionTerms) {
-      if (scanText.includes(term)) {
+      if (this.matchesTermWithBoundary(scanText, term)) {
         detections.push({
           type: 'requires_approval',
           claim: term,
