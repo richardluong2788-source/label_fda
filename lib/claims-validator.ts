@@ -19,7 +19,7 @@
  *    - Active ingredient + purpose required
  */
 
-export type ProductDomain = 'food' | 'supplement' | 'cosmetic' | 'drug_otc' | 'device'
+export type ProductDomain = 'food' | 'infant_formula' | 'supplement' | 'cosmetic' | 'drug_otc' | 'device'
 
 export interface ClaimDetection {
   type: 'prohibited' | 'restricted' | 'requires_approval' | 'safe'
@@ -195,21 +195,22 @@ export class ClaimsValidator {
   // ─── MAIN ENTRY POINT ──────────────────────────────────────────────────────
 
   /**
-   * Scan label text for prohibited or restricted claims.
-   *
-   * @param labelText   - Full label text extracted by Vision AI
-   * @param domain      - Product domain (food | supplement | cosmetic | drug_otc | device)
-   *                      Defaults to 'food' for backwards compatibility.
-   */
+  * Scan label text for prohibited or restricted claims.
+  *
+  * @param labelText   - Full label text extracted by Vision AI
+  * @param domain      - Product domain (food | infant_formula | supplement | cosmetic | drug_otc | device)
+  *                      Defaults to 'food' for backwards compatibility.
+  */
   static validateClaims(labelText: string, domain: ProductDomain = 'food'): ClaimDetection[] {
-    if (domain === 'cosmetic') {
-      return this.validateCosmeticClaims(labelText)
-    }
-    if (domain === 'drug_otc') {
-      return this.validateDrugOtcClaims(labelText)
-    }
-    // food, supplement, device — use food/supplement ruleset
-    return this.validateFoodSupplementClaims(labelText, domain)
+  if (domain === 'cosmetic') {
+  return this.validateCosmeticClaims(labelText)
+  }
+  if (domain === 'drug_otc') {
+  return this.validateDrugOtcClaims(labelText)
+  }
+  // food, infant_formula, supplement, device — use food/supplement ruleset
+  // Infant formula (21 CFR 107) follows similar claim restrictions as food
+  return this.validateFoodSupplementClaims(labelText, domain)
   }
 
   // ─── FDA-APPROVED QUALIFIED HEALTH CLAIM PATTERNS ─────────────────────────
@@ -439,6 +440,50 @@ export class ClaimsValidator {
     return false
   }
 
+  /**
+   * Check if a therapeutic verb ("cure", "treat", "diagnose") appears INSIDE
+   * a DSHEA disclaimer context — meaning it's used in NEGATION, not as an
+   * affirmative therapeutic claim.
+   *
+   * Examples:
+   *   ✓ "not intended to treat" → returns true (skip detection)
+   *   ✓ "is not intended to diagnose, treat, cure" → returns true
+   *   ✗ "treats diabetes" → returns false (flag as violation)
+   *
+   * The key insight: DSHEA disclaimers use these verbs in the phrase
+   * "not intended to [verb]" which is a legal denial, not a claim.
+   */
+  private static isTermInDSHEADisclaimer(lowerText: string, term: string): boolean {
+    if (!lowerText.includes(term)) return false
+
+    // Pattern 1: Check for DSHEA disclaimer signals in the same sentence
+    const sentences = this.splitSentences(lowerText)
+    for (const sentence of sentences) {
+      if (!sentence.includes(term)) continue
+      
+      // If sentence has DSHEA disclaimer signal, the verb is part of the disclaimer
+      if (this.DSHEA_DISCLAIMER_SIGNALS.some(signal => sentence.includes(signal))) {
+        return true
+      }
+      
+      // Pattern 2: Check for negation pattern "not intended to [verb]" or similar
+      // This catches cases where the exact DSHEA signal might not be in our list
+      const negationPatterns = [
+        `not intended to ${term}`,
+        `not meant to ${term}`,
+        `does not ${term}`,
+        `will not ${term}`,
+        `cannot ${term}`,
+        `is not to ${term}`,
+      ]
+      if (negationPatterns.some(pattern => sentence.includes(pattern))) {
+        return true
+      }
+    }
+
+    return false
+  }
+
   // ─── FOOD / SUPPLEMENT validator ───────────────────────────────────────────
 
   private static validateFoodSupplementClaims(
@@ -448,10 +493,16 @@ export class ClaimsValidator {
     const detections: ClaimDetection[] = []
     const lowerText = labelText.toLowerCase()
 
-    // ── Therapeutic action verbs: always prohibited, DSHEA disclaimer does NOT authorize ──
-    // "cure", "treat", "diagnose" are drug claims regardless of disclaimer presence.
-    // A label saying "treats diabetes" is illegal even with the DSHEA disclaimer.
-    // We only skip them if they appear inside an FDA-approved QHC (very rare for these verbs).
+    // ── Therapeutic action verbs: context-dependent ──────────────────────────
+    // "cure", "treat", "diagnose" are drug claims UNLESS they appear as part of
+    // the DSHEA mandatory disclaimer: "not intended to diagnose, treat, cure, or
+    // prevent any disease."
+    //
+    // KEY DISTINCTION:
+    //   ✗ "treats diabetes" → illegal drug claim (affirmative therapeutic claim)
+    //   ✓ "not intended to treat" → legal DSHEA disclaimer (denying therapeutic claim)
+    //
+    // We skip therapeutic verbs if they appear in the NEGATED context of a disclaimer.
     const THERAPEUTIC_VERBS = new Set(['cure', 'treat', 'diagnose'])
 
     // Check for prohibited disease claims
@@ -459,8 +510,13 @@ export class ClaimsValidator {
       if (!lowerText.includes(term)) continue
 
       if (THERAPEUTIC_VERBS.has(term)) {
-        // Therapeutic verbs: only skip if explicitly part of a real QHC (not DSHEA disclaimer)
+        // Therapeutic verbs: skip if part of a real QHC
         if (this.isPartOfQHCOnly(lowerText, term)) continue
+        
+        // CRITICAL FIX: Also skip if the verb appears inside a DSHEA disclaimer.
+        // The disclaimer uses these verbs in NEGATED context ("not intended to treat")
+        // which is LEGAL — it's a denial, not an affirmative claim.
+        if (this.isTermInDSHEADisclaimer(lowerText, term)) continue
       } else {
         // Disease names and "prevent + disease" combos:
         // Skip if in QHC context OR if in a DSHEA disclaimer context
