@@ -1,9 +1,22 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, AlertTriangle, AlertCircle, Clock } from 'lucide-react'
+import { CheckCircle, AlertTriangle, AlertCircle, Clock, Trash2, Loader2 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import Link from 'next/link'
 import type { AuditReport } from '@/lib/types'
 import { FormatDate } from '@/components/format-date'
@@ -32,6 +45,24 @@ function getResultIcon(result?: string) {
 export function AuditHistory({ reports, currentPage, totalPages, totalCount }: AuditHistoryProps) {
   const { t } = useTranslation()
   const h = t.history
+  const router = useRouter()
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  async function handleDelete(reportId: string) {
+    setDeletingId(reportId)
+    try {
+      const res = await fetch(`/api/reports/${reportId}`, { method: 'DELETE' })
+      if (res.ok) {
+        router.refresh()
+      } else {
+        console.error('Failed to delete report')
+      }
+    } catch (error) {
+      console.error('Delete error:', error)
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   function getResultBadge(result?: string) {
     const label = result ? (h.resultLabels[result] || result) : h.resultLabels.processing
@@ -99,9 +130,44 @@ export function AuditHistory({ reports, currentPage, totalPages, totalCount }: A
                       )}
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" className="flex-shrink-0 bg-transparent">
-                    {h.viewReport}
-                  </Button>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button variant="outline" size="sm" className="bg-transparent">
+                      {h.viewReport}
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => e.preventDefault()}
+                        >
+                          {deletingId === report.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{h.deleteConfirmTitle || 'Delete Report?'}</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {h.deleteConfirmDesc || 'This action cannot be undone. This will permanently delete the audit report and all associated data.'}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{h.cancel || 'Cancel'}</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => handleDelete(report.id)}
+                          >
+                            {h.delete || 'Delete'}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </Link>
             </Card>

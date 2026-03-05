@@ -309,7 +309,7 @@ export const en: TranslationKeys = {
     geometrySection: 'GEOMETRY & FONT SIZE CHECK (21 CFR)',
   },
 
-  // ─── Audit Page ──────────────────────────────────────
+  // ─── Audit Page ───────────��──────────────────────────
   audit: {
     loading: 'Analyzing product label...',
     loadingDesc: 'AI system is scanning and cross-referencing your label with the FDA database',
@@ -689,6 +689,11 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     viewReport: 'View report',
     prev: 'Previous',
     next: 'Next',
+    // Delete functionality
+    delete: 'Delete',
+    cancel: 'Cancel',
+    deleteConfirmTitle: 'Delete Report?',
+    deleteConfirmDesc: 'This action cannot be undone. This will permanently delete the audit report and all associated data.',
   },
 
   // ─── Settings ────────────────────────────────────────

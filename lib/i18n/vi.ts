@@ -689,6 +689,11 @@ export const vi = {
     viewReport: 'Xem báo cáo',
     prev: 'Trước',
     next: 'Sau',
+    // Delete functionality
+    delete: 'Xóa',
+    cancel: 'Hủy',
+    deleteConfirmTitle: 'Xóa báo cáo?',
+    deleteConfirmDesc: 'Hành động này không thể hoàn tác. Báo cáo và tất cả dữ liệu liên quan sẽ bị xóa vĩnh viễn.',
   },
 
   // ─── Settings ────────────────────────────────────────
