@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface KBStatus {
   available: boolean
@@ -16,9 +16,12 @@ export interface KBStatus {
  * Returns document counts by type and whether the KB has enough data for reliable analysis.
  * 
  * Minimum threshold: at least 1 regulation document must exist for analysis to proceed.
+ * 
+ * NOTE: Uses admin client to bypass RLS since this is called from internal routes
+ * (e.g., /api/analyze/process/run) that may not have a user session.
  */
 export async function checkKnowledgeBaseStatus(): Promise<KBStatus> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Count total documents
   const { count: totalDocuments, error: totalError } = await supabase
