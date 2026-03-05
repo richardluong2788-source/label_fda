@@ -186,18 +186,14 @@ export async function POST(request: Request) {
     // ── Fire-and-forget: trigger process endpoint immediately ───
     // This avoids waiting for the next cron tick in dev / low-traffic.
     // Uses an absolute URL so it works in both edge and Node.js runtimes.
+    // Priority: NEXT_PUBLIC_APP_URL > request origin > VERCEL_URL > localhost
+    const requestUrl = new URL(request.url)
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL 
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-      || 'http://localhost:3000'
+      || `${requestUrl.protocol}//${requestUrl.host}`
 
     const processToken = process.env.PROCESS_SECRET_TOKEN ?? ''
     // Fallback internal key: use last 32 chars of service role key as internal auth
     const internalServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(-32) ?? ''
-    
-    console.log('[v0] submit: triggering process at', `${baseUrl}/api/analyze/process`, {
-      hasProcessToken: !!processToken,
-      hasInternalKey: !!internalServiceKey,
-    })
     
     fetch(`${baseUrl}/api/analyze/process`, {
       method: 'POST',
@@ -207,9 +203,7 @@ export async function POST(request: Request) {
         'x-internal-service-key': internalServiceKey,
       },
       body: JSON.stringify({ jobId: job.id }),
-    })
-      .then(res => console.log('[v0] submit: process response status:', res.status))
-      .catch(err => console.error('[submit] Failed to trigger process:', err))
+    }).catch(err => console.error('[submit] Failed to trigger process:', err))
 
     return NextResponse.json({
       success:  true,
