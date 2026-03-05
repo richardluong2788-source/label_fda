@@ -231,7 +231,16 @@ export async function POST(request: Request) {
           warnings: [...(pdpData.warnings || []), ...(nutritionData.warnings || []), ...(ingredientsData.warnings || []), ...(drugData.warnings || [])],
           detectedLanguages: pdpData.detectedLanguages || ['English'],
           tokensUsed: totalTokensUsed,
-          overallConfidence: Math.max(pdpData.overallConfidence || 0, nutritionData.overallConfidence || 0, ingredientsData.overallConfidence || 0)
+          overallConfidence: Math.max(pdpData.overallConfidence || 0, nutritionData.overallConfidence || 0, ingredientsData.overallConfidence || 0),
+          // Merge validation warnings from all image analyses
+          validationWarnings: [
+            ...(pdpData.validationWarnings || []).map((w: string) => `[PDP] ${w}`),
+            ...(nutritionData.validationWarnings || []).map((w: string) => `[Nutrition] ${w}`),
+            ...(ingredientsData.validationWarnings || []).map((w: string) => `[Ingredients] ${w}`),
+            ...(supplementData.validationWarnings || []).map((w: string) => `[Supplement] ${w}`),
+            ...(drugData.validationWarnings || []).map((w: string) => `[Drug] ${w}`),
+            ...(inciData.validationWarnings || []).map((w: string) => `[INCI] ${w}`),
+          ].filter(Boolean),
         }
         
         totalTokensUsed = visionResult.tokensUsed
@@ -292,7 +301,43 @@ export async function POST(request: Request) {
         // ── END AUTO-DETECT ───────────────────────────────────────────────────
       } catch (error: any) {
         console.error('[v0] Vision analysis failed:', error)
-        // Update report with error status
+        
+        // Determine if this is a validation error (user-actionable) vs system error
+        const isValidationError = error.isValidationError === true
+        const validationErrors: string[] = error.validationErrors || []
+        const validationWarnings: string[] = error.validationWarnings || []
+        
+        // Build a user-friendly error message
+        let userMessage: string
+        let errorCode: string
+        
+        if (isValidationError) {
+          // Validation errors - user can take action (re-upload, better image, etc.)
+          errorCode = 'vision_validation_failed'
+          
+          const hasHallucination = validationErrors.some((e: string) => e.includes('HALLUCINATION'))
+          const hasNoText = validationErrors.some((e: string) => e.includes('No substantial text'))
+          const hasInsufficientData = validationErrors.some((e: string) => e.includes('Insufficient data'))
+          const hasNutritionMissing = validationErrors.some((e: string) => e.includes('Nutrition Facts panel detected'))
+          
+          if (hasHallucination) {
+            userMessage = 'AI detected inconsistent data that may be inaccurate. Please re-upload clearer images with better lighting and resolution.'
+          } else if (hasNoText) {
+            userMessage = 'Could not read text from the image. Please ensure the label is clearly visible, well-lit, and not blurry.'
+          } else if (hasInsufficientData) {
+            userMessage = 'Not enough information could be extracted from the image. Please upload a clearer photo of the label.'
+          } else if (hasNutritionMissing) {
+            userMessage = 'A Nutrition Facts panel was detected but no data could be extracted. Please upload a clearer photo of the nutrition label.'
+          } else {
+            userMessage = 'Image analysis could not extract reliable data. Please check your images and try again.'
+          }
+        } else {
+          // System/API errors - not user's fault
+          errorCode = 'vision_system_error'
+          userMessage = 'AI analysis service is temporarily unavailable. Please try again in a few minutes.'
+        }
+        
+        // Update report with detailed error info
         await supabase
           .from('audit_reports')
           .update({ 
@@ -302,8 +347,13 @@ export async function POST(request: Request) {
           .eq('id', reportId)
         
         return NextResponse.json({ 
-          error: 'AI analysis temporarily unavailable. Please try again.' 
-        }, { status: 503 })
+          error: errorCode,
+          message: userMessage,
+          details: isValidationError ? {
+            validationErrors,
+            validationWarnings,
+          } : undefined,
+        }, { status: isValidationError ? 422 : 503 })
       }
     }
     
@@ -330,6 +380,23 @@ export async function POST(request: Request) {
         })
         .eq('id', reportId)
       
+      // Collect validation warnings from all image analyses
+      const allValidationWarnings: string[] = []
+      if (!isManualEntry) {
+        const imageAnalyses = (visionResult as any)._imageAnalyses || {}
+        // Collect from individual image results
+        for (const key of Object.keys(imageAnalyses)) {
+          const analysis = imageAnalyses[key]
+          if (analysis?.validationWarnings?.length > 0) {
+            allValidationWarnings.push(...analysis.validationWarnings.map((w: string) => `[${key}] ${w}`))
+          }
+        }
+        // Also collect from merged result
+        if (visionResult.validationWarnings?.length > 0) {
+          allValidationWarnings.push(...visionResult.validationWarnings)
+        }
+      }
+      
       return NextResponse.json({
         success: true,
         phase: 'vision_extraction',
@@ -342,6 +409,7 @@ export async function POST(request: Request) {
           detectedLanguages: visionResult.detectedLanguages,
           overallConfidence: visionResult.overallConfidence,
         },
+        visionWarnings: allValidationWarnings.length > 0 ? allValidationWarnings : undefined,
         needsDoublePass,
         needsVerification: true,
         message: needsDoublePass 

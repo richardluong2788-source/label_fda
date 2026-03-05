@@ -45,6 +45,11 @@ export default function AuditPage() {
     message: string
     totalDocuments: number
   } | null>(null)
+  const [visionError, setVisionError] = useState<{
+    message: string
+    errorCode: string
+    details?: string[]
+  } | null>(null)
 
   // ── PDF Download ──────────────────────────────────────────
   const handleDownloadPdf = async () => {
@@ -125,6 +130,15 @@ export default function AuditPage() {
         return
       }
 
+      if (data.status === 'error') {
+        // Report previously failed - show error to user
+        setVisionError({
+          message: data.error_message || rpt?.error_message || a.visionValidationFailed,
+          errorCode: 'vision_validation_failed',
+        })
+        return
+      }
+
       if (data.status === 'pending') {
         startAnalysis()
       }
@@ -183,6 +197,29 @@ export default function AuditPage() {
           })
           return
         }
+        // Vision system error (API/network issue)
+        clearInterval(stepInterval)
+        setAnalyzing(false)
+        setLoading(false)
+        setVisionError({
+          message: errData.message || a.visionSystemError,
+          errorCode: errData.error || 'vision_system_error',
+        })
+        return
+      }
+
+      if (res.status === 422) {
+        // Vision validation error - user can take action
+        const errData = await res.json().catch(() => ({}))
+        clearInterval(stepInterval)
+        setAnalyzing(false)
+        setLoading(false)
+        setVisionError({
+          message: errData.message || a.visionValidationFailed,
+          errorCode: errData.error || 'vision_validation_failed',
+          details: errData.details?.validationErrors || [],
+        })
+        return
       }
 
       if (!res.ok) throw new Error('Analysis failed')
@@ -277,6 +314,63 @@ export default function AuditPage() {
             </Button>
             <Button variant="outline" onClick={() => router.push('/dashboard')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
+              {a.backToDashboard}
+            </Button>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
+  if (visionError) {
+    const isValidation = visionError.errorCode === 'vision_validation_failed'
+    return (
+      <div className="flex-1 flex items-center justify-center p-4">
+        <Card className="p-8 max-w-lg w-full text-center">
+          <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">
+            {isValidation ? a.visionValidationTitle : a.visionSystemTitle}
+          </h2>
+          <p className="text-muted-foreground mb-4">{visionError.message}</p>
+          {isValidation && visionError.details && visionError.details.length > 0 && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 mb-6 text-sm text-left space-y-2">
+              <p className="font-medium">{a.visionErrorDetailsTitle}</p>
+              <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                {visionError.details.map((detail, i) => (
+                  <li key={i}>{detail}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="bg-muted rounded-lg p-4 mb-6 text-sm text-left space-y-2">
+            <p className="font-medium">{a.visionFixTitle}</p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-1">
+              {a.visionFixItems.map((item: string, i: number) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={async () => {
+                setVisionError(null)
+                try {
+                  await fetch(`/api/audit/${params.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'pending' }),
+                  })
+                } catch {}
+                startAnalysis()
+              }}
+            >
+              {a.retryAnalysis}
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/analyze')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              {a.reuploadImages}
+            </Button>
+            <Button variant="ghost" onClick={() => router.push('/dashboard')}>
               {a.backToDashboard}
             </Button>
           </div>

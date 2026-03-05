@@ -35,6 +35,8 @@ export interface VisionAnalysisResult {
    * Used to auto-populate productDomain when user hasn't selected a category.
    */
   detectedProductType?: string
+  /** Validation warnings from the extraction pipeline (non-fatal) */
+  validationWarnings?: string[]
 }
 
 const VISION_SYSTEM_PROMPT = `You are an FDA compliance expert analyzing product labels. Your PRIMARY GOAL is to extract ONLY the EXACT information VISIBLE in the image. DO NOT use example values, DO NOT hallucinate, DO NOT fill in common values.
@@ -495,15 +497,20 @@ FONT SIZE CHART (use these values):
       validationErrors.push('Recommendation: Try re-uploading image with higher resolution or better lighting')
     }
     
-    // If critical validation fails, throw error
+    // If critical validation fails, throw error with structured info
     if (validationErrors.length > 0) {
       console.error('[v0] Vision validation FAILED:', validationErrors)
-      throw new Error(`Vision analysis validation failed: ${validationErrors.join('; ')}. The AI may not be able to properly read this image. Please ensure the image is clear, properly oriented, and contains a readable nutrition label.`)
+      const err = new Error(`Vision analysis validation failed: ${validationErrors.join('; ')}. The AI may not be able to properly read this image. Please ensure the image is clear, properly oriented, and contains a readable nutrition label.`)
+      ;(err as any).validationErrors = validationErrors
+      ;(err as any).validationWarnings = validationWarnings
+      ;(err as any).isValidationError = true
+      throw err
     }
     
-    // Log warnings but don't fail
+    // Attach warnings to result so callers can surface them to users
     if (validationWarnings.length > 0) {
       console.warn('[v0] Vision validation WARNINGS:', validationWarnings)
+      normalized.validationWarnings = validationWarnings
     }
     
     console.log('[v0] Vision analysis validated successfully. Sample:', {
@@ -516,6 +523,8 @@ FONT SIZE CHART (use these values):
     return normalized
   } catch (error: any) {
     console.error('[v0] Vision analysis error:', error)
+    // Preserve structured validation info if present
+    if (error.isValidationError) throw error
     throw new Error(`Vision analysis failed: ${error.message}`)
   }
 }
