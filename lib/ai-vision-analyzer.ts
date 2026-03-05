@@ -306,10 +306,20 @@ FONT SIZE CHART (use these values):
     }
     
     // Check 2: If it's a nutrition label, must have nutrition facts
-    const hasNutritionIndicator = normalized.textElements.allText.toLowerCase().includes('nutrition') ||
-                                   normalized.textElements.allText.toLowerCase().includes('calories')
-    if (hasNutritionIndicator && normalized.nutritionFacts.length === 0) {
-      validationErrors.push('Nutrition Facts detected in text but no nutrition data extracted')
+    // Only treat as error when there's a strong indicator of an actual Nutrition Facts panel
+    // (not just a mention of "nutrition" in marketing text on PDP images).
+    const allTextLower = normalized.textElements.allText.toLowerCase()
+    const hasStrongNutritionPanel = allTextLower.includes('nutrition facts') ||
+                                     allTextLower.includes('supplement facts') ||
+                                     allTextLower.includes('drug facts')
+    const hasWeakNutritionIndicator = allTextLower.includes('nutrition') ||
+                                      allTextLower.includes('calories')
+    if (hasStrongNutritionPanel && normalized.nutritionFacts.length === 0) {
+      // Strong indicator: "Nutrition Facts" title visible but no data extracted -> error
+      validationErrors.push('Nutrition Facts panel detected in text but no nutrition data extracted')
+    } else if (hasWeakNutritionIndicator && !hasStrongNutritionPanel && normalized.nutritionFacts.length === 0) {
+      // Weak indicator: just the word "nutrition" or "calories" mentioned -> warning only
+      validationWarnings.push('Text mentions nutrition/calories but no Nutrition Facts panel found - this may be a PDP or marketing image')
     }
     
     // Check 3: Must have EITHER text elements OR sufficient allText OR nutrition facts
