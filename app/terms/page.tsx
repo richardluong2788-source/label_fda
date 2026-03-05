@@ -4,8 +4,8 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export const metadata: Metadata = {
-  title: 'Điều khoản Dịch vụ | Vexim Compliance AI',
-  description: 'Điều khoản và điều kiện sử dụng dịch vụ Vexim Compliance AI',
+  title: 'Điều khoản Dịch vụ | AI Label Pro by Vexim Global',
+  description: 'Điều khoản và điều kiện sử dụng dịch vụ AI Label Pro – sản phẩm của Vexim Global',
 }
 
 export default function TermsPage() {
@@ -31,7 +31,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-4">1. Giới thiệu</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Chào mừng bạn đến với Vexim Compliance AI (&quot;Dịch vụ&quot;), được vận hành bởi Vexim Global (&quot;Công ty&quot;, &quot;chúng tôi&quot;). 
+              Chào mừng bạn đến với AI Label Pro (&quot;Dịch vụ&quot;), được vận hành bởi Vexim Global (&quot;Công ty&quot;, &quot;chúng tôi&quot;). 
               Bằng việc truy cập hoặc sử dụng Dịch vụ, bạn đồng ý tuân thủ các Điều khoản Dịch vụ này.
             </p>
           </section>
@@ -39,7 +39,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-4">2. Mô tả Dịch vụ</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Vexim Compliance AI cung cấp dịch vụ kiểm tra tuân thủ nhãn thực phẩm theo quy định FDA (Cục Quản lý Thực phẩm và Dược phẩm Hoa Kỳ), bao gồm:
+              AI Label Pro cung cấp dịch vụ kiểm tra tuân thủ nhãn thực phẩm theo quy định FDA (Cục Quản lý Thực phẩm và Dược phẩm Hoa Kỳ), bao gồm:
             </p>
             <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
               <li>Phân tích nhãn sản phẩm bằng công nghệ AI</li>
@@ -83,7 +83,7 @@ export default function TermsPage() {
             <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
               <p className="text-amber-800 dark:text-amber-200 leading-relaxed">
                 <strong>Quan trọng:</strong> Dịch vụ của chúng tôi chỉ mang tính chất tham khảo và không thay thế cho tư vấn pháp lý chuyên nghiệp. 
-                Vexim Compliance AI sử dụng công nghệ AI và cơ sở dữ liệu quy định FDA, tuy nhiên:
+                AI Label Pro sử dụng công nghệ AI và cơ sở dữ liệu quy định FDA, tuy nhiên:
               </p>
               <ul className="list-disc pl-6 space-y-2 text-amber-800 dark:text-amber-200 mt-3">
                 <li>Không đảm bảo độ chính xác 100%</li>
@@ -97,7 +97,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-4">6. Sở hữu Trí tuệ</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Tất cả nội dung, thiết kế, logo, và công nghệ của Vexim Compliance AI thuộc quyền sở hữu của Vexim Global. 
+              Tất cả nội dung, thiết kế, logo, và công nghệ của AI Label Pro thuộc quyền sở hữu của Vexim Global. 
               Bạn không được sao chép, phân phối, hoặc sử dụng cho mục đích thương mại mà không có sự cho phép bằng văn bản.
             </p>
           </section>

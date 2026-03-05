@@ -39,10 +39,10 @@ export function LandingHeader() {
             <SheetContent side="left" className="w-72 p-0">
               <SheetHeader className="p-4 border-b">
                 <SheetTitle className="flex items-center gap-3">
-                  <Image src="/images/logo.png" alt="Vexim logo" width={36} height={36} className="rounded-lg" />
+                  <Image src="/images/logo.png" alt="AI Label Pro by Vexim Global" width={36} height={36} className="rounded-lg" />
                   <div>
-                    <div className="text-sm font-bold leading-tight">Vexim Compliance AI</div>
-                    <div className="text-xs text-muted-foreground leading-tight">FDA Market - US</div>
+                    <div className="text-sm font-bold leading-tight">AI Label Pro</div>
+                    <div className="text-xs text-muted-foreground leading-tight">by Vexim Global</div>
                   </div>
                 </SheetTitle>
               </SheetHeader>
@@ -70,10 +70,10 @@ export function LandingHeader() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/images/logo.png" alt="Vexim logo" width={40} height={40} className="rounded-lg" />
+            <Image src="/images/logo.png" alt="AI Label Pro by Vexim Global" width={40} height={40} className="rounded-lg" />
             <div>
-              <span className="text-base font-bold">Vexim Compliance AI</span>
-              <p className="text-xs text-muted-foreground leading-tight">FDA Market - US</p>
+              <span className="text-base font-bold">AI Label Pro</span>
+              <p className="text-xs text-muted-foreground leading-tight">by Vexim Global</p>
             </div>
           </Link>
         </div>

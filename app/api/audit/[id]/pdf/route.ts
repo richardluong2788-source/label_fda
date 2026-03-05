@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generatePDFReportHTML } from '@/lib/pdf-report-generator'
 
 const VEXIM_COMPANY_INFO = {
-  name: 'Vexim Global',
+  name: 'Vexim',
   address: 'Ho Chi Minh City, Vietnam',
   phone: '+84 123 456 789',
-  email: 'compliance@vexim.global',
-  website: 'vexim.global',
+  email: 'compliance@ailabelpro.com',
+  website: 'ailabelpro.com',
   certificationId: 'VXM-FDA-2024-001',
 }
 
@@ -90,7 +90,7 @@ export async function GET(
     const lang = (langParam === 'en' ? 'en' : 'vi') as 'vi' | 'en'
 
     // Determine who generated this
-    let generatedBy = 'Vexim Compliance AI'
+    let generatedBy = 'AI Label Pro – by Vexim'
     if (report.reviewed_by) {
       // Look up expert name
       const { data: reviewer } = await supabase
@@ -101,11 +101,11 @@ export async function GET(
 
       if (reviewer) {
         // Try to get the user's email for display
-        generatedBy = `Expert Reviewer (Vexim)`
+        generatedBy = `Expert Reviewer – AI Label Pro (Vexim)`
       }
     }
     if (report.status === 'verified') {
-      generatedBy = `Vexim Expert Team (Verified)`
+      generatedBy = `Vexim Expert Team – Verified`
     }
 
     // Generate PDF HTML
@@ -124,7 +124,7 @@ export async function GET(
       .replace(/[^a-zA-Z0-9]/g, '-')
       .slice(0, 30)
     const dateStr = new Date().toISOString().split('T')[0]
-    const filename = `Vexim-FDA-Report-${productName}-${dateStr}.html`
+    const filename = `AILabelPro-FDA-Report-${productName}-${dateStr}.html`
 
     return new NextResponse(html, {
       status: 200,

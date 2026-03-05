@@ -14,7 +14,7 @@ interface OnboardingStep {
 
 const steps: OnboardingStep[] = [
   {
-    title: 'Chào mừng đến với Vexim Compliance AI! 👋',
+    title: 'Chào mừng đến với AI Label Pro!',
     description:
       'Hệ thống giúp bạn kiểm tra nhãn thực phẩm có tuân thủ FDA hay không chỉ trong vài phút.',
     highlight: 'welcome',

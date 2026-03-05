@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
 export const metadata: Metadata = {
-  title: 'Chính sách Bảo mật | Vexim Compliance AI',
-  description: 'Chính sách bảo mật và quyền riêng tư của Vexim Compliance AI',
+  title: 'Chính sách Bảo mật | AI Label Pro by Vexim Global',
+  description: 'Chính sách bảo mật và quyền riêng tư của AI Label Pro – sản phẩm của Vexim Global',
 }
 
 export default function PrivacyPage() {
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
               1. Thông tin Chúng tôi Thu thập
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Khi bạn sử dụng Vexim Compliance AI, chúng tôi có thể thu thập các loại thông tin sau:
+              Khi bạn sử dụng AI Label Pro, chúng tôi có thể thu thập các loại thông tin sau:
             </p>
             
             <div className="space-y-4">
