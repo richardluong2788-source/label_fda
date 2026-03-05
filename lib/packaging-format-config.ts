@@ -77,6 +77,13 @@ export const PRODUCT_DOMAINS: Record<ProductDomain, {
     factsPanel: 'Nutrition Facts',
     factsPanelVi: 'Bảng Thông tin Dinh dưỡng (Nutrition Facts)',
   },
+  infant_formula: {
+    name: 'Infant Formula',
+    nameVi: 'Sữa công thức trẻ em',
+    primaryRegulation: '21 CFR Part 107 / Infant Formula Act',
+    factsPanel: 'Nutrition Facts (Infant)',
+    factsPanelVi: 'Bảng Dinh dưỡng Sữa công thức (21 CFR 107)',
+  },
   supplement: {
     name: 'Dietary Supplement',
     nameVi: 'Thực phẩm chức năng / TPCN',
@@ -146,6 +153,32 @@ export const PACKAGING_FORMATS: PackagingFormat[] = [
       'Khai báo dị ứng theo FALCPA Section 203',
     ],
     domainOverrides: {
+      infant_formula: {
+        rules: {
+          nutritionFactsFormat: 'standard',
+          nutritionFactsRequired: true,
+          allergenDeclarationRequired: true,
+        },
+        fdaRegulations: ['21 CFR 107', '21 CFR 107.10', '21 CFR 107.100', '21 CFR 101.9', 'Infant Formula Act', 'FALCPA Section 203'],
+        fdaNotes: [
+          'Infant Formula: must comply with 21 CFR 107 (Infant Formula Act) — stricter than standard food',
+          'Nutrient content must meet minimum/maximum levels per 21 CFR 107.100',
+          'Must include: Protein, Fat, Linoleic Acid + all vitamins and minerals per CFR 107.100 table',
+          'Serving size must be expressed "per 100 Calories" AND "per prepared amount"',
+          'Statement of identity: "Infant Formula" must appear prominently',
+          'Use-by / expiration date MANDATORY (not optional like regular food)',
+          'Allergen declaration per FALCPA still required (milk, soy are common)',
+        ],
+        fdaNotesVi: [
+          'Sữa công thức: phải tuân thủ 21 CFR 107 (Đạo luật Sữa công thức) — nghiêm ngặt hơn thực phẩm thường',
+          'Hàm lượng dinh dưỡng phải đạt mức tối thiểu/tối đa theo 21 CFR 107.100',
+          'Phải bao gồm: Protein, Chất béo, Linoleic Acid + tất cả vitamin và khoáng chất theo bảng CFR 107.100',
+          'Khẩu phần phải ghi theo "mỗi 100 Calories" VÀ "mỗi lượng pha chế"',
+          'Tên sản phẩm: "Infant Formula" phải hiển thị nổi bật',
+          'Hạn sử dụng BẮT BUỘC (không tùy chọn như thực phẩm thường)',
+          'Khai báo dị ứng theo FALCPA vẫn bắt buộc (sữa, đậu nành phổ biến)',
+        ],
+      },
       supplement: {
         rules: { nutritionFactsFormat: 'standard' },
         fdaRegulations: ['21 CFR 101.36', 'DSHEA', '21 CFR 101.4'],
@@ -327,6 +360,32 @@ export const PACKAGING_FORMATS: PackagingFormat[] = [
       'Khối lượng tịnh cả metric và imperial theo 21 CFR 101.105',
     ],
     domainOverrides: {
+      infant_formula: {
+        rules: {
+          nutritionFactsFormat: 'standard',
+          nutritionFactsRequired: true,
+          allergenDeclarationRequired: true,
+        },
+        fdaRegulations: ['21 CFR 107', '21 CFR 107.10', '21 CFR 107.100', '21 CFR 101.9', 'Infant Formula Act', 'FALCPA Section 203'],
+        fdaNotes: [
+          'PRIMARY label for Infant Formula — full 21 CFR 107 compliance required',
+          'Nutrient content must meet minimum/maximum levels per 21 CFR 107.100',
+          'Serving size: "per 100 Calories" AND "per prepared amount" (e.g., per 5 fl oz)',
+          'Statement of identity: "Infant Formula" prominently displayed',
+          'Use-by / expiration date MANDATORY',
+          'Allergen declaration per FALCPA required (milk, soy are common)',
+          'Preparation/mixing instructions MANDATORY for powder formulas',
+        ],
+        fdaNotesVi: [
+          'NHÃN CHÍNH cho Sữa công thức — phải tuân thủ đầy đủ 21 CFR 107',
+          'Hàm lượng dinh dưỡng phải đạt mức tối thiểu/tối đa theo 21 CFR 107.100',
+          'Khẩu phần: "mỗi 100 Calories" VÀ "mỗi lượng pha chế" (vd: mỗi 5 fl oz)',
+          'Tên sản phẩm: "Infant Formula" phải hiển thị nổi bật',
+          'Hạn sử dụng BẮT BUỘC',
+          'Khai báo dị ứng theo FALCPA bắt buộc (sữa, đậu nành phổ biến)',
+          'Hướng dẫn pha chế BẮT BUỘC cho sữa bột công thức',
+        ],
+      },
       supplement: {
         rules: {},
         fdaRegulations: ['21 CFR 101.36', 'DSHEA', 'FALCPA'],
@@ -361,7 +420,7 @@ export const PACKAGING_FORMATS: PackagingFormat[] = [
           'If product claims SPF: automatically becomes OTC drug - Drug Facts required',
         ],
         fdaNotesVi: [
-          'NHÃN CHÍNH — danh sách INCI đầy đủ bắt buộc (21 CFR 701.3)',
+          'NHÃN CHÍNH �� danh sách INCI đầy đủ bắt buộc (21 CFR 701.3)',
           'Tên sản phẩm trên mặt trước chính (PDP)',
           'Khối lượng tịnh trên PDP theo 21 CFR 701.13',
           'Cảnh báo theo 21 CFR 740 nếu áp dụng (thuốc nhuộm tóc, bình xịt, v.v.)',
@@ -725,6 +784,10 @@ export function buildPackagingFormatPrompt(formatId: PackagingFormatId, domain: 
 
   if (domain === 'supplement') {
     prompt += '\nCRITICAL: This is a DIETARY SUPPLEMENT. Look for Supplement Facts (NOT Nutrition Facts). Check for DSHEA disclaimer, Other Ingredients, structure/function claims.\n'
+  }
+
+  if (domain === 'infant_formula') {
+    prompt += '\nCRITICAL: This is an INFANT FORMULA product regulated under 21 CFR 107 (Infant Formula Act). This is STRICTER than regular food labeling. Check for: (1) All required nutrients per 21 CFR 107.100 table (protein, fat, linoleic acid, vitamins A-K, all minerals), (2) Serving size expressed per 100 Calories AND per prepared amount, (3) Statement of identity "Infant Formula", (4) Mandatory use-by/expiration date, (5) Preparation/mixing instructions for powder formulas, (6) FALCPA allergen declaration.\n'
   }
 
   if (formatId === 'outer_carton') {
