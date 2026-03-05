@@ -301,7 +301,7 @@ export const vi = {
     riskScoreLabel: 'Điểm rủi ro',
     citationsCount: (count: number) => `${count} trích dẫn quy định`,
     enforcementFrequency: (count: number) => `FDA đã xử phạt ${count} lần vì lỗi tương tự`,
-    criticalNeedsExpert: 'Vi phạm này cần chuyên gia xem x��t',
+    criticalNeedsExpert: 'Vi phạm này cần chuyên gia xem xét',
     getExpertHelp: 'Liên hệ chuyên gia Vexim',
     // Geometry violations
     actualValue: 'GIÁ TRỊ THỰC TẾ',
@@ -421,14 +421,14 @@ export const vi = {
     submitting: 'Đang gửi...',
     submitFreeInPlan: 'Gửi yêu cầu tư vấn (Miễn phí trong gói)',
     submitWithPrice: (price: string) => `Gửi yêu cầu tư vấn — ${price}`,
-    submitDefault: 'Gửi yêu c��u tư vấn',
+    submitDefault: 'Gửi yêu cầu tư vấn',
     proUpgradeNote: 'Gói Business/Pro có lượt Expert Review miễn phí.',
     // Quota-related translations
     creditsRemaining: 'còn lại',
     upgradeRequired: 'Yêu cầu gói Pro/Business',
     upgradeToAccess: 'Nâng cấp để sử dụng Tư vấn Chuyên gia',
     upgradeToPro: 'Nâng cấp lên Pro/Business',
-    quotaExhaustedUpgrade: 'Bạn đã sử dụng h���t lượt Expert Review trong tháng này.',
+    quotaExhaustedUpgrade: 'Bạn đã sử dụng hết lượt Expert Review trong tháng này.',
     upgradeForMore: 'Nâng cấp để không giới hạn',
     // Addon purchase translations
     quotaExhaustedTitle: 'Đã hết lượt trong tháng',
@@ -542,8 +542,8 @@ export const vi = {
       {
         id: 'ingredients', label: 'Thành phần & Allergens', subtitle: 'Ingredient List + Allergen Statement', badge: 'Khuyến nghị',
         description: 'Danh sách thành phần và cảnh báo dị ứng. Upload để AI kiểm tra đầy đủ 9 allergen bắt buộc theo FALCPA.',
-        mustHave: ['Toàn bộ danh sách Ingredients (tất cả các dòng)', 'Phần "Contains:" hoặc "Allergen warning" nếu có', 'Chữ đủ rõ để AI nhận diện từng thành ph���n'],
-        avoid: ['Chỉ chụp một phần danh sách (AI sẽ bỏ sót th��nh phần cuối)', 'Ảnh quá tối hoặc contrast thấp'],
+        mustHave: ['Toàn bộ danh sách Ingredients (tất cả các dòng)', 'Phần "Contains:" hoặc "Allergen warning" nếu có', 'Chữ đủ rõ để AI nhận diện từng thành phần'],
+        avoid: ['Chỉ chụp một phần danh sách (AI sẽ bỏ sót thành phần cuối)', 'Ảnh quá tối hoặc contrast thấp'],
         tip: 'Nếu Ingredient List nằm chung bảng Nutrition Facts, bạn không cần upload riêng — AI tự trích xuất từ ảnh Nutrition.',
       },
       {
@@ -570,7 +570,7 @@ export const vi = {
     advancedTips: [
       { title: 'Chọn đúng danh mục sản phẩm', desc: 'Vào "Tùy chọn nâng cao" và chọn đúng Product Category (Food, Beverage, Dietary Supplement, Cosmetic...). AI sẽ áp dụng bộ quy định FDA đúng với loại sản phẩm của bạn thay vì dùng mặc định.' },
       { title: 'Nhập kích thước vật lý của nhãn', desc: 'Đo chiều rộng × chiều cao của bề mặt nhãn (cm) và nhập vào ô Kích thước vật lý. AI dùng thông tin này để kiểm tra font size có đạt chuẩn tối thiểu 21 CFR 101.105 hay không.' },
-      { title: 'Khai báo ngôn ngữ phụ', desc: 'Nếu nhãn có song ngữ (Anh + Việt), b��t "Nhãn này có chữ ngoài tiếng Anh" và chọn ngôn ngữ. AI sẽ kiểm tra xem tất cả thông tin bắt buộc đã dịch đầy đủ chưa theo 21 CFR 101.15.' },
+      { title: 'Khai báo ngôn ngữ phụ', desc: 'Nếu nhãn có song ngữ (Anh + Việt), bắt "Nhãn này có chữ ngoài tiếng Anh" và chọn ngôn ngữ. AI sẽ kiểm tra xem tất cả thông tin bắt buộc đã dịch đầy đủ chưa theo 21 CFR 101.15.' },
       { title: 'Cách chụp ảnh chất lượng cao', desc: 'Đặt sản phẩm lên nền trắng, chụp bằng điện thoại ở chế độ ban ngày tự nhiên hoặc đèn trắng. Giữ điện thoại song song với mặt nhãn. Không dùng zoom số.' },
     ],
     mistakesTitle: 'Lỗi phổ biến khiến kết quả không chính xác',
@@ -744,12 +744,12 @@ export const vi = {
   landing: {
     // Phần Badge nhỏ phía trên tiêu đề để tạo bằng chứng số liệu
     heroBadge: 'Đối soát trực tiếp dữ liệu từ 5.346 vi phạm thực tế của FDA',
-    
+
     // Tiêu đề chính: Ngắn gọn, đánh thẳng vào thời gian và tiền bạc
     heroTitle: 'Kiểm tra tuân thủ nhãn FDA theo 21 CFR -',
     heroTitleHighlight: 'Phát hiện lỗi trước khi hàng rời cảng',
-    
-   // Phần mô tả: Logic, chặt chẽ và đánh trúng nỗi đau tài chính
+
+    // Phần mô tả: Logic, chặt chẽ và đánh trúng nỗi đau tài chính
     heroDesc1: 'Bạn có chắc nhãn sản phẩm không nằm trong danh sách ',
     heroDesc2: 'Warning Letters của FDA',
     heroDesc3: '? Vexim AI tự động hóa quy trình thẩm định phức tạp bằng cách đối soát với ',
@@ -792,11 +792,11 @@ export const vi = {
     sampleImportantCount: 'Quan trọng:',
     sampleMinorCount: 'Nhẹ:',
     sampleNeedFix: 'Cần khắc phục trước khi xuất hàng',
-    whyTrustTitle: 'Tại sao kết qu�� của Vexim lại đáng tin cậy?',
+    whyTrustTitle: 'Tại sao kết quả của Vexim lại đáng tin cậy?',
     whyTrustDesc: 'AI của Vexim được huấn luyện trực tiếp trên dữ liệu cưỡng chế thực tế của FDA - không chỉ lý thuyết sách vở.',
     commonViolations: 'Các vi phạm phổ biến nhất theo ngành:',
-    dbUpdated: 'Cơ sở dữ liệu được c��p nhật hàng tuần',
-    dbUpdatedDesc: 'Mỗi Warning Letter mới t��� FDA.gov được đội ngũ kỹ thuật Vexim xử lý và đưa vào hệ thống trong vòng 7 ngày.',
+    dbUpdated: 'Cơ sở dữ liệu được cập nhật hàng tuần',
+    dbUpdatedDesc: 'Mỗi Warning Letter mới tại FDA.gov được đội ngũ kỹ thuật Vexim xử lý và đưa vào hệ thống trong vòng 7 ngày.',
     portProcessTitle: 'Điều gì xảy ra khi hàng đến cảng Mỹ? Bạn nên biết',
     portProcessDesc: 'FDA sử dụng hệ thống AI PREDICT 2.0 từ năm 2024 - tự động phát hiện lô hàng rủi ro cao.',
     detentionCost: 'Chi phí giữ hàng',
@@ -867,7 +867,7 @@ export const vi = {
       { cat: 'Thực phẩm', vio: 'Sai đơn vị khối lượng tịnh', pct: '31%', cnt: '1.187 vụ' },
       { cat: 'Thực phẩm', vio: 'Sai định dạng Nutrition Facts 2016', pct: '24%', cnt: '894 vụ' },
       { cat: 'TP/TPCN', vio: 'Không khai báo chất gây dị ứng', pct: '17%', cnt: '618 vụ' },
-      { cat: 'TPCN', vio: 'Thi���u disclaimer cho claim chức năng', pct: '22%', cnt: '429 vụ' },
+      { cat: 'TPCN', vio: 'Thiếu disclaimer cho claim chức năng', pct: '22%', cnt: '429 vụ' },
       { cat: 'Mỹ phẩm', vio: 'Nhãn chứa tuyên bố dược phẩm', pct: '34%', cnt: '306 vụ' },
     ],
     // Port process
@@ -945,7 +945,7 @@ export const vi = {
     criticalLabel: 'NGHIÊM TRỌNG',
     warningLabel: 'CẢNH BÁO',
     infoLabel: 'THÔNG TIN',
-    disclaimer: 'Báo cáo này được tạo bởi hệ thống AI của Vexim Global và chỉ mang tính chất tham kh���o. Không thay thế tư vấn pháp lý chuyên nghiệp.',
+    disclaimer: 'Báo cáo này được tạo bởi hệ thống AI của Vexim Global và chỉ mang tính chất tham khảo. Không thay thế tư vấn pháp lý chuyên nghiệp.',
     signatureTitle: 'Xác nhận bởi',
     signatureRole: 'Hệ thống AI Vexim Compliance',
     page: 'Trang',
