@@ -209,6 +209,11 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     catImportAlertMatch: 'Khớp cảnh báo nhập khẩu',
     catWarningLetterCitation: 'Trích dẫn thư cảnh báo',
     catRecallAssociation: 'Liên quan thu hồi',
+    productImages: 'Hình Ảnh Sản Phẩm',
+    imageTypePdp: 'Mặt trước (PDP)',
+    imageTypeNutrition: 'Bảng dinh dưỡng',
+    imageTypeIngredients: 'Thành phần',
+    imageTypeOther: 'Khác',
   },
   en: {
     downloadTitle: 'FDA Compliance Audit Report',
@@ -396,6 +401,11 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     catImportAlertMatch: 'Import Alert Match',
     catWarningLetterCitation: 'Warning Letter Citation',
     catRecallAssociation: 'Recall Association',
+    productImages: 'Product Images',
+    imageTypePdp: 'Front (PDP)',
+    imageTypeNutrition: 'Nutrition Facts',
+    imageTypeIngredients: 'Ingredients',
+    imageTypeOther: 'Other',
   },
 }
 
@@ -582,6 +592,16 @@ function confidenceBar(label: string, value: number | undefined | null): string 
       </div>
       <div style="font-size:9px;font-weight:600;min-width:32px;text-align:right;color:${color};">${pct}%</div>
     </div>`
+}
+
+function translateImageType(type: string, L: Record<string, string>): string {
+  const map: Record<string, string> = {
+    pdp: L.imageTypePdp,
+    nutrition: L.imageTypeNutrition,
+    ingredients: L.imageTypeIngredients,
+    other: L.imageTypeOther,
+  }
+  return map[type] || L.imageTypeOther
 }
 
 function pageHeader(L: Record<string, string>, reportId: string, dateStr: string): string {
@@ -822,6 +842,20 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   .action-row-critical { background: #FEF2F2; }
   .action-row-warning { background: #FFFBEB; }
   .action-row-info { background: #F0F9FF; }
+
+  /* Product images layout */
+  .product-layout { display: flex; gap: 20px; margin-bottom: 16px; }
+  .product-images { flex: 0 0 180px; min-width: 0; }
+  .product-details { flex: 1; min-width: 0; }
+  .product-image-card { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; background: #f8fafc; }
+  .product-image-wrapper { width: 100%; aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #ffffff; padding: 8px; }
+  .product-image-wrapper img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; }
+  .product-image-label { padding: 6px 10px; background: #f1f5f9; border-top: 1px solid #e2e8f0; font-size: 7.5px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
+  .product-thumbs { display: flex; gap: 6px; margin-top: 8px; }
+  .product-thumb { width: 50px; height: 50px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: #ffffff; display: flex; align-items: center; justify-content: center; padding: 3px; }
+  .product-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .product-thumb-label { font-size: 6px; color: #94a3b8; text-align: center; margin-top: 2px; text-transform: uppercase; }
+  @media print { .product-image-wrapper img, .product-thumb img { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 </style>
 </head>
 <body>
@@ -1008,20 +1042,60 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   <div class="section">
     <div class="section-title"><span class="section-number">${secProduct}</span>${L.productInfo}</div>
-    <table class="info-table">
-      ${report.product_name ? `<tr><td>${L.productName}</td><td>${escapeHtml(report.product_name)}</td></tr>` : ''}
-      ${report.brand_name ? `<tr><td>${L.brandName}</td><td>${escapeHtml(report.brand_name)}</td></tr>` : ''}
-      ${report.product_category ? `<tr><td>${L.category}</td><td>${escapeHtml(report.product_category)}</td></tr>` : ''}
-      ${report.product_type ? `<tr><td>${L.productType}</td><td>${escapeHtml(report.product_type)}</td></tr>` : ''}
-      ${report.packaging_format ? `<tr><td>${L.packageFormat}</td><td>${escapeHtml(report.packaging_format)}</td></tr>` : ''}
-      ${report.net_content ? `<tr><td>${L.netContent}</td><td>${report.net_content.value} ${report.net_content.unit}</td></tr>` : ''}
-      ${report.pdp_area_square_inches ? `<tr><td>${L.pdpArea}</td><td>${report.pdp_area_square_inches.toFixed(2)} sq in</td></tr>` : ''}
-      ${report.manufacturer_info?.company_name ? `<tr><td>${L.manufacturer}</td><td>${escapeHtml(report.manufacturer_info.company_name)}</td></tr>` : ''}
-      ${report.manufacturer_info?.country_of_origin ? `<tr><td>${L.origin}</td><td>${escapeHtml(report.manufacturer_info.country_of_origin)}</td></tr>` : ''}
-      ${report.target_market ? `<tr><td>${L.targetMarket}</td><td>${escapeHtml(report.target_market)}</td></tr>` : ''}
-      ${report.detected_languages && report.detected_languages.length > 0 ? `<tr><td>${L.detectedLangs}</td><td>${report.detected_languages.map((l: string) => escapeHtml(l)).join(', ')}</td></tr>` : ''}
-      <tr><td>${L.analysisDate}</td><td>${formatDate(report.created_at, lang)}</td></tr>
-    </table>
+    ${(() => {
+      // Gather all available images
+      const allImages: { url: string; type: string }[] = []
+      if (report.label_images && report.label_images.length > 0) {
+        report.label_images.forEach(img => allImages.push({ url: img.url, type: img.type }))
+      } else if (report.label_image_url) {
+        allImages.push({ url: report.label_image_url, type: 'pdp' })
+      }
+      const primaryImage = allImages[0]
+      const thumbImages = allImages.slice(1)
+
+      const imagesHTML = primaryImage ? `
+        <div class="product-images">
+          <div class="product-image-card">
+            <div class="product-image-wrapper">
+              <img src="${escapeHtml(primaryImage.url)}" alt="${escapeHtml(report.product_name || 'Product')}" crossorigin="anonymous" />
+            </div>
+            <div class="product-image-label">${translateImageType(primaryImage.type, L)}</div>
+          </div>
+          ${thumbImages.length > 0 ? `
+          <div class="product-thumbs">
+            ${thumbImages.map(img => `
+            <div style="text-align:center;">
+              <div class="product-thumb">
+                <img src="${escapeHtml(img.url)}" alt="${translateImageType(img.type, L)}" crossorigin="anonymous" />
+              </div>
+              <div class="product-thumb-label">${translateImageType(img.type, L)}</div>
+            </div>`).join('')}
+          </div>` : ''}
+        </div>` : ''
+
+      const infoTableHTML = `
+        <div class="${primaryImage ? 'product-details' : ''}">
+          <table class="info-table">
+            ${report.product_name ? `<tr><td>${L.productName}</td><td>${escapeHtml(report.product_name)}</td></tr>` : ''}
+            ${report.brand_name ? `<tr><td>${L.brandName}</td><td>${escapeHtml(report.brand_name)}</td></tr>` : ''}
+            ${report.product_category ? `<tr><td>${L.category}</td><td>${escapeHtml(report.product_category)}</td></tr>` : ''}
+            ${report.product_type ? `<tr><td>${L.productType}</td><td>${escapeHtml(report.product_type)}</td></tr>` : ''}
+            ${report.packaging_format ? `<tr><td>${L.packageFormat}</td><td>${escapeHtml(report.packaging_format)}</td></tr>` : ''}
+            ${report.net_content ? `<tr><td>${L.netContent}</td><td>${report.net_content.value} ${report.net_content.unit}</td></tr>` : ''}
+            ${report.pdp_area_square_inches ? `<tr><td>${L.pdpArea}</td><td>${report.pdp_area_square_inches.toFixed(2)} sq in</td></tr>` : ''}
+            ${report.manufacturer_info?.company_name ? `<tr><td>${L.manufacturer}</td><td>${escapeHtml(report.manufacturer_info.company_name)}</td></tr>` : ''}
+            ${report.manufacturer_info?.country_of_origin ? `<tr><td>${L.origin}</td><td>${escapeHtml(report.manufacturer_info.country_of_origin)}</td></tr>` : ''}
+            ${report.target_market ? `<tr><td>${L.targetMarket}</td><td>${escapeHtml(report.target_market)}</td></tr>` : ''}
+            ${report.detected_languages && report.detected_languages.length > 0 ? `<tr><td>${L.detectedLangs}</td><td>${report.detected_languages.map((l: string) => escapeHtml(l)).join(', ')}</td></tr>` : ''}
+            <tr><td>${L.analysisDate}</td><td>${formatDate(report.created_at, lang)}</td></tr>
+          </table>
+        </div>`
+
+      if (primaryImage) {
+        return `<div class="product-layout">${imagesHTML}${infoTableHTML}</div>`
+      }
+      return infoTableHTML
+    })()}
   </div>
 
   <!-- Allergen Declaration -->
