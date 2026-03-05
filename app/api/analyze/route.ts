@@ -731,7 +731,7 @@ export async function POST(request: Request) {
           violations.push({
             category: `Mẫu Warning Letter: ${meta.violation_type?.[0] || 'Ngôn ngữ tiềm ẩn rủi ro'}`,
             severity: meta.severity === 'Critical' ? 'critical' : meta.severity === 'Major' ? 'warning' : 'info',
-            description: `Nhãn này chứa ngôn ngữ tương đồng với nội dung mà FDA đã gửi Warning Letter ${meta.letter_id || ''} đến ${meta.company_name || 'một doanh nghiệp'}. Cụm từ bị nhận diện: "${matchedKeywords.join('", "')}". Vi phạm gốc: ${meta.why_problematic || 'Xem chi tiết trong Warning Letter.'}`,
+            description: `Nhãn này chứa ngôn ngữ tương đồng với nội dung mà FDA đã gửi Warning Letter ${meta.letter_id || ''} đến ${meta.company_name || 'một doanh nghi��p'}. Cụm từ bị nhận diện: "${matchedKeywords.join('", "')}". Vi phạm gốc: ${meta.why_problematic || 'Xem chi tiết trong Warning Letter.'}`,
             regulation_reference: meta.regulation_violated?.[0] || 'Xem FDA Warning Letter',
             suggested_fix: meta.correction_required || 'Xem xét và sửa đổi hoặc xóa ngôn ngữ bị gắn cờ để đảm bảo tuân thủ FDA.',
             citations: [warningCitation],
@@ -849,30 +849,48 @@ export async function POST(request: Request) {
       }
     }
     
-    // Check ingredient list presence
-    // NOTE: Do NOT create violation for missing ingredients if we only have a partial label image
-    // The image might be cropped or only show the Nutrition Facts panel
-    // Only flag this if we have clear indicators that ingredients SHOULD be visible but aren't
+    // Check ingredient list presence.
+    //
+    // Guards before flagging a violation:
+    //   1. visionResult.ingredients must be empty (Vision didn't parse a list)
+    //   2. The label must have substantial text (> 200 chars) — avoids cropped images
+    //   3. An "Ingredients:" heading must be visible in allText
+    //   4. BUT: if the heading is followed by actual ingredient text in allText
+    //      (i.e. there is content after "Ingredients:"), then OCR captured the
+    //      ingredients inside allText even if the structured array is empty.
+    //      In that case the label IS compliant — skip the violation.
+    //
+    // This prevents the false-positive caused by Vision populating allText with
+    // "Ingredients: Pistachios, sea salt." but not filling the structured array.
     if (visionResult.ingredients.length === 0 && visionResult.textElements.allText.length > 200) {
-      // Only flag if we have substantial text (full label) but no ingredients
-      // This prevents false positives on cropped Nutrition Facts panels
-      const hasIngredientIndicator = visionResult.textElements.allText.toLowerCase().includes('ingredients:') ||
-                                     visionResult.textElements.allText.toLowerCase().includes('contains:')
-      
-      if (hasIngredientIndicator) {
-        const ingredientCitation = realCitations.find(c => 
-          c.regulation_id.includes('101.4') || c.section.toLowerCase().includes('ingredient')
-        )
-        
-        violations.push({
-          category: 'Ingredient List',
-          severity: 'critical' as const,
-          description: 'Ingredient list heading detected but no ingredients extracted',
-          regulation_reference: ingredientCitation?.regulation_id || '21 CFR 101.4',
-          suggested_fix: 'Add complete ingredient list in descending order by weight after "Ingredients:" label',
-          citations: ingredientCitation ? [ingredientCitation] : [],
-          confidence_score: 0.8,
-        })
+      const allTextLowerForIngredients = visionResult.textElements.allText.toLowerCase()
+      const ingredientsHeadingIdx = allTextLowerForIngredients.indexOf('ingredients:')
+      const containsHeadingIdx   = allTextLowerForIngredients.indexOf('contains:')
+      const hasIngredientHeading = ingredientsHeadingIdx !== -1 || containsHeadingIdx !== -1
+
+      if (hasIngredientHeading) {
+        // Check whether there is meaningful text immediately after the heading.
+        // "Meaningful" = at least 3 non-whitespace characters following the colon.
+        const headingIdx = ingredientsHeadingIdx !== -1 ? ingredientsHeadingIdx : containsHeadingIdx
+        const afterHeading = visionResult.textElements.allText.slice(headingIdx + 'ingredients:'.length).trim()
+        const hasIngredientsAfterHeading = afterHeading.length >= 3
+
+        if (!hasIngredientsAfterHeading) {
+          // Heading visible but nothing follows — genuine missing ingredient list
+          const ingredientCitation = realCitations.find(c =>
+            c.regulation_id.includes('101.4') || c.section.toLowerCase().includes('ingredient')
+          )
+          violations.push({
+            category: 'Ingredient List',
+            severity: 'critical' as const,
+            description: 'Ingredient list heading detected but ingredient text is missing from the label',
+            regulation_reference: ingredientCitation?.regulation_id || '21 CFR 101.4',
+            suggested_fix: 'Add a complete ingredient list in descending order by weight immediately after the "Ingredients:" heading',
+            citations: ingredientCitation ? [ingredientCitation] : [],
+            confidence_score: 0.8,
+          })
+        }
+        // else: allText has content after heading — label is compliant, no violation
       }
     }
 

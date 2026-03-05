@@ -178,6 +178,78 @@ export class ClaimsValidator {
     return this.validateFoodSupplementClaims(labelText, domain)
   }
 
+  // ─── FDA-APPROVED QUALIFIED HEALTH CLAIM PATTERNS ─────────────────────────
+  //
+  // These exact phrase patterns represent FDA-authorized qualified health claims
+  // (QHC) or authorized health claims. When the label text matches one of these
+  // patterns, the claim is COMPLIANT and must NOT trigger a violation.
+  //
+  // References:
+  //   • Nuts & Heart Disease QHC  — FDA Docket 02P-0505 (2003)
+  //   • Whole Grain & Heart Disease — FDA Authorized Health Claim
+  //   • Dietary Saturated Fat & Cholesterol & Heart Disease — 21 CFR 101.75
+  //   • Plant Sterol/Stanol Esters & Heart Disease — 21 CFR 101.83
+  //   • Soluble Fiber & Heart Disease — 21 CFR 101.81
+  //   • Fish/Omega-3 & Heart Disease QHC — FDA Docket 91N-0103
+  //
+  // A QHC must include uncertainty language such as:
+  //   "suggests but does not prove", "may reduce", "scientific evidence suggests"
+  // FDA requires these exact hedging phrases — they are the SIGNAL that
+  // the claim is authorized, not a reason to flag it.
+  // ──────────────────────────────────────────────────────────────────────────
+  private static FDA_QUALIFIED_HEALTH_CLAIM_SIGNALS = [
+    // ── Mandatory uncertainty hedges required by FDA for QHC ──────────────
+    // FDA requires one of these phrases on every Qualified Health Claim.
+    // Their presence proves the claim is authorized — NOT a violation.
+    'suggests but does not prove',
+    'scientific evidence suggests',
+    'limited and not conclusive',
+    'supportive but not conclusive',
+    'some evidence suggests',
+    'emerging evidence suggests',
+    'not been evaluated by',
+
+    // ── FDA Authorized Health Claim standard boilerplate (21 CFR 101.7x) ──
+    'as part of a diet low in saturated fat and cholesterol',
+    'as part of a heart-healthy diet',
+    'as part of a diet low in saturated fat',
+    'as part of a low saturated fat',
+    // Nuts QHC — FDA Docket 02P-0505 (2003)
+    '1.5 ounces per day of most nuts',
+    'ounces per day of most nuts',
+    // Soluble fiber QHC — 21 CFR 101.81
+    '3 grams of soluble fiber from psyllium',
+    'beta glucan soluble fiber',
+    // Potassium & blood pressure — 21 CFR 101.79
+    'diets containing foods that are good sources of potassium',
+    // Calcium & osteoporosis — 21 CFR 101.72
+    'adequate calcium and vitamin d',
+    // Heart-disease related authorized claims
+    'low in saturated fat and cholesterol',
+    'may reduce the risk of heart disease',
+    'risk of heart disease',
+  ]
+
+  /**
+   * Returns true if the given claim term appears in the label text BUT is part of
+   * an FDA-approved qualified health claim (has required uncertainty language nearby).
+   *
+   * Strategy: scan the ±500 character window around the matched term for QHC signals.
+   * If any signal is found in that window, the claim is authorized and not a violation.
+   */
+  private static isPartOfQualifiedHealthClaim(
+    lowerText: string,
+    term: string
+  ): boolean {
+    const idx = lowerText.indexOf(term)
+    if (idx === -1) return false
+    // Extract a ±500-char window around the term
+    const windowStart = Math.max(0, idx - 500)
+    const windowEnd   = Math.min(lowerText.length, idx + term.length + 500)
+    const window      = lowerText.slice(windowStart, windowEnd)
+    return this.FDA_QUALIFIED_HEALTH_CLAIM_SIGNALS.some(signal => window.includes(signal))
+  }
+
   // ─── FOOD / SUPPLEMENT validator ───────────────────────────────────────────
 
   private static validateFoodSupplementClaims(
@@ -189,18 +261,22 @@ export class ClaimsValidator {
 
     // Check for prohibited disease claims
     for (const term of this.FOOD_SUPPLEMENT_PROHIBITED_DISEASE_CLAIMS) {
-      if (lowerText.includes(term)) {
-        detections.push({
-          type: 'prohibited',
-          claim: term,
-          severity: 'critical',
-          regulation: '21 CFR 101.93 / FD&C Act Section 403(r)',
-          description: `Prohibited disease claim detected: "${term}"`,
-          recommendation:
-            'Remove all disease treatment/cure claims. Only FDA-approved health claims are allowed.',
-          matchedTerms: [term],
-        })
-      }
+      if (!lowerText.includes(term)) continue
+
+      // Skip if the term is part of an FDA-approved qualified health claim.
+      // e.g. "heart disease" inside an FDA QHC for nuts is fully authorized.
+      if (this.isPartOfQualifiedHealthClaim(lowerText, term)) continue
+
+      detections.push({
+        type: 'prohibited',
+        claim: term,
+        severity: 'critical',
+        regulation: '21 CFR 101.93 / FD&C Act Section 403(r)',
+        description: `Prohibited disease claim detected: "${term}"`,
+        recommendation:
+          'Remove all disease treatment/cure claims. Only FDA-approved health claims are allowed.',
+        matchedTerms: [term],
+      })
     }
 
     // Check for drug-like claims (all domains)
@@ -221,18 +297,22 @@ export class ClaimsValidator {
 
     // Check for restricted health claims (food/supplement only)
     for (const term of this.FOOD_SUPPLEMENT_RESTRICTED_HEALTH_CLAIMS) {
-      if (lowerText.includes(term)) {
-        detections.push({
-          type: 'requires_approval',
-          claim: term,
-          severity: 'warning',
-          regulation: '21 CFR 101.14',
-          description: `Restricted health claim detected: "${term}"`,
-          recommendation:
-            'Health claims require FDA approval or must be qualified. Ensure compliance with approved claim wording.',
-          matchedTerms: [term],
-        })
-      }
+      if (!lowerText.includes(term)) continue
+
+      // "may reduce the risk", "reduce risk of", "heart healthy" etc. are compliant
+      // when used within the context of an FDA-approved qualified health claim.
+      if (this.isPartOfQualifiedHealthClaim(lowerText, term)) continue
+
+      detections.push({
+        type: 'requires_approval',
+        claim: term,
+        severity: 'warning',
+        regulation: '21 CFR 101.14',
+        description: `Restricted health claim requires FDA authorization: "${term}"`,
+        recommendation:
+          'Health claims require FDA approval or must be qualified. Ensure compliance with approved claim wording and include required uncertainty language.',
+        matchedTerms: [term],
+      })
     }
 
     // Check for structure/function claims without disclaimer (supplement only)
