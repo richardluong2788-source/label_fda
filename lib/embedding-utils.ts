@@ -226,12 +226,31 @@ export async function searchKnowledge(
     rawResults.sort((a: any, b: any) => b.similarity - a.similarity)
 
     // Content-based dedup + boilerplate filter
+    // Also hard-exclude any 19 CFR / CBP / import_compliance records that may
+    // have survived a DB deletion or been re-synced — label analysis is 21 CFR only.
+    const EXCLUDED_CATEGORIES = new Set(['import_compliance'])
+    const EXCLUDED_DOC_TYPES  = new Set(['cbp regulation', 'cbp regulation'])
     const seenContent = new Set<string>()
     const deduped: any[] = []
     for (const r of rawResults) {
       const t = r.content?.trim() || ''
       if (t.length < 50) continue
       if (t.length < 80 && /^21 CFR Part \d+/i.test(t)) continue
+
+      // Skip any 19 CFR / CBP records
+      const cat     = (r.metadata?.category      || '').toLowerCase()
+      const docType = (r.metadata?.document_type || '').toLowerCase()
+      const src     = (r.metadata?.source        || r.source || '').toLowerCase()
+      const reg     = (r.metadata?.regulation    || '').toLowerCase()
+      if (
+        EXCLUDED_CATEGORIES.has(cat) ||
+        EXCLUDED_DOC_TYPES.has(docType) ||
+        src.includes('19 cfr') ||
+        reg.includes('19 cfr')
+      ) {
+        continue
+      }
+
       const hash = t.replace(/\s+/g, ' ').substring(0, 200).toLowerCase()
       if (!seenContent.has(hash)) {
         seenContent.add(hash)

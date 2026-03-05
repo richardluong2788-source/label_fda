@@ -376,10 +376,22 @@ export async function POST(request: Request) {
     console.log('[v0] Retrieved', recallContext.length, 'recall enforcement examples')
     console.log('[v0] Retrieved', importAlertContext.length, 'import alert risk signals (Layer 4)')
 
-    // Build citations from regulatory context (exclude warning letters from citations)
-    const regulationsOnly = regulatoryContext.filter(
-      ctx => ctx.metadata?.document_type !== 'FDA Warning Letter'
-    )
+    // Build citations from regulatory context.
+    // Exclude: Warning Letters, Recalls, and any 19 CFR / CBP records
+    // (label compliance is 21 CFR FDA only — CBP/customs is out of scope).
+    const regulationsOnly = regulatoryContext.filter(ctx => {
+      const docType = (ctx.metadata?.document_type || '').toLowerCase()
+      const cat     = (ctx.metadata?.category      || '').toLowerCase()
+      const src     = (ctx.metadata?.source        || '').toLowerCase()
+      const reg     = (ctx.metadata?.regulation    || '').toLowerCase()
+      if (docType === 'fda warning letter') return false
+      if (docType === 'fda recall')         return false
+      if (docType === 'cbp regulation')     return false
+      if (cat === 'import_compliance')      return false
+      if (src.includes('19 cfr'))           return false
+      if (reg.includes('19 cfr'))           return false
+      return true
+    })
     const realCitations: Citation[] = regulationsOnly.map(ctx => ({
       regulation_id: ctx.metadata?.regulation_id || ctx.section,
       section: ctx.section,
