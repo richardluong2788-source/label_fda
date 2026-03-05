@@ -12,7 +12,7 @@ import { checkKnowledgeBaseStatus } from '@/lib/knowledge-base-check'
 import { analyzeLabel } from '@/lib/ai-vision-analyzer'
 import { ViolationToCFRMapper } from '@/lib/violation-to-cfr-mapper'
 import { SmartCitationFormatter } from '@/lib/smart-citation-formatter'
-import { getPackagingFormat, getExemptFields, buildPackagingFormatPrompt, canUseSimplifiedLabeling, getMinFontSize, mapProductTypeToDomain, type PackagingFormatId, type ProductDomain } from '@/lib/packaging-format-config'
+import { getPackagingFormat, getResolvedRules, getExemptFields, buildPackagingFormatPrompt, canUseSimplifiedLabeling, getMinFontSize, mapProductTypeToDomain, type PackagingFormatId, type ProductDomain } from '@/lib/packaging-format-config'
 import type { Citation, NutritionFact, TextElement } from '@/lib/types'
 
 /**
@@ -1122,9 +1122,12 @@ export async function POST(request: Request) {
     }
 
     // PACKAGING FORMAT: Add format-specific violations
-    if (formatConfig) {
+    if (formatConfig && packagingFormat) {
+      // Get resolved rules for the specific format + domain combination
+      const resolvedRules = getResolvedRules(packagingFormat, productDomain)
+      
       // Check: Multi-pack must declare total unit count
-      if (formatConfig.rules.requiresTotalCount) {
+      if (resolvedRules.requiresTotalCount) {
         const allText = visionResult.textElements.allText.toLowerCase()
         const hasTotalCount = /\d+\s*(x|packets?|packs?|units?|count|pieces?|sachets?|bags?|pouches?)/i.test(allText)
         if (!hasTotalCount) {
