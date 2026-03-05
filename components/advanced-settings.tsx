@@ -33,11 +33,16 @@ interface AdvancedSettingsProps {
     }
   }
   onChange: (settings: any) => void
+  /** When provided from the main form, product type is read-only here */
+  externalProductType?: string
 }
 
-export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) {
+export function AdvancedSettings({ settings, onChange, externalProductType }: AdvancedSettingsProps) {
   const { t } = useTranslation()
   const af = t.advancedForm
+
+  // Use external product type when available, otherwise fall back to settings
+  const effectiveProductType = externalProductType || settings.product_type
 
   return (
     <Card className="overflow-hidden">
@@ -251,7 +256,8 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
                     <span className="ml-1 text-red-500">*</span>
                   </Label>
                   <Select
-                    value={settings.product_type}
+                    value={effectiveProductType}
+                    disabled={!!externalProductType}
                     onValueChange={(value) =>
                       onChange({ ...settings, product_type: value })
                     }
@@ -332,7 +338,7 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
                 {af.packagingTierDesc}
               </p>
 
-              {!settings.product_type && (
+              {!effectiveProductType && (
                 <Alert className="border-amber-200 bg-amber-50/50">
                   <Info className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-xs text-amber-800">
@@ -372,11 +378,11 @@ export function AdvancedSettings({ settings, onChange }: AdvancedSettingsProps) 
               {settings.packaging_format && (() => {
                 const selectedFormat = PACKAGING_FORMATS.find(f => f.id === settings.packaging_format)
                 if (!selectedFormat) return null
-                const domain = mapProductTypeToDomain(settings.product_type)
+                const domain = mapProductTypeToDomain(effectiveProductType)
                 const domainMeta = PRODUCT_DOMAINS[domain]
                 const notes = getResolvedFdaNotesVi(settings.packaging_format, domain)
                 const regulations = getResolvedRegulations(settings.packaging_format, domain)
-                const isDefaultDomain = !settings.product_type
+                const isDefaultDomain = !effectiveProductType
                 return (
                   <Alert className="border-blue-200 bg-blue-50/50">
                     <Info className="h-4 w-4 text-blue-600" />

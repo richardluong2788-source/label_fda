@@ -48,6 +48,9 @@ export const en: TranslationKeys = {
     imageTypes: {
       pdp: { label: 'Front Panel (PDP)', description: 'Principal Display Panel - Net Weight, Brand, Product Name' },
       nutrition: { label: 'Nutrition Facts', description: 'Detailed nutrition information panel' },
+      supplementFacts: { label: 'Supplement Facts', description: 'Dietary supplement information panel' },
+      drugFacts: { label: 'Drug Facts', description: 'OTC drug information panel' },
+      inciIngredients: { label: 'INCI Ingredients', description: 'Cosmetic ingredients list (INCI)' },
       ingredients: { label: 'Ingredients & Allergens', description: 'Ingredient list and allergen declarations' },
       other: { label: 'Other Panels', description: 'Claims, warnings, or supplementary information' },
     },
@@ -71,7 +74,7 @@ export const en: TranslationKeys = {
     fileTooLarge: 'File too large (max 10MB)',
     needLogin: 'You need to log in',
     analyzeFailed: 'Analysis failed',
-    uploadRequired: 'Please upload both Front Panel (PDP) and Nutrition Facts images',
+    uploadRequired: 'Please upload all required images for this product type',
     invalidImages: 'Some images are invalid. Please remove and re-upload.',
     waitForAI: 'Please wait for AI validation to complete.',
     advancedSettings: 'Advanced Settings',
@@ -109,6 +112,24 @@ export const en: TranslationKeys = {
     statFdaDocs: 'FDA Docs in KB',
     statRegulations: 'Food Labeling Regulations',
     statAiAccuracy: 'AI Accuracy',
+    // Product type selector (main form)
+    productTypeLabel: 'Product Type',
+    productTypeDesc: 'Select the correct product type to show the right upload cards',
+    productTypeFood: 'Food',
+    productTypeSupplement: 'Dietary Supplement',
+    productTypeBeverage: 'Beverage',
+    productTypeCosmetic: 'Cosmetics',
+    productTypeDrugOTC: 'OTC Drug',
+    productTypeInfant: 'Infant Formula',
+    productTypeMedical: 'Medical Food',
+    selectProductType: 'Select product type...',
+    notApplicable: 'Not applicable',
+    recommended: 'Recommended',
+    // Guide banner
+    firstTimeUser: 'First time here?',
+    guideDescription: 'Read the image upload guide to help AI analyze more accurately — especially requirements for each image type.',
+    viewGuide: 'View guide',
+    imageRequirements: 'Image requirements',
   },
 
   // ─── Audit / Report Result View ──────────────────────
@@ -324,7 +345,7 @@ export const en: TranslationKeys = {
     pdfDownloadError: 'Unable to download report. Please try again.',
   },
 
-  // ─── Label Image Gallery ─���───────────────────────────
+  // ─── Label Image Gallery ─���───���───────────────────────
   gallery: {
     noImages: 'No images',
     scanning: 'Scanning...',

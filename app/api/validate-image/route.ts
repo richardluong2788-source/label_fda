@@ -15,6 +15,24 @@ const VALIDATION_RULES = {
     keywords: ['nutrition facts', 'serving size', 'calories', 'total fat', 'sodium', 'carbohydrate', 'protein'],
     description: 'Bảng dinh dưỡng phải có đầy đủ các thông tin bắt buộc theo FDA'
   },
+  supplementFacts: {
+    name: 'Supplement Facts',
+    requiredElements: ['Supplement Facts', 'Serving Size', 'Amount Per Serving'],
+    keywords: ['supplement facts', 'serving size', 'amount per serving', 'daily value', '% daily value', 'other ingredients'],
+    description: 'Bảng Supplement Facts cho thực phẩm chức năng (21 CFR 101.36)'
+  },
+  drugFacts: {
+    name: 'Drug Facts',
+    requiredElements: ['Drug Facts', 'Active Ingredient', 'Purpose', 'Uses', 'Warnings', 'Directions'],
+    keywords: ['drug facts', 'active ingredient', 'purpose', 'uses', 'warnings', 'directions', 'inactive ingredients'],
+    description: 'Bảng Drug Facts cho dược phẩm OTC (21 CFR 201.66)'
+  },
+  inciIngredients: {
+    name: 'INCI Ingredient Declaration',
+    requiredElements: ['Ingredients'],
+    keywords: ['ingredients', 'aqua', 'water', 'glycerin', 'sodium', 'parfum', 'fragrance', 'ci ', 'tocopherol'],
+    description: 'Danh sách thành phần mỹ phẩm theo INCI (21 CFR 701.3)'
+  },
   ingredients: {
     name: 'Ingredients',
     requiredElements: ['Ingredients'],
@@ -60,8 +78,8 @@ export async function POST(req: NextRequest) {
         {
           role: 'system',
           content: `You are an expert FDA label compliance validator. Analyze the uploaded image and determine:
-1. Is this a food product label? (not a random image, person, landscape, etc.)
-2. What type of label is it? (PDP/front panel, Nutrition Facts, Ingredients, or other)
+1. Is this a product label? (food, supplement, cosmetic, or OTC drug label — not a random image, person, landscape, etc.)
+2. What type of label panel is it? (PDP/front panel, Nutrition Facts, Supplement Facts, Drug Facts, INCI Ingredient Declaration, Ingredients list, or other)
 3. Image quality (sharp/blurry, well-lit/dark, readable/unreadable)
 4. What key elements are visible on the label?
 5. Any major issues that would prevent analysis?
@@ -69,7 +87,7 @@ export async function POST(req: NextRequest) {
 Return JSON format:
 {
   "isLabel": boolean,
-  "detectedType": "pdp" | "nutrition" | "ingredients" | "other" | "not_a_label",
+  "detectedType": "pdp" | "nutrition" | "supplementFacts" | "drugFacts" | "inciIngredients" | "ingredients" | "other" | "not_a_label",
   "confidence": 0-1,
   "quality": "good" | "acceptable" | "poor",
   "isBlurry": boolean,
@@ -134,8 +152,8 @@ Return JSON format:
 
     // Generate user-friendly message
     if (!result.isLabel) {
-      result.message = '❌ Đây không phải ảnh nhãn thực phẩm. Vui lòng upload ảnh nhãn đúng.'
-      result.issues.push('Không phải ảnh nhãn thực phẩm')
+      result.message = '❌ Đây không phải ảnh nhãn sản phẩm. Vui lòng upload ảnh nhãn đúng.'
+      result.issues.push('Không phải ảnh nhãn sản phẩm')
     } else if (result.isBlurry) {
       result.message = '⚠️ Ảnh bị mờ. Vui lòng chụp lại rõ hơn để AI phân tích chính xác.'
     } else if (result.detectedType !== expectedType && result.detectedType !== 'other') {

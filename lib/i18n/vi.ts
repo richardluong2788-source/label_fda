@@ -46,6 +46,9 @@ export const vi = {
     imageTypes: {
       pdp: { label: 'Mặt trước (PDP)', description: 'Principal Display Panel - Có Net Weight, Brand, Product Name' },
       nutrition: { label: 'Bảng Nutrition Facts', description: 'Bảng thành phần dinh dưỡng chi tiết' },
+      supplementFacts: { label: 'Bảng Supplement Facts', description: 'Bảng thành phần thực phẩm chức năng' },
+      drugFacts: { label: 'Bảng Drug Facts', description: 'Bảng thông tin dược phẩm OTC' },
+      inciIngredients: { label: 'Bảng INCI Ingredients', description: 'Danh sách thành phần mỹ phẩm (INCI)' },
       ingredients: { label: 'Thành phần & Allergens', description: 'Danh sách nguyên liệu và cảnh báo dị ứng' },
       other: { label: 'Mặt khác', description: 'Claims, warnings, hoặc thông tin bổ sung' },
     },
@@ -69,7 +72,7 @@ export const vi = {
     fileTooLarge: 'File quá lớn (tối đa 10MB)',
     needLogin: 'Bạn cần đăng nhập',
     analyzeFailed: 'Phân tích thất bại',
-    uploadRequired: 'Vui lòng upload đầy đủ ảnh Mặt trước (PDP) và Bảng Nutrition Facts',
+    uploadRequired: 'Vui lòng upload đầy đủ các ảnh bắt buộc theo loại sản phẩm',
     invalidImages: 'Có ảnh không hợp lệ. Vui lòng xóa và upload lại.',
     waitForAI: 'Vui lòng đợi AI kiểm tra xong.',
     advancedSettings: 'Thông số nâng cao',
@@ -108,6 +111,24 @@ export const vi = {
     statFdaDocs: 'Tài liệu FDA trong KB',
     statRegulations: 'Food Labeling Regulations',
     statAiAccuracy: 'Độ chính xác AI',
+    // Product type selector (main form)
+    productTypeLabel: 'Loại sản phẩm',
+    productTypeDesc: 'Chọn đúng loại sản phẩm để hiển thị card upload phù hợp',
+    productTypeFood: 'Thực phẩm',
+    productTypeSupplement: 'Thực phẩm chức năng / TPCN',
+    productTypeBeverage: 'Đồ uống',
+    productTypeCosmetic: 'Mỹ phẩm',
+    productTypeDrugOTC: 'Dược phẩm OTC',
+    productTypeInfant: 'Sữa công thức trẻ em',
+    productTypeMedical: 'Thực phẩm y học',
+    selectProductType: 'Chọn loại sản phẩm...',
+    notApplicable: 'Không áp dụng',
+    recommended: 'Khuyến nghị',
+    // Guide banner
+    firstTimeUser: 'Lần đầu sử dụng?',
+    guideDescription: 'Đọc hướng dẫn upload ảnh đúng cách để AI phân tích chính xác hơn — đặc biệt là yêu cầu cho từng loại ảnh.',
+    viewGuide: 'Xem hướng dẫn',
+    imageRequirements: 'Yêu cầu ảnh',
   },
 
   // ─── Audit / Report Result View ──────────────────────
@@ -502,7 +523,7 @@ export const vi = {
       {
         id: 'ingredients', label: 'Thành phần & Allergens', subtitle: 'Ingredient List + Allergen Statement', badge: 'Khuyến nghị',
         description: 'Danh sách thành phần và cảnh báo dị ứng. Upload để AI kiểm tra đầy đủ 9 allergen bắt buộc theo FALCPA.',
-        mustHave: ['Toàn bộ danh sách Ingredients (tất cả các dòng)', 'Phần "Contains:" hoặc "Allergen warning" nếu có', 'Chữ đủ rõ để AI nhận diện từng thành phần'],
+        mustHave: ['Toàn bộ danh sách Ingredients (tất cả các dòng)', 'Phần "Contains:" hoặc "Allergen warning" nếu có', 'Chữ đủ rõ để AI nhận diện từng thành ph���n'],
         avoid: ['Chỉ chụp một phần danh sách (AI sẽ bỏ sót thành phần cuối)', 'Ảnh quá tối hoặc contrast thấp'],
         tip: 'Nếu Ingredient List nằm chung bảng Nutrition Facts, bạn không cần upload riêng — AI tự trích xuất từ ảnh Nutrition.',
       },
@@ -610,7 +631,7 @@ export const vi = {
     viewAll: 'Xem tất cả',
   },
 
-  // ─── History ─────────────────────────────────────────
+  // ─── History ───────���─────────────────────────────────
   history: {
     title: 'Lịch sử kiểm tra',
     pageTitle: 'Lịch sử Phân tích',
@@ -755,7 +776,7 @@ export const vi = {
     whyTrustTitle: 'Tại sao kết quả của Vexim lại đáng tin cậy?',
     whyTrustDesc: 'AI của Vexim được huấn luyện trực tiếp trên dữ liệu cưỡng chế thực tế của FDA - không chỉ lý thuyết sách vở.',
     commonViolations: 'Các vi phạm phổ biến nhất theo ngành:',
-    dbUpdated: 'Cơ sở dữ liệu được cập nhật hàng tuần',
+    dbUpdated: 'Cơ sở dữ liệu được c��p nhật hàng tuần',
     dbUpdatedDesc: 'Mỗi Warning Letter mới từ FDA.gov được đội ngũ kỹ thuật Vexim xử lý và đưa vào hệ thống trong vòng 7 ngày.',
     portProcessTitle: 'Điều gì xảy ra khi hàng đến cảng Mỹ? Bạn nên biết',
     portProcessDesc: 'FDA sử dụng hệ thống AI PREDICT 2.0 từ năm 2024 - tự động phát hiện lô hàng rủi ro cao.',
@@ -827,7 +848,7 @@ export const vi = {
       { cat: 'Thực phẩm', vio: 'Sai đơn vị khối lượng tịnh', pct: '31%', cnt: '1.187 vụ' },
       { cat: 'Thực phẩm', vio: 'Sai định dạng Nutrition Facts 2016', pct: '24%', cnt: '894 vụ' },
       { cat: 'TP/TPCN', vio: 'Không khai báo chất gây dị ứng', pct: '17%', cnt: '618 vụ' },
-      { cat: 'TPCN', vio: 'Thiếu disclaimer cho claim chức năng', pct: '22%', cnt: '429 vụ' },
+      { cat: 'TPCN', vio: 'Thi���u disclaimer cho claim chức năng', pct: '22%', cnt: '429 vụ' },
       { cat: 'Mỹ phẩm', vio: 'Nhãn chứa tuyên bố dược phẩm', pct: '34%', cnt: '306 vụ' },
     ],
     // Port process

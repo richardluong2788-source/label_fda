@@ -191,11 +191,16 @@ export async function POST(request: Request) {
         
         // Merge results from all images intelligently
         // PDP image for: brand name, product name, net weight
-        // Nutrition image for: nutrition facts
-        // Ingredients image for: ingredients, allergens
+        // Nutrition/Supplement Facts/Drug Facts image for: nutrition/panel facts
+        // Ingredients/INCI image for: ingredients, allergens
         const pdpData = imageAnalyses.pdp || imageAnalyses.main || {}
-        const nutritionData = imageAnalyses.nutrition || imageAnalyses.main || {}
-        const ingredientsData = imageAnalyses.ingredients || imageAnalyses.main || {}
+        const nutritionData = imageAnalyses.nutrition || imageAnalyses.supplementFacts || imageAnalyses.drugFacts || imageAnalyses.main || {}
+        const ingredientsData = imageAnalyses.ingredients || imageAnalyses.inciIngredients || imageAnalyses.main || {}
+        
+        // Also collect data from all panel types for allText merge
+        const supplementData = imageAnalyses.supplementFacts || {}
+        const drugData = imageAnalyses.drugFacts || {}
+        const inciData = imageAnalyses.inciIngredients || {}
         
         visionResult = {
           nutritionFacts: nutritionData.nutritionFacts || pdpData.nutritionFacts || [],
@@ -203,12 +208,19 @@ export async function POST(request: Request) {
             brandName: pdpData.textElements?.brandName || { text: '', boundingBox: { confidence: 0 } },
             productName: pdpData.textElements?.productName || { text: '', boundingBox: { confidence: 0 } },
             netQuantity: pdpData.textElements?.netQuantity || { text: '', boundingBox: { confidence: 0 } },
-            allText: [pdpData.textElements?.allText, nutritionData.textElements?.allText, ingredientsData.textElements?.allText].filter(Boolean).join(' ')
+            allText: [
+              pdpData.textElements?.allText, 
+              nutritionData.textElements?.allText, 
+              ingredientsData.textElements?.allText,
+              supplementData.textElements?.allText,
+              drugData.textElements?.allText,
+              inciData.textElements?.allText,
+            ].filter(Boolean).join(' ')
           },
           detectedClaims: [...(pdpData.detectedClaims || []), ...(nutritionData.detectedClaims || [])],
-          ingredients: ingredientsData.ingredients || pdpData.ingredients || [],
+          ingredients: ingredientsData.ingredients || inciData.ingredients || pdpData.ingredients || [],
           allergens: ingredientsData.allergens || pdpData.allergens || [],
-          warnings: [...(pdpData.warnings || []), ...(nutritionData.warnings || []), ...(ingredientsData.warnings || [])],
+          warnings: [...(pdpData.warnings || []), ...(nutritionData.warnings || []), ...(ingredientsData.warnings || []), ...(drugData.warnings || [])],
           detectedLanguages: pdpData.detectedLanguages || ['English'],
           tokensUsed: totalTokensUsed,
           overallConfidence: Math.max(pdpData.overallConfidence || 0, nutritionData.overallConfidence || 0, ingredientsData.overallConfidence || 0)

@@ -1,23 +1,32 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
-import { Upload, AlertCircle, CheckCircle2, ImagePlus, X, Shield, AlertTriangle, ChevronDown, Settings, BookOpen, ArrowRight } from 'lucide-react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
+import { Upload, AlertCircle, CheckCircle2, ImagePlus, X, Shield, AlertTriangle, ChevronDown, Settings, BookOpen, ArrowRight, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { AdvancedSettings } from '@/components/advanced-settings'
 import { useTranslation } from '@/lib/i18n'
 
+type ImageSlotKey = 'pdp' | 'nutrition' | 'supplementFacts' | 'drugFacts' | 'inciIngredients' | 'ingredients' | 'other'
+
 interface LabelImage {
   id: string
   file: File
   preview: string
-  type: 'pdp' | 'nutrition' | 'ingredients' | 'other'
+  type: ImageSlotKey
   label: string
   status: 'uploading' | 'analyzing' | 'validated' | 'error'
   validationResult?: {
@@ -32,31 +41,57 @@ interface LabelImage {
   }
 }
 
-const IMAGE_TYPES = {
-  pdp: {
-    label: 'Mặt trước (PDP)',
-    description: 'Principal Display Panel - Có Net Weight, Brand, Product Name',
-    required: true,
-    icon: '📦',
-  },
-  nutrition: {
-    label: 'Bảng Nutrition Facts',
-    description: 'Bảng thành phần dinh dưỡng chi tiết',
-    required: true,
-    icon: '📊',
-  },
-  ingredients: {
-    label: 'Thành phần & Allergens',
-    description: 'Danh sách nguyên liệu và cảnh báo dị ứng',
-    required: false,
-    icon: '🧪',
-  },
-  other: {
-    label: 'Mặt khác',
-    description: 'Claims, warnings, hoặc thông tin bổ sung',
-    required: false,
-    icon: '📄',
+type ProductType = 'food' | 'beverage' | 'dietary_supplement' | 'infant_formula' | 'medical_food' | 'cosmetic' | 'drug_otc'
+
+interface ImageSlotConfig {
+  label: string
+  description: string
+  required: boolean
+  icon: string
+}
+
+/**
+ * Get the 4 upload card slots based on product type.
+ * Card #1: always PDP (required)
+ * Card #2: dynamic panel based on product type
+ * Card #3: Ingredients / Allergens (recommended for food/supplement; not applicable for cosmetics)
+ * Card #4: Other panels (optional)
+ */
+function getImageSlotsForProduct(
+  productType: ProductType | '',
+  t: any
+): Record<string, ImageSlotConfig> {
+  const slots: Record<string, ImageSlotConfig> = {}
+
+  // Card 1: PDP is always required
+  slots.pdp = { ...t.analyze.imageTypes.pdp, required: true, icon: '📦' }
+
+  // Card 2: dynamic based on product type
+  switch (productType) {
+    case 'cosmetic':
+      slots.inciIngredients = { ...t.analyze.imageTypes.inciIngredients, required: false, icon: '🧴' }
+      break
+    case 'drug_otc':
+      slots.drugFacts = { ...t.analyze.imageTypes.drugFacts, required: true, icon: '💊' }
+      break
+    case 'dietary_supplement':
+      slots.supplementFacts = { ...t.analyze.imageTypes.supplementFacts, required: true, icon: '💎' }
+      break
+    // food, beverage, infant_formula, medical_food, or no selection => Nutrition Facts
+    default:
+      slots.nutrition = { ...t.analyze.imageTypes.nutrition, required: !productType ? true : true, icon: '📊' }
+      break
   }
+
+  // Card 3: Ingredients & Allergens (not relevant for cosmetics since INCI replaces it)
+  if (productType !== 'cosmetic') {
+    slots.ingredients = { ...t.analyze.imageTypes.ingredients, required: false, icon: '🧪' }
+  }
+
+  // Card 4: Other panels
+  slots.other = { ...t.analyze.imageTypes.other, required: false, icon: '📄' }
+
+  return slots
 }
 
 export function LabelAnalyzer() {
@@ -68,13 +103,21 @@ export function LabelAnalyzer() {
   const [advancedSettings, setAdvancedSettings] = useState<any>({})
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [kbDocCount, setKbDocCount] = useState<number | null>(null)
+  const [productType, setProductType] = useState<ProductType | ''>('')
 
-  const IMAGE_TYPES_I18N = {
-    pdp: { ...t.analyze.imageTypes.pdp, required: true, icon: '📦' },
-    nutrition: { ...t.analyze.imageTypes.nutrition, required: true, icon: '📊' },
-    ingredients: { ...t.analyze.imageTypes.ingredients, required: false, icon: '🧪' },
-    other: { ...t.analyze.imageTypes.other, required: false, icon: '📄' },
-  }
+  // Compute dynamic image slots based on selected product type
+  const IMAGE_SLOTS = useMemo(
+    () => getImageSlotsForProduct(productType, t),
+    [productType, t]
+  )
+
+  // When product type changes, remove images that no longer have a slot
+  useEffect(() => {
+    setImages(prev => {
+      const validKeys = Object.keys(IMAGE_SLOTS) as ImageSlotKey[]
+      return prev.filter(img => validKeys.includes(img.type))
+    })
+  }, [IMAGE_SLOTS])
 
   // Fetch KB status on mount to display actual document counts
   useEffect(() => {
@@ -85,11 +128,16 @@ export function LabelAnalyzer() {
   }, [])
 
   const hasPDP = images.some(img => img.type === 'pdp')
-  const hasNutrition = images.some(img => img.type === 'nutrition')
+  // Dynamic: check all required slots are filled
+  const requiredSlotKeys = Object.entries(IMAGE_SLOTS)
+    .filter(([, cfg]) => cfg.required)
+    .map(([key]) => key)
+  const allRequiredFilled = requiredSlotKeys.every(key =>
+    images.some(img => img.type === key)
+  )
 
   const validateImageWithAI = async (image: LabelImage): Promise<void> => {
     try {
-      console.log('[v0] Starting validation for image type:', image.type)
       const response = await fetch('/api/validate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -100,12 +148,10 @@ export function LabelAnalyzer() {
       })
 
       if (!response.ok) {
-        console.error('[v0] Validation API failed:', response.status)
         throw new Error('Validation failed')
       }
 
       const result = await response.json()
-      console.log('[v0] Validation result:', result)
       const newStatus = result.isValid ? 'validated' : 'error'
       
       setImages(prev => {
@@ -127,15 +173,11 @@ export function LabelAnalyzer() {
               }
             : img
         )
-        console.log('[v0] Updated images state:', updated)
         return updated
       })
 
       if (!result.isValid) {
-        console.log('[v0] Image is invalid, showing error')
         setError(result.message)
-      } else {
-        console.log('[v0] Image validated successfully')
       }
     } catch (error) {
       setImages(prev => prev.map(img =>
@@ -156,7 +198,7 @@ export function LabelAnalyzer() {
     }
   }
 
-  const addImage = useCallback(async (file: File, type: LabelImage['type']) => {
+  const addImage = useCallback(async (file: File, type: ImageSlotKey) => {
     if (!file.type.startsWith('image/')) {
       setError(t.analyze.selectImageFile)
       return
@@ -174,7 +216,7 @@ export function LabelAnalyzer() {
         file,
         preview: reader.result as string,
         type,
-        label: IMAGE_TYPES_I18N[type].label,
+        label: IMAGE_SLOTS[type]?.label || type,
         status: 'analyzing'
       }
       setImages(prev => [...prev, newImage])
@@ -184,12 +226,12 @@ export function LabelAnalyzer() {
     reader.readAsDataURL(file)
   }, [])
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>, type: LabelImage['type']) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>, type: ImageSlotKey) => {
     const selectedFiles = Array.from(e.target.files || [])
     selectedFiles.forEach(file => addImage(file, type))
   }, [addImage])
 
-  const handleDrop = useCallback((e: React.DragEvent, type: LabelImage['type']) => {
+  const handleDrop = useCallback((e: React.DragEvent, type: ImageSlotKey) => {
     e.preventDefault()
     const droppedFiles = Array.from(e.dataTransfer.files)
     droppedFiles.forEach(file => addImage(file, type))
@@ -204,7 +246,7 @@ export function LabelAnalyzer() {
   }, [])
 
   const handleAnalyze = async () => {
-    if (!hasPDP || !hasNutrition) {
+    if (!allRequiredFilled) {
       setError(t.analyze.uploadRequired)
       return
     }
@@ -272,7 +314,7 @@ export function LabelAnalyzer() {
             value: parseFloat(advancedSettings.netContentValue),
             unit: advancedSettings.netContentUnit
           } : undefined,
-          product_type: advancedSettings.productType,
+          product_type: productType || advancedSettings.productType,
           target_audience: advancedSettings.targetAudience,
           special_claims: advancedSettings.specialClaims ? advancedSettings.specialClaims.split(',').map((c: string) => c.trim()) : undefined,
           manufacturer_info: advancedSettings.countryOfOrigin || advancedSettings.companyName ? {
@@ -326,25 +368,55 @@ export function LabelAnalyzer() {
         <div className="flex items-start gap-3">
           <BookOpen className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-blue-900">Lần đầu sử dụng?</p>
+            <p className="text-sm font-medium text-blue-900">{t.analyze.firstTimeUser}</p>
             <p className="text-xs text-blue-700 mt-0.5 leading-relaxed">
-              Đọc hướng dẫn upload ảnh đúng cách để AI phân tích chính xác hơn — đặc biệt là yêu cầu cho từng loại ảnh.
+              {t.analyze.guideDescription}
             </p>
           </div>
         </div>
         <Link href="/guide" target="_blank" className="shrink-0">
           <Button variant="outline" size="sm" className="border-blue-300 text-blue-700 hover:bg-blue-100 hover:border-blue-400 gap-1.5 whitespace-nowrap">
-            Xem hướng dẫn
+            {t.analyze.viewGuide}
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </Link>
       </div>
 
-      {/* Upload Grid */}
+      {/* Product Type Selector */}
+      <Card className="p-5 border-2 border-primary/30 bg-primary/5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <Package className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+            <div>
+              <h3 className="font-bold text-foreground text-sm">{t.analyze.productTypeLabel}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">{t.analyze.productTypeDesc}</p>
+            </div>
+          </div>
+          <Select
+            value={productType}
+            onValueChange={(value) => setProductType(value as ProductType)}
+          >
+            <SelectTrigger className="w-full sm:w-64 bg-background">
+              <SelectValue placeholder={t.analyze.selectProductType} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="food">{t.analyze.productTypeFood}</SelectItem>
+              <SelectItem value="beverage">{t.analyze.productTypeBeverage}</SelectItem>
+              <SelectItem value="dietary_supplement">{t.analyze.productTypeSupplement}</SelectItem>
+              <SelectItem value="infant_formula">{t.analyze.productTypeInfant}</SelectItem>
+              <SelectItem value="medical_food">{t.analyze.productTypeMedical}</SelectItem>
+              <SelectItem value="cosmetic">{t.analyze.productTypeCosmetic}</SelectItem>
+              <SelectItem value="drug_otc">{t.analyze.productTypeDrugOTC}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </Card>
+
+      {/* Upload Grid - dynamic based on product type */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {Object.entries(IMAGE_TYPES_I18N).map(([key, info]) => {
+        {Object.entries(IMAGE_SLOTS).map(([key, info]) => {
           const imageOfThisType = images.find(img => img.type === key)
-          const typeKey = key as keyof typeof IMAGE_TYPES_I18N
+          const typeKey = key as ImageSlotKey
           
           return (
             <Card 
@@ -358,20 +430,23 @@ export function LabelAnalyzer() {
               {/* Header with badge on right */}
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="font-bold text-gray-900">{info.label}</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">{info.description}</p>
+                  <h3 className="font-bold text-foreground">{info.label}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{info.description}</p>
                   <Link
                     href={`/guide#${key}`}
                     target="_blank"
                     className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 mt-1"
                   >
                     <BookOpen className="h-3 w-3" />
-                    Yêu cầu ảnh
+                    {t.analyze.imageRequirements}
                   </Link>
                 </div>
                 <div className="flex items-center gap-1 ml-2">
                   {info.required && !imageOfThisType && (
                     <Badge variant="destructive" className="text-[10px] px-2 py-0.5 h-5">{t.common.required}</Badge>
+                  )}
+                  {!info.required && !imageOfThisType && (
+                    <Badge variant="secondary" className="text-[10px] px-2 py-0.5 h-5">{t.analyze.recommended}</Badge>
                   )}
                   {imageOfThisType && (
                     <Button
@@ -462,7 +537,7 @@ export function LabelAnalyzer() {
                         <>
                           <AlertCircle className="h-3.5 w-3.5 text-amber-300" />
                           <span className="text-xs font-medium">
-                            {t.analyze.detectedImage(IMAGE_TYPES_I18N[imageOfThisType.validationResult.detectedType as keyof typeof IMAGE_TYPES_I18N]?.label || imageOfThisType.validationResult.detectedType)}
+                            {t.analyze.detectedImage(IMAGE_SLOTS[imageOfThisType.validationResult.detectedType as ImageSlotKey]?.label || imageOfThisType.validationResult.detectedType)}
                           </span>
                         </>
                       ) : (
@@ -507,6 +582,7 @@ export function LabelAnalyzer() {
             <AdvancedSettings 
               settings={advancedSettings}
               onChange={setAdvancedSettings}
+              externalProductType={productType}
             />
           </div>
         </CollapsibleContent>
@@ -526,7 +602,7 @@ export function LabelAnalyzer() {
           <Button
             size="lg"
             onClick={handleAnalyze}
-            disabled={!hasPDP || !hasNutrition || isAnalyzing}
+            disabled={!allRequiredFilled || isAnalyzing}
             className="px-8"
           >
             {isAnalyzing ? t.analyze.analyzing : t.analyze.scanNow}
