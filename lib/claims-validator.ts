@@ -177,13 +177,18 @@ export class ClaimsValidator {
   ]
 
   // Drug-like claims — apply to ALL domains (cosmetic included)
+  //
+  // NOTE: "clinical" is intentionally excluded here.
+  // "Clinically tested", "clinical studies", "clinical research" are standard
+  // marketing language on food, supplement, and cosmetic labels and do NOT
+  // constitute a drug claim under 21 CFR 201(g). Only explicit therapeutic-intent
+  // terms are included in this list.
   private static DRUG_CLAIMS_ALL_DOMAINS = [
     'drug',
     'medicine',
     'medication',
     'therapeutic',
     'prescription',
-    'clinical',
     'pharmacological',
   ]
 
@@ -226,28 +231,33 @@ export class ClaimsValidator {
   // FDA requires these exact hedging phrases — they are the SIGNAL that
   // the claim is authorized, not a reason to flag it.
   // ──────────────────────────────────────────────────────────────────────────
-  private static FDA_QUALIFIED_HEALTH_CLAIM_SIGNALS = [
-    // ── Mandatory uncertainty hedges required by FDA for QHC ──────────────
-    // FDA requires one of these phrases on every Qualified Health Claim.
-    // Their presence proves the claim is authorized — NOT a violation.
+  // ── FDA Qualified Health Claim uncertainty signals ─────────────────────────
+  //
+  // These are the mandatory hedging phrases FDA requires on every QHC.
+  // Their presence in the label proves the claim is authorized.
+  //
+  // IMPORTANT: These signals are used to authorize disease names and restricted
+  // health claim terms (e.g. "heart disease", "may reduce the risk").
+  // They are intentionally NOT used to authorize "cure", "treat", or "diagnose"
+  // because the DSHEA disclaimer only protects structure/function claims —
+  // it does NOT make "treats diabetes" legal on a food/supplement label.
+  //
+  // References:
+  //   • Nuts & Heart Disease QHC — FDA Docket 02P-0505 (2003)
+  //   • Dietary Fat & Heart Disease — 21 CFR 101.75
+  //   • Plant Sterols & Heart Disease — 21 CFR 101.83
+  //   • Soluble Fiber & Heart Disease — 21 CFR 101.81
+  //   • Potassium & Blood Pressure — 21 CFR 101.79
+  //   • Calcium & Osteoporosis — 21 CFR 101.72
+  private static FDA_QHC_UNCERTAINTY_SIGNALS = [
+    // Mandatory FDA hedging phrases on every Qualified Health Claim
     'suggests but does not prove',
     'scientific evidence suggests',
     'limited and not conclusive',
     'supportive but not conclusive',
     'some evidence suggests',
     'emerging evidence suggests',
-    'not been evaluated by',
-
-    // ── DSHEA mandatory disclaimer — disease terms here are NOT a violation ──
-    // 21 CFR 101.93(f): "This product is not intended to diagnose, treat, cure,
-    // or prevent any disease." Disease names in this disclaimer context are safe.
-    'not intended to diagnose',
-    'not intended to treat',
-    'not intended to cure',
-    'not intended to prevent any disease',
-    'these statements have not been evaluated',
-
-    // ── FDA Authorized Health Claim standard boilerplate (21 CFR 101.7x) ──
+    // Authorized health claim boilerplate (21 CFR 101.7x)
     'as part of a diet low in saturated fat and cholesterol',
     'as part of a heart-healthy diet',
     'as part of a diet low in saturated fat',
@@ -258,22 +268,49 @@ export class ClaimsValidator {
     // Soluble fiber QHC — 21 CFR 101.81
     '3 grams of soluble fiber from psyllium',
     'beta glucan soluble fiber',
-    // Potassium & blood pressure — 21 CFR 101.79
+    // Potassium — 21 CFR 101.79
     'diets containing foods that are good sources of potassium',
-    // Calcium & osteoporosis — 21 CFR 101.72
+    // Calcium — 21 CFR 101.72
     'adequate calcium and vitamin d',
-    // Heart-disease related authorized claims
+    // General heart-disease claim boilerplate
     'low in saturated fat and cholesterol',
     'may reduce the risk of heart disease',
     'risk of heart disease',
   ]
 
+  // ── DSHEA mandatory disclaimer signals ─────────────────────────────────────
+  //
+  // These phrases appear in the DSHEA-required disclaimer on dietary supplements:
+  //   "These statements have not been evaluated by the FDA. This product is not
+  //    intended to diagnose, treat, cure, or prevent any disease."
+  //
+  // SCOPE: When a disease name (e.g. "cancer", "diabetes") or structure/function
+  // term appears in the ±500 char window of one of these phrases, it means the
+  // disease term is part of the disclaimer itself — NOT a therapeutic claim.
+  //
+  // CRITICAL: These signals do NOT authorize "treats [disease]" or "cures [disease]"
+  // as standalone claims. The disclaimer only exempts structure/function claims.
+  // If a label says "treats diabetes" AND has the disclaimer, it is STILL illegal.
+  // The disclaimer exemption only applies to disease-name detection, not to
+  // therapeutic action verbs (treat, cure, diagnose).
+  private static DSHEA_DISCLAIMER_SIGNALS = [
+    'not intended to diagnose',
+    'not intended to treat',
+    'not intended to cure',
+    'not intended to prevent any disease',
+    'these statements have not been evaluated',
+    'not been evaluated by the food and drug administration',
+  ]
+
   /**
-   * Returns true if the given claim term appears in the label text BUT is part of
-   * an FDA-approved qualified health claim (has required uncertainty language nearby).
+   * Returns true when a DISEASE NAME (e.g. "cancer", "diabetes", "heart disease")
+   * or RESTRICTED HEALTH CLAIM TERM appears in the label but is part of either:
+   *   (a) an FDA-approved Qualified Health Claim (has required QHC uncertainty language), OR
+   *   (b) a DSHEA-required disclaimer (the disease is mentioned only to deny treating it)
    *
-   * Strategy: scan the ±500 character window around the matched term for QHC signals.
-   * If any signal is found in that window, the claim is authorized and not a violation.
+   * NOTE: This method must NOT be called for therapeutic action verbs ("cure", "treat",
+   * "diagnose") when evaluating standalone claims — the disclaimer does not authorize
+   * those verbs as affirmative product claims.
    */
   private static isPartOfQualifiedHealthClaim(
     lowerText: string,
@@ -281,11 +318,39 @@ export class ClaimsValidator {
   ): boolean {
     const idx = lowerText.indexOf(term)
     if (idx === -1) return false
-    // Extract a ±500-char window around the term
+
+    // Extract ±500-char window around the term for context analysis
     const windowStart = Math.max(0, idx - 500)
     const windowEnd   = Math.min(lowerText.length, idx + term.length + 500)
     const window      = lowerText.slice(windowStart, windowEnd)
-    return this.FDA_QUALIFIED_HEALTH_CLAIM_SIGNALS.some(signal => window.includes(signal))
+
+    // Check 1: Is this term part of an FDA-approved QHC?
+    if (this.FDA_QHC_UNCERTAINTY_SIGNALS.some(signal => window.includes(signal))) {
+      return true
+    }
+
+    // Check 2: Is this term occurring inside a DSHEA disclaimer?
+    // Only applies to disease names, NOT to "cure"/"treat"/"diagnose" verb checks.
+    // (Callers that handle therapeutic verbs should skip calling this method.)
+    if (this.DSHEA_DISCLAIMER_SIGNALS.some(signal => window.includes(signal))) {
+      return true
+    }
+
+    return false
+  }
+
+  /**
+   * Variant of isPartOfQualifiedHealthClaim that checks ONLY QHC signals,
+   * NOT the DSHEA disclaimer. Use this for therapeutic action verbs ("cure",
+   * "treat", "diagnose") where the DSHEA disclaimer provides no authorization.
+   */
+  private static isPartOfQHCOnly(lowerText: string, term: string): boolean {
+    const idx = lowerText.indexOf(term)
+    if (idx === -1) return false
+    const windowStart = Math.max(0, idx - 500)
+    const windowEnd   = Math.min(lowerText.length, idx + term.length + 500)
+    const window      = lowerText.slice(windowStart, windowEnd)
+    return this.FDA_QHC_UNCERTAINTY_SIGNALS.some(signal => window.includes(signal))
   }
 
   // ─── FOOD / SUPPLEMENT validator ───────────────────────────────────────────
@@ -297,13 +362,24 @@ export class ClaimsValidator {
     const detections: ClaimDetection[] = []
     const lowerText = labelText.toLowerCase()
 
+    // ── Therapeutic action verbs: always prohibited, DSHEA disclaimer does NOT authorize ──
+    // "cure", "treat", "diagnose" are drug claims regardless of disclaimer presence.
+    // A label saying "treats diabetes" is illegal even with the DSHEA disclaimer.
+    // We only skip them if they appear inside an FDA-approved QHC (very rare for these verbs).
+    const THERAPEUTIC_VERBS = new Set(['cure', 'treat', 'diagnose'])
+
     // Check for prohibited disease claims
     for (const term of this.FOOD_SUPPLEMENT_PROHIBITED_DISEASE_CLAIMS) {
       if (!lowerText.includes(term)) continue
 
-      // Skip if the term is part of an FDA-approved qualified health claim.
-      // e.g. "heart disease" inside an FDA QHC for nuts is fully authorized.
-      if (this.isPartOfQualifiedHealthClaim(lowerText, term)) continue
+      if (THERAPEUTIC_VERBS.has(term)) {
+        // Therapeutic verbs: only skip if explicitly part of a real QHC (not DSHEA disclaimer)
+        if (this.isPartOfQHCOnly(lowerText, term)) continue
+      } else {
+        // Disease names and "prevent + disease" combos:
+        // Skip if in QHC context OR if in a DSHEA disclaimer context
+        if (this.isPartOfQualifiedHealthClaim(lowerText, term)) continue
+      }
 
       detections.push({
         type: 'prohibited',

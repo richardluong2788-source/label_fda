@@ -233,21 +233,41 @@ export async function POST(request: Request) {
             // Only override default 'food' if Vision detected something more specific
             ;(productDomain as any) = autoDetectedDomain
           } else {
-            // Vision also says food — but refine via content signals if possible
+            // Vision also says food — refine via content signals with strict priority:
+            //
+            // Priority order (highest → lowest):
+            //   1. "Drug Facts" or "Active Ingredient" → drug_otc  (always OTC drug, no exception)
+            //   2. "Supplement Facts" → supplement
+            //   3. "Nutrition Facts" or "Calories" → force FOOD — do NOT reclassify as cosmetic
+            //      even if the word "ingredients" is present (all food labels have ingredients)
+            //   4. INCI keyword (without Nutrition Facts/Calories) → cosmetic
+            //
+            // This prevents food multipack labels (e.g. pistachios with Nutrition Facts panel)
+            // from being misclassified as cosmetics due to the generic "ingredients" keyword.
             const allText = visionResult.textElements.allText?.toLowerCase() || ''
             if (allText.includes('drug facts') || allText.includes('active ingredient')) {
               ;(productDomain as any) = 'drug_otc'
             } else if (allText.includes('supplement facts')) {
               ;(productDomain as any) = 'supplement'
-            } else if (allText.includes('inci') || (allText.includes('ingredients') && !allText.includes('nutrition facts') && !allText.includes('calories'))) {
+            } else if (allText.includes('nutrition facts') || allText.includes('calories')) {
+              // Explicit food panel detected — keep 'food', no override
+              ;(productDomain as any) = 'food'
+            } else if (allText.includes('inci')) {
+              // INCI keyword without any food/nutrition panel → cosmetic
               ;(productDomain as any) = 'cosmetic'
             }
+            // else: no strong signal → keep existing 'food' default
           }
-          console.log('[v0] AUTO-DETECT: productDomain resolved to', productDomain, 'from Vision detectedProductType:', visionResult.detectedProductType)
-        } else if (userChoseProductType) {
-          console.log('[v0] User-selected productDomain:', productDomain)
-        } else {
-          console.log('[v0] No product type detected — defaulting to food domain')
+        } else if (!userChoseProductType) {
+          // No Vision detectedProductType at all — still apply content-signal refinement
+          const allText = visionResult.textElements.allText?.toLowerCase() || ''
+          if (allText.includes('drug facts') || allText.includes('active ingredient')) {
+            ;(productDomain as any) = 'drug_otc'
+          } else if (allText.includes('supplement facts')) {
+            ;(productDomain as any) = 'supplement'
+          } else if (!allText.includes('nutrition facts') && !allText.includes('calories') && allText.includes('inci')) {
+            ;(productDomain as any) = 'cosmetic'
+          }
         }
         // ── END AUTO-DETECT ───────────────────────────────────────────────────
       } catch (error: any) {
@@ -443,9 +463,7 @@ export async function POST(request: Request) {
 
     // Add packaging format context to prompt (domain-aware)
     const packagingFormatPrompt = packagingFormat ? buildPackagingFormatPrompt(packagingFormat, productDomain) : ''
-    console.log('[v0] Packaging format prompt length:', packagingFormatPrompt.length, 'chars')
-    console.log('[v0] Warning letter prompt section length:', warningLetterPromptSection.length, 'chars')
-    console.log('[v0] Import alert prompt section length:', importAlertPromptSection.length, 'chars')
+
 
     // Calculate actual PDP area from user-provided dimensions
     // Supports TWO input paths:
@@ -625,7 +643,7 @@ export async function POST(request: Request) {
     // DOMAIN-AWARE: pass productDomain so the correct ruleset is applied.
     //   cosmetic  → "prevents blisters/chafing" is a LEGAL cosmetic action claim
     //   food/supplement → "prevent" triggers prohibited disease claim check
-    console.log('[v0] Step 4: Validating health claims (domain:', productDomain, ')...')
+    // Step 4: Claims validation using AI-detected claims
     const detectedClaimsText = visionResult.detectedClaims.join(' ')
     const claimViolations = ClaimsValidator.validateClaims(
       labelText + ' ' + detectedClaimsText,
@@ -633,12 +651,12 @@ export async function POST(request: Request) {
     )
 
     // Multi-language validation using DETECTED languages from AI
-    console.log('[v0] Step 6: Validating multi-language requirements...')
+    // Step 6: Multi-language validation
     let multiLanguageIssues = null
     const detectedLanguages = visionResult.detectedLanguages || []
     
     if (detectedLanguages.length > 1 || report.has_foreign_language) {
-      console.log('[v0] Multiple languages detected:', detectedLanguages.join(', '))
+
       
       // Check if mandatory information is present in both languages
       const mandatoryFields = ['product name', 'net quantity', 'ingredients', 'allergens']
@@ -666,14 +684,8 @@ export async function POST(request: Request) {
     const hasClaims = claimViolations.length > 0
     const disclaimers = ClaimsValidator.generateRequiredDisclaimers(productType, hasClaims)
 
-    // Citations now come from REAL regulatory context (RAG) retrieved above
-    console.log('[v0] Using', realCitations.length, 'citations from Knowledge Base')
-
     // Build violations based on ACTUAL findings from AI analysis and regulatory context
     let violations = []
-
-    // NEW: Convert detected violations to professional findings
-    console.log('[v0] Formatting violations into professional findings...')
     const professionalFindings = detectedViolations.map(violation => {
       const relevantReg = regulationsOnly.find(r => 
         r.regulation_id === violation.regulationSection ||
@@ -707,7 +719,6 @@ export async function POST(request: Request) {
     
     // WARNING LETTER CHECKS: Flag issues found in real FDA Warning Letters
     if (warningLetterContext.length > 0) {
-      console.log('[v0] Checking label against', warningLetterContext.length, 'warning letter patterns...')
 
       const labelTextLower = labelText.toLowerCase()
       for (const warning of warningLetterContext) {
@@ -742,7 +753,7 @@ export async function POST(request: Request) {
         }
       }
 
-      console.log('[v0] Warning letter pattern matches added to violations')
+
     }
 
     // FDA RECALL CHECKS: Flag issues matching real FDA Recall patterns
@@ -771,7 +782,7 @@ export async function POST(request: Request) {
           violations.push({
             category: `Mẫu Thu hồi: ${meta.recall_issue_type || 'Yếu tố tiềm ẩn rủi ro'}`,
             severity: meta.recall_classification === 'Class I' ? 'critical' : meta.recall_classification === 'Class II' ? 'warning' : 'info',
-            description: `Nhãn này chứa các yếu tố tương đồng với sản phẩm đã bị FDA thu hồi. Recall ${meta.recall_number || 'N/A'} (${meta.recalling_firm || 'một doanh nghiệp'}): ${meta.why_recalled || 'Xem chi tiết sự kiện thu hồi.'}. Từ khóa nhận diện: "${matchedKeywords.join('", "')}".`,
+            description: `Nhãn này chứa c��c yếu tố tương đồng với sản phẩm đã bị FDA thu hồi. Recall ${meta.recall_number || 'N/A'} (${meta.recalling_firm || 'một doanh nghiệp'}): ${meta.why_recalled || 'Xem chi tiết sự kiện thu hồi.'}. Từ khóa nhận diện: "${matchedKeywords.join('", "')}".`,
             regulation_reference: meta.regulation_related || 'Xem Cơ sở dữ liệu FDA Recall',
             suggested_fix: meta.preventive_action || 'Xem xét và khắc phục các yếu tố bị gắn cờ để tránh nguy cơ thu hồi tiềm ẩn.',
             citations: [recallCitation],
@@ -781,7 +792,7 @@ export async function POST(request: Request) {
         }
       }
 
-      console.log('[v0] Recall pattern matches added to violations')
+
     }
 
     // IMPORT ALERT CHECKS: Flag potential DWPE risk based on FDA Import Alerts (Layer 4)
@@ -812,7 +823,7 @@ export async function POST(request: Request) {
         })
       }
 
-      console.log('[v0] Import alert risk signals added to violations')
+
     }
 
     // ── END COUNTRY OF ORIGIN CHECK ────────────────────────────────────────
@@ -851,49 +862,58 @@ export async function POST(request: Request) {
     
     // Check ingredient list presence.
     //
-    // Guards before flagging a violation:
-    //   1. visionResult.ingredients must be empty (Vision didn't parse a list)
-    //   2. The label must have substantial text (> 200 chars) — avoids cropped images
-    //   3. An "Ingredients:" heading must be visible in allText
-    //   4. BUT: if the heading is followed by actual ingredient text in allText
-    //      (i.e. there is content after "Ingredients:"), then OCR captured the
-    //      ingredients inside allText even if the structured array is empty.
-    //      In that case the label IS compliant — skip the violation.
+    // Guards before flagging a violation (ALL must be true):
+    //   1. visionResult.ingredients structured array is empty
+    //   2. Label has substantial text (> 200 chars) — avoids cropped images
+    //   3. An "Ingredients:" or "Contains:" heading is visible in allText
+    //   4. AND the heading is NOT followed by actual text content in allText
     //
-    // This prevents the false-positive caused by Vision populating allText with
-    // "Ingredients: Pistachios, sea salt." but not filling the structured array.
+    // Why this matters: GPT-4o Vision often populates allText with the full label
+    // including "Ingredients: Pistachios, sea salt." but does not always populate the
+    // structured ingredients[] array. Checking allText avoids false positives.
+    //
+    // Three OCR patterns handled:
+    //   (a) Normal:   "Ingredients: Pistachios, sea salt."
+    //   (b) No space: "Ingredients:Pistachios,sea salt" (OCR gộp)
+    //   (c) Newline:  "Ingredients:\nPistachios, sea salt"
+    // All three are caught by the regex + afterHeading checks below.
     if (visionResult.ingredients.length === 0 && visionResult.textElements.allText.length > 200) {
-      const allTextLowerForIngredients = visionResult.textElements.allText.toLowerCase()
-      const ingredientsHeadingIdx = allTextLowerForIngredients.indexOf('ingredients:')
-      const containsHeadingIdx   = allTextLowerForIngredients.indexOf('contains:')
-      const hasIngredientHeading = ingredientsHeadingIdx !== -1 || containsHeadingIdx !== -1
+      const allTextLower = visionResult.textElements.allText.toLowerCase()
 
-      if (hasIngredientHeading) {
-        // Check whether there is meaningful text immediately after the heading.
-        // "Meaningful" = at least 3 non-whitespace characters following the colon.
-        // IMPORTANT: Use the lowercased allText for slicing (same source as indexOf)
-        // to avoid off-by-one errors from mixed-case OCR output like "Ingredients:".
-        const headingIdx  = ingredientsHeadingIdx !== -1 ? ingredientsHeadingIdx : containsHeadingIdx
-        const headingWord = ingredientsHeadingIdx !== -1 ? 'ingredients:' : 'contains:'
-        const afterHeading = allTextLowerForIngredients.slice(headingIdx + headingWord.length).trim()
-        const hasIngredientsAfterHeading = afterHeading.replace(/\s+/g, '').length >= 3
+      // Fast path: regex catches all OCR variants including no-space glueing
+      // Pattern: "ingredients:" or "contains:" immediately followed by a word character
+      const ingredientInlinePattern = /ingredients:\s*[a-z0-9]|contains:\s*[a-z0-9]/i
+      if (ingredientInlinePattern.test(visionResult.textElements.allText)) {
+        // Ingredient content is present inline — label is compliant, no violation
+      } else {
+        // Slow path: check heading then look at text after it
+        const ingredientsHeadingIdx = allTextLower.indexOf('ingredients:')
+        const containsHeadingIdx   = allTextLower.indexOf('contains:')
+        const hasIngredientHeading = ingredientsHeadingIdx !== -1 || containsHeadingIdx !== -1
 
-        if (!hasIngredientsAfterHeading) {
-          // Heading visible but nothing follows — genuine missing ingredient list
-          const ingredientCitation = realCitations.find(c =>
-            c.regulation_id.includes('101.4') || c.section.toLowerCase().includes('ingredient')
-          )
-          violations.push({
-            category: 'Ingredient List',
-            severity: 'critical' as const,
-            description: 'Ingredient list heading detected but ingredient text is missing from the label',
-            regulation_reference: ingredientCitation?.regulation_id || '21 CFR 101.4',
-            suggested_fix: 'Add a complete ingredient list in descending order by weight immediately after the "Ingredients:" heading',
-            citations: ingredientCitation ? [ingredientCitation] : [],
-            confidence_score: 0.8,
-          })
+        if (hasIngredientHeading) {
+          const headingIdx  = ingredientsHeadingIdx !== -1 ? ingredientsHeadingIdx : containsHeadingIdx
+          const headingWord = ingredientsHeadingIdx !== -1 ? 'ingredients:' : 'contains:'
+          const afterHeading = allTextLower.slice(headingIdx + headingWord.length).trim()
+          const hasIngredientsAfterHeading = afterHeading.replace(/\s+/g, '').length >= 3
+
+          if (!hasIngredientsAfterHeading) {
+            // Heading visible but nothing follows — genuine missing ingredient list
+            const ingredientCitation = realCitations.find(c =>
+              c.regulation_id.includes('101.4') || c.section.toLowerCase().includes('ingredient')
+            )
+            violations.push({
+              category: 'Ingredient List',
+              severity: 'critical' as const,
+              description: 'Ingredient list heading detected but no ingredient text follows it on the label',
+              regulation_reference: ingredientCitation?.regulation_id || '21 CFR 101.4',
+              suggested_fix: 'Add a complete ingredient list in descending order by weight immediately after the "Ingredients:" heading',
+              citations: ingredientCitation ? [ingredientCitation] : [],
+              confidence_score: 0.8,
+            })
+          }
+          // else: text after heading confirms ingredients present — no violation
         }
-        // else: allText has content after heading — label is compliant, no violation
       }
     }
 
