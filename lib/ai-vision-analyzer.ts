@@ -247,7 +247,7 @@ FONT SIZE CHART (use these values):
             ],
           },
         ],
-        max_tokens: 2000,
+        max_tokens: 4000,
         temperature: 0, // Zero temperature for maximum consistency
         seed: 12345, // Fixed seed for reproducible outputs
         response_format: { type: 'json_object' },
@@ -259,7 +259,50 @@ FONT SIZE CHART (use these values):
 
     console.log('[v0] Vision analysis complete. Tokens used:', tokensUsed)
 
-    const parsed = JSON.parse(content)
+    // Safely parse JSON — long labels (complex ingredients) can sometimes produce
+    // truncated output even with response_format:'json_object'. We attempt a
+    // best-effort repair before falling back to an empty object.
+    let parsed: any = {}
+    try {
+      parsed = JSON.parse(content)
+    } catch (jsonErr: any) {
+      console.warn('[v0] JSON.parse failed, attempting truncation repair:', jsonErr.message)
+      // Strategy: find the last valid closing brace position and attempt parse up to there.
+      // If that also fails, extract whatever partial fields we can via regex and continue
+      // with a degraded (but non-crashing) result rather than throwing an unrecoverable error.
+      let repaired = content.trimEnd()
+      // Close any open string that caused the "Unterminated string" error
+      if (!/[}\]"0-9]$/.test(repaired)) {
+        // Truncated mid-string — close it
+        repaired += '"'
+      }
+      // Count unclosed braces/brackets and close them
+      let openBraces = 0
+      let openBrackets = 0
+      let inString = false
+      let escape = false
+      for (const ch of repaired) {
+        if (escape) { escape = false; continue }
+        if (ch === '\\' && inString) { escape = true; continue }
+        if (ch === '"') { inString = !inString; continue }
+        if (inString) continue
+        if (ch === '{') openBraces++
+        else if (ch === '}') openBraces--
+        else if (ch === '[') openBrackets++
+        else if (ch === ']') openBrackets--
+      }
+      while (openBrackets > 0) { repaired += ']'; openBrackets-- }
+      while (openBraces > 0) { repaired += '}'; openBraces-- }
+      try {
+        parsed = JSON.parse(repaired)
+        console.log('[v0] JSON repair succeeded')
+      } catch (repairErr: any) {
+        // Repair also failed — log and continue with empty object so analysis
+        // degrades gracefully instead of crashing with a 500 error.
+        console.error('[v0] JSON repair failed, falling back to empty result:', repairErr.message)
+        parsed = {}
+      }
+    }
 
     const normalized: VisionAnalysisResult = {
       nutritionFacts: Array.isArray(parsed.nutritionFacts) ? parsed.nutritionFacts : [],
