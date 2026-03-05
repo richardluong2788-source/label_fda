@@ -507,7 +507,10 @@ export class ClaimsValidator {
 
     // Check for prohibited disease claims
     for (const term of this.FOOD_SUPPLEMENT_PROHIBITED_DISEASE_CLAIMS) {
-      if (!lowerText.includes(term)) continue
+      // CRITICAL: Use word boundary matching to avoid false positives
+      // e.g., "rbst-treated" should NOT match "treat", only standalone "treat" or "treats"
+      const wordBoundaryRegex = new RegExp(`\\b${term}s?\\b`, 'i')
+      if (!wordBoundaryRegex.test(lowerText)) continue
 
       if (THERAPEUTIC_VERBS.has(term)) {
         // Therapeutic verbs: skip if part of a real QHC
