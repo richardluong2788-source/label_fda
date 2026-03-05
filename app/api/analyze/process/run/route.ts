@@ -59,6 +59,8 @@ export async function POST(request: Request) {
   const userId = request.headers.get('x-internal-user-id') || (body._internal_user_id as string) || ''
   const reportId = request.headers.get('x-internal-report-id') || (body.reportId as string) || ''
 
+  console.log('[v0] run route started:', { jobId, userId: userId ? 'set' : 'empty', reportId })
+
   if (!jobId || !userId || !reportId) {
     return NextResponse.json({ error: 'Missing internal context' }, { status: 400 })
   }

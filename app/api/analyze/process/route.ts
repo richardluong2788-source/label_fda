@@ -69,6 +69,14 @@ export async function POST(request: Request) {
   // ── Dequeue ────────────────────────────────────────────────
   const job = await dequeueNextJob()
 
+  console.log('[v0] process dequeue result:', { 
+    hasJob: !!job, 
+    jobId: job?.id ?? 'none', 
+    reportId: job?.report_id ?? 'none',
+    status: job?.status ?? 'none',
+    bodyJobId: jobId ?? 'none',
+  })
+
   if (!job) {
     return NextResponse.json({ message: 'No jobs to process' })
   }
@@ -147,10 +155,22 @@ export async function POST(request: Request) {
       _processToken:       expectedToken,
     }
 
+    console.log('[v0] process calling run:', { 
+      runUrl: runUrl.toString().replace(/(_token)=[^&]*/g, '$1=***'),
+      reportId: job.report_id,
+      jobId: job.id,
+    })
+
     const analyzeRes = await fetch(runUrl.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(runBody),
+    })
+
+    console.log('[v0] process run response:', { 
+      status: analyzeRes.status, 
+      ok: analyzeRes.ok,
+      jobId: job.id,
     })
 
     if (!analyzeRes.ok) {
