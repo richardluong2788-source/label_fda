@@ -101,75 +101,76 @@ export function AuditHistory({ reports, currentPage, totalPages, totalCount }: A
           
           return (
             <Card key={report.id} className="hover:shadow-md transition-shadow">
-              <Link href={reportLink} className="block p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      {getResultIcon(report.overall_result)}
-                      <h4 className="font-semibold text-base truncate">
-                        {productName}
-                      </h4>
-                      {getResultBadge(report.overall_result)}
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground mb-1">
-                      <span className="font-medium text-foreground">{categoryDisplay}</span>
-                      <span>{'·'}</span>
-                      <FormatDate date={report.created_at} />
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="capitalize">{h.statusPrefix}: {report.status}</span>
-                      <span>{'·'}</span>
-                      <span className={violationCount > 0 ? "font-medium text-destructive" : ""}>
-                        {violationCount > 0 ? h.violations(violationCount) : h.noViolationData}
-                      </span>
-                      {report.brand_name && report.product_name && (
-                        <>
-                          <span>{'·'}</span>
-                          <span>{h.brandPrefix}: {report.brand_name}</span>
-                        </>
-                      )}
-                    </div>
+              <div className="flex items-center gap-4 p-4">
+                {/* Clickable area navigates to report */}
+                <Link href={reportLink} className="flex-1 min-w-0 block">
+                  <div className="flex items-center gap-2 mb-2">
+                    {getResultIcon(report.overall_result)}
+                    <h4 className="font-semibold text-base truncate">
+                      {productName}
+                    </h4>
+                    {getResultBadge(report.overall_result)}
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Button variant="outline" size="sm" className="bg-transparent">
-                      {h.viewReport}
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                          onClick={(e) => e.preventDefault()}
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground mb-1">
+                    <span className="font-medium text-foreground">{categoryDisplay}</span>
+                    <span>{'·'}</span>
+                    <FormatDate date={report.created_at} />
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="capitalize">{h.statusPrefix}: {report.status}</span>
+                    <span>{'·'}</span>
+                    <span className={violationCount > 0 ? "font-medium text-destructive" : ""}>
+                      {violationCount > 0 ? h.violations(violationCount) : h.noViolationData}
+                    </span>
+                    {report.brand_name && report.product_name && (
+                      <>
+                        <span>{'·'}</span>
+                        <span>{h.brandPrefix}: {report.brand_name}</span>
+                      </>
+                    )}
+                  </div>
+                </Link>
+
+                {/* Actions - outside Link to prevent navigation conflicts */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button variant="outline" size="sm" className="bg-transparent" asChild>
+                    <Link href={reportLink}>{h.viewReport}</Link>
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        disabled={deletingId === report.id}
+                      >
+                        {deletingId === report.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{h.deleteConfirmTitle || 'Delete Report?'}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {h.deleteConfirmDesc || 'This action cannot be undone. This will permanently delete the audit report and all associated data.'}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{h.cancel || 'Cancel'}</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={() => handleDelete(report.id)}
                         >
-                          {deletingId === report.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>{h.deleteConfirmTitle || 'Delete Report?'}</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {h.deleteConfirmDesc || 'This action cannot be undone. This will permanently delete the audit report and all associated data.'}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>{h.cancel || 'Cancel'}</AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            onClick={() => handleDelete(report.id)}
-                          >
-                            {h.delete || 'Delete'}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
+                          {h.delete || 'Delete'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
-              </Link>
+              </div>
             </Card>
           )
         })}
