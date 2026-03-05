@@ -10,6 +10,7 @@ import {
   Package, Microscope, Pill, Sparkles, RefreshCw, Lock,
   Truck, Ban, UserCheck,
 } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { LandingHeader } from '@/components/landing-header'
 import { useTranslation } from '@/lib/i18n'
@@ -549,9 +550,7 @@ export default function Page() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <div className="rounded-lg bg-primary p-1.5">
-                  <FileText className="h-4 w-4 text-primary-foreground" />
-                </div>
+                <Image src="/images/logo.png" alt="Vexim logo" width={32} height={32} className="rounded-lg" />
                 <span className="font-bold">{l.footerCompany}</span>
               </div>
               <p className="text-sm text-muted-foreground">{l.footerDescFull}</p>

@@ -13,6 +13,10 @@ export const metadata: Metadata = {
   title: 'Vexim Compliance AI - FDA Market',
   description: 'AI-powered FDA compliance auditing for food labels - Vexim Global',
   generator: 'v0.app',
+  icons: {
+    icon: '/icon.png',
+    apple: '/icon.png',
+  },
 }
 
 export default function RootLayout({

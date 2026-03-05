@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Check, Zap, Shield, Crown, Star, MessageCircle, Users, FileText, Clock, CheckCircle, X, ArrowLeft } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import PricingClient from './pricing-client'
 
@@ -43,9 +44,7 @@ export default async function PricingPage() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <div className="rounded-lg bg-primary p-2">
-              <Shield className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <Image src="/images/logo.png" alt="Vexim logo" width={40} height={40} className="rounded-lg" />
             <div>
               <h1 className="text-xl font-bold">Vexim Compliance AI</h1>
               <p className="text-xs text-muted-foreground">Vexim Global</p>
@@ -146,7 +145,7 @@ export default async function PricingPage() {
                   <div className="mb-3">
                     <p className="font-semibold text-sm">{plan.name}</p>
                     {isCurrentPlan && (
-                      <Badge variant="secondary" className="text-[10px] mt-1">Gói hiện tại</Badge>
+                      <Badge variant="secondary" className="text-[10px] mt-1">G��i hiện tại</Badge>
                     )}
                   </div>
 

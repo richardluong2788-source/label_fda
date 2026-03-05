@@ -2,6 +2,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { BookOpen, FileText, Video, Shield, ArrowRight } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 
 export default function KnowledgeHubPage() {
@@ -105,9 +106,7 @@ export default function KnowledgeHubPage() {
       <header className="border-b bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <div className="rounded-lg bg-primary p-2">
-              <BookOpen className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <Image src="/images/logo.png" alt="Vexim logo" width={40} height={40} className="rounded-lg" />
             <div>
               <h1 className="text-xl font-bold">Vexim Compliance AI</h1>
               <p className="text-xs text-muted-foreground">Knowledge Hub</p>
