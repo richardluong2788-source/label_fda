@@ -9,12 +9,24 @@ import { openai, retryWithBackoff } from './openai-client'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { quickRerank, type RerankableResult } from './rag/reranker'
+import { getEmbeddingCache, setEmbeddingCache } from './cache/embedding-cache'
 
 /**
  * Generate embedding vector for text using OpenAI
+ * Phase 3: Results are cached in Upstash Redis (30-day TTL) to avoid
+ * redundant API calls when the same label text is analysed multiple times.
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
   console.log('[v0] Generating embedding for text length:', text.length)
+
+  // ── Phase 3: Embedding Cache lookup ────────────────────────────────────
+  const cached = await getEmbeddingCache(text)
+  if (cached) {
+    console.log('[v0] Embedding cache HIT')
+    return cached
+  }
+  console.log('[v0] Embedding cache MISS — calling OpenAI')
+  // ────────────────────────────────────────────────────────────────────────
   
   try {
     const response = await retryWithBackoff(() =>
@@ -25,7 +37,13 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     )
     
     console.log('[v0] Successfully generated embedding')
-    return response.data[0].embedding
+    const embedding = response.data[0].embedding
+
+    // ── Phase 3: Write to cache (fire-and-forget) ─────────────────────────
+    setEmbeddingCache(text, embedding).catch(() => {})
+    // ─────────────────────────────────────────────────────────────────────
+
+    return embedding
   } catch (error) {
     console.error('[v0] Error generating embedding:', error)
     

@@ -1,5 +1,6 @@
 import { openai, retryWithBackoff } from './openai-client'
 import type { NutritionFact, TextElement } from './types'
+import { lookupVisionCache, setVisionCache } from './cache/vision-cache'
 
 export interface ColorInfo {
   foreground: string // Hex color code
@@ -167,6 +168,20 @@ export async function analyzeLabel(imageUrl: string, packagingFormatContext?: st
   if (packagingFormatContext) {
     console.log('[v0] Packaging format context provided for AI analysis')
   }
+
+  // ── Phase 3: Vision Cache lookup ─────────────────────────────────────────
+  // Hash the raw image bytes (content-addressable) so the same image
+  // uploaded under a different path still hits the cache.
+  // Note: we intentionally do NOT include packagingFormatContext in the key
+  // because the Vision prompt appends it as a minor context hint and the
+  // extracted facts should be identical regardless.
+  const { hit: cacheHit, hash: imageHash, result: cachedResult } = await lookupVisionCache(imageUrl)
+  if (cacheHit && cachedResult) {
+    console.log('[v0] Vision cache HIT — skipping GPT-4o call')
+    return cachedResult
+  }
+  console.log('[v0] Vision cache MISS — calling GPT-4o')
+  // ─────────────────────────────────────────────────────────────────────────
 
   // Download image server-side and convert to base64 to avoid OpenAI timeout
   // when fetching from Supabase Storage URLs directly.
@@ -562,6 +577,12 @@ FONT SIZE CHART (use these values):
       detectedLanguages: normalized.detectedLanguages,
       totalTextLength: normalized.textElements.allText.length
     })
+
+    // ── Phase 3: Write result to Vision Cache (fire-and-forget) ─────────────
+    if (imageHash) {
+      setVisionCache(imageHash, normalized).catch(() => {})
+    }
+    // ────────────────────────────────────────────────────────────────────────
 
     return normalized
   } catch (error: any) {
