@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, Menu } from 'lucide-react'
+import { Menu } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { LanguageSwitcher } from '@/components/language-switcher'
@@ -38,9 +39,7 @@ export function LandingHeader() {
             <SheetContent side="left" className="w-72 p-0">
               <SheetHeader className="p-4 border-b">
                 <SheetTitle className="flex items-center gap-3">
-                  <div className="rounded-lg bg-primary p-2">
-                    <FileText className="h-4 w-4 text-primary-foreground" />
-                  </div>
+                  <Image src="/logo.png" alt="Vexim Compliance AI Logo" width={36} height={36} className="rounded-lg shrink-0" />
                   <div>
                     <div className="text-sm font-bold leading-tight">Vexim Compliance AI</div>
                     <div className="text-xs text-muted-foreground leading-tight">FDA Market - US</div>
@@ -71,9 +70,7 @@ export function LandingHeader() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
-            <div className="rounded-lg bg-primary p-2">
-              <FileText className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <Image src="/logo.png" alt="Vexim Compliance AI Logo" width={36} height={36} className="rounded-lg shrink-0" />
             <div>
               <span className="text-base font-bold">Vexim Compliance AI</span>
               <p className="text-xs text-muted-foreground leading-tight">FDA Market - US</p>
