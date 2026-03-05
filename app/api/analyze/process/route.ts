@@ -27,6 +27,14 @@ export async function POST(request: Request) {
   const cronSig = request.headers.get('x-vercel-cron-signature') ?? ''
   const expectedToken = process.env.PROCESS_SECRET_TOKEN ?? ''
 
+  console.log('[v0] process auth check:', { 
+    hasProcessToken: !!processToken, 
+    hasCronSig: !!cronSig, 
+    hasExpectedToken: !!expectedToken,
+    tokenMatch: processToken === expectedToken,
+    nodeEnv: process.env.NODE_ENV 
+  })
+
   // Allow: correct process token, cron call, or dev mode (no secret configured)
   const isAuthorized =
     (expectedToken && processToken === expectedToken) ||
@@ -34,8 +42,11 @@ export async function POST(request: Request) {
     (!expectedToken && process.env.NODE_ENV === 'development')
 
   if (!isAuthorized) {
+    console.log('[v0] process: unauthorized - returning 403')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
+  
+  console.log('[v0] process: authorized, proceeding')
 
   // ── Dequeue ────────────────────────────────────────────────
   const job = await dequeueNextJob()
@@ -94,9 +105,11 @@ export async function POST(request: Request) {
     // For jobs dispatched via the service role we need to pass the service
     // key so the analyze route trusts this call. We use a dedicated
     // internal-auth header to allow the route to look up the user_id directly.
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL 
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || 'http://localhost:3000'
+
+    console.log('[v0] process: calling run at', `${appUrl}/api/analyze/process/run`)
 
     // Update progress before the long-running call
     await updateJobProgress(job.id, 'Running AI Vision analysis', 20)

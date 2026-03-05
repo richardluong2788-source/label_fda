@@ -186,10 +186,12 @@ export async function POST(request: Request) {
     // ── Fire-and-forget: trigger process endpoint immediately ───
     // This avoids waiting for the next cron tick in dev / low-traffic.
     // Uses an absolute URL so it works in both edge and Node.js runtimes.
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL 
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || 'http://localhost:3000'
 
+    console.log('[v0] submit: triggering process at', `${baseUrl}/api/analyze/process`)
+    
     fetch(`${baseUrl}/api/analyze/process`, {
       method: 'POST',
       headers: {
