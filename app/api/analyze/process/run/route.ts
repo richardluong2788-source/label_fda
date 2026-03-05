@@ -30,22 +30,40 @@ import type { Citation } from '@/lib/types'
 export const maxDuration = 300
 
 export async function POST(request: Request) {
+  // ── Parse URL query params (survive redirects even when body/headers are stripped) ───
+  const url = new URL(request.url)
+  const queryToken = url.searchParams.get('_token') ?? ''
+
+  // ── Parse body (may be empty if redirect stripped it) ───
+  const body = await request.json().catch(() => ({}))
+  
   // ── Internal auth guard ────────────────────────────────────
-  const processToken = request.headers.get('x-process-token') ?? ''
+  // Priority: query param > body > header (query params always survive redirects)
+  const processTokenHeader = request.headers.get('x-process-token') ?? ''
+  const processTokenBody = (body._processToken as string) ?? ''
+  const processToken = queryToken || processTokenBody || processTokenHeader
   const expectedToken = process.env.PROCESS_SECRET_TOKEN ?? ''
+  
   if (expectedToken && processToken !== expectedToken) {
+    console.error('[process/run] Auth failed: token mismatch', {
+      hasQuery: !!queryToken,
+      hasBody: !!processTokenBody,
+      hasHeader: !!processTokenHeader,
+      expectedLen: expectedToken.length,
+    })
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const jobId      = request.headers.get('x-internal-job-id')      ?? ''
-  const userId     = request.headers.get('x-internal-user-id')     ?? ''
-  const reportId   = request.headers.get('x-internal-report-id')   ?? ''
+  // Read job context from headers OR body
+  const jobId = request.headers.get('x-internal-job-id') || (body._internal_job_id as string) || ''
+  const userId = request.headers.get('x-internal-user-id') || (body._internal_user_id as string) || ''
+  const reportId = request.headers.get('x-internal-report-id') || (body.reportId as string) || ''
 
   if (!jobId || !userId || !reportId) {
-    return NextResponse.json({ error: 'Missing internal headers' }, { status: 400 })
+    return NextResponse.json({ error: 'Missing internal context' }, { status: 400 })
   }
 
-  const { phase = 'full', visionDataConfirmed = false } = await request.json().catch(() => ({}))
+  const { phase = 'full', visionDataConfirmed = false } = body
 
   const supabase = createAdminClient()
 

@@ -22,26 +22,33 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export const maxDuration = 300
 
 export async function POST(request: Request) {
+  // ── Parse URL query params first (survive all redirects) ───
+  const requestUrlObj = new URL(request.url)
+  const queryToken = requestUrlObj.searchParams.get('_token') ?? ''
+  const queryServiceKey = requestUrlObj.searchParams.get('_skey') ?? ''
+
+  // ── Parse body to get auth tokens (fallback if query params missing) ───
+  let body: Record<string, unknown> = {}
+  try {
+    body = await request.json()
+  } catch {
+    // Body may be empty for cron calls or after redirect
+  }
+
   // ── Auth guard ─────────────────────────────────────────────
-  const processToken = request.headers.get('x-process-token') ?? ''
+  // Priority: query param > body > header (query params survive redirects)
+  const processTokenHeader = request.headers.get('x-process-token') ?? ''
+  const processTokenBody = (body._processToken as string) ?? ''
+  const processToken = queryToken || processTokenBody || processTokenHeader
+  
   const cronSig = request.headers.get('x-vercel-cron-signature') ?? ''
   const expectedToken = process.env.PROCESS_SECRET_TOKEN ?? ''
   
-  // Check for internal service call header (set by submit route)
-  const internalServiceKey = request.headers.get('x-internal-service-key') ?? ''
+  // Check for internal service call
+  const internalServiceKeyHeader = request.headers.get('x-internal-service-key') ?? ''
+  const internalServiceKeyBody = (body._internalServiceKey as string) ?? ''
+  const internalServiceKey = queryServiceKey || internalServiceKeyBody || internalServiceKeyHeader
   const expectedServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(-32) ?? ''
-
-  console.log('[v0] process auth check:', { 
-    hasProcessToken: !!processToken, 
-    processTokenLength: processToken.length,
-    hasCronSig: !!cronSig, 
-    hasExpectedToken: !!expectedToken,
-    expectedTokenLength: expectedToken.length,
-    tokenMatch: processToken === expectedToken,
-    hasInternalKey: !!internalServiceKey,
-    internalKeyMatch: internalServiceKey === expectedServiceKey,
-    nodeEnv: process.env.NODE_ENV 
-  })
 
   // Allow: correct process token, cron call, internal service key, or dev mode
   const isAuthorized =
@@ -51,11 +58,11 @@ export async function POST(request: Request) {
     (!expectedToken && process.env.NODE_ENV === 'development')
 
   if (!isAuthorized) {
-    console.log('[v0] process: unauthorized - returning 403')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   
-  console.log('[v0] process: authorized, proceeding')
+  // Extract jobId from body (already parsed above)
+  const jobId = body.jobId as string | undefined
 
   // ── Dequeue ────────────────────────────────────────────────
   const job = await dequeueNextJob()
@@ -114,25 +121,34 @@ export async function POST(request: Request) {
     // For jobs dispatched via the service role we need to pass the service
     // key so the analyze route trusts this call. We use a dedicated
     // internal-auth header to allow the route to look up the user_id directly.
+    // Use request origin to ensure we call the same deployment
+    const requestUrl = new URL(request.url)
     const appUrl = process.env.NEXT_PUBLIC_APP_URL 
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-      || 'http://localhost:3000'
+      || `${requestUrl.protocol}//${requestUrl.host}`
 
-    console.log('[v0] process: calling run at', `${appUrl}/api/analyze/process/run`)
+
 
     // Update progress before the long-running call
     await updateJobProgress(job.id, 'Running AI Vision analysis', 20)
 
-    const analyzeRes = await fetch(`${appUrl}/api/analyze/process/run`, {
+    // Send auth token as query param AND in body — query params survive
+    // all HTTP redirects (301/302/307/308) even when body+headers are stripped.
+    const runUrl = new URL(`${appUrl}/api/analyze/process/run`)
+    runUrl.searchParams.set('_token', expectedToken)
+
+    const runBody = {
+      reportId:            job.report_id,
+      phase:               payload.phase ?? 'full',
+      visionDataConfirmed: payload.visionDataConfirmed ?? false,
+      _internal_job_id:    job.id,
+      _internal_user_id:   job.user_id,
+      _processToken:       expectedToken,
+    }
+
+    const analyzeRes = await fetch(runUrl.toString(), {
       method: 'POST',
-      headers: {
-        'Content-Type':             'application/json',
-        'x-process-token':          expectedToken,
-        'x-internal-job-id':        job.id,
-        'x-internal-user-id':       job.user_id,
-        'x-internal-report-id':     job.report_id,
-      },
-      body: syntheticBody,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(runBody),
     })
 
     if (!analyzeRes.ok) {
