@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-// POST — User tạo yêu cầu tư vấn chuyên gia
+// POST — User creates an expert review request
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       .single()
 
     if (reportError || !report) {
-      return NextResponse.json({ error: 'Báo cáo không tồn tại' }, { status: 404 })
+      return NextResponse.json({ error: 'Report not found' }, { status: 404 })
     }
 
     // Check if request already exists for this report
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
 
     if (existing) {
       return NextResponse.json(
-        { error: 'Báo cáo này đã có yêu cầu tư vấn đang xử lý.', existing_id: existing.id },
+        { error: 'This report already has a pending expert review request.', existing_id: existing.id },
         { status: 409 }
       )
     }
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             error: 'quota_exceeded',
-            message: `Gói ${plan?.name} đã hết lượt tư vấn chuyên gia (${used}/${limit}). Nâng cấp gói để tiếp tục.`,
+            message: `${plan?.name} plan has exhausted expert review quota (${used}/${limit}). Please upgrade to continue.`,
             used,
             limit,
           },
@@ -121,11 +121,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, request: reviewRequest })
   } catch (error: any) {
     console.error('[v0] Expert review route error:', error)
-    return NextResponse.json({ error: 'Không thể tạo yêu cầu tư vấn' }, { status: 500 })
+    return NextResponse.json({ error: 'Unable to create expert review request' }, { status: 500 })
   }
 }
 
-// GET — User lấy trạng thái request của báo cáo
+// GET — User retrieves expert review request status for a report
 export async function GET(request: Request) {
   try {
     const supabase = await createClient()
@@ -158,6 +158,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ request: data })
   } catch (error: any) {
-    return NextResponse.json({ error: 'Không thể lấy trạng thái yêu cầu' }, { status: 500 })
+    return NextResponse.json({ error: 'Unable to retrieve request status' }, { status: 500 })
   }
 }

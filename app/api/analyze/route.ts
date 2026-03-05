@@ -71,14 +71,14 @@ export async function POST(request: Request) {
         console.error('Quota check failed:', quotaError.message)
         // Fail closed — block user nếu quota check lỗi để tránh bypass
         return NextResponse.json(
-          { error: 'quota_check_failed', message: 'Không thể kiểm tra quota. Vui lòng thử lại.' },
+          { error: 'quota_check_failed', message: 'Unable to verify quota. Please try again.' },
           { status: 503 }
         )
       } else if (quotaData && !quotaData.has_quota) {
         return NextResponse.json(
           {
             error: 'quota_exceeded',
-            message: `Bạn đã dùng hết ${quotaData.reports_used}/${quotaData.reports_limit} lượt phân tích trong tháng này. Nâng cấp gói để tiếp tục.`,
+            message: `You have used ${quotaData.reports_used}/${quotaData.reports_limit} analyses this month. Please upgrade your plan to continue.`,
             quota: {
               plan_id:       quotaData.plan_id,
               plan_name:     quotaData.plan_name,
@@ -115,6 +115,14 @@ export async function POST(request: Request) {
       }
     }
     // ── END QUOTA ENFORCEMENT ───────────────────────────────────────────────────
+
+    // Fetch user's preferred language for report content generation
+    const { data: userLangProfile } = await supabase
+      .from('profiles')
+      .select('language')
+      .eq('id', user.id)
+      .maybeSingle()
+    const userLang = (userLangProfile?.language as 'vi' | 'en') || 'en'
 
     // Get report
     const { data: report, error: reportError } = await supabase
@@ -357,7 +365,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         error: 'knowledge_base_empty',
-        message: 'Hệ thống Knowledge Base chưa có dữ liệu. Vui lòng liên hệ Admin để nạp tài liệu FDA (regulations, warning letters, recalls) trước khi chạy phân tích.',
+        message: 'Knowledge Base has no data. Please contact Admin to load FDA documents (regulations, warning letters, recalls) before running analysis.',
         kbStatus,
       }, { status: 503 })
     }
@@ -753,7 +761,7 @@ export async function POST(request: Request) {
         r.regulation_id === violation.regulationSection ||
         r.section.includes(violation.regulationSection)
       )
-      return SmartCitationFormatter.formatProfessionalFinding(violation, relevantReg || null)
+      return SmartCitationFormatter.formatProfessionalFinding(violation, relevantReg || null, userLang)
     })
     
     // Add formatted findings to violations array
@@ -844,7 +852,7 @@ export async function POST(request: Request) {
           violations.push({
             category: `Mẫu Thu hồi: ${meta.recall_issue_type || 'Yếu tố tiềm ẩn rủi ro'}`,
             severity: meta.recall_classification === 'Class I' ? 'critical' : meta.recall_classification === 'Class II' ? 'warning' : 'info',
-            description: `Nhãn này chứa c��c yếu tố tương đồng với sản phẩm đã bị FDA thu hồi. Recall ${meta.recall_number || 'N/A'} (${meta.recalling_firm || 'một doanh nghiệp'}): ${meta.why_recalled || 'Xem chi tiết sự kiện thu hồi.'}. Từ khóa nhận diện: "${matchedKeywords.join('", "')}".`,
+            description: `Nhãn này chứa c��c yếu tố tương đồng v���i sản phẩm đã bị FDA thu hồi. Recall ${meta.recall_number || 'N/A'} (${meta.recalling_firm || 'một doanh nghiệp'}): ${meta.why_recalled || 'Xem chi tiết sự kiện thu hồi.'}. Từ khóa nhận diện: "${matchedKeywords.join('", "')}".`,
             regulation_reference: meta.regulation_related || 'Xem Cơ sở dữ liệu FDA Recall',
             suggested_fix: meta.preventive_action || 'Xem xét và khắc phục các yếu tố bị gắn cờ để tránh nguy cơ thu hồi tiềm ẩn.',
             citations: [recallCitation],
@@ -1171,7 +1179,7 @@ export async function POST(request: Request) {
       })
       .map(v => ({
         summary: v.category,
-        legal_basis: v.regulation_reference ? `Căn cứ theo ${v.regulation_reference}` : '',
+        legal_basis: v.regulation_reference ? (userLang === 'vi' ? `Căn cứ theo ${v.regulation_reference}` : `Per ${v.regulation_reference}`) : '',
         expert_logic: v.description,
         remediation: v.suggested_fix || 'Xem chi tiết trong phần Chi Tiết Phát Hiện',
         severity: v.severity,
@@ -1180,8 +1188,8 @@ export async function POST(request: Request) {
       }))
     const allFindingsForSummary = [...professionalFindings, ...additionalFindings]
     console.log('[v0] Professional findings:', professionalFindings.length, '+ additional:', additionalFindings.length, '= total for summary:', allFindingsForSummary.length)
-    const commercialSummary = SmartCitationFormatter.createReportSummary(allFindingsForSummary)
-    const expertTips = SmartCitationFormatter.generateExpertTips(allFindingsForSummary)
+    const commercialSummary = SmartCitationFormatter.createReportSummary(allFindingsForSummary, userLang)
+    const expertTips = SmartCitationFormatter.generateExpertTips(allFindingsForSummary, userLang)
 
     // Update report with results including ALL analysis and cost tracking
     console.log('[v0] ========== ANALYSIS SUMMARY ==========')
