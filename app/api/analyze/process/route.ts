@@ -26,19 +26,28 @@ export async function POST(request: Request) {
   const processToken = request.headers.get('x-process-token') ?? ''
   const cronSig = request.headers.get('x-vercel-cron-signature') ?? ''
   const expectedToken = process.env.PROCESS_SECRET_TOKEN ?? ''
+  
+  // Check for internal service call header (set by submit route)
+  const internalServiceKey = request.headers.get('x-internal-service-key') ?? ''
+  const expectedServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(-32) ?? ''
 
   console.log('[v0] process auth check:', { 
     hasProcessToken: !!processToken, 
+    processTokenLength: processToken.length,
     hasCronSig: !!cronSig, 
     hasExpectedToken: !!expectedToken,
+    expectedTokenLength: expectedToken.length,
     tokenMatch: processToken === expectedToken,
+    hasInternalKey: !!internalServiceKey,
+    internalKeyMatch: internalServiceKey === expectedServiceKey,
     nodeEnv: process.env.NODE_ENV 
   })
 
-  // Allow: correct process token, cron call, or dev mode (no secret configured)
+  // Allow: correct process token, cron call, internal service key, or dev mode
   const isAuthorized =
     (expectedToken && processToken === expectedToken) ||
     cronSig !== '' ||
+    (expectedServiceKey && internalServiceKey === expectedServiceKey) ||
     (!expectedToken && process.env.NODE_ENV === 'development')
 
   if (!isAuthorized) {

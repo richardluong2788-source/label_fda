@@ -190,16 +190,26 @@ export async function POST(request: Request) {
       || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
       || 'http://localhost:3000'
 
-    console.log('[v0] submit: triggering process at', `${baseUrl}/api/analyze/process`)
+    const processToken = process.env.PROCESS_SECRET_TOKEN ?? ''
+    // Fallback internal key: use last 32 chars of service role key as internal auth
+    const internalServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(-32) ?? ''
+    
+    console.log('[v0] submit: triggering process at', `${baseUrl}/api/analyze/process`, {
+      hasProcessToken: !!processToken,
+      hasInternalKey: !!internalServiceKey,
+    })
     
     fetch(`${baseUrl}/api/analyze/process`, {
       method: 'POST',
       headers: {
-        'Content-Type':    'application/json',
-        'x-process-token': process.env.PROCESS_SECRET_TOKEN ?? '',
+        'Content-Type':           'application/json',
+        'x-process-token':        processToken,
+        'x-internal-service-key': internalServiceKey,
       },
       body: JSON.stringify({ jobId: job.id }),
-    }).catch(err => console.error('[submit] Failed to trigger process:', err))
+    })
+      .then(res => console.log('[v0] submit: process response status:', res.status))
+      .catch(err => console.error('[submit] Failed to trigger process:', err))
 
     return NextResponse.json({
       success:  true,
