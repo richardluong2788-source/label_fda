@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { dequeueNextJob, updateJobProgress, completeJob, failJob } from '@/lib/analysis-queue'
+import { dequeueNextJob, claimSpecificJob, updateJobProgress, completeJob, failJob } from '@/lib/analysis-queue'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
@@ -64,17 +64,28 @@ export async function POST(request: Request) {
   }
   
   // Extract jobId from body (already parsed above)
-  const jobId = body.jobId as string | undefined
+  const bodyJobId = body.jobId as string | undefined
 
   // ── Dequeue ────────────────────────────────────────────────
-  const job = await dequeueNextJob()
+  // If a specific jobId was provided (from /submit fire-and-forget),
+  // try to claim THAT specific job first to avoid race conditions.
+  // Only fall back to generic dequeue for cron calls without jobId.
+  let job = bodyJobId 
+    ? await claimSpecificJob(bodyJobId)
+    : null
+
+  // If specific job claim failed or no jobId provided, try generic dequeue
+  if (!job) {
+    job = await dequeueNextJob()
+  }
 
   console.log('[v0] process dequeue result:', { 
     hasJob: !!job, 
     jobId: job?.id ?? 'none', 
     reportId: job?.report_id ?? 'none',
     status: job?.status ?? 'none',
-    bodyJobId: jobId ?? 'none',
+    bodyJobId: bodyJobId ?? 'none',
+    claimedSpecific: bodyJobId && job?.id === bodyJobId,
   })
 
   if (!job) {
