@@ -1,11 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
-import { CreditCard, Calendar, TrendingUp, CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { CreditCard, Calendar, TrendingUp, CheckCircle2, Clock, XCircle, CalendarDays } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
@@ -16,6 +19,8 @@ interface Plan {
   id: string
   name: string
   price_vnd: number
+  annual_price_vnd?: number
+  annual_discount_percent?: number
   reports_limit: number
   expert_reviews_limit: number
   features: string[]
@@ -180,42 +185,11 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
 
       {/* Upgrade suggestions */}
       {upgradePlans.length > 0 && (
-        <div>
-          <h3 className="font-semibold mb-3">{s.upgradePlan}</h3>
-          <p className="text-sm text-muted-foreground mb-3">
-            {s.annualSavingsHint || 'Visit pricing page for annual billing with up to 20% savings.'}
-          </p>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {upgradePlans.map((p) => (
-              <Card key={p.id} className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="font-semibold">{p.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {p.reports_limit === -1
-                      ? s.unlimitedUsage
-                      : s.usagePerMonth(p.reports_limit)}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-sm">
-                    {p.price_vnd.toLocaleString('vi-VN')}{'\u20AB'}
-                    <span className="text-muted-foreground font-normal">/{t.common.month}</span>
-                  </p>
-                  <Button size="sm" className="mt-2" asChild>
-                    <Link href={`/checkout?plan=${p.id}&amount=${p.price_vnd}&billing=monthly`}>
-                      {s.upgrade}
-                    </Link>
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            <Link href="/pricing" className="text-primary hover:underline">
-              {s.viewAllPlansWithAnnual || 'View all plans including annual pricing'}
-            </Link>
-          </p>
-        </div>
+        <UpgradePlansSection 
+          upgradePlans={upgradePlans} 
+          t={t} 
+          locale={locale} 
+        />
       )}
 
       {/* Payment history */}
@@ -273,6 +247,135 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
         <CreditCard className="h-4 w-4" />
         <span>{s.paymentNote}</span>
       </div>
+    </div>
+  )
+}
+
+// Separate component for upgrade plans with billing toggle
+function UpgradePlansSection({ 
+  upgradePlans, 
+  t, 
+  locale 
+}: { 
+  upgradePlans: Plan[]
+  t: ReturnType<typeof useTranslation>['t']
+  locale: string
+}) {
+  const [isAnnual, setIsAnnual] = useState(false)
+  const s = t.settings
+
+  // Check if any plan has annual pricing
+  const hasAnnualPricing = upgradePlans.some(p => p.annual_price_vnd && p.annual_price_vnd > 0)
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold">{s.upgradePlan}</h3>
+        
+        {/* Billing toggle */}
+        {hasAnnualPricing && (
+          <div className="flex items-center gap-3">
+            <Label 
+              htmlFor="billing-toggle-settings" 
+              className={`text-sm cursor-pointer ${!isAnnual ? 'font-medium text-foreground' : 'text-muted-foreground'}`}
+            >
+              {t.pricing?.billingMonthly || t.common.month}
+            </Label>
+            <Switch
+              id="billing-toggle-settings"
+              checked={isAnnual}
+              onCheckedChange={setIsAnnual}
+            />
+            <div className="flex items-center gap-1.5">
+              <Label 
+                htmlFor="billing-toggle-settings" 
+                className={`text-sm cursor-pointer ${isAnnual ? 'font-medium text-foreground' : 'text-muted-foreground'}`}
+              >
+                {t.pricing?.billingAnnual || t.common.year}
+              </Label>
+              <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
+                {t.pricing?.saveUpTo || '-20%'}
+              </Badge>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <div className="grid sm:grid-cols-2 gap-4">
+        {upgradePlans.map((p) => {
+          const showAnnual = isAnnual && p.annual_price_vnd && p.annual_price_vnd > 0
+          const displayPrice = showAnnual ? p.annual_price_vnd! : p.price_vnd
+          const monthlyEquivalent = showAnnual ? Math.round(p.annual_price_vnd! / 12) : p.price_vnd
+          const billingCycle = showAnnual ? 'annual' : 'monthly'
+          const discountPercent = p.annual_discount_percent ?? 0
+
+          return (
+            <Card key={p.id} className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="font-semibold">{p.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {p.reports_limit === -1
+                      ? s.unlimitedUsage
+                      : s.usagePerMonth(p.reports_limit)}
+                  </p>
+                </div>
+                {showAnnual && discountPercent > 0 && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
+                    -{discountPercent}%
+                  </Badge>
+                )}
+              </div>
+              
+              <div className="mb-3">
+                {showAnnual ? (
+                  <div>
+                    <p className="text-2xl font-bold">
+                      {monthlyEquivalent.toLocaleString('vi-VN')}
+                      <span className="text-sm font-normal text-muted-foreground ml-1">
+                        {'\u20AB'}/{t.common.month}
+                      </span>
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">
+                        {t.pricing?.payAnnually 
+                          ? t.pricing.payAnnually(displayPrice.toLocaleString('vi-VN'))
+                          : `${displayPrice.toLocaleString('vi-VN')}\u20AB/${t.common.year}`
+                        }
+                      </p>
+                    </div>
+                    {p.price_vnd > 0 && (
+                      <p className="text-xs text-muted-foreground mt-0.5 line-through">
+                        {p.price_vnd.toLocaleString('vi-VN')}{'\u20AB'}/{t.common.month}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-2xl font-bold">
+                    {displayPrice.toLocaleString('vi-VN')}
+                    <span className="text-sm font-normal text-muted-foreground ml-1">
+                      {'\u20AB'}/{t.common.month}
+                    </span>
+                  </p>
+                )}
+              </div>
+
+              <Button size="sm" className="w-full" asChild>
+                <Link href={`/checkout?plan=${p.id}&amount=${displayPrice}&billing=${billingCycle}`}>
+                  {s.upgrade}
+                </Link>
+              </Button>
+            </Card>
+          )
+        })}
+      </div>
+      
+      <p className="text-xs text-muted-foreground mt-3">
+        <Link href="/pricing" className="text-primary hover:underline">
+          {s.viewAllPlansWithAnnual || 'View all plans including annual pricing'}
+        </Link>
+      </p>
     </div>
   )
 }
