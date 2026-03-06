@@ -10,10 +10,10 @@
  *
  * Khi chưa có credentials, helper chạy ở DEMO MODE và trả về URL giả lập.
  *
- * ─── QUAN TRỌNG (theo spec VNPay) ───────────────────────────────────────────
- * 1. signData được build bằng cách sắp xếp key theo alphabet, sau đó nối
- *    "key=value" KHÔNG encode, rồi ký bằng HMAC-SHA512.
- * 2. URL thanh toán dùng encodeURIComponent cho value (thay %20 → +).
+ * ─── QUAN TRỌNG (theo spec VNPay 2.1.0) ────────────────────────────────────
+ * 1. signData: sắp xếp key alphabet, mỗi cặp dùng encodeURIComponent(k)=encodeURIComponent(v),
+ *    bỏ qua field rỗng/null, nối bằng "&", ký HMAC-SHA512 + padStart(128,'0').
+ * 2. URL thanh toán dùng cùng encoding với signData → nhất quán → VNPay khớp hash.
  * 3. vnp_Amount = số tiền VND × 100 (bỏ phần thập phân).
  * 4. IPN phản hồi JSON { RspCode, Message } — không redirect.
  */
@@ -101,35 +101,34 @@ function sortObject(params: Record<string, string>): Record<string, string> {
 }
 
 /**
- * Build signData string — KHÔNG encode key hay value.
- * Đây là chuỗi dùng để tính HMAC-SHA512.
- * Theo NodeJS sample chính thức của VNPay:
- *   qs.stringify(vnp_Params, { encode: false })
- * → Tất cả value phải giữ nguyên, KHÔNG encode bất kỳ ký tự nào.
+ * Build signData string để tính HMAC-SHA512.
+ *
+ * Theo VNPay 2.1.0 spec:
+ *   - Sắp xếp key theo alphabet
+ *   - Mỗi cặp: encodeURIComponent(key) + "=" + encodeURIComponent(value)
+ *   - Bỏ qua các field có value null hoặc rỗng
+ *   - Nối bằng "&"
+ *
+ * Quan trọng: vnp_ReturnUrl chứa "://" → phải encode thành "%3A%2F%2F"
+ * trong signData. buildQueryString dùng cùng encoding → nhất quán → VNPay khớp hash.
  */
 function buildSignData(params: Record<string, string>): string {
   return Object.entries(sortObject(params))
-    .map(([k, v]) => `${k}=${v}`)
+    .filter(([, v]) => v !== null && v !== undefined && v !== '')
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
     .join('&')
 }
 
 /**
- * Build query string cho URL thanh toán — KHÔNG encode (encode: false).
+ * Build query string cho URL thanh toán — dùng cùng encoding với buildSignData.
  *
- * Theo NodeJS sample CHÍNH THỨC của VNPay:
- *   var signData = querystring.stringify(vnp_Params, { encode: false })
- *   vnpUrl += '?' + querystring.stringify(vnp_Params, { encode: false })
- *
- * Cả signData lẫn URL đều KHÔNG encode → VNPay server nhận chuỗi nguyên bản
- * → tính lại hash trên cùng chuỗi đó → khớp 100%.
- *
- * Điều kiện tiên quyết: mọi value phải là ASCII thuần, KHÔNG có khoảng trắng
- * hay ký tự đặc biệt. sanitizeOrderInfo() đã đảm bảo điều này bằng cách
- * thay khoảng trắng và ký tự đặc biệt bằng dấu gạch dưới.
+ * Cả signData lẫn URL đều dùng encodeURIComponent → nhất quán hoàn toàn.
+ * VNPay server nhận URL, decode từng value, tính lại hash → khớp với signData.
  */
 function buildQueryString(params: Record<string, string>): string {
   return Object.entries(sortObject(params))
-    .map(([k, v]) => `${k}=${v}`)
+    .filter(([, v]) => v !== null && v !== undefined && v !== '')
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
     .join('&')
 }
 
@@ -205,11 +204,6 @@ export function createPaymentUrl(params: CreatePaymentParams): PaymentResult {
 
   const queryString = buildQueryString(vnpParams) + `&vnp_SecureHash=${secureHash}`
   const payUrl      = `${cfg.payUrl}?${queryString}`
-
-  console.log('[v0] VNPAY orderInfo (sanitized):', vnpParams.vnp_OrderInfo)
-  console.log('[v0] VNPAY signData:', signData)
-  console.log('[v0] VNPAY hash length:', secureHash.length, '| value:', secureHash)
-  console.log('[v0] VNPAY payUrl:', payUrl)
 
   return { payUrl, txnRef, isDemoMode: false }
 }
