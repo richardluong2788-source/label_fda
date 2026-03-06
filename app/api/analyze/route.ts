@@ -1,7 +1,31 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { rateLimit, AUTH_RATE_LIMITS } from '@/lib/rate-limit'
 import { sendEmail, lowCreditsTemplate, quotaExhaustedTemplate } from '@/lib/email'
+
+// Helper function to get user email from auth.users (reliable source)
+async function getUserEmailFromAuth(userId: string): Promise<{ email: string | null; lang: 'vi' | 'en' }> {
+  try {
+    const adminClient = createAdminClient()
+    const { data: authUser } = await adminClient.auth.admin.getUserById(userId)
+    
+    const supabase = await createClient()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('language')
+      .eq('id', userId)
+      .maybeSingle()
+    
+    return {
+      email: authUser?.user?.email || null,
+      lang: (profile?.language as 'vi' | 'en') || 'en',
+    }
+  } catch (error) {
+    console.error('[analyze] getUserEmailFromAuth error:', error)
+    return { email: null, lang: 'en' }
+  }
+}
 
 // Allow up to 300s for heavy AI analysis (Vercel Pro/Enterprise)
 export const maxDuration = 300
@@ -92,16 +116,11 @@ export async function POST(request: Request) {
         // ── SEND QUOTA EXHAUSTED EMAIL ──────────────────────────────────────
         // Gửi email thông báo khi user hết quota hoàn toàn
         try {
-          const { data: userProfile } = await supabase
-            .from('profiles')
-            .select('email, language')
-            .eq('id', user.id)
-            .maybeSingle()
+          const { email: userEmail, lang } = await getUserEmailFromAuth(user.id)
 
-          if (userProfile?.email) {
-            const lang = (userProfile.language as 'vi' | 'en') || 'en'
+          if (userEmail) {
             const exhaustedEmail = quotaExhaustedTemplate({
-              email: userProfile.email,
+              email: userEmail,
               reportsUsed: quotaData.reports_used,
               reportsLimit: quotaData.reports_limit,
               planName: quotaData.plan_name,
@@ -109,7 +128,7 @@ export async function POST(request: Request) {
               lang,
             })
             // Fire-and-forget — don't block the response
-            sendEmail({ to: userProfile.email, subject: exhaustedEmail.subject, html: exhaustedEmail.html })
+            sendEmail({ to: userEmail, subject: exhaustedEmail.subject, html: exhaustedEmail.html })
           }
         } catch (emailErr) {
           console.error('[email] Failed to send quota exhausted email:', emailErr)
@@ -141,23 +160,18 @@ export async function POST(request: Request) {
 
         if (shouldSendLowCredits) {
           try {
-            const { data: userProfile } = await supabase
-              .from('profiles')
-              .select('email, language')
-              .eq('id', user.id)
-              .maybeSingle()
+            const { email: userEmail, lang } = await getUserEmailFromAuth(user.id)
 
-            if (userProfile?.email) {
-              const lang = (userProfile.language as 'vi' | 'en') || 'en'
+            if (userEmail) {
               const lowEmail = lowCreditsTemplate({
-                email: userProfile.email,
+                email: userEmail,
                 reportsUsed: quotaData.reports_used + 1,
                 reportsLimit: quotaData.reports_limit,
                 planName: quotaData.plan_name,
                 periodEnd: quotaData.period_end,
                 lang,
               })
-              sendEmail({ to: userProfile.email, subject: lowEmail.subject, html: lowEmail.html })
+              sendEmail({ to: userEmail, subject: lowEmail.subject, html: lowEmail.html })
             }
           } catch (emailErr) {
             console.error('[email] Failed to send low credits email:', emailErr)

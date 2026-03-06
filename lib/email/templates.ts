@@ -305,7 +305,7 @@ export function expertReviewCancelledTemplate({
       subject: `Expert Review đã bị huỷ — ${productName}`,
       preview: `Yêu cầu expert review cho "${productName}" đã bị huỷ.`,
       heading: 'Expert Review đã bị huỷ',
-      p1: `Yêu cầu expert review cho sản phẩm <strong>${productName}</strong> đã bị huỷ. Nếu bạn cho rằng đây là lỗi hoặc muốn gửi yêu cầu mới, vui lòng liên hệ đội hỗ trợ.`,
+      p1: `Yêu cầu expert review cho sản phẩm <strong>${productName}</strong> đã bị huỷ. Nếu bạn cho rằng đây là l���i hoặc muốn gửi yêu cầu mới, vui lòng liên hệ đội hỗ trợ.`,
       cta: 'Gửi yêu cầu mới',
     },
   }[lang]
@@ -356,7 +356,11 @@ export function adminNewExpertRequestTemplate({
       </table>
     </div>
 
-    ${button('Open Admin Queue', `${APP_URL}/admin/expert-queue`)}
+    ${button('Review This Request', `${APP_URL}/admin/expert-review/${requestId}`)}
+    
+    <p style="margin-top:16px;text-align:center;">
+      <a href="${APP_URL}/admin" style="color:#64748b;font-size:13px;text-decoration:underline;">Or view all requests in Admin Dashboard</a>
+    </p>
   `
 
   return {
@@ -365,6 +369,8 @@ export function adminNewExpertRequestTemplate({
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. VNPAY PAYMENT CONFIRMATION — xác nhận thanh toán thành công
 // ─────────────────────────────────────────────────────────────────────────────
 // 6. VNPAY PAYMENT CONFIRMATION — xác nhận thanh toán thành công
 // ─────������───────���──────────────────────────────────────────────────────────────
@@ -452,7 +458,7 @@ export function paymentSuccessTemplate({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 7a. QUOTA EXHAUSTED — đã hết lượt phân tích hoàn toàn
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────���─────────────────────────────────────────────────────────────
 export function quotaExhaustedTemplate({
   email,
   reportsUsed,

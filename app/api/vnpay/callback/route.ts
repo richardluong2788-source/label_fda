@@ -5,8 +5,32 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyCallbackSignature, decodeResponseCode, getVnpayConfig } from '@/lib/vnpay'
 import { sendEmail, paymentSuccessTemplate } from '@/lib/email'
+
+// Helper function to get user email from auth.users
+async function getUserEmailFromAuth(userId: string): Promise<{ email: string | null; lang: 'vi' | 'en' }> {
+  try {
+    const adminClient = createAdminClient()
+    const { data: authUser } = await adminClient.auth.admin.getUserById(userId)
+    
+    const supabase = await createClient()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('language')
+      .eq('id', userId)
+      .maybeSingle()
+    
+    return {
+      email: authUser?.user?.email || null,
+      lang: (profile?.language as 'vi' | 'en') || 'en',
+    }
+  } catch (error) {
+    console.error('[vnpay-callback] getUserEmailFromAuth error:', error)
+    return { email: null, lang: 'en' }
+  }
+}
 
 export async function GET(request: NextRequest) {
   // Dùng baseUrl từ getVnpayConfig (ưu tiên NEXT_PUBLIC_APP_URL → VERCEL_URL → localhost)
@@ -145,14 +169,9 @@ export async function GET(request: NextRequest) {
 
   // ── PAYMENT CONFIRMATION EMAIL ──────────────────────────────────────────
   if (isSuccess) {
-    const { data: userProfile } = await supabase
-      .from('profiles')
-      .select('email, language')
-      .eq('id', txn.user_id)
-      .maybeSingle()
+    const { email: userEmail, lang } = await getUserEmailFromAuth(txn.user_id)
 
-    if (userProfile?.email) {
-      const lang = (userProfile.language as 'vi' | 'en') || 'en'
+    if (userEmail) {
       const isAddonEmail = txn.transaction_type === 'addon_expert_review'
 
       // Lấy tên gói
@@ -171,7 +190,7 @@ export async function GET(request: NextRequest) {
         .maybeSingle()
 
       const paymentEmail = paymentSuccessTemplate({
-        email: userProfile.email,
+        email: userEmail,
         planName: planData?.name || txn.plan_id,
         amountVnd: Number(amountRaw) / 100,
         txnRef,
@@ -179,7 +198,10 @@ export async function GET(request: NextRequest) {
         isAddon: isAddonEmail,
         lang,
       })
-      sendEmail({ to: userProfile.email, subject: paymentEmail.subject, html: paymentEmail.html })
+      sendEmail({ to: userEmail, subject: paymentEmail.subject, html: paymentEmail.html })
+      console.log('[vnpay-callback] Sent payment success email to:', userEmail)
+    } else {
+      console.warn('[vnpay-callback] Could not find email for user_id:', txn.user_id)
     }
   }
   // ── END PAYMENT EMAIL ────────────────────────────────────────────────────
