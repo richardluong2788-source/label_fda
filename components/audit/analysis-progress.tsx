@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -126,6 +127,25 @@ export function AnalysisProgressView({
   const currentStep = ANALYSIS_STEPS[currentStepIndex]
   const StepIcon = currentStep.icon
 
+  // Auto-scroll: giữ bước active hiển thị ở cuối danh sách
+  // để user thấy đang chạy đến gần bước cuối "Ánh xạ vi phạm..."
+  const stepListRef = useRef<HTMLDivElement>(null)
+  const activeStepRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const container = stepListRef.current
+    const activeEl  = activeStepRef.current
+    if (!container || !activeEl) return
+
+    // Scroll sao cho bước active nằm ở cuối vùng nhìn thấy của container
+    const containerTop    = container.getBoundingClientRect().top
+    const activeBottom    = activeEl.getBoundingClientRect().bottom
+    const containerHeight = container.clientHeight
+    const targetScrollTop = container.scrollTop + (activeBottom - containerTop) - containerHeight + 8
+
+    container.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' })
+  }, [currentStepIndex])
+
   return (
     <div className="flex-1">
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-10">
@@ -215,7 +235,10 @@ export function AnalysisProgressView({
             {/* All Steps Timeline */}
             <Card className="p-6">
               <h3 className="font-semibold mb-4">Quy trình phân tích FDA</h3>
-              <div className="space-y-3">
+              <div
+                ref={stepListRef}
+                className="space-y-3 max-h-72 overflow-y-auto pr-1 scroll-smooth"
+              >
                 {ANALYSIS_STEPS.map((step, idx) => {
                   const Icon = step.icon
                   const isCompleted = idx < currentStepIndex
@@ -225,6 +248,7 @@ export function AnalysisProgressView({
                   return (
                     <div
                       key={step.id}
+                      ref={isCurrent ? activeStepRef : null}
                       className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
                         isCurrent
                           ? 'bg-primary/10 border border-primary/20'
