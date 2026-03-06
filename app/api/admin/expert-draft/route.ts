@@ -1,7 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { generateText, Output } from 'ai'
+import { createGroq } from '@ai-sdk/groq'
 import { z } from 'zod'
+
+const groq = createGroq({ apiKey: process.env.GROQ_API_KEY })
 
 // POST /api/admin/expert-draft
 // AI tự động soạn thảo expert review dựa trên báo cáo + request context.
@@ -91,7 +94,7 @@ Please provide a complete expert review draft.`
 
   try {
     const { experimental_output } = await generateText({
-      model: 'openai/gpt-4o',
+      model: groq('llama-3.3-70b-versatile'),
       system: systemPrompt,
       prompt: userPrompt,
       experimental_output: Output.object({
