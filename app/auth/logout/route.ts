@@ -12,5 +12,5 @@ export async function POST(request: NextRequest) {
   const protocol = headersList.get('x-forwarded-proto') || 'https'
   const origin = `${protocol}://${host}`
   
-  return NextResponse.redirect(new URL('/auth/login', origin))
+  return NextResponse.redirect(new URL('/auth/login', origin), { status: 303 })
 }
