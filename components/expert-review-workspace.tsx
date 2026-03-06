@@ -83,18 +83,10 @@ export function ExpertReviewWorkspace({
     setAiDrafting(true)
     setAiDraftError(null)
     try {
-      const res = await fetch('/api/admin/ai-draft', {
+      const res = await fetch('/api/admin/expert-draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          findings,
-          productName: report?.product_name,
-          productCategory: report?.product_category ?? request.product_category,
-          targetMarket: request.target_market,
-          userContext: request.user_context,
-          overallResult: report?.overall_result,
-          overallRiskScore: report?.overall_risk_score,
-        }),
+        body: JSON.stringify({ requestId: request.id }),
       })
 
       if (!res.ok) {
