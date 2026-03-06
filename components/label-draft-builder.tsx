@@ -2,7 +2,6 @@
 
 import {
   ClipboardCheck,
-  Download,
   ArrowLeft,
   Save,
   Sparkles,
@@ -88,10 +87,6 @@ export function LabelDraftBuilder() {
               ))}
             </SelectContent>
           </Select>
-
-          <Button variant="outline" className="flex items-center gap-2 bg-transparent">
-            <Download size={16} /> Xuat PDF
-          </Button>
 
           <Button
             variant="outline"

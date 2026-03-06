@@ -104,3 +104,120 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* ─── Print Styles for PDF Export ─── */
+
+/* Print Header - Hidden on web, visible on print */
+.print-header {
+  display: none;
+}
+
+@media print {
+  /* 1. Page setup A4 portrait */
+  @page {
+    size: A4 portrait;
+    margin: 15mm 10mm;
+  }
+
+  /* 2. Show print header */
+  .print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #0056b3;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    break-after: avoid;
+  }
+
+  /* 3. Hide web elements */
+  header,
+  footer,
+  nav,
+  .no-print,
+  .print\\:hidden,
+  [data-no-print],
+  .fixed,
+  .sticky {
+    display: none !important;
+  }
+
+  /* 4. Main content full width */
+  main,
+  .report-content,
+  .print-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 5. Prevent page breaks inside important elements */
+  table,
+  .card,
+  .violation-card,
+  .print-no-break,
+  [data-print-no-break] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* 6. Force color printing */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* 7. Reset backgrounds for better print */
+  body {
+    background: white !important;
+  }
+
+  .bg-slate-50 {
+    background: white !important;
+  }
+
+  /* 8. Ensure proper contrast for badges */
+  .bg-red-500,
+  .bg-amber-500,
+  .bg-green-500,
+  .bg-blue-500 {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 9. Page break before major sections */
+  .print-page-break {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  /* 10. Ensure links are readable */
+  a[href]:after {
+    content: none !important;
+  }
+
+  /* 11. Hide interactive elements */
+  .animate-pulse,
+  .animate-spin {
+    animation: none !important;
+  }
+
+  /* 12. Full width main content when sidebar is hidden */
+  .grid.lg\\:grid-cols-\\[320px_1fr\\] {
+    display: block !important;
+  }
+
+  /* 13. Violation cards styling for print */
+  .violation-card {
+    margin-bottom: 16px;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  /* 14. Risk gauge colors preserved */
+  svg circle[stroke] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

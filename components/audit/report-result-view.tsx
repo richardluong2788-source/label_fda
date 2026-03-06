@@ -32,6 +32,7 @@ import {
   Utensils,
   MessageSquare,
   Landmark,
+  Printer,
 } from 'lucide-react'
 import type { AuditReport, Violation, LabelImageEntry, GeometryViolation } from '@/lib/types'
 import { LabelImageGallery } from '@/components/label-image-gallery'
@@ -171,6 +172,67 @@ function MarkdownContent({ content, className }: { content: string; className?: 
   flushList()
 
   return <div className={`space-y-2 ${className || ''}`}>{elements}</div>
+}
+
+// ────────────────────────────────────────────────────────────
+// Print Header Component - Only visible when printing
+// ────────────────────────────────────────────────────────────
+
+function PrintReportHeader({ 
+  reportId, 
+  productName, 
+  productCategory,
+  serviceType,
+  t 
+}: { 
+  reportId: string
+  productName?: string
+  productCategory?: string
+  serviceType?: string
+  t: ReturnType<typeof useTranslation>['t']
+}) {
+  const currentDate = new Date().toLocaleString('vi-VN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  return (
+    <div className="print-header">
+      {/* Logo and Company Info */}
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
+          <Shield className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-slate-900">VEXIM GLOBAL</h1>
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider">FDA Compliance Solutions</p>
+        </div>
+      </div>
+
+      {/* Report Title */}
+      <div className="text-center flex-1 px-6">
+        <h2 className="text-lg font-bold text-slate-900 uppercase tracking-wide">
+          {t.report.printReportTitle || 'BÁO CÁO KIỂM TRA NHÃN TUÂN THỦ'}
+        </h2>
+        {productName && (
+          <p className="text-sm text-slate-600 mt-1">{productName}</p>
+        )}
+      </div>
+
+      {/* Report Metadata */}
+      <div className="text-right text-xs text-slate-500 space-y-0.5">
+        <p><span className="font-medium">{t.report.printServiceType || 'Dịch vụ'}:</span> {serviceType || 'FDA Compliance'}</p>
+        <p><span className="font-medium">{t.report.printReportCode || 'Mã báo cáo'}:</span> {reportId.slice(0, 8).toUpperCase()}</p>
+        <p><span className="font-medium">{t.report.printExportDate || 'Ngày xuất'}:</span> {currentDate}</p>
+        {productCategory && (
+          <p><span className="font-medium">{t.report.printCategory || 'Danh mục'}:</span> {productCategory}</p>
+        )}
+      </div>
+    </div>
+  )
 }
 
 // ────────────────────────────────────────────────────────────
@@ -377,7 +439,7 @@ function ViolationCard({ violation, index, t, showExpertCta }: { violation: Viol
   const hasCitations = violation.citations && violation.citations.length > 0
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden violation-card print-no-break">
       {/* Header */}
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="flex items-start gap-3">
@@ -523,7 +585,7 @@ function ViolationCard({ violation, index, t, showExpertCta }: { violation: Viol
 
 function WarningLetterCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
-    <div className="rounded-xl border border-orange-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-orange-200 bg-white overflow-hidden violation-card print-no-break">
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="flex items-start gap-3">
           <ViolationIcon severity={violation.severity} type="warning_letter" />
@@ -572,7 +634,7 @@ function WarningLetterCard({ violation, t }: { violation: Violation; t: ReturnTy
 
 function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
-    <div className="rounded-xl border border-purple-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-purple-200 bg-white overflow-hidden violation-card print-no-break">
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="flex items-start gap-3">
           <ViolationIcon severity={violation.severity} type="recall" />
@@ -616,7 +678,7 @@ function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<type
 
 function ImportAlertCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
-    <div className="rounded-xl border border-cyan-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-cyan-200 bg-white overflow-hidden violation-card print-no-break">
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="flex items-start gap-3">
           <ViolationIcon severity={violation.severity} type="import_alert" />
@@ -751,7 +813,7 @@ function ContrastViolationCard({
 
 function GeometryViolationCard({ violation, t }: { violation: GeometryViolation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
-    <div className="rounded-xl border border-indigo-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-indigo-200 bg-white overflow-hidden violation-card print-no-break">
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="flex items-start gap-3">
           <div className="rounded-full bg-indigo-100 p-2.5 shrink-0">
@@ -795,14 +857,10 @@ function GeometryViolationCard({ violation, t }: { violation: GeometryViolation;
 
 interface ReportResultViewProps {
   report: AuditReport
-  onDownloadPdf: () => void
-  pdfLoading: boolean
 }
 
 export function ReportResultView({
   report,
-  onDownloadPdf,
-  pdfLoading,
 }: ReportResultViewProps) {
   const router = useRouter()
   const { t, locale } = useTranslation()
@@ -872,11 +930,41 @@ export function ReportResultView({
   const packagingFormat = report.packaging_format
   const specialClaims = report.special_claims || []
 
+  // ── PDF Export Handler ────────────────────────────────────
+  const handleExportPdf = () => {
+    // 1. Save original document title
+    const originalTitle = document.title
+
+    // 2. Set custom title for PDF filename
+    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '')
+    const productSlug = (report.product_name || 'Report')
+      .replace(/[^a-zA-Z0-9]/g, '_')
+      .substring(0, 30)
+    document.title = `Bao_cao_FDA_${productSlug}_VeximGlobal_${dateStr}`
+
+    // 3. Trigger browser print dialog
+    window.print()
+
+    // 4. Restore original title after print dialog closes
+    setTimeout(() => {
+      document.title = originalTitle
+    }, 1000)
+  }
+
   return (
-    <div className="bg-slate-50">
+    <div className="bg-slate-50 print-content">
+      {/* Print Header - Only visible when printing */}
+      <PrintReportHeader
+        reportId={report.id}
+        productName={report.product_name}
+        productCategory={report.product_category}
+        serviceType={report.product_type === 'dietary_supplement' ? 'Dietary Supplement' : 'FDA Food Labeling'}
+        t={t}
+      />
+
       <main className="container mx-auto px-4 py-6 max-w-7xl">
         {/* Action Bar */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 no-print">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200">
               <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
@@ -917,23 +1005,20 @@ export function ReportResultView({
               </div>
             )}
           </div>
+
+          {/* PDF Export Button */}
           <Button
-            onClick={onDownloadPdf}
-            disabled={pdfLoading}
+            onClick={handleExportPdf}
             className="bg-red-600 hover:bg-red-700 text-white gap-2 text-sm font-semibold"
             size="sm"
           >
-            {pdfLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            {pdfLoading ? t.report.generating : t.report.exportReport}
+            <Download className="h-4 w-4" />
+            {t.report.downloadPdf || 'Tải báo cáo PDF'}
           </Button>
         </div>
-        <div className="grid lg:grid-cols-[320px_1fr] gap-6">
+        <div className="grid lg:grid-cols-[320px_1fr] gap-6 print:block print:grid-cols-1">
           {/* ── LEFT SIDEBAR ───────────────────────────────── */}
-          <aside className="space-y-4">
+          <aside className="space-y-4 no-print">
             {/* Label Images Card */}
             <Card className="bg-white border-slate-200 overflow-hidden">
               <div className="p-4">

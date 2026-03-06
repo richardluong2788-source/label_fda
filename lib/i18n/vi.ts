@@ -246,9 +246,14 @@ export const vi = {
       importAlerts: 'Cảnh báo nhập khẩu FDA',
       contrastIssues: 'Vấn đề tương phản màu sắc',
     },
-    downloadPdf: 'Tải PDF',
-    downloading: 'Đang tải...',
     backToHistory: 'Lịch sử kiểm tra',
+    // PDF Export
+    downloadPdf: 'Tải báo cáo PDF',
+    printReportTitle: 'BÁO CÁO KIỂM TRA NHÃN TUÂN THỦ',
+    printServiceType: 'Dịch vụ',
+    printReportCode: 'Mã báo cáo',
+    printExportDate: 'Ngày xuất',
+    printCategory: 'Danh mục',
     // Translation status
     translating: 'Đang dịch nội dung...',
     translationFailed: 'Không thể dịch',
@@ -268,7 +273,7 @@ export const vi = {
     andWord: 'và',
     currentRisk: 'HIỆN TẠI',
     afterFix: 'SAU KHI SỬA',
-    projectedRiskDesc: (score: number) => `Sau khi sửa lỗi nghiêm trọng, điểm rủi ro dự kiến giảm còn ${score.toFixed(1)}/10`,
+    projectedRiskDesc: (score: number) => `Sau khi sửa lỗi nghiêm trọng, đi���m rủi ro dự kiến giảm còn ${score.toFixed(1)}/10`,
     // Expert insights / AI summary
     expertInsightsTitle: 'Phân Tích Chuyên Sâu',
     expertInsightsDesc: 'Tóm tắt thương mại và lời khuyên chuyên gia dựa trên dữ liệu FDA',
@@ -403,7 +408,7 @@ export const vi = {
       'Viết hướng dẫn sửa chi tiết',
       'Đề xuất wording chính xác',
       'Xác nhận sau khi sửa',
-      'Ký tên & đóng dấu xác nhận',
+      'Ký t��n & đóng dấu xác nhận',
       'SLA: phản hồi trong 48h',
     ],
     targetMarketLabel: 'Thị trường mục tiêu',
@@ -930,7 +935,7 @@ export const vi = {
     footerSupportLabel: 'Hỗ trợ khách hàng',
   },
 
-  // ─── PDF Report ──────────────────────────────────────
+  // ─── PDF Report ────────────────────────────────────��─
   pdf: {
     title: 'BÁO CÁO KIỂM TRA NHÃN',
     subtitle: 'FDA Label Compliance Audit Report',
