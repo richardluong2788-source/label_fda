@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from '@/lib/i18n'
 
 interface Props {
   planId: string
@@ -24,11 +25,12 @@ export default function PricingCTA({
   isLoggedIn,
 }: Props) {
   const router = useRouter()
+  const { t, locale } = useTranslation()
 
   if (isCurrent) {
     return (
       <Button className="w-full" variant="secondary" size="lg" disabled>
-        Gói hiện tại
+        {t.pricing.currentPlanBtn}
       </Button>
     )
   }
@@ -36,7 +38,7 @@ export default function PricingCTA({
   if (isEnterprise) {
     return (
       <Button className="w-full" variant="outline" size="lg" asChild>
-        <a href="mailto:sales@vexim.io">Liên hệ Sales</a>
+        <a href="mailto:sales@vexim.io">{t.pricing.contactSales}</a>
       </Button>
     )
   }
@@ -50,13 +52,17 @@ export default function PricingCTA({
       // Already on free — no action needed (handled by isCurrent above)
       return
     }
-    // Redirect to checkout with plan pre-selected
-    router.push(`/checkout?plan=${planId}&amount=${priceVnd}`)
+    // Redirect to checkout with plan pre-selected (monthly billing by default)
+    router.push(`/checkout?plan=${planId}&amount=${priceVnd}&billing=monthly`)
   }
 
+  const formattedPrice = locale === 'vi' 
+    ? priceVnd.toLocaleString('vi-VN')
+    : `$${Math.round(priceVnd / 25000).toLocaleString()}`
+
   const label = isFree
-    ? 'Dùng thử miễn phí'
-    : `Nâng cấp — ${priceVnd.toLocaleString('vi-VN')}₫/tháng`
+    ? t.pricing.tryFreeBtn
+    : t.pricing.upgradeBtn(formattedPrice, locale === 'vi' ? 'tháng' : 'month')
 
   return (
     <Button

@@ -182,6 +182,9 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
       {upgradePlans.length > 0 && (
         <div>
           <h3 className="font-semibold mb-3">{s.upgradePlan}</h3>
+          <p className="text-sm text-muted-foreground mb-3">
+            {s.annualSavingsHint || 'Visit pricing page for annual billing with up to 20% savings.'}
+          </p>
           <div className="grid sm:grid-cols-2 gap-4">
             {upgradePlans.map((p) => (
               <Card key={p.id} className="p-4 flex items-center justify-between">
@@ -199,7 +202,7 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
                     <span className="text-muted-foreground font-normal">/{t.common.month}</span>
                   </p>
                   <Button size="sm" className="mt-2" asChild>
-                    <Link href={`/checkout?plan=${p.id}&amount=${p.price_vnd}`}>
+                    <Link href={`/checkout?plan=${p.id}&amount=${p.price_vnd}&billing=monthly`}>
                       {s.upgrade}
                     </Link>
                   </Button>
@@ -207,6 +210,11 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
               </Card>
             ))}
           </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            <Link href="/pricing" className="text-primary hover:underline">
+              {s.viewAllPlansWithAnnual || 'View all plans including annual pricing'}
+            </Link>
+          </p>
         </div>
       )}
 

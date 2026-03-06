@@ -1,62 +1,38 @@
-import { createClient } from '@/lib/supabase/server'
-import PricingPageContent from './pricing-page-content'
+'use client'
 
-export default async function PricingPage() {
-  const supabase = await createClient()
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Check, MessageCircle, Users, FileText, Clock, CheckCircle, X, ArrowLeft, Shield } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useTranslation } from '@/lib/i18n'
+import PricingClient from './pricing-client'
 
-  const { data: plans } = await supabase
-    .from('subscription_plans')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  let currentPlanId: string | null = null
-  if (user) {
-    const { data: sub } = await supabase
-      .from('user_subscriptions')
-      .select('plan_id')
-      .eq('user_id', user.id)
-      .single()
-    currentPlanId = sub?.plan_id ?? 'free'
-  }
-
-  return (
-    <PricingPageContent
-      plans={plans ?? []}
-      currentPlanId={currentPlanId}
-      isLoggedIn={!!user}
-    />
-  )
+interface Plan {
+  id: string
+  name: string
+  price_vnd: number
+  annual_price_vnd?: number
+  annual_discount_percent?: number
+  reports_limit: number
+  features: string[] | string
+  is_active: boolean
+  sort_order: number
+  expert_reviews_limit?: number
+  expert_review_price_vnd?: number
 }
 
-const POPULAR_PLAN = 'pro'
+interface Props {
+  plans: Plan[]
+  currentPlanId: string | null
+  isLoggedIn: boolean
+}
 
-export default async function PricingPage() {
-  const supabase = await createClient()
+export default function PricingPageContent({ plans, currentPlanId, isLoggedIn }: Props) {
+  const { t, locale } = useTranslation()
 
-  const { data: plans } = await supabase
-    .from('subscription_plans')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  let currentPlanId: string | null = null
-  if (user) {
-    const { data: sub } = await supabase
-      .from('user_subscriptions')
-      .select('plan_id')
-      .eq('user_id', user.id)
-      .single()
-    currentPlanId = sub?.plan_id ?? 'free'
-  }
+  const EXPERT_FEATURE_ICONS = [FileText, CheckCircle, MessageCircle, Shield, Clock, Users]
 
   return (
     <div className="min-h-screen bg-background">
@@ -70,17 +46,17 @@ export default async function PricingPage() {
             </div>
           </Link>
           <div className="flex gap-2">
-            {user ? (
+            {isLoggedIn ? (
               <Button asChild>
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
             ) : (
               <>
                 <Button variant="ghost" asChild>
-                  <Link href="/auth/login">Đăng nhập</Link>
+                  <Link href="/auth/login">{t.pricing.login}</Link>
                 </Button>
                 <Button asChild>
-                  <Link href="/auth/sign-up">Dùng thử miễn phí</Link>
+                  <Link href="/auth/sign-up">{t.pricing.tryFreeBtn}</Link>
                 </Button>
               </>
             )}
@@ -93,15 +69,15 @@ export default async function PricingPage() {
         <Button variant="ghost" size="sm" className="gap-2 mb-6 -ml-2" asChild>
           <Link href="/dashboard">
             <ArrowLeft className="h-4 w-4" />
-            Quay lại Dashboard
+            {t.pricing.backToDashboard}
           </Link>
         </Button>
 
         {/* Hero + Plans (Client Component with Toggle) */}
         <PricingClient
-          plans={plans ?? []}
+          plans={plans}
           currentPlanId={currentPlanId}
-          isLoggedIn={!!user}
+          isLoggedIn={isLoggedIn}
         />
 
         {/* Expert Review Section */}
@@ -109,14 +85,13 @@ export default async function PricingPage() {
           <div className="text-center mb-10">
             <Badge variant="outline" className="mb-4 text-primary border-primary">
               <MessageCircle className="h-3 w-3 mr-1" />
-              Dịch vụ Tư vấn Chuyên gia
+              {t.pricing.expertServiceBadge}
             </Badge>
             <h2 className="text-3xl font-bold mb-3 text-balance">
-              Expert Review bởi chuyên gia FDA Compliance
+              {t.pricing.expertTitle}
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto text-pretty">
-              Nhận phân tích chuyên sâu, hướng dẫn sửa wording cụ thể, và xác nhận từ chuyên gia.
-              Khác với AI report, Expert Review được thực hiện bởi người thật.
+              {t.pricing.expertSubtitle}
             </p>
           </div>
 
@@ -124,22 +99,18 @@ export default async function PricingPage() {
           <Card className="p-6 mb-8 border-primary/20 bg-gradient-to-br from-primary/5 to-blue-500/5">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              Expert Review bao gồm
+              {t.pricing.expertIncludes}
             </h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {[
-                { icon: FileText, text: 'Phân tích bối cảnh sản phẩm cụ thể' },
-                { icon: CheckCircle, text: 'Hướng dẫn sửa chi tiết + wording chính xác' },
-                { icon: MessageCircle, text: 'Đề xuất sửa từng vi phạm riêng biệt' },
-                { icon: Shield, text: 'Ký xác nhận & đóng dấu compliance' },
-                { icon: Clock, text: 'SLA: phản hồi trong 48 giờ làm việc' },
-                { icon: Users, text: 'Đội ngũ chuyên gia tuân thủ FDA' },
-              ].map(({ icon: Icon, text }) => (
-                <div key={text} className="flex items-center gap-2 text-sm">
-                  <Icon className="h-4 w-4 text-primary shrink-0" />
-                  <span>{text}</span>
-                </div>
-              ))}
+              {t.pricing.expertFeatures.map((text, i) => {
+                const Icon = EXPERT_FEATURE_ICONS[i] ?? FileText
+                return (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <Icon className="h-4 w-4 text-primary shrink-0" />
+                    <span>{text}</span>
+                  </div>
+                )
+              })}
             </div>
           </Card>
 
@@ -150,7 +121,6 @@ export default async function PricingPage() {
               const isStarter = plan.id === 'starter'
               const isPro = plan.id === 'pro'
               const isEnterprise = plan.id === 'enterprise'
-              const hasExpertIncluded = (plan.expert_reviews_limit ?? 0) > 0 || plan.expert_reviews_limit === -1
               const expertPrice = plan.expert_review_price_vnd ?? 0
               const isCurrentPlan = currentPlanId === plan.id
 
@@ -164,7 +134,7 @@ export default async function PricingPage() {
                   <div className="mb-3">
                     <p className="font-semibold text-sm">{plan.name}</p>
                     {isCurrentPlan && (
-                      <Badge variant="secondary" className="text-[10px] mt-1">G��i hiện tại</Badge>
+                      <Badge variant="secondary" className="text-[10px] mt-1">{t.pricing.currentPlanBadge}</Badge>
                     )}
                   </div>
 
@@ -174,10 +144,10 @@ export default async function PricingPage() {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <X className="h-4 w-4 text-muted-foreground/50" />
-                          <span>Không bao gồm Expert Review</span>
+                          <span>{t.pricing.noExpertReview}</span>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Nâng cấp lên Starter trở lên để sử dụng.
+                          {t.pricing.upgradeToAccess}
                         </p>
                       </div>
                     )}
@@ -185,14 +155,17 @@ export default async function PricingPage() {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm">
                           <MessageCircle className="h-4 w-4 text-primary" />
-                          <span>Mua thêm theo lần</span>
+                          <span>{t.pricing.buyPerUse}</span>
                         </div>
                         <p className="text-2xl font-bold">
-                          {expertPrice.toLocaleString('vi-VN')}
-                          <span className="text-sm font-normal text-muted-foreground ml-1">₫/lần</span>
+                          {locale === 'vi' 
+                            ? expertPrice.toLocaleString('vi-VN')
+                            : `$${Math.round(expertPrice / 25000).toLocaleString()}`
+                          }
+                          <span className="text-sm font-normal text-muted-foreground ml-1">{t.pricing.perUse}</span>
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Thanh toán riêng mỗi lần yêu cầu Expert Review.
+                          {t.pricing.payPerRequest}
                         </p>
                       </div>
                     )}
@@ -200,14 +173,14 @@ export default async function PricingPage() {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm">
                           <CheckCircle className="h-4 w-4 text-green-600" />
-                          <span className="font-medium text-green-700">Đã bao gồm trong gói</span>
+                          <span className="font-medium text-green-700">{t.pricing.includedInPlan}</span>
                         </div>
                         <p className="text-2xl font-bold">
                           {plan.expert_reviews_limit}
-                          <span className="text-sm font-normal text-muted-foreground ml-1">lượt/tháng</span>
+                          <span className="text-sm font-normal text-muted-foreground ml-1">{t.pricing.creditsPerMonth}</span>
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Miễn phí {plan.expert_reviews_limit} lượt Expert Review mỗi tháng.
+                          {t.pricing.freeCreditsPerMonth(plan.expert_reviews_limit ?? 0)}
                         </p>
                       </div>
                     )}
@@ -215,13 +188,13 @@ export default async function PricingPage() {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm">
                           <CheckCircle className="h-4 w-4 text-green-600" />
-                          <span className="font-medium text-green-700">Không giới hạn</span>
+                          <span className="font-medium text-green-700">{t.pricing.unlimited}</span>
                         </div>
                         <p className="text-2xl font-bold">
                           Unlimited
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Expert Review không giới hạn + SLA riêng.
+                          {t.pricing.unlimitedExpert}
                         </p>
                       </div>
                     )}
@@ -230,15 +203,15 @@ export default async function PricingPage() {
                   {/* CTA */}
                   {isCurrentPlan ? (
                     <Button variant="secondary" size="sm" className="w-full" disabled>
-                      Gói hiện tại
+                      {t.pricing.currentPlanBtn}
                     </Button>
                   ) : isFree ? (
                     <Button variant="outline" size="sm" className="w-full" disabled>
-                      Không khả dụng
+                      {t.pricing.notAvailable}
                     </Button>
                   ) : isEnterprise ? (
                     <Button variant="outline" size="sm" className="w-full" asChild>
-                      <a href="mailto:sales@vexim.io">Liên hệ Sales</a>
+                      <a href="mailto:sales@vexim.io">{t.pricing.contactSales}</a>
                     </Button>
                   ) : (
                     <Button
@@ -247,8 +220,8 @@ export default async function PricingPage() {
                       className="w-full"
                       asChild
                     >
-                      <Link href={user ? `/checkout?plan=${plan.id}&amount=${plan.price_vnd}` : '/auth/sign-up'}>
-                        {isPro ? 'Nâng cấp Pro' : `Nâng cấp ${plan.name}`}
+                      <Link href={isLoggedIn ? `/checkout?plan=${plan.id}&amount=${plan.price_vnd}&billing=monthly` : '/auth/sign-up'}>
+                        {isPro ? t.pricing.upgradePro : t.pricing.upgradePlan(plan.name)}
                       </Link>
                     </Button>
                   )}
@@ -261,24 +234,23 @@ export default async function PricingPage() {
         {/* FAQ / guarantee strip */}
         <Card className="p-8 bg-muted/50 border-border text-center">
           <h3 className="text-xl font-bold mb-2">
-            Thanh toán an toàn qua QR ngân hàng Việt Nam
+            {t.pricing.securePaymentTitle}
           </h3>
           <p className="text-muted-foreground mb-4 text-pretty max-w-lg mx-auto">
-            Hỗ trợ tất cả ngân hàng nội địa (Vietcombank, BIDV, Techcombank,
-            MB, VPBank, ...) qua chuẩn VietQR. Không lưu thông tin thẻ.
+            {t.pricing.securePaymentDesc}
           </p>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Check className="h-4 w-4 text-primary" />
-              Kích hoạt ngay sau thanh toán
+              {t.pricing.activateInstantly}
             </span>
             <span className="flex items-center gap-1">
               <Check className="h-4 w-4 text-primary" />
-              Huỷ bất cứ lúc nào
+              {t.pricing.cancelAnytime}
             </span>
             <span className="flex items-center gap-1">
               <Check className="h-4 w-4 text-primary" />
-              Hỗ trợ qua email 24/7
+              {t.pricing.emailSupport}
             </span>
           </div>
         </Card>

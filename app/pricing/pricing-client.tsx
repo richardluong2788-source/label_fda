@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Check, Zap, Shield, Crown, Star, CalendarDays, Briefcase } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useTranslation } from '@/lib/i18n'
 
 interface Plan {
   id: string
@@ -42,6 +43,7 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
   const [highlightedPlan, setHighlightedPlan] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t, locale } = useTranslation()
 
   // Check for highlight param from URL (e.g., /pricing?highlight=business)
   useEffect(() => {
@@ -77,14 +79,13 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
       {/* Hero */}
       <div className="text-center mb-10">
         <Badge variant="outline" className="mb-4 text-primary border-primary">
-          Thị trường Việt Nam
+          {t.pricing.marketBadge}
         </Badge>
         <h2 className="text-4xl font-bold mb-4 text-balance">
-          Bảng giá dịch vụ FDA Compliance
+          {t.pricing.title}
         </h2>
         <p className="text-lg text-muted-foreground max-w-xl mx-auto text-pretty">
-          Thanh toán đơn giản qua QR ngân hàng — không cần thẻ quốc tế.
-          Nâng cấp hoặc huỷ bất cứ lúc nào.
+          {t.pricing.subtitle}
         </p>
       </div>
 
@@ -95,7 +96,7 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
             htmlFor="billing-toggle" 
             className={`text-sm font-medium cursor-pointer ${!isAnnual ? 'text-foreground' : 'text-muted-foreground'}`}
           >
-            Thanh toán tháng
+            {t.pricing.billingMonthly}
           </Label>
           <Switch
             id="billing-toggle"
@@ -107,10 +108,10 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
               htmlFor="billing-toggle" 
               className={`text-sm font-medium cursor-pointer ${isAnnual ? 'text-foreground' : 'text-muted-foreground'}`}
             >
-              Thanh toán năm
+              {t.pricing.billingAnnual}
             </Label>
             <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs">
-              Tiết kiệm đến 20%
+              {t.pricing.saveUpTo}
             </Badge>
           </div>
         </div>
@@ -148,7 +149,7 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
             >
               {isPopular && (
                 <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                  Phổ biến nhất
+                  {t.pricing.popularBadge}
                 </Badge>
               )}
               {isCurrent && !isPopular && (
@@ -156,7 +157,7 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
                   variant="secondary"
                   className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap"
                 >
-                  Gói hiện tại
+                  {t.pricing.currentPlanBadge}
                 </Badge>
               )}
 
@@ -179,21 +180,24 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
               {/* Price */}
               <div className="mb-5">
                 {isEnterprise ? (
-                  <p className="text-3xl font-bold">Liên hệ</p>
+                  <p className="text-3xl font-bold">{t.pricing.contact}</p>
                 ) : isFree ? (
                   <div>
-                    <p className="text-3xl font-bold">Miễn phí</p>
+                    <p className="text-3xl font-bold">{t.pricing.free}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {plan.reports_limit} lượt / đăng ký
+                      {plan.reports_limit} {t.pricing.perSignup}
                     </p>
                   </div>
                 ) : showAnnual ? (
                   <div>
                     <div className="flex items-baseline gap-2">
                       <p className="text-3xl font-bold">
-                        {monthlyEquivalent.toLocaleString('vi-VN')}
+                        {locale === 'vi' 
+                          ? monthlyEquivalent.toLocaleString('vi-VN')
+                          : `$${Math.round(monthlyEquivalent / 25000).toLocaleString()}`
+                        }
                         <span className="text-base font-normal text-muted-foreground ml-1">
-                          ₫/tháng
+                          {t.pricing.perMonth}
                         </span>
                       </p>
                       {discountPercent > 0 && (
@@ -205,32 +209,42 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
                     <div className="flex items-center gap-1.5 mt-1.5">
                       <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
                       <p className="text-sm text-muted-foreground">
-                        Thanh toán {displayPrice.toLocaleString('vi-VN')}₫/năm
+                        {t.pricing.payAnnually(
+                          locale === 'vi' 
+                            ? displayPrice.toLocaleString('vi-VN')
+                            : `$${Math.round(displayPrice / 25000).toLocaleString()}`
+                        )}
                       </p>
                     </div>
                     {plan.price_vnd > 0 && (
                       <p className="text-xs text-muted-foreground mt-1 line-through">
-                        {plan.price_vnd.toLocaleString('vi-VN')}₫/tháng
+                        {locale === 'vi' 
+                          ? `${plan.price_vnd.toLocaleString('vi-VN')}₫/tháng`
+                          : `$${Math.round(plan.price_vnd / 25000).toLocaleString()}/month`
+                        }
                       </p>
                     )}
                     <p className="text-xs text-muted-foreground mt-1">
                       {plan.reports_limit === -1
-                        ? 'Không giới hạn lượt'
-                        : `${plan.reports_limit} lượt AI / tháng`}
+                        ? t.pricing.unlimitedCredits
+                        : `${plan.reports_limit} ${t.pricing.aiCreditsPerMonth}`}
                     </p>
                   </div>
                 ) : (
                   <div>
                     <p className="text-3xl font-bold">
-                      {plan.price_vnd.toLocaleString('vi-VN')}
+                      {locale === 'vi' 
+                        ? plan.price_vnd.toLocaleString('vi-VN')
+                        : `$${Math.round(plan.price_vnd / 25000).toLocaleString()}`
+                      }
                       <span className="text-base font-normal text-muted-foreground ml-1">
-                        ₫/tháng
+                        {t.pricing.perMonth}
                       </span>
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {plan.reports_limit === -1
-                        ? 'Không giới hạn lượt'
-                        : `${plan.reports_limit} lượt AI / tháng`}
+                        ? t.pricing.unlimitedCredits
+                        : `${plan.reports_limit} ${t.pricing.aiCreditsPerMonth}`}
                     </p>
                   </div>
                 )}
@@ -249,11 +263,11 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
               {/* CTA */}
               {isCurrent ? (
                 <Button className="w-full" variant="secondary" size="lg" disabled>
-                  Gói hiện tại
+                  {t.pricing.currentPlanBtn}
                 </Button>
               ) : isEnterprise ? (
                 <Button className="w-full" variant="outline" size="lg" asChild>
-                  <a href="mailto:sales@vexim.io">Liên hệ Sales</a>
+                  <a href="mailto:sales@vexim.io">{t.pricing.contactSales}</a>
                 </Button>
               ) : isFree ? (
                 <Button 
@@ -262,7 +276,7 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
                   size="lg"
                   onClick={() => !isLoggedIn && router.push('/auth/sign-up')}
                 >
-                  {isLoggedIn ? 'Gói miễn phí' : 'Dùng thử miễn phí'}
+                  {isLoggedIn ? t.pricing.freePlanBtn : t.pricing.tryFreeBtn}
                 </Button>
               ) : (
                 <Button
@@ -271,10 +285,14 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
                   size="lg"
                   onClick={() => handleSelect(plan)}
                 >
-                  {showAnnual 
-                    ? `Nâng cấp — ${displayPrice.toLocaleString('vi-VN')}₫/năm`
-                    : `Nâng cấp — ${displayPrice.toLocaleString('vi-VN')}₫/tháng`
-                  }
+                  {t.pricing.upgradeBtn(
+                    locale === 'vi' 
+                      ? displayPrice.toLocaleString('vi-VN')
+                      : `$${Math.round(displayPrice / 25000).toLocaleString()}`,
+                    showAnnual 
+                      ? (locale === 'vi' ? 'năm' : 'year')
+                      : (locale === 'vi' ? 'tháng' : 'month')
+                  )}
                 </Button>
               )}
             </Card>
