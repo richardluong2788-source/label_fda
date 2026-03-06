@@ -459,24 +459,26 @@ export function ExpertRequestPanel({
           {/* Show addon purchase + upgrade CTA for Starter/Free users */}
           {!expertReviewsIncluded ? (
             <div className="space-y-3">
-              {/* Option A: Buy single addon */}
-              <Button
-                onClick={handleAddonCheckout}
-                disabled={processingAddon}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
-              >
-                {processingAddon ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <CreditCard className="mr-2 h-4 w-4" />
-                )}
-                {processingAddon
-                  ? t.expert.processingPayment || 'Processing...'
-                  : t.expert.buyAddon
-                    ? t.expert.buyAddon(expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US'))
-                    : `Mua 1 lần tư vấn - ${expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}₫`
-                }
-              </Button>
+              {/* Option A: Buy single addon — chỉ hiện cho Starter, ẩn với Free */}
+              {planName && !planName.toLowerCase().includes('free') && (
+                <Button
+                  onClick={handleAddonCheckout}
+                  disabled={processingAddon}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                >
+                  {processingAddon ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <CreditCard className="mr-2 h-4 w-4" />
+                  )}
+                  {processingAddon
+                    ? t.expert.processingPayment || 'Processing...'
+                    : t.expert.buyAddon
+                      ? t.expert.buyAddon(expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US'))
+                      : `Mua 1 lần tư vấn - ${expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}₫`
+                  }
+                </Button>
+              )}
 
               {/* Option B: Upgrade to Pro/Business */}
               <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
