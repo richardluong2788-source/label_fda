@@ -142,9 +142,11 @@ export function DashboardClient({
             <Progress value={quotaPercent} className="h-2 mb-2" />
             <p className="text-sm text-muted-foreground">
               {d.usedOf(reportsUsed, reportsLimit)}
-              {quotaPercent >= 80 && (
+              {quotaPercent >= 100 ? (
+                <span className="ml-2 text-red-600 font-medium">{d.quotaExhaustedLabel}</span>
+              ) : quotaPercent >= 80 ? (
                 <span className="ml-2 text-amber-600 font-medium">{d.almostOut}</span>
-              )}
+              ) : null}
             </p>
           </>
         )}
