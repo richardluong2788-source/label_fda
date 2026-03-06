@@ -85,11 +85,11 @@ export async function GET(
 
     const violations = report.findings || report.violations || []
 
-    // Fetch expert review data if exists
+    // Fetch expert review data if exists (field is audit_report_id, not report_id)
     const { data: expertReview } = await supabase
       .from('expert_review_requests')
       .select('*')
-      .eq('report_id', id)
+      .eq('audit_report_id', id)
       .eq('status', 'completed')
       .maybeSingle()
 
