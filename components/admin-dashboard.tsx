@@ -9,7 +9,7 @@ import {
   CheckCircle,
   Clock,
   FileText,
-  XCircle,
+  ShieldAlert,
   Database,
   Upload,
   TestTube,
@@ -19,6 +19,9 @@ import {
   Loader2,
   User,
   ArrowRight,
+  Eye,
+  Bell,
+  CircleDollarSign,
 } from 'lucide-react'
 import Link from 'next/link'
 import type { AdminUser } from '@/lib/types'
@@ -28,29 +31,25 @@ interface UserData {
   email?: string
 }
 
-interface AdminDashboardWithUserProps {
-  adminUser: AdminUser
-  pendingReports: any[]
-  attentionReports: any[]
-  user?: UserData
-}
-
 interface AdminDashboardProps {
   adminUser: AdminUser
-  pendingReports: any[]
-  attentionReports: any[]
+  riskReports: any[]
+  expertQueueCount: number
+  expertInReviewCount: number
   userEmail?: string
 }
 
 export function AdminDashboard({
   adminUser,
-  pendingReports,
-  attentionReports,
+  riskReports,
+  expertQueueCount,
+  expertInReviewCount,
   userEmail,
 }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'pending' | 'attention' | 'expert_queue'>('pending')
+  const [activeTab, setActiveTab] = useState<'expert_queue' | 'risk_monitor'>('expert_queue')
   const [expertQueue, setExpertQueue] = useState<any[]>([])
   const [expertQueueLoading, setExpertQueueLoading] = useState(false)
+  const [liveExpertCount, setLiveExpertCount] = useState(expertQueueCount)
   const isAdmin = ['admin', 'superadmin', 'expert'].includes(adminUser.role)
 
   const fetchExpertQueue = async (status = 'pending') => {
@@ -58,7 +57,9 @@ export function AdminDashboard({
     try {
       const res = await fetch(`/api/admin/expert-queue?status=${status}`)
       const data = await res.json()
-      setExpertQueue(data.requests ?? [])
+      const items = data.requests ?? []
+      setExpertQueue(items)
+      if (status === 'pending') setLiveExpertCount(items.length)
     } catch {
       setExpertQueue([])
     } finally {
@@ -67,47 +68,52 @@ export function AdminDashboard({
   }
 
   useEffect(() => {
+    fetchExpertQueue()
+  }, [])
+
+  useEffect(() => {
     if (activeTab === 'expert_queue') fetchExpertQueue()
   }, [activeTab])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-background">
       <AppHeader email={userEmail} isAdmin={isAdmin} />
 
-      <div className="border-b bg-white/80 backdrop-blur-sm">
+      {/* Page header */}
+      <div className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h2 className="text-lg font-semibold">Bảng điều khiển Kiểm duyệt</h2>
-              <p className="text-xs text-muted-foreground">
-                Quản lý báo cáo compliance cần kiểm duyệt
+              <h2 className="text-lg font-semibold">Bảng điều khiển Admin</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Quản lý yêu cầu tư vấn chuyên gia và giám sát rủi ro AI
               </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="secondary" className="text-xs font-medium">
                 {adminUser.role.toUpperCase()}
               </Badge>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/admin/revenue">
-                  <TrendingUp className="mr-2 h-4 w-4" />
+                  <TrendingUp className="mr-1.5 h-3.5 w-3.5" />
                   Doanh thu
                 </Link>
               </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/admin/pricing">
-                  <Tag className="mr-2 h-4 w-4" />
+                  <Tag className="mr-1.5 h-3.5 w-3.5" />
                   Quản lý giá
                 </Link>
               </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/admin/knowledge/batch-import">
-                  <Upload className="mr-2 h-4 w-4" />
+                  <Upload className="mr-1.5 h-3.5 w-3.5" />
                   Batch Import
                 </Link>
               </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/admin/test-rag">
-                  <TestTube className="mr-2 h-4 w-4" />
+                  <TestTube className="mr-1.5 h-3.5 w-3.5" />
                   Test RAG
                 </Link>
               </Button>
@@ -117,112 +123,179 @@ export function AdminDashboard({
       </div>
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">Chờ kiểm duyệt</span>
-              <Clock className="h-5 w-5 text-orange-500" />
+        {/* Summary cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Card className="p-5 border-l-4 border-l-primary">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Chờ tư vấn
+              </span>
+              <CircleDollarSign className="h-4 w-4 text-primary" />
             </div>
-            <p className="text-3xl font-bold">{pendingReports.length}</p>
+            <p className="text-3xl font-bold">{liveExpertCount}</p>
+            <p className="text-xs text-muted-foreground mt-1">User đã trả phí / dùng quota</p>
           </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">Cần chú ý</span>
-              <AlertCircle className="h-5 w-5 text-red-500" />
+          <Card className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Đang review
+              </span>
+              <Clock className="h-4 w-4 text-blue-500" />
             </div>
-            <p className="text-3xl font-bold">{attentionReports.length}</p>
+            <p className="text-3xl font-bold">{expertInReviewCount}</p>
+            <p className="text-xs text-muted-foreground mt-1">Expert đang xử lý</p>
           </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">Xác nhận hôm nay</span>
-              <CheckCircle className="h-5 w-5 text-green-500" />
+          <Card className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Risk cao (AI flag)
+              </span>
+              <ShieldAlert className="h-4 w-4 text-amber-500" />
+            </div>
+            <p className="text-3xl font-bold">{riskReports.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">Chưa có yêu cầu tư vấn</p>
+          </Card>
+
+          <Card className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Hoàn thành hôm nay
+              </span>
+              <CheckCircle className="h-4 w-4 text-green-500" />
             </div>
             <p className="text-3xl font-bold">0</p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">Bị từ chối</span>
-              <XCircle className="h-5 w-5 text-red-500" />
-            </div>
-            <p className="text-3xl font-bold">0</p>
+            <p className="text-xs text-muted-foreground mt-1">Expert review đã xong</p>
           </Card>
         </div>
 
+        {/* Tab switcher */}
         <Card className="p-6">
-          <div className="flex gap-4 mb-6 flex-wrap">
-            <Button
-              variant={activeTab === 'pending' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('pending')}
-            >
-              <Clock className="mr-2 h-4 w-4" />
-              Chờ kiểm duyệt ({pendingReports.length})
-            </Button>
-            <Button
-              variant={activeTab === 'attention' ? 'default' : 'outline'}
-              onClick={() => setActiveTab('attention')}
-            >
-              <AlertCircle className="mr-2 h-4 w-4" />
-              Cần chú ý ({attentionReports.length})
-            </Button>
-            <Button
-              variant={activeTab === 'expert_queue' ? 'default' : 'outline'}
+          <div className="flex gap-3 mb-6 flex-wrap">
+            {/* Expert Queue — primary tab */}
+            <button
               onClick={() => setActiveTab('expert_queue')}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'expert_queue'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
             >
-              <MessageCircle className="mr-2 h-4 w-4" />
+              <CircleDollarSign className="h-4 w-4" />
               Expert Queue
-            </Button>
+              {liveExpertCount > 0 && (
+                <span className={`inline-flex items-center justify-center rounded-full text-xs font-bold px-1.5 py-0.5 min-w-[20px] ${
+                  activeTab === 'expert_queue'
+                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                    : 'bg-primary text-primary-foreground'
+                }`}>
+                  {liveExpertCount}
+                </span>
+              )}
+            </button>
+
+            {/* Risk Monitor — secondary tab */}
+            <button
+              onClick={() => setActiveTab('risk_monitor')}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'risk_monitor'
+                  ? 'bg-amber-500 text-white shadow-sm'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              <ShieldAlert className="h-4 w-4" />
+              Risk Monitor (AI flag)
+              {riskReports.length > 0 && (
+                <span className={`inline-flex items-center justify-center rounded-full text-xs font-bold px-1.5 py-0.5 min-w-[20px] ${
+                  activeTab === 'risk_monitor'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-amber-100 text-amber-700'
+                }`}>
+                  {riskReports.length}
+                </span>
+              )}
+            </button>
           </div>
 
-          <div className="space-y-4">
-            {activeTab === 'pending' &&
-              (pendingReports.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Không có báo cáo chờ kiểm duyệt</p>
+          {/* Expert Queue tab */}
+          {activeTab === 'expert_queue' && (
+            <div>
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold">Hàng đợi tư vấn chuyên gia</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Chỉ hiển thị các yêu cầu user đã trả phí hoặc sử dụng quota gói. Đây là nhiệm vụ có cam kết dịch vụ.
+                  </p>
                 </div>
-              ) : (
-                pendingReports.map((report) => (
-                  <ReportCard key={report.id} report={report} />
-                ))
-              ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => fetchExpertQueue()}
+                  disabled={expertQueueLoading}
+                >
+                  {expertQueueLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Làm mới'}
+                </Button>
+              </div>
 
-            {activeTab === 'attention' &&
-              (attentionReports.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Không có báo cáo cần chú ý</p>
-                </div>
-              ) : (
-                attentionReports.map((report) => (
-                  <ReportCard key={report.id} report={report} />
-                ))
-              ))}
-
-            {activeTab === 'expert_queue' && (
-              expertQueueLoading ? (
-                <div className="flex items-center justify-center py-12">
+              {expertQueueLoading ? (
+                <div className="flex items-center justify-center py-16">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : expertQueue.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Không có yêu cầu tư vấn nào đang chờ</p>
+                <div className="text-center py-16 text-muted-foreground">
+                  <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-400" />
+                  <p className="font-medium">Hàng đợi trống</p>
+                  <p className="text-sm mt-1">Không có yêu cầu tư vấn nào đang chờ xử lý.</p>
                 </div>
               ) : (
-                expertQueue.map((req) => (
-                  <ExpertQueueCard key={req.id} request={req} onAssigned={() => fetchExpertQueue()} />
-                ))
-              )
-            )}
-          </div>
+                <div className="space-y-3">
+                  {expertQueue.map((req) => (
+                    <ExpertQueueCard
+                      key={req.id}
+                      request={req}
+                      onAssigned={() => fetchExpertQueue()}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Risk Monitor tab */}
+          {activeTab === 'risk_monitor' && (
+            <div>
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold">Giám sát rủi ro (AI flag)</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Các báo cáo mà AI tự động đánh dấu risk cao. Đây là công cụ theo dõi nội bộ — admin không có nghĩa vụ xử lý, nhưng có thể mời user mua Expert Review.
+                  </p>
+                </div>
+              </div>
+
+              {riskReports.length === 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                  <ShieldAlert className="h-12 w-12 mx-auto mb-3 text-amber-300" />
+                  <p className="font-medium">Không có báo cáo risk cao</p>
+                  <p className="text-sm mt-1">Tất cả sản phẩm đang ở mức an toàn.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {riskReports.map((report) => (
+                    <RiskReportCard key={report.id} report={report} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </Card>
       </main>
     </div>
   )
 }
+
+// ─── Expert Queue Card ───────────────────────────────────────────────────────
 
 function ExpertQueueCard({ request, onAssigned }: { request: any; onAssigned: () => void }) {
   const [assigning, setAssigning] = useState(false)
@@ -242,45 +315,58 @@ function ExpertQueueCard({ request, onAssigned }: { request: any; onAssigned: ()
     }
   }
 
-  const statusColor: Record<string, string> = {
-    pending:   'bg-amber-100 text-amber-700 border-amber-200',
-    in_review: 'bg-blue-100 text-blue-700 border-blue-200',
-    completed: 'bg-green-100 text-green-700 border-green-200',
+  const statusConfig: Record<string, { label: string; className: string }> = {
+    pending:   { label: 'Chờ xử lý',    className: 'bg-amber-50 text-amber-700 border-amber-200' },
+    in_review: { label: 'Đang review',   className: 'bg-blue-50 text-blue-700 border-blue-200' },
+    completed: { label: 'Hoàn thành',    className: 'bg-green-50 text-green-700 border-green-200' },
   }
+  const status = statusConfig[request.status] ?? statusConfig.pending
 
   return (
-    <Card className="p-4 hover:shadow-md transition-shadow">
+    <Card className="p-4 hover:shadow-sm transition-shadow border-l-4 border-l-primary">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <h3 className="font-semibold">
               {report?.product_name || report?.file_name || 'Sản phẩm không tên'}
             </h3>
-            <Badge className={`text-xs border ${statusColor[request.status] ?? ''}`}>
-              {request.status === 'pending' ? 'Chờ xử lý' : request.status === 'in_review' ? 'Đang review' : 'Hoàn thành'}
-            </Badge>
+            <Badge className={`text-xs border ${status.className}`}>{status.label}</Badge>
             {request.is_paid && (
-              <Badge variant="secondary" className="text-xs">Gói trả phí</Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
-            <span>
-              <User className="inline h-3 w-3 mr-1" />
-              {request.target_market ?? 'US'}
-            </span>
-            {report?.overall_result && (
-              <Badge variant={report.overall_result === 'fail' ? 'destructive' : 'outline'} className="text-xs">
-                {report.overall_result.toUpperCase()}
+              <Badge variant="secondary" className="text-xs gap-1">
+                <CircleDollarSign className="h-3 w-3" />
+                Trả phí
               </Badge>
             )}
             {report?.overall_risk_score && (
-              <span>Risk: {report.overall_risk_score}/10</span>
+              <Badge
+                variant="outline"
+                className={`text-xs ${
+                  report.overall_risk_score >= 7
+                    ? 'border-red-300 text-red-600'
+                    : report.overall_risk_score >= 4
+                    ? 'border-amber-300 text-amber-600'
+                    : 'border-green-300 text-green-600'
+                }`}
+              >
+                Risk: {report.overall_risk_score}/10
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span>{request.target_market ?? 'US'}</span>
+            {report?.overall_result && (
+              <Badge
+                variant={report.overall_result === 'fail' ? 'destructive' : 'outline'}
+                className="text-xs"
+              >
+                {report.overall_result.toUpperCase()}
+              </Badge>
             )}
             <span>{new Date(request.created_at).toLocaleString('vi-VN')}</span>
           </div>
           {request.user_context && (
-            <p className="text-xs text-muted-foreground italic line-clamp-2 mb-2">
-              "{request.user_context}"
+            <p className="text-xs text-muted-foreground italic line-clamp-2 mt-1.5 border-l-2 border-muted pl-2">
+              {request.user_context}
             </p>
           )}
         </div>
@@ -302,64 +388,50 @@ function ExpertQueueCard({ request, onAssigned }: { request: any; onAssigned: ()
   )
 }
 
-function ReportCard({ report }: { report: any }) {
+// ─── Risk Monitor Card ───────────────────────────────────────────────────────
+
+function RiskReportCard({ report }: { report: any }) {
   const findings = report.findings || []
   const criticalCount = findings.filter((f: any) => f.severity === 'critical').length
   const warningCount = findings.filter((f: any) => f.severity === 'warning').length
-  
-  // Get product display name (priority: product_name > brand_name > file_name)
   const productName = report.product_name || report.brand_name || report.file_name || 'Sản phẩm không tên'
-  
-  // Get user info 
   const userEmail = report.user_email || 'Unknown user'
-  
-  // Format time for priority indicator
-  const createdAt = new Date(report.created_at)
-  const now = new Date()
-  const hoursAgo = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60))
-  const isUrgent = hoursAgo > 24 // More than 24 hours waiting
+  const riskScore = report.overall_risk_score ?? 0
 
   return (
-    <Card className={`p-4 hover:shadow-md transition-shadow ${isUrgent ? 'border-l-4 border-l-amber-500' : ''}`}>
+    <Card className="p-4 hover:shadow-sm transition-shadow">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          {/* Product name and badges */}
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h3 className="font-semibold truncate" title={productName}>{productName}</h3>
-            {report.needs_expert_review && (
-              <Badge variant="destructive" className="text-xs shrink-0">
-                Cần kiểm duyệt
-              </Badge>
-            )}
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <h3 className="font-semibold truncate" title={productName}>
+              {productName}
+            </h3>
+            <Badge
+              variant="outline"
+              className={`text-xs shrink-0 ${
+                riskScore >= 7
+                  ? 'border-red-300 text-red-600 bg-red-50'
+                  : 'border-amber-300 text-amber-600 bg-amber-50'
+              }`}
+            >
+              <ShieldAlert className="h-3 w-3 mr-1" />
+              Risk {riskScore}/10
+            </Badge>
             <Badge variant="outline" className="text-xs shrink-0">
               {report.citation_count || 0} Citations
             </Badge>
-            {report.overall_risk_score && (
-              <Badge 
-                variant="outline" 
-                className={`text-xs shrink-0 ${
-                  report.overall_risk_score >= 7 ? 'border-red-300 text-red-600' :
-                  report.overall_risk_score >= 4 ? 'border-amber-300 text-amber-600' :
-                  'border-green-300 text-green-600'
-                }`}
-              >
-                Risk: {report.overall_risk_score}/10
-              </Badge>
+          </div>
+
+          <div className="flex items-center gap-4 text-sm mb-1.5">
+            {criticalCount > 0 && (
+              <span className="text-red-600 font-medium text-xs">{criticalCount} Nghiêm trọng</span>
+            )}
+            {warningCount > 0 && (
+              <span className="text-amber-600 font-medium text-xs">{warningCount} Cảnh báo</span>
             )}
           </div>
-          
-          {/* Violation counts */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-            <span className={criticalCount > 0 ? 'text-red-600 font-medium' : ''}>
-              {criticalCount} Nghiêm trọng
-            </span>
-            <span className={warningCount > 0 ? 'text-amber-600 font-medium' : ''}>
-              {warningCount} Cảnh báo
-            </span>
-          </div>
-          
-          {/* User info and timestamp */}
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <User className="h-3 w-3" />
               <span className="truncate max-w-[200px]" title={userEmail}>
@@ -368,25 +440,26 @@ function ReportCard({ report }: { report: any }) {
             </span>
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {createdAt.toLocaleString('vi-VN', { 
-                day: '2-digit', 
-                month: '2-digit', 
+              {new Date(report.created_at).toLocaleString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
                 year: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
               })}
-              {isUrgent && (
-                <Badge variant="outline" className="ml-1 text-[10px] border-amber-300 text-amber-600 px-1 py-0">
-                  {'>'} 24h
-                </Badge>
-              )}
             </span>
           </div>
         </div>
-        
-        <Button asChild className="shrink-0">
-          <Link href={`/admin/review/${report.id}`}>Kiểm duyệt</Link>
-        </Button>
+
+        {/* Actions: view only, no "Kiểm duyệt" obligation */}
+        <div className="flex gap-2 shrink-0">
+          <Button size="sm" variant="outline" asChild>
+            <Link href={`/admin/review/${report.id}`}>
+              <Eye className="h-4 w-4 mr-1" />
+              Xem
+            </Link>
+          </Button>
+        </div>
       </div>
     </Card>
   )

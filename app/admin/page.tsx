@@ -15,7 +15,6 @@ export default async function AdminPage() {
     redirect('/auth/login')
   }
 
-  // Check if user is admin
   const { data: adminUser } = await supabase
     .from('admin_users')
     .select('*')
@@ -26,8 +25,8 @@ export default async function AdminPage() {
     redirect('/dashboard')
   }
 
-  // Get reports pending review
-  const { data: pendingReports } = await supabase
+  // Luồng 1 — AI Risk Monitor: report AI flag risk cao, chưa có expert_review_request nào
+  const { data: riskReports } = await supabase
     .from('audit_reports')
     .select(`
       id,
@@ -37,26 +36,7 @@ export default async function AdminPage() {
       status,
       overall_risk_score,
       needs_expert_review,
-      findings,
-      citation_count,
-      created_at,
-      updated_at,
-      user_id
-    `)
-    .eq('status', 'ai_completed')
-    .order('created_at', { ascending: false })
-
-  // Get reports needing attention
-  const { data: attentionReports } = await supabase
-    .from('audit_reports')
-    .select(`
-      id,
-      file_name,
-      product_name,
-      brand_name,
-      status,
-      overall_risk_score,
-      needs_expert_review,
+      expert_review_status,
       findings,
       citation_count,
       created_at,
@@ -64,40 +44,40 @@ export default async function AdminPage() {
       user_id
     `)
     .eq('needs_expert_review', true)
-    .order('created_at', { ascending: false })
+    .is('expert_review_status', null)
+    .order('overall_risk_score', { ascending: false })
+    .limit(50)
 
-  // Collect unique user IDs and fetch their emails using service role
-  const allReports = [...(pendingReports || []), ...(attentionReports || [])]
-  const userIds = [...new Set(allReports.map(r => r.user_id).filter(Boolean))]
-  
+  // Luồng 2 — Expert Queue count (client sẽ fetch chi tiết)
+  const { count: expertQueueCount } = await supabase
+    .from('expert_review_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'pending')
+
+  const { count: expertInReviewCount } = await supabase
+    .from('expert_review_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'in_review')
+
+  // Enrich risk reports with user emails
+  const userIds = [...new Set((riskReports || []).map((r) => r.user_id).filter(Boolean))]
   let userEmailMap: Record<string, string> = {}
-  
+
   if (userIds.length > 0 && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const serviceClient = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     )
-    
-    // Fetch users in batches
-    const { data: usersData } = await serviceClient.auth.admin.listUsers({
-      perPage: 1000,
-    })
-    
+    const { data: usersData } = await serviceClient.auth.admin.listUsers({ perPage: 1000 })
     if (usersData?.users) {
-      userEmailMap = usersData.users.reduce((acc, u) => {
-        acc[u.id] = u.email || 'Unknown'
-        return acc
-      }, {} as Record<string, string>)
+      userEmailMap = usersData.users.reduce(
+        (acc, u) => { acc[u.id] = u.email || 'Unknown'; return acc },
+        {} as Record<string, string>
+      )
     }
   }
 
-  // Attach user email to reports
-  const enrichedPendingReports = (pendingReports || []).map(r => ({
-    ...r,
-    user_email: userEmailMap[r.user_id] || null,
-  }))
-  
-  const enrichedAttentionReports = (attentionReports || []).map(r => ({
+  const enrichedRiskReports = (riskReports || []).map((r) => ({
     ...r,
     user_email: userEmailMap[r.user_id] || null,
   }))
@@ -105,8 +85,9 @@ export default async function AdminPage() {
   return (
     <AdminDashboard
       adminUser={adminUser}
-      pendingReports={enrichedPendingReports}
-      attentionReports={enrichedAttentionReports}
+      riskReports={enrichedRiskReports}
+      expertQueueCount={expertQueueCount ?? 0}
+      expertInReviewCount={expertInReviewCount ?? 0}
       userEmail={user.email || ''}
     />
   )
