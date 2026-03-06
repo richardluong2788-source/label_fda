@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { sendEmail, quotaExhaustedTemplate, lowCreditsTemplate } from '@/lib/email'
 import { updateJobProgress, completeJob } from '@/lib/analysis-queue'
 import { NutritionValidator } from '@/lib/nutrition-validator'
 import { VisualGeometryAnalyzer } from '@/lib/visual-geometry-analyzer'
@@ -605,9 +606,59 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError
 
-    // Increment usage counter
+    // Increment usage counter, rồi check ngay xem có hết quota không
     if (phase !== 'vision_only' || visionDataConfirmed) {
       await supabase.rpc('increment_reports_used', { p_user_id: userId })
+
+      // Sau khi increment, check quota để gửi email thông báo kịp thời
+      // (không phải đợi user submit lần tiếp theo mới biết hết lượt)
+      try {
+        const { data: quotaAfter } = await supabase.rpc('check_quota', { p_user_id: userId })
+
+        if (quotaAfter) {
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('email, language')
+            .eq('id', userId)
+            .maybeSingle()
+
+          if (userProfile?.email) {
+            const lang = (userProfile.language as 'vi' | 'en') ?? 'en'
+
+            if (!quotaAfter.has_quota) {
+              // Hết lượt hoàn toàn → gửi email quota exhausted ngay lập tức
+              const exhaustedEmail = quotaExhaustedTemplate({
+                email: userProfile.email,
+                reportsUsed:  quotaAfter.reports_used,
+                reportsLimit: quotaAfter.reports_limit,
+                planName:     quotaAfter.plan_name,
+                periodEnd:    quotaAfter.period_end,
+                lang,
+              })
+              sendEmail({ to: userProfile.email, subject: exhaustedEmail.subject, html: exhaustedEmail.html })
+            } else {
+              // Còn lượt nhưng sắp hết → gửi low credits warning
+              const remaining = quotaAfter.reports_limit - quotaAfter.reports_used
+              const shouldWarn = quotaAfter.reports_limit >= 5
+                ? remaining === 2
+                : remaining === 0
+              if (shouldWarn) {
+                const lowEmail = lowCreditsTemplate({
+                  email: userProfile.email,
+                  reportsUsed:  quotaAfter.reports_used,
+                  reportsLimit: quotaAfter.reports_limit,
+                  planName:     quotaAfter.plan_name,
+                  periodEnd:    quotaAfter.period_end,
+                  lang,
+                })
+                sendEmail({ to: userProfile.email, subject: lowEmail.subject, html: lowEmail.html })
+              }
+            }
+          }
+        }
+      } catch (emailErr) {
+        console.error('[process/run] Failed to send quota email after increment:', emailErr)
+      }
     }
 
     await completeJob(jobId)
