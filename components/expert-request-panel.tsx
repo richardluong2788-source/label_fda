@@ -353,10 +353,10 @@ export function ExpertRequestPanel({
   const isHighRisk = overallResult === 'fail' || needsExpertReview
 
   // Determine effective access: a user has unlimited access if their plan includes it
-  // OR if the quota API says can_request=true with limit=0 (unlimited sentinel from DB)
+  // OR if the quota API says can_request=true with limit=-1 (unlimited sentinel from DB)
   const hasUnlimitedAccess =
     expertReviewsIncluded ||
-    (quotaInfo !== null && quotaInfo.canRequest && quotaInfo.limit === 0)
+    (quotaInfo !== null && quotaInfo.canRequest && quotaInfo.limit === -1)
 
   // Has a finite quota (Pro with limited slots)
   const hasFiniteQuota =
