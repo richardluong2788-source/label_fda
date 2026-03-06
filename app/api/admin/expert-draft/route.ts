@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { generateText, Output } from 'ai'
+import { generateText } from 'ai'
 import { createGroq } from '@ai-sdk/groq'
-import { z } from 'zod'
 
 const groq = createGroq({ apiKey: process.env.GROQ_API_KEY })
 
@@ -105,38 +104,58 @@ ${violationsSummary || 'No violations detected by AI'}
 When writing legal_note, quote specific phrases from the "Health Claims Found on Label" above as examples.
 Please provide a complete expert review draft.`
 
+  // Instruct the model to return pure JSON — no Output.object() since Groq
+  // rejects JSON Schema meta-properties ($schema, additionalProperties, etc.)
+  const jsonSystemPrompt = systemPrompt + `
+
+RESPONSE FORMAT: You MUST respond with ONLY valid JSON, no markdown, no code blocks, no commentary. The JSON must have this exact shape:
+{
+  "expert_summary": "string (Vietnamese, 2-4 sentences)",
+  "violation_reviews": [
+    {
+      "violation_index": 0,
+      "confirmed": true,
+      "wording_fix": "exact English text or null",
+      "legal_note": "Vietnamese explanation starting with 'Qua rà soát nhãn...' or null"
+    }
+  ],
+  "recommended_actions": [
+    {
+      "action": "Vietnamese action text",
+      "priority": "high|medium|low",
+      "cfr_reference": "21 CFR xxx or null"
+    }
+  ],
+  "overall_assessment": "approved|needs_revision|rejected",
+  "estimated_fix_complexity": "simple|moderate|complex"
+}`
+
   try {
-    const { experimental_output } = await generateText({
+    const { text } = await generateText({
       model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
-      system: systemPrompt,
+      system: jsonSystemPrompt,
       prompt: userPrompt,
-      experimental_output: Output.object({
-        schema: z.object({
-          expert_summary: z.string().describe('Tổng quan đánh giá bằng tiếng Việt, 2-4 câu'),
-          violation_reviews: z.array(
-            z.object({
-              violation_index: z.number().describe('0-based index of violation'),
-              confirmed: z.boolean().describe('true nếu vi phạm thực sự cần sửa'),
-              wording_fix: z.string().nullable().describe('Exact corrected label text in English'),
-              legal_note: z.string().nullable().describe('Giải thích pháp lý bằng tiếng Việt: bắt đầu bằng "Qua rà soát nhãn...", giải thích lý do pháp lý, đưa ví dụ cụ thể từ nhãn, và trích dẫn CFR cuối cùng'),
-            })
-          ),
-          recommended_actions: z.array(
-            z.object({
-              action: z.string().describe('Hành động cụ thể bằng tiếng Việt'),
-              priority: z.enum(['high', 'medium', 'low']),
-              cfr_reference: z.string().nullable().describe('e.g. 21 CFR 101.9(d)'),
-            })
-          ),
-          overall_assessment: z.enum(['approved', 'needs_revision', 'rejected']),
-          estimated_fix_complexity: z.enum(['simple', 'moderate', 'complex']),
-        }),
-      }),
       maxOutputTokens: 2000,
     })
 
+    // Strip potential markdown code fences and parse JSON
+    const cleaned = text
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```\s*$/, '')
+      .trim()
+
+    let draft: any
+    try {
+      draft = JSON.parse(cleaned)
+    } catch {
+      // Try extracting the first {...} block if surrounding text leaked in
+      const match = cleaned.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('AI response is not valid JSON')
+      draft = JSON.parse(match[0])
+    }
+
     return NextResponse.json({
-      draft: experimental_output,
+      draft,
       violations_count: findings.length,
     })
   } catch (err: any) {
