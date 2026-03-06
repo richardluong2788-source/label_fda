@@ -449,7 +449,7 @@ export const vi = {
     marketCA: 'Canada',
     marketEU: 'Liên minh Châu Âu (EU)',
     marketMultiple: 'Nhiều thị trường',
-    marketNote: 'Mỗi thị trường có quy định FDA/CFIA/EFSA khác nhau',
+    marketNote: 'Hiện tại chỉ hỗ trợ thị trường Hoa Kỳ (FDA). Các thị trường khác sẽ sớm được hỗ trợ.',
     labelLanguage: 'Ngôn ngữ trên nhãn',
     selectLanguage: 'Chọn ngôn ngữ',
     langEn: 'Tiếng Anh',
@@ -727,6 +727,7 @@ export const vi = {
     monthlyUsage: 'Lượt phân tích tháng này',
     usedOfLimit: (used: number, limit: number) => `${used}/${limit} lượt`,
     almostOutQuota: 'Sắp hết quota — nâng cấp gói để tiếp tục.',
+    outOfQuota: 'Đã hết quota — nâng cấp gói để tiếp tục sử dụng.',
     viewAllPlans: 'Xem tất cả gói',
     cancelPlan: 'Huỷ gói',
     upgradePlan: 'Nâng cấp gói',
@@ -909,7 +910,7 @@ export const vi = {
     // What you get
     whatYouGetCols: [
       { title: 'Báo cáo AI chuyên sâu', items: ['Quét toàn bộ nhãn bằng OCR + Vision AI', 'Phát hiện vi phạm kèm trích dẫn mã CFR cụ thể', 'Phân loại mức độ: Nghiêm trọng / Quan trọng / Nhẹ', 'Hướng dẫn khắc phục chi tiết từng điểm vi phạm'] },
-      { title: 'Tư vấn bởi chuyên gia', items: ['Rà soát bởi FDA Compliance Specialist', 'Tư vấn trực tiếp 1-1 qua call hoặc email', 'Đánh giá rủi ro bị từ chối tại cảng Mỹ', 'Hỗ trợ chỉnh sửa file thiết kế nhãn'] },
+      { title: 'Tư vấn bởi chuyên gia', items: ['Rà soát bởi FDA Compliance Specialist', 'Tư vấn trực tiếp 1-1 qua call hoặc email', 'Đánh giá rủi ro bị từ chối tại cảng Mỹ', 'Hỗ trợ chỉnh s��a file thiết kế nhãn'] },
       { title: 'Đảm bảo & Chứng nhận', items: ['Cấp Certification Letter khi nhãn đạt chuẩn', 'Kiểm tra lại miễn phí khi có thay đổi nhỏ', 'Hỗ trợ khi FDA yêu cầu giải trình bổ sung', 'Cam kết bồi thường nếu sai sót thuộc về Vexim'] },
     ],
     commitmentQuote: '"Vexim Global kết hợp công nghệ AI với đội ngũ chuyên gia tuân thủ FDA, phân tích dữ liệu cưỡng chế thực tế (Regulation — Warning Letter — Recall) nhằm đánh giá rủi ro nhãn dán và hồ sơ xuất khẩu. Chúng tôi đã đồng hành cùng hàng trăm doanh nghiệp Việt Nam chuẩn hóa nhãn sản phẩm trước khi xuất khẩu sang Mỹ, tập trung giảm thiểu nguy cơ bị giữ hàng, ghi nhãn sai quy cách và thu hồi sản phẩm."',

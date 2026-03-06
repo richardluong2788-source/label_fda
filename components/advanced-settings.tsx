@@ -60,7 +60,7 @@ export function AdvancedSettings({ settings, onChange, externalProductType }: Ad
                     <span className="ml-1 text-red-500">*</span>
                   </Label>
                   <Select
-                    value={settings.target_market}
+                    value={settings.target_market || 'US'}
                     onValueChange={(value) =>
                       onChange({ ...settings, target_market: value })
                     }
@@ -70,9 +70,15 @@ export function AdvancedSettings({ settings, onChange, externalProductType }: Ad
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="US">{af.marketUS}</SelectItem>
-                      <SelectItem value="Canada">{af.marketCA}</SelectItem>
-                      <SelectItem value="EU">{af.marketEU}</SelectItem>
-                      <SelectItem value="Multiple">{af.marketMultiple}</SelectItem>
+                      <SelectItem value="Canada" disabled className="text-muted-foreground">
+                        {af.marketCA} <span className="text-xs ml-1 opacity-60">(Coming soon)</span>
+                      </SelectItem>
+                      <SelectItem value="EU" disabled className="text-muted-foreground">
+                        {af.marketEU} <span className="text-xs ml-1 opacity-60">(Coming soon)</span>
+                      </SelectItem>
+                      <SelectItem value="Multiple" disabled className="text-muted-foreground">
+                        {af.marketMultiple} <span className="text-xs ml-1 opacity-60">(Coming soon)</span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground flex items-start gap-1">

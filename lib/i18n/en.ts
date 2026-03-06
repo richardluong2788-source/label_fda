@@ -309,7 +309,7 @@ export const en: TranslationKeys = {
     geometrySection: 'GEOMETRY & FONT SIZE CHECK (21 CFR)',
   },
 
-  // ─── Audit Page ───────────��──────────────────────────
+  // ─── Audit Page ─────────�����─��──────────────────────────
   audit: {
     loading: 'Analyzing product label...',
     loadingDesc: 'AI system is scanning and cross-referencing your label with the FDA database',
@@ -449,7 +449,7 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     marketCA: 'Canada',
     marketEU: 'European Union (EU)',
     marketMultiple: 'Multiple markets',
-    marketNote: 'Each market has different FDA/CFIA/EFSA regulations',
+    marketNote: 'Currently only US market (FDA) is supported. Other markets coming soon.',
     labelLanguage: 'Label language',
     selectLanguage: 'Select language',
     langEn: 'English',
@@ -726,6 +726,7 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     monthlyUsage: 'Analysis credits this month',
     usedOfLimit: (used: number, limit: number) => `${used}/${limit} credits`,
     almostOutQuota: 'Almost out of quota — upgrade to continue.',
+    outOfQuota: 'Out of quota — upgrade to continue using.',
     viewAllPlans: 'View all plans',
     cancelPlan: 'Cancel plan',
     upgradePlan: 'Upgrade plan',
@@ -754,7 +755,7 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     heroTitle: 'FDA Label Compliance Audit (21 CFR) -',
     heroTitleHighlight: 'Detect Errors Before Cargo Departure',
 
-    // Hero Description: Chặt chẽ, đánh vào chi phí và sự an toàn
+    // Hero Description: Chặt chẽ, đánh vào chi phí và s�� an toàn
     heroDesc1: 'Are you certain your product labels are clear of ',
     heroDesc2: 'FDA Warning Letters',
     heroDesc3: '? Vexim AI automates complex compliance audits by cross-referencing ',

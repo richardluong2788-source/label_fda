@@ -154,9 +154,11 @@ export default function BillingTab({ subscription, transactions, allPlans }: Pro
               value={usagePercent}
               className={`h-2 ${usagePercent >= 80 ? '[&>div]:bg-destructive' : ''}`}
             />
-            {usagePercent >= 80 && (
+            {usagePercent >= 100 ? (
+              <p className="text-xs text-destructive mt-1 font-medium">{s.outOfQuota}</p>
+            ) : usagePercent >= 80 ? (
               <p className="text-xs text-destructive mt-1">{s.almostOutQuota}</p>
-            )}
+            ) : null}
           </div>
         )}
 
