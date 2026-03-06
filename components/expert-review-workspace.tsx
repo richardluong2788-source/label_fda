@@ -21,8 +21,12 @@ import {
   ArrowRight,
   Plus,
   Trash2,
+  ZoomIn,
+  X,
+  ImageOff,
 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { AppHeader } from '@/components/app-header'
 
 interface ViolationReview {
@@ -58,6 +62,8 @@ export function ExpertReviewWorkspace({
   const [signOffName, setSignOffName] = useState(
     request.sign_off_name ?? adminUser?.display_name ?? adminUser?.email ?? ''
   )
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const labelImageUrl = report?.label_image_url ?? null
   const [violationReviews, setViolationReviews] = useState<ViolationReview[]>(
     request.violation_reviews?.length
       ? request.violation_reviews
@@ -243,7 +249,7 @@ export function ExpertReviewWorkspace({
           <div className="flex items-center gap-2">
             {request.status === 'pending' && (
               <Button size="sm" variant="outline" onClick={handleAssign} disabled={submitting}>
-                Nhận việc này
+                Nhận việc n��y
               </Button>
             )}
             <Badge
@@ -301,6 +307,41 @@ export function ExpertReviewWorkspace({
                   </div>
                 )}
               </div>
+            </Card>
+
+            {/* Ảnh nhãn sản phẩm */}
+            <Card className="p-5">
+              <h2 className="font-semibold mb-3 flex items-center gap-2">
+                <ImageOff className="h-4 w-4 text-primary" />
+                Nhãn sản phẩm
+              </h2>
+              {labelImageUrl ? (
+                <div className="relative group">
+                  <div
+                    className="relative w-full rounded-lg overflow-hidden border bg-muted cursor-zoom-in"
+                    style={{ maxHeight: 320 }}
+                    onClick={() => setLightboxOpen(true)}
+                  >
+                    <img
+                      src={labelImageUrl}
+                      alt="Nhãn sản phẩm"
+                      className="w-full h-full object-contain"
+                      style={{ maxHeight: 320 }}
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-2 shadow">
+                        <ZoomIn className="h-5 w-5 text-foreground" />
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">Bấm vào ảnh để phóng to</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
+                  <ImageOff className="h-8 w-8 opacity-40" />
+                  <p className="text-sm">Không có ảnh nhãn</p>
+                </div>
+              )}
             </Card>
 
             {/* Danh sách vi phạm — review từng cái */}
@@ -609,6 +650,29 @@ export function ExpertReviewWorkspace({
           </div>
         </div>
       </main>
+
+      {/* Lightbox */}
+      {lightboxOpen && labelImageUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <div className="relative max-w-5xl w-full" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors flex items-center gap-1 text-sm"
+              onClick={() => setLightboxOpen(false)}
+            >
+              <X className="h-5 w-5" />
+              Đóng
+            </button>
+            <img
+              src={labelImageUrl}
+              alt="Nhãn sản phẩm phóng to"
+              className="w-full h-auto max-h-[85vh] object-contain rounded-lg shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
