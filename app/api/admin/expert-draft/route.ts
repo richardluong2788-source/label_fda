@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       audit_report_id,
       audit_reports (
         product_name, file_name, overall_result, overall_risk_score,
-        product_category, findings
+        product_category, findings, health_claims, ingredient_list
       )
     `)
     .eq('id', requestId)
@@ -60,6 +60,7 @@ export async function POST(request: Request) {
 
   const report = reviewRequest.audit_reports as any
   const findings = report?.findings ?? []
+  const healthClaims = report?.health_claims ?? []
 
   // Build prompt context
   const violationsSummary = findings
@@ -67,6 +68,10 @@ export async function POST(request: Request) {
       `[${i + 1}] ${v.violation_type ?? v.type ?? 'Unknown'} — ${v.description ?? ''} | Severity: ${v.severity ?? 'unknown'} | CFR: ${v.citations?.join(', ') ?? 'N/A'} | AI suggested fix: ${v.suggested_fix ?? 'N/A'}`
     )
     .join('\n')
+
+  const healthClaimsList = Array.isArray(healthClaims)
+    ? healthClaims.map((c: any) => typeof c === 'string' ? c : c.claim || c.text || '').filter(Boolean).join('; ')
+    : ''
 
   const systemPrompt = `You are an expert FDA compliance consultant with 15+ years experience reviewing food, dietary supplement, and cosmetic labels for the US market. You provide precise, actionable, and legally sound guidance based on 21 CFR regulations.
 
@@ -78,7 +83,11 @@ Your task: Review an AI-generated FDA compliance report and produce a structured
 IMPORTANT:
 - Write the expert_summary in Vietnamese (professional tone)
 - wording_fix should be the EXACT replacement text in English (as it should appear on the label)
-- legal_note should cite the specific CFR section and explain the legal risk in Vietnamese
+- legal_note MUST be written in Vietnamese with the following structure:
+  1. Start with "Qua rà soát nhãn, hệ thống phát hiện..." describing what was found (e.g., health benefit phrases, missing disclaimers)
+  2. Explain why it matters legally (e.g., "Theo quy định, các tuyên bố này bắt buộc phải đi kèm câu miễn trừ DSHEA để tránh bị FDA phân loại nhầm thành dược phẩm")
+  3. Provide a concrete example from the label: "Ví dụ: nhãn hiện có cụm từ '[quote from label]' cần được bổ sung disclaimer."
+  4. Reference the specific CFR section at the end
 - Be precise about which violations are genuinely critical vs. minor`
 
   const userPrompt = `Product: ${report?.product_name ?? report?.file_name ?? 'Unknown'}
@@ -87,9 +96,13 @@ Target Market: ${reviewRequest.target_market ?? 'US'}
 Overall AI Result: ${report?.overall_result ?? 'N/A'} (Risk Score: ${report?.overall_risk_score ?? 'N/A'}/10)
 User Context: ${reviewRequest.user_context ?? 'No additional context provided'}
 
+Health Claims Found on Label:
+${healthClaimsList || 'No health claims extracted'}
+
 AI-Detected Violations (${findings.length} total):
 ${violationsSummary || 'No violations detected by AI'}
 
+When writing legal_note, quote specific phrases from the "Health Claims Found on Label" above as examples.
 Please provide a complete expert review draft.`
 
   try {
@@ -105,7 +118,7 @@ Please provide a complete expert review draft.`
               violation_index: z.number().describe('0-based index of violation'),
               confirmed: z.boolean().describe('true nếu vi phạm thực sự cần sửa'),
               wording_fix: z.string().nullable().describe('Exact corrected label text in English'),
-              legal_note: z.string().nullable().describe('Giải thích pháp lý bằng tiếng Việt'),
+              legal_note: z.string().nullable().describe('Giải thích pháp lý bằng tiếng Việt: bắt đầu bằng "Qua rà soát nhãn...", giải thích lý do pháp lý, đưa ví dụ cụ thể từ nhãn, và trích dẫn CFR cuối cùng'),
             })
           ),
           recommended_actions: z.array(
