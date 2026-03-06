@@ -103,7 +103,9 @@ function sortObject(params: Record<string, string>): Record<string, string> {
 /**
  * Build signData string — KHÔNG encode key hay value.
  * Đây là chuỗi dùng để tính HMAC-SHA512.
- * Theo NodeJS sample của VNPay: qs.stringify(vnp_Params, { encode: false })
+ * Theo NodeJS sample chính thức của VNPay:
+ *   qs.stringify(vnp_Params, { encode: false })
+ * → Tất cả value phải giữ nguyên, KHÔNG encode bất kỳ ký tự nào.
  */
 function buildSignData(params: Record<string, string>): string {
   return Object.entries(sortObject(params))
@@ -112,13 +114,17 @@ function buildSignData(params: Record<string, string>): string {
 }
 
 /**
- * Build query string cho URL thanh toán — encode value theo chuẩn URL.
- * Theo NodeJS sample: qs.stringify(vnp_Params, { encode: false }) + hash
- * Tuy nhiên khi gắn vào URL thực tế, value cần được encode.
+ * Build query string cho URL thanh toán.
+ * Theo NodeJS sample chính thức của VNPay:
+ *   qs.stringify(vnp_Params, { encode: false })
+ * → VNPay yêu cầu KHÔNG encode value trong URL (dùng encode: false như qs).
+ *   Nếu encode, server VNPay sẽ decode rồi tính lại hash → khớp.
+ *   Nhưng nếu encode kiểu khác (encodeURIComponent vs %20 vs +) → KHÔNG khớp → "Sai chữ ký".
+ * → Giải pháp an toàn nhất: KHÔNG encode value, để VNPay tự xử lý.
  */
 function buildQueryString(params: Record<string, string>): string {
   return Object.entries(sortObject(params))
-    .map(([k, v]) => `${k}=${encodeURIComponent(v).replace(/%20/g, '+')}`)
+    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
     .join('&')
 }
 
@@ -171,7 +177,7 @@ export function createPaymentUrl(params: CreatePaymentParams): PaymentResult {
     vnp_Amount:     String(amount * 100),
     vnp_CurrCode:   cfg.currCode,
     vnp_TxnRef:     txnRef,
-    vnp_OrderInfo:  orderInfo,
+    vnp_OrderInfo:  sanitizeOrderInfo(orderInfo), // VNPay yêu cầu không dấu, không ký tự đặc biệt
     vnp_OrderType:  orderType ?? 'other',
     vnp_Locale:     locale ?? cfg.locale,
     vnp_ReturnUrl:  cfg.returnUrl,
@@ -241,6 +247,23 @@ export function decodeResponseCode(code: string): { success: boolean; message: s
     success: code === '00',
     message: codes[code] ?? `Lỗi không xác định. Mã lỗi: ${code}`,
   }
+}
+
+/**
+ * Loại bỏ ký tự đặc biệt khỏi orderInfo theo yêu cầu VNPay.
+ * VNPay yêu cầu: chỉ chữ cái, số, khoảng trắng — KHÔNG dấu tiếng Việt, KHÔNG ký tự đặc biệt.
+ * Nếu orderInfo có ký tự lạ, signData sẽ khác với những gì VNPay nhận → "Sai chữ ký".
+ */
+export function sanitizeOrderInfo(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // bỏ dấu tổ hợp (à → a, ê → e, ...)
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/[^a-zA-Z0-9 ]/g, ' ')  // thay ký tự đặc biệt bằng khoảng trắng
+    .replace(/\s+/g, ' ')             // gộp nhiều khoảng trắng thành 1
+    .trim()
+    .slice(0, 255)                    // giới hạn độ dài
 }
 
 /**
