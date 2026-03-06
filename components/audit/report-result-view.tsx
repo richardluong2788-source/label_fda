@@ -1033,22 +1033,82 @@ export function ReportResultView({
                     </div>
                   )}
 
-                  {/* Health Claims (NEW) */}
-                  {healthClaims && healthClaims.length > 0 && (
-                    <div className="p-2.5 rounded-lg bg-red-50 border border-red-200">
-                      <p className="text-[11px] text-red-700 uppercase tracking-wider font-bold mb-1.5">
-                        {t.report.healthClaimsTitle}
-                      </p>
-                      <div className="space-y-1">
-                        {healthClaims.map((claim, idx) => (
-                          <p key={idx} className="text-xs text-red-800 flex items-start gap-1.5">
-                            <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
-                            {claim}
-                          </p>
-                        ))}
+                  {/* Health Claims (NEW) - Split into Structure/Function vs Factual */}
+                  {healthClaims && healthClaims.length > 0 && (() => {
+                    // Structure/Function indicators that require DSHEA disclaimer
+                    const structureFunctionKeywords = ['supports', 'maintains', 'promotes', 'helps', 'contributes to', 'assists', 'aids', 'healthy blood', 'nitric oxide', 'antioxidant']
+                    
+                    // Factual/Negative claims that are compliant
+                    const factualClaimPatterns = ['no artificial', 'no added', 'no preservatives', 'free', 'organic', 'natural', 'non-gmo', 'gluten-free', 'allergen-free', 'sulfate-free']
+                    
+                    const structureFunctionClaims = healthClaims.filter(claim => 
+                      structureFunctionKeywords.some(keyword => claim.toLowerCase().includes(keyword))
+                    )
+                    
+                    const factualClaims = healthClaims.filter(claim => 
+                      factualClaimPatterns.some(pattern => claim.toLowerCase().includes(pattern)) &&
+                      !structureFunctionKeywords.some(keyword => claim.toLowerCase().includes(keyword))
+                    )
+                    
+                    const otherClaims = healthClaims.filter(claim => 
+                      !structureFunctionClaims.includes(claim) && !factualClaims.includes(claim)
+                    )
+                    
+                    return (
+                      <div className="space-y-2">
+                        {/* Structure/Function Claims - Need DSHEA */}
+                        {structureFunctionClaims.length > 0 && (
+                          <div className="p-2.5 rounded-lg bg-red-50 border border-red-200">
+                            <p className="text-[11px] text-red-700 uppercase tracking-wider font-bold mb-1.5">
+                              {t.report.structureFunctionClaimsTitle || 'STRUCTURE/FUNCTION CLAIMS (NEED DSHEA)'}
+                            </p>
+                            <div className="space-y-1">
+                              {structureFunctionClaims.map((claim, idx) => (
+                                <p key={idx} className="text-xs text-red-800 flex items-start gap-1.5">
+                                  <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
+                                  {claim}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Other claims that may need review */}
+                        {otherClaims.length > 0 && (
+                          <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+                            <p className="text-[11px] text-amber-700 uppercase tracking-wider font-bold mb-1.5">
+                              {t.report.otherClaimsTitle || 'OTHER CLAIMS (REVIEW NEEDED)'}
+                            </p>
+                            <div className="space-y-1">
+                              {otherClaims.map((claim, idx) => (
+                                <p key={idx} className="text-xs text-amber-800 flex items-start gap-1.5">
+                                  <Info className="h-3 w-3 shrink-0 mt-0.5" />
+                                  {claim}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Factual/Negative Claims - Compliant */}
+                        {factualClaims.length > 0 && (
+                          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                            <p className="text-[11px] text-slate-600 uppercase tracking-wider font-bold mb-1.5">
+                              {t.report.factualClaimsTitle || 'FACTUAL/NEGATIVE CLAIMS (COMPLIANT)'}
+                            </p>
+                            <div className="space-y-1">
+                              {factualClaims.map((claim, idx) => (
+                                <p key={idx} className="text-xs text-slate-700 flex items-start gap-1.5">
+                                  <CheckCircle className="h-3 w-3 shrink-0 mt-0.5 text-green-600" />
+                                  {claim}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    )
+                  })()}
 
                   {/* Special Claims (NEW) */}
                   {specialClaims.length > 0 && (
