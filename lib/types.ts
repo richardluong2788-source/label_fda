@@ -60,6 +60,24 @@ export interface AuditReport {
   // Manual entry fields
   product_category?: string
   nutrition_facts?: Array<{ nutrient: string; value: number; unit?: string; dailyValue?: number }>
+  // Multi-column Nutrition Facts support (variety packs)
+  is_multi_column_nutrition?: boolean
+  nutrition_facts_columns?: Array<{
+    columnName: string
+    servingSize?: string
+    servingsPerContainer?: number
+    nutritionFacts: Array<{ name: string; value: number; unit?: string; dailyValue?: number }>
+  }>
+  multi_column_validation?: {
+    isValid: boolean
+    errors: string[]
+    warnings: string[]
+    columnIssues: Array<{
+      column: string
+      missingNutrients: string[]
+      inconsistentNutrients: string[]
+    }>
+  }
   ingredient_list?: string
   allergen_declaration?: string
   product_name?: string
