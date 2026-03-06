@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Check, Zap, Shield, Crown, Star, CalendarDays, Briefcase } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n'
+import { formatVND, vndToUsd, formatUSD } from '@/lib/currency'
 
 interface Plan {
   id: string
@@ -193,8 +194,8 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
                     <div className="flex items-baseline gap-2">
                       <p className="text-3xl font-bold">
                         {locale === 'vi' 
-                          ? monthlyEquivalent.toLocaleString('vi-VN')
-                          : `$${Math.round(monthlyEquivalent / 25000).toLocaleString()}`
+                          ? formatVND(monthlyEquivalent)
+                          : `$${formatUSD(vndToUsd(monthlyEquivalent), false)}`
                         }
                         <span className="text-base font-normal text-muted-foreground ml-1">
                           {t.pricing.perMonth}
@@ -211,16 +212,16 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
                       <p className="text-sm text-muted-foreground">
                         {t.pricing.payAnnually(
                           locale === 'vi' 
-                            ? displayPrice.toLocaleString('vi-VN')
-                            : `$${Math.round(displayPrice / 25000).toLocaleString()}`
+                            ? formatVND(displayPrice)
+                            : `$${formatUSD(vndToUsd(displayPrice), false)}`
                         )}
                       </p>
                     </div>
                     {plan.price_vnd > 0 && (
                       <p className="text-xs text-muted-foreground mt-1 line-through">
                         {locale === 'vi' 
-                          ? `${plan.price_vnd.toLocaleString('vi-VN')}₫/tháng`
-                          : `$${Math.round(plan.price_vnd / 25000).toLocaleString()}/month`
+                          ? `${formatVND(plan.price_vnd)}₫/tháng`
+                          : `$${formatUSD(vndToUsd(plan.price_vnd), false)}/month`
                         }
                       </p>
                     )}
@@ -234,8 +235,8 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
                   <div>
                     <p className="text-3xl font-bold">
                       {locale === 'vi' 
-                        ? plan.price_vnd.toLocaleString('vi-VN')
-                        : `$${Math.round(plan.price_vnd / 25000).toLocaleString()}`
+                        ? formatVND(plan.price_vnd)
+                        : `$${formatUSD(vndToUsd(plan.price_vnd), false)}`
                       }
                       <span className="text-base font-normal text-muted-foreground ml-1">
                         {t.pricing.perMonth}
@@ -287,8 +288,8 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
                 >
                   {t.pricing.upgradeBtn(
                     locale === 'vi' 
-                      ? displayPrice.toLocaleString('vi-VN')
-                      : `$${Math.round(displayPrice / 25000).toLocaleString()}`,
+                      ? formatVND(displayPrice)
+                      : `$${formatUSD(vndToUsd(displayPrice), false)}`,
                     showAnnual 
                       ? (locale === 'vi' ? 'năm' : 'year')
                       : (locale === 'vi' ? 'tháng' : 'month')

@@ -7,6 +7,7 @@ import { Check, MessageCircle, Users, FileText, Clock, CheckCircle, X, ArrowLeft
 import Image from 'next/image'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n'
+import { formatVND, formatUSD, vndToUsd } from '@/lib/currency'
 import PricingClient from './pricing-client'
 
 interface Plan {
@@ -158,9 +159,9 @@ export default function PricingPageContent({ plans, currentPlanId, isLoggedIn }:
                           <span>{t.pricing.buyPerUse}</span>
                         </div>
                         <p className="text-2xl font-bold">
-                          {locale === 'vi' 
-                            ? expertPrice.toLocaleString('vi-VN')
-                            : `$${Math.round(expertPrice / 25000).toLocaleString()}`
+                          {locale === 'vi'
+                            ? formatVND(expertPrice)
+                            : `$${formatUSD(vndToUsd(expertPrice), false)}`
                           }
                           <span className="text-sm font-normal text-muted-foreground ml-1">{t.pricing.perUse}</span>
                         </p>

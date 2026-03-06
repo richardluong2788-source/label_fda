@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/i18n'
+import { formatVND, vndToUsd, formatUSD } from '@/lib/currency'
 
 interface Props {
   planId: string
@@ -56,9 +57,9 @@ export default function PricingCTA({
     router.push(`/checkout?plan=${planId}&amount=${priceVnd}&billing=monthly`)
   }
 
-  const formattedPrice = locale === 'vi' 
-    ? priceVnd.toLocaleString('vi-VN')
-    : `$${Math.round(priceVnd / 25000).toLocaleString()}`
+  const formattedPrice = locale === 'vi'
+    ? formatVND(priceVnd)
+    : `$${formatUSD(vndToUsd(priceVnd), false)}`
 
   const label = isFree
     ? t.pricing.tryFreeBtn
