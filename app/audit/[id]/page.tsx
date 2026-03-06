@@ -104,6 +104,36 @@ export default function AuditPage() {
     return () => clearInterval(interval)
   }, [analyzing, scanDirection])
 
+  // ── Smooth fake progress while queued/processing ──────────
+  // Giữ thanh tiến trình luôn nhích dần, tránh user nghĩ app bị đơ.
+  // Server sẽ override với giá trị thật khi các bước hoàn thành.
+  useEffect(() => {
+    if (!analyzing) return
+    const ticker = setInterval(() => {
+      setProgress(prev => {
+        const next = (() => {
+          if (prev < 14) return prev + 0.08      // giai đoạn queued: lên đến ~14%
+          if (prev < 30) return prev + 0.04      // bước 1 đang chạy: 14→30
+          if (prev < 50) return prev + 0.02      // bước 2: 30→50
+          if (prev < 70) return prev + 0.015     // bước 3-4: 50→70
+          if (prev < 88) return prev + 0.008     // bước 5-6: 70→88
+          return prev                             // dừng tại 88 — server sẽ đẩy lên 100
+        })()
+
+        // Đồng bộ stepIndex với fake progress (chỉ khi server chưa override)
+        // Tìm step CUỐI CÙNG có progress <= next
+        let bestIdx = 0
+        for (let i = 0; i < ANALYSIS_STEPS.length; i++) {
+          if (ANALYSIS_STEPS[i].progress <= next) bestIdx = i
+        }
+        setCurrentStepIndex(ci => Math.max(ci, bestIdx))
+
+        return next
+      })
+    }, 300)
+    return () => clearInterval(ticker)
+  }, [analyzing])
+
   // ── Load Report ───────────────────────────────────────────
   const loadReport = async () => {
     try {
@@ -232,13 +262,26 @@ export default function AuditPage() {
                 .catch(() => {}) // fire-and-forget
             }
 
-            // Update UI progress from server-driven step
+            // Update UI progress from server-driven step.
+            // Dùng smooth animation thay vì nhảy cóc:
+            // - Nếu server chưa trả progress (0 / queued), tăng dần theo thời gian để user thấy đang chạy
+            // - Nếu server trả progress > 0, dùng giá trị thật nhưng không bao giờ giảm
             const serverProgress = statusData.progress ?? 0
+            setProgress(prev => {
+              if (serverProgress > 0) return Math.max(prev, serverProgress)
+              // Slow fake crawl while queued: tăng tối đa đến 12% (trước khi bước 1 bắt đầu)
+              if (prev < 12) return prev + 0.5
+              return prev
+            })
+            // Map progress → stepIndex: tìm step CÓ progress nhỏ nhất nhưng >= serverProgress
+            // Khi server chưa có progress (0), giữ step hiện tại (không reset về 0)
             if (serverProgress > 0) {
-              setProgress(serverProgress)
-              // Map server progress to step index
-              const stepIdx = ANALYSIS_STEPS.findIndex(s => s.progress >= serverProgress)
-              if (stepIdx >= 0) setCurrentStepIndex(stepIdx)
+              // Tìm step CUỐI CÙNG mà progress của nó <= serverProgress → đang ở bước đó
+              let bestIdx = 0
+              for (let i = 0; i < ANALYSIS_STEPS.length; i++) {
+                if (ANALYSIS_STEPS[i].progress <= serverProgress) bestIdx = i
+              }
+              setCurrentStepIndex(prev => Math.max(prev, bestIdx))
             }
 
             // Terminal states
