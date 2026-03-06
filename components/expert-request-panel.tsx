@@ -440,9 +440,6 @@ export function ExpertRequestPanel({
               className="w-full px-3 py-2 border rounded-md text-sm bg-background"
             >
               <option value="US">{t.expert.marketUS}</option>
-              <option value="EU">{t.expert.marketEU}</option>
-              <option value="CA">{t.expert.marketCA}</option>
-              <option value="AU">{t.expert.marketAU}</option>
             </select>
           </div>
 
