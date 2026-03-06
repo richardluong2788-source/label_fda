@@ -24,9 +24,13 @@ interface Plan {
   id: string
   name: string
   price_vnd: number
-  annual_price_vnd: number          // Giá năm (thường discount 20%)
-  annual_discount_percent: number   // % giảm so với giá tháng x12
-  expert_review_price_vnd: number   // 0 = miễn phí trong gói, >0 = trả lẻ
+  annual_price_vnd: number
+  annual_discount_percent: number
+  expert_review_price_vnd: number
+  // Strategic USD pricing (null = auto-convert from VND)
+  price_usd: number | null
+  annual_price_usd: number | null
+  expert_review_price_usd: number | null
   reports_limit: number
   expert_reviews_limit: number
   storage_days: number | null
@@ -306,12 +310,18 @@ export function AdminPricingManager({ initialPlans }: Props) {
                       {plan.price_vnd > 0 && (
                         <span className="text-muted-foreground text-sm mb-0.5">/tháng</span>
                       )}
+                      {plan.price_usd != null && (
+                        <span className="text-blue-600 text-sm mb-0.5 ml-1">(${plan.price_usd} USD)</span>
+                      )}
                     </div>
                     {plan.annual_price_vnd > 0 && (
                       <div className="flex items-center gap-2 text-sm">
                         <CalendarDays className="h-3.5 w-3.5 text-green-600" />
                         <span className="text-green-700 font-medium">
                           {plan.annual_price_vnd.toLocaleString('vi-VN')}₫/năm
+                          {plan.annual_price_usd != null && (
+                            <span className="text-blue-600 ml-1">(${plan.annual_price_usd} USD)</span>
+                          )}
                         </span>
                         {plan.annual_discount_percent > 0 && (
                           <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
@@ -449,7 +459,46 @@ export function AdminPricingManager({ initialPlans }: Props) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Strategic USD Pricing */}
+              <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50/40 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-blue-800">
+                  <span className="text-base">$</span>
+                  Giá USD chiến lược
+                  <span className="text-xs font-normal text-blue-600 ml-1">(để trống = tự đổi từ VND theo tỷ giá)</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Giá tháng (USD)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editing.price_usd ?? ''}
+                      onChange={(e) => setEditing({ ...editing, price_usd: e.target.value === '' ? null : Number(e.target.value) })}
+                      placeholder={`~$${Math.round(editing.price_vnd / 25500)}`}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Giá năm (USD)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editing.annual_price_usd ?? ''}
+                      onChange={(e) => setEditing({ ...editing, annual_price_usd: e.target.value === '' ? null : Number(e.target.value) })}
+                      placeholder={editing.annual_price_vnd > 0 ? `~$${Math.round(editing.annual_price_vnd / 25500)}` : ''}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Giá tư vấn lẻ (USD/lần)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editing.expert_review_price_usd ?? ''}
+                    onChange={(e) => setEditing({ ...editing, expert_review_price_usd: e.target.value === '' ? null : Number(e.target.value) })}
+                    placeholder={editing.expert_review_price_vnd > 0 ? `~$${Math.round(editing.expert_review_price_vnd / 25500)}` : ''}
+                  />
+                </div>
+              </div>
                 <div className="space-y-1.5">
                   <Label>Số lượt AI / tháng</Label>
                   <Input

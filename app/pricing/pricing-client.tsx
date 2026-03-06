@@ -21,6 +21,9 @@ interface Plan {
   features: string[] | string
   is_active: boolean
   sort_order: number
+  // Strategic USD pricing (set in admin; null = auto-convert from VND)
+  price_usd?: number | null
+  annual_price_usd?: number | null
 }
 
 interface Props {
@@ -137,6 +140,15 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
           const monthlyEquivalent = showAnnual ? Math.round(plan.annual_price_vnd! / 12) : plan.price_vnd
           const discountPercent = plan.annual_discount_percent ?? 0
 
+          // USD display: use strategic price if set, otherwise convert from VND
+          const displayUsd = showAnnual
+            ? (plan.annual_price_usd ?? vndToUsd(plan.annual_price_vnd!))
+            : (plan.price_usd ?? vndToUsd(plan.price_vnd))
+          const monthlyUsd = showAnnual
+            ? Math.round((plan.annual_price_usd ?? vndToUsd(plan.annual_price_vnd!)) / 12 * 100) / 100
+            : (plan.price_usd ?? vndToUsd(plan.price_vnd))
+          const monthlyUsdBaseline = plan.price_usd ?? vndToUsd(plan.price_vnd)
+
           return (
             <Card
               key={plan.id}
@@ -195,7 +207,7 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
                       <p className="text-3xl font-bold">
                         {locale === 'vi' 
                           ? formatVND(monthlyEquivalent)
-                          : `$${formatUSD(vndToUsd(monthlyEquivalent), false)}`
+                          : `$${formatUSD(monthlyUsd, false)}`
                         }
                         <span className="text-base font-normal text-muted-foreground ml-1">
                           {t.pricing.perMonth}
@@ -213,7 +225,7 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
                         {t.pricing.payAnnually(
                           locale === 'vi' 
                             ? formatVND(displayPrice)
-                            : `$${formatUSD(vndToUsd(displayPrice), false)}`
+                            : `$${formatUSD(displayUsd, false)}`
                         )}
                       </p>
                     </div>
@@ -221,7 +233,7 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
                       <p className="text-xs text-muted-foreground mt-1 line-through">
                         {locale === 'vi' 
                           ? `${formatVND(plan.price_vnd)}₫/tháng`
-                          : `$${formatUSD(vndToUsd(plan.price_vnd), false)}/month`
+                          : `$${formatUSD(monthlyUsdBaseline, false)}/month`
                         }
                       </p>
                     )}
@@ -236,7 +248,7 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
                     <p className="text-3xl font-bold">
                       {locale === 'vi' 
                         ? formatVND(plan.price_vnd)
-                        : `$${formatUSD(vndToUsd(plan.price_vnd), false)}`
+                        : `$${formatUSD(displayUsd, false)}`
                       }
                       <span className="text-base font-normal text-muted-foreground ml-1">
                         {t.pricing.perMonth}
@@ -289,7 +301,7 @@ export default function PricingClient({ plans, currentPlanId, isLoggedIn }: Prop
                   {t.pricing.upgradeBtn(
                     locale === 'vi' 
                       ? formatVND(displayPrice)
-                      : `$${formatUSD(vndToUsd(displayPrice), false)}`,
+                      : `$${formatUSD(displayUsd, false)}`,
                     showAnnual 
                       ? (locale === 'vi' ? 'năm' : 'year')
                       : (locale === 'vi' ? 'tháng' : 'month')
