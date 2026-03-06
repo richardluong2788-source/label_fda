@@ -857,11 +857,34 @@ export async function POST(request: Request) {
         // For large brand text, WCAG AA minimum is 3:1; for normal text it's 4.5:1
         const requiredMinRatio = textSize === 'large' ? 3 : 4.5
 
-        if (!contrastResult.isReadable) {
+        // FIX: Brand/decorative elements with large text and ratio >= 3:1 are COMPLIANT
+        // WCAG AA for large text requires 3:1 minimum. Brand design elements with 
+        // intentionally low contrast are acceptable as long as they meet this threshold.
+        // 21 CFR does NOT specify exact contrast ratios - only "conspicuous/legible".
+        // Only flag brand elements if ratio is critically low (< 2.5:1).
+        const isBrandElement = role === 'brand'
+        const ratioMeetsLargeTextMin = contrastResult.ratio >= 3.0
+        const ratioIsCriticallyLow = contrastResult.ratio < 2.5
+        
+        // Skip violation for brand elements that meet minimum large text threshold
+        if (isBrandElement && isLargeText && ratioMeetsLargeTextMin) {
+          // This is an intentional design choice - brand graphics are exempt from strict contrast
+          continue
+        }
+        
+        // Only create violation if truly problematic
+        if (!contrastResult.isReadable || (isBrandElement && ratioIsCriticallyLow)) {
+          // For brand elements with critically low contrast, still flag but as info
+          const actualSeverity = role === 'regulatory' 
+            ? 'warning' as const 
+            : (ratioIsCriticallyLow ? 'info' as const : 'info' as const)
+          
           contrastViolations.push({
             type: 'contrast',
-            severity: role === 'regulatory' ? 'warning' as const : 'info' as const,
-            description: `${name}: ${contrastResult.warning || 'Poor color contrast detected'}`,
+            severity: actualSeverity,
+            description: isBrandElement 
+              ? `${name}: Brand text contrast ${contrastResult.ratio.toFixed(2)}:1 is below recommended minimum. This may be intentional design, but FDA requires text be "conspicuous".`
+              : `${name}: ${contrastResult.warning || 'Poor color contrast detected'}`,
             ratio: contrastResult.ratio,
             requiredMinRatio,
             textSize,
