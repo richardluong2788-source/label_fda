@@ -63,7 +63,7 @@ ${userContext ? `- Ghi chú từ khách hàng: "${userContext}"` : ''}`
 
   try {
     const result = await generateText({
-      model: groq('llama-3.3-70b-specdec'),
+      model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
       system: systemPrompt,
       prompt: `Dưới đây là danh sách vi phạm AI phát hiện:\n\n${findingsText}\n\nHãy soạn expert review draft đầy đủ.`,
       output: Output.object({
