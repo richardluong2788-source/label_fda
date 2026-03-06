@@ -180,7 +180,7 @@ export const en: TranslationKeys = {
     exportReport: 'Export Report',
     labelImages: 'Label Images',
     images: 'IMAGES',
-    productInfoAI: 'PRODUCT INFO,
+    productInfoAI: 'PRODUCT INFO',
     brand: 'BRAND',
     productName: 'PRODUCT NAME',
     extractedIngredients: 'EXTRACTED INGREDIENTS',
