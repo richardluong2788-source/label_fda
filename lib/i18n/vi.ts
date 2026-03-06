@@ -268,7 +268,7 @@ export const vi = {
     andWord: 'và',
     currentRisk: 'HIỆN TẠI',
     afterFix: 'SAU KHI SỬA',
-    projectedRiskDesc: (score: number) => `Sau khi sửa lỗi nghiêm trọng, đi���m rủi ro dự kiến giảm còn ${score.toFixed(1)}/10`,
+    projectedRiskDesc: (score: number) => `Sau khi sửa lỗi nghiêm trọng, đi�����m rủi ro dự kiến giảm còn ${score.toFixed(1)}/10`,
     // Expert insights / AI summary
     expertInsightsTitle: 'Phân Tích Chuyên Sâu',
     expertInsightsDesc: 'Tóm tắt thương mại và lời khuyên chuyên gia dựa trên dữ liệu FDA',
@@ -294,6 +294,8 @@ export const vi = {
     packagingFormatLabel: 'DẠNG BAO BÌ',
     detectedLanguagesTitle: 'NGÔN NGỮ PHÁT HIỆN',
     nutritionFactsTitle: 'THÀNH PHẦN DINH DƯỠNG',
+    multiColumnLabel: 'ĐA CỘT',
+    multiColumnWarnings: 'Phát hiện không nhất quán giữa các cột:',
     // Confidence metrics
     confidenceMetrics: 'ĐỘ TIN CẬY PHÂN TÍCH',
     ocrLabel: 'OCR (Đọc văn bản)',
@@ -826,7 +828,7 @@ export const vi = {
     whatYouGetTitle: 'Bạn nhận được gì khi sử dụng Vexim?',
     whatYouGetDesc: 'Cam kết từ đội ngũ FDA Compliance Specialist với hơn 10 năm kinh nghiệm thực chiến.',
     commitment: 'Cam kết từ đội ngũ Vexim Compliance:',
-    finalCtaTitle: 'Đừng để lô hàng tiếp theo trở thành bài học đắt giá',
+    finalCtaTitle: 'Đừng đ�� lô hàng tiếp theo trở thành bài học đắt giá',
     footerCompany: 'Vexim Global',
     footerSlogan: 'FDA Compliance AI Platform',
     footerDesc: 'Giải pháp AI hàng đầu giúp doanh nghiệp Việt Nam tuân thủ quy định FDA khi xuất khẩu sang thị trường Mỹ.',

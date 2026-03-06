@@ -13,8 +13,20 @@ export interface TextElementWithColor extends TextElement {
   colors?: ColorInfo
 }
 
+/** Represents a single column in multi-column Nutrition Facts (variety packs) */
+export interface NutritionFactsColumn {
+  columnName: string // e.g., "Cheddar", "Colors", "Pretzel"
+  servingSize: string
+  servingsPerContainer?: number
+  nutritionFacts: NutritionFact[]
+}
+
 export interface VisionAnalysisResult {
   nutritionFacts: NutritionFact[]
+  /** True if panel has 2+ columns (variety packs, dual-column format) */
+  isMultiColumnNutrition?: boolean
+  /** Array of columns for multi-column Nutrition Facts panels */
+  nutritionFactsColumns?: NutritionFactsColumn[]
   textElements: {
     brandName?: TextElementWithColor
     productName?: TextElementWithColor
@@ -64,7 +76,21 @@ Return a JSON object with this structure:
 {
   "productType": "infant_food" | "toddler_food" | "beverage" | "solid_food" | "food" | "dietary_supplement" | "cosmetic" | "drug_otc" | "medical_device" | "unknown",
   "servingSize": "exact text from label",
+  "isMultiColumnNutrition": false, // TRUE if panel has 2+ columns (variety packs, dual-column format)
+  "nutritionFactsColumns": [
+    // ONLY include if isMultiColumnNutrition is true. One object per column.
+    {
+      "columnName": "Cheddar", // Header text for this column (product variant name)
+      "servingSize": "1 Pack (28g)",
+      "servingsPerContainer": 12,
+      "nutritionFacts": [
+        { "name": "Calories", "value": 130, "unit": "kcal", "dailyValue": null }
+        // ... all nutrients for THIS column
+      ]
+    }
+  ],
   "nutritionFacts": [
+    // For single-column OR the FIRST column of multi-column panels
     { "name": "Calories", "value": <READ_FROM_LABEL>, "unit": "kcal", "dailyValue": <READ_OR_NULL> },
     <...include EVERY nutrient you see...>
   ],
@@ -133,6 +159,16 @@ CRITICAL NUTRITION FACTS RULES - READ EVERY WORD:
 8. NEVER skip nutrients that are present on the label
 9. Infants/toddlers often have LOWER values than adult foods - this is NORMAL
 10. Cross-check: Does your extracted data match the serving size type (70g vs 355ml)?
+
+MULTI-COLUMN NUTRITION FACTS (VARIETY PACKS) - CRITICAL:
+1. DETECT multi-column format: Look for 2+ vertical columns of nutrition data side-by-side
+2. Common in variety packs: "Cheddar | Colors | Pretzel" or "Original | BBQ | Sour Cream"
+3. If you see column headers (product variant names) above nutrition values → isMultiColumnNutrition = true
+4. EXTRACT EACH COLUMN INDEPENDENTLY into nutritionFactsColumns array
+5. Each column MUST have its own: columnName, servingSize, servingsPerContainer, and full nutritionFacts array
+6. CRITICAL: If a nutrient appears in Column A but NOT in Column B, note this as the value being MISSING (do NOT assume 0)
+7. Use null for missing nutrients, NOT 0 (0 means "zero grams present", null means "not declared")
+8. Still populate the main "nutritionFacts" array with the FIRST column data for backwards compatibility
 
 NET QUANTITY / NET WEIGHT EXTRACTION:
 - Look for "Net Wt", "Net Weight", "NET WT" anywhere on the label
@@ -321,6 +357,9 @@ FONT SIZE CHART (use these values):
 
     const normalized: VisionAnalysisResult = {
       nutritionFacts: Array.isArray(parsed.nutritionFacts) ? parsed.nutritionFacts : [],
+      // Multi-column Nutrition Facts support (variety packs)
+      isMultiColumnNutrition: parsed.isMultiColumnNutrition === true,
+      nutritionFactsColumns: Array.isArray(parsed.nutritionFactsColumns) ? parsed.nutritionFactsColumns : undefined,
       textElements: {
         brandName: parsed.textElements?.brandName || { text: '', fontSize: 0, x: 0, y: 0, width: 0, height: 0, colors: { foreground: '#000000', background: '#FFFFFF', isFallback: true }, boundingBox: { x: 0, y: 0, width: 0, height: 0, confidence: 0 } },
         productName: parsed.textElements?.productName || { text: '', fontSize: 0, x: 0, y: 0, width: 0, height: 0, colors: { foreground: '#000000', background: '#FFFFFF', isFallback: true }, boundingBox: { x: 0, y: 0, width: 0, height: 0, confidence: 0 } },

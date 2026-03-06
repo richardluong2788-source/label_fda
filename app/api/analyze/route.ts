@@ -733,6 +733,25 @@ export async function POST(request: Request) {
 
     // Use extracted nutrition facts from AI
     const extractedNutritionFacts = visionResult.nutritionFacts
+    
+    // Check for multi-column Nutrition Facts (variety packs)
+    const isMultiColumnNutrition = visionResult.isMultiColumnNutrition || false
+    const nutritionFactsColumns = visionResult.nutritionFactsColumns || []
+    let multiColumnValidation: { isValid: boolean; errors: string[]; warnings: string[]; columnIssues: any[] } | null = null
+    
+    if (isMultiColumnNutrition && nutritionFactsColumns.length >= 2) {
+      console.log(`[v0] Multi-column Nutrition Facts detected: ${nutritionFactsColumns.length} columns`)
+      multiColumnValidation = NutritionValidator.validateMultiColumnNutritionFacts(
+        nutritionFactsColumns,
+        productDomain
+      )
+      console.log('[v0] Multi-column validation:', {
+        isValid: multiColumnValidation.isValid,
+        errorsCount: multiColumnValidation.errors.length,
+        warningsCount: multiColumnValidation.warnings.length,
+        columnIssues: multiColumnValidation.columnIssues
+      })
+    }
 
     // Apply FDA rounding rules validation
     // NOTE: Infant formula (21 CFR 107) and supplements (21 CFR 101.36) are exempt
@@ -1179,22 +1198,52 @@ export async function POST(request: Request) {
       }
     }
 
-    // Add nutrition validation errors as violations
-    if (!nutritionValidation.isValid) {
-      for (const error of nutritionValidation.errors) {
-        violations.push({
-          category: 'Nutrition Facts Validation',
-          severity: 'critical' as const,
-          description: error,
-          regulation_reference: '21 CFR 101.9(c)',
-          suggested_fix: 'Correct the value according to FDA rounding rules',
-          citations: [],
-          confidence_score: 1.0, // Code validation is 100% confident
-        })
-      }
+  // Add nutrition validation errors as violations
+  if (!nutritionValidation.isValid) {
+  for (const error of nutritionValidation.errors) {
+  violations.push({
+  category: 'Nutrition Facts Validation',
+  severity: 'critical' as const,
+  description: error,
+  regulation_reference: '21 CFR 101.9(c)',
+  suggested_fix: 'Correct the value according to FDA rounding rules',
+  citations: [],
+  confidence_score: 1.0, // Code validation is 100% confident
+  })
+  }
+  }
+  
+  // Add multi-column Nutrition Facts violations (variety packs)
+  if (multiColumnValidation && !multiColumnValidation.isValid) {
+    for (const error of multiColumnValidation.errors) {
+      violations.push({
+        category: 'Multi-Column Nutrition Facts',
+        severity: 'warning' as const,
+        description: error,
+        regulation_reference: '21 CFR 101.9(b)(12)',
+        suggested_fix: 'Ensure all columns declare consistent nutrients or include "not a significant source of..." statement for missing nutrients',
+        citations: [],
+        confidence_score: 0.9,
+      })
     }
-
-    // Add dimension violations
+  }
+  
+  // Add multi-column warnings as info-level violations
+  if (multiColumnValidation && multiColumnValidation.warnings.length > 0) {
+    for (const warning of multiColumnValidation.warnings) {
+      violations.push({
+        category: 'Multi-Column Nutrition Facts',
+        severity: 'info' as const,
+        description: warning,
+        regulation_reference: '21 CFR 101.9(b)(12)',
+        suggested_fix: 'Review column consistency and verify compliance with aggregate/dual-column labeling requirements',
+        citations: [],
+        confidence_score: 0.85,
+      })
+    }
+  }
+  
+  // Add dimension violations
     violations.push(...dimensionViolations)
 
     // Add claim violations
@@ -1430,11 +1479,15 @@ export async function POST(request: Request) {
         ai_cost_usd: (totalTokensUsed / 1000) * 0.005, // Approximate cost: $0.005 per 1K tokens
         commercial_summary: commercialSummary, // NEW: Professional report summary
         expert_tips: expertTips, // NEW: Expert recommendations
-        // Vision extracted data for display in UI
-        nutrition_facts: visionResult.nutritionFacts || [],
-        ingredient_list: visionResult.ingredients?.join(', ') || null,
-        allergen_declaration: visionResult.allergens?.join(', ') || null,
-        health_claims: visionResult.detectedClaims || [],
+  // Vision extracted data for display in UI
+  nutrition_facts: visionResult.nutritionFacts || [],
+  // Multi-column Nutrition Facts support (variety packs)
+  is_multi_column_nutrition: isMultiColumnNutrition,
+  nutrition_facts_columns: nutritionFactsColumns.length > 0 ? nutritionFactsColumns : null,
+  multi_column_validation: multiColumnValidation,
+  ingredient_list: visionResult.ingredients?.join(', ') || null,
+  allergen_declaration: visionResult.allergens?.join(', ') || null,
+  health_claims: visionResult.detectedClaims || [],
         detected_languages: visionResult.detectedLanguages || ['English'],
         brand_name: visionResult.textElements?.brandName?.text || null,
         product_name: visionResult.textElements?.productName?.text || null,

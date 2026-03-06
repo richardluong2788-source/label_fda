@@ -397,4 +397,182 @@ export class NutritionValidator {
       missingNutrients: mandatoryResult.missing,
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NEW: Multi-Column Nutrition Facts Validation (21 CFR §101.9(b)(12))
+  // For variety packs with multiple products in one package
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Represents a single column in multi-column Nutrition Facts
+   */
+  static validateMultiColumnNutritionFacts(
+    columns: Array<{
+      columnName: string
+      servingSize?: string
+      servingsPerContainer?: number
+      nutritionFacts: NutritionFact[]
+    }>,
+    productDomain?: ProductDomain
+  ): {
+    isValid: boolean
+    errors: string[]
+    warnings: string[]
+    columnIssues: Array<{
+      column: string
+      missingNutrients: string[]
+      inconsistentNutrients: string[]
+    }>
+  } {
+    const errors: string[] = []
+    const warnings: string[] = []
+    const columnIssues: Array<{
+      column: string
+      missingNutrients: string[]
+      inconsistentNutrients: string[]
+    }> = []
+
+    if (!columns || columns.length < 2) {
+      // Not a multi-column format - skip validation
+      return { isValid: true, errors: [], warnings: [], columnIssues: [] }
+    }
+
+    console.log(`[v0] Validating multi-column Nutrition Facts: ${columns.length} columns detected`)
+
+    // ── 21 CFR §101.9(b)(12) Requirements ────────────────────────────────────
+    // Multi-column format must:
+    // 1. Each column must declare ALL mandatory nutrients OR include "not a significant source of..." statement
+    // 2. Serving sizes can differ between columns (valid if products are genuinely different)
+    // 3. All columns must use consistent formatting
+
+    // Mandatory nutrients that should appear in ALL columns (if product contains them)
+    const mandatoryNutrients = [
+      'calories',
+      'total fat',
+      'saturated fat',
+      'trans fat',
+      'cholesterol',
+      'sodium',
+      'total carbohydrate',
+      'dietary fiber',
+      'total sugars',
+      'added sugars',
+      'protein',
+    ]
+
+    // Build a map of which nutrients appear in each column
+    const nutrientPresenceMap = new Map<string, Set<string>>() // nutrient -> set of column names
+    
+    for (const column of columns) {
+      const columnNutrients = column.nutritionFacts.map(f => 
+        f.name.toLowerCase().replace(/[^a-z\s]/g, '').trim()
+      )
+      
+      for (const nutrient of columnNutrients) {
+        if (!nutrientPresenceMap.has(nutrient)) {
+          nutrientPresenceMap.set(nutrient, new Set())
+        }
+        nutrientPresenceMap.get(nutrient)!.add(column.columnName)
+      }
+    }
+
+    // Check each column for missing mandatory nutrients
+    for (const column of columns) {
+      const columnNutrients = new Set(
+        column.nutritionFacts.map(f => 
+          f.name.toLowerCase().replace(/[^a-z\s]/g, '').trim()
+        )
+      )
+      
+      const missingInColumn: string[] = []
+      const inconsistentInColumn: string[] = []
+      
+      for (const mandatoryNutrient of mandatoryNutrients) {
+        // Check if this column is missing a mandatory nutrient
+        const hasNutrient = Array.from(columnNutrients).some(n => 
+          n.includes(mandatoryNutrient) || mandatoryNutrient.includes(n)
+        )
+        
+        if (!hasNutrient) {
+          // Check if OTHER columns have this nutrient (inconsistency)
+          const columnsWithNutrient = nutrientPresenceMap.get(mandatoryNutrient)
+          if (columnsWithNutrient && columnsWithNutrient.size > 0 && !columnsWithNutrient.has(column.columnName)) {
+            // Other columns have it, but this one doesn't - INCONSISTENCY
+            inconsistentInColumn.push(mandatoryNutrient)
+          } else {
+            // No columns have it - just missing (may be intentional)
+            missingInColumn.push(mandatoryNutrient)
+          }
+        }
+      }
+      
+      // Also check for non-mandatory nutrients that appear in some columns but not others
+      // (e.g., Riboflavin, Niacin, Thiamin in enriched flour products)
+      const vitaminMinerals = ['riboflavin', 'niacin', 'thiamin', 'vitamin d', 'calcium', 'iron', 'potassium']
+      for (const vm of vitaminMinerals) {
+        const columnsWithNutrient = Array.from(nutrientPresenceMap.entries())
+          .filter(([key]) => key.includes(vm))
+          .flatMap(([, cols]) => Array.from(cols))
+        
+        if (columnsWithNutrient.length > 0 && !columnsWithNutrient.includes(column.columnName)) {
+          const hasIt = Array.from(columnNutrients).some(n => n.includes(vm))
+          if (!hasIt) {
+            inconsistentInColumn.push(vm)
+          }
+        }
+      }
+      
+      if (missingInColumn.length > 0 || inconsistentInColumn.length > 0) {
+        columnIssues.push({
+          column: column.columnName,
+          missingNutrients: missingInColumn,
+          inconsistentNutrients: inconsistentInColumn,
+        })
+      }
+    }
+
+    // Generate warnings for inconsistencies
+    for (const issue of columnIssues) {
+      if (issue.inconsistentNutrients.length > 0) {
+        warnings.push(
+          `Column "${issue.column}" is missing nutrients that other columns declare: ${issue.inconsistentNutrients.join(', ')}. ` +
+          `Per 21 CFR §101.9(b)(12), multi-column format should include all nutrients across columns or use "not a significant source of..." statement.`
+        )
+      }
+      
+      if (issue.missingNutrients.length > 0) {
+        // This is less severe - might be intentional if ALL columns are missing it
+        warnings.push(
+          `Column "${issue.column}" is missing mandatory nutrients: ${issue.missingNutrients.join(', ')}. ` +
+          `Verify this is intentional and compliant with 21 CFR §101.9(c).`
+        )
+      }
+    }
+
+    // Check for serving size consistency warning (informational)
+    const servingSizes = columns.map(c => c.servingSize).filter(Boolean)
+    const uniqueServingSizes = new Set(servingSizes)
+    if (uniqueServingSizes.size > 1) {
+      warnings.push(
+        `Multi-column panel has different serving sizes: ${Array.from(uniqueServingSizes).join(' | ')}. ` +
+        `This is allowed if products are genuinely different, but verify serving size declarations are accurate.`
+      )
+    }
+
+    // Generate error if critical inconsistencies found
+    const hasInconsistencies = columnIssues.some(i => i.inconsistentNutrients.length > 0)
+    if (hasInconsistencies) {
+      errors.push(
+        `Multi-column Nutrition Facts has inconsistent nutrient declarations across columns. ` +
+        `This may violate 21 CFR §101.9(b)(12) requirements for aggregate/dual-column labeling.`
+      )
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings,
+      columnIssues,
+    }
+  }
 }

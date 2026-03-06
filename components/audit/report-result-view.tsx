@@ -1195,22 +1195,102 @@ export function ReportResultView({
                     </Badge>
                   </div>
                   <div className="border border-slate-200 rounded-lg overflow-hidden">
-                    <div className="bg-slate-800 text-white px-3 py-2 text-xs font-bold uppercase tracking-wider">
-                      Nutrition Facts
+                    <div className="bg-slate-800 text-white px-3 py-2 text-xs font-bold uppercase tracking-wider flex items-center justify-between">
+                      <span>Nutrition Facts</span>
+                      {(report as any).is_multi_column_nutrition && (
+                        <Badge variant="outline" className="text-[9px] bg-amber-500/20 text-amber-100 border-amber-400/50">
+                          {t.report.multiColumnLabel || 'MULTI-COLUMN'}
+                        </Badge>
+                      )}
                     </div>
-                    <div className="divide-y divide-slate-100">
-                      {nutritionFacts.slice(0, 12).map((item: any, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between px-3 py-1.5 text-xs">
-                          <span className="text-slate-700 font-medium">{item.nutrient || item.name}</span>
-                          <span className="text-slate-900 font-semibold">
-                            {item.value}{item.unit}
-                            {item.dailyValue && (
-                              <span className="text-slate-400 font-normal ml-1">({item.dailyValue}% DV)</span>
-                            )}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                    
+                    {/* Multi-column display for variety packs */}
+                    {(report as any).is_multi_column_nutrition && (report as any).nutrition_facts_columns?.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="bg-slate-100 border-b border-slate-200">
+                              <th className="text-left px-2 py-1.5 font-semibold text-slate-700">Nutrient</th>
+                              {((report as any).nutrition_facts_columns as any[]).map((col: any, colIdx: number) => (
+                                <th key={colIdx} className="text-center px-2 py-1.5 font-semibold text-slate-700 border-l border-slate-200">
+                                  <div className="text-[10px] leading-tight">{col.columnName}</div>
+                                  {col.servingSize && (
+                                    <div className="text-[9px] text-slate-500 font-normal">{col.servingSize}</div>
+                                  )}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {/* Get all unique nutrients across columns */}
+                            {(() => {
+                              const columns = (report as any).nutrition_facts_columns as any[]
+                              const allNutrients = new Set<string>()
+                              columns.forEach((col: any) => {
+                                col.nutritionFacts?.forEach((f: any) => allNutrients.add(f.name || f.nutrient))
+                              })
+                              return Array.from(allNutrients).slice(0, 15).map((nutrientName, rowIdx) => (
+                                <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                                  <td className="px-2 py-1 font-medium text-slate-700">{nutrientName}</td>
+                                  {columns.map((col: any, colIdx: number) => {
+                                    const fact = col.nutritionFacts?.find((f: any) => 
+                                      (f.name || f.nutrient) === nutrientName
+                                    )
+                                    const isMissing = !fact || fact.value === null || fact.value === undefined
+                                    return (
+                                      <td 
+                                        key={colIdx} 
+                                        className={`text-center px-2 py-1 border-l border-slate-200 ${
+                                          isMissing ? 'bg-amber-50 text-amber-600' : 'text-slate-900'
+                                        }`}
+                                      >
+                                        {isMissing ? (
+                                          <span className="text-[9px]">—</span>
+                                        ) : (
+                                          <>
+                                            {fact.value}{fact.unit}
+                                            {fact.dailyValue && (
+                                              <span className="text-slate-400 ml-0.5">({fact.dailyValue}%)</span>
+                                            )}
+                                          </>
+                                        )}
+                                      </td>
+                                    )
+                                  })}
+                                </tr>
+                              ))
+                            })()}
+                          </tbody>
+                        </table>
+                        
+                        {/* Multi-column validation warnings */}
+                        {(report as any).multi_column_validation?.warnings?.length > 0 && (
+                          <div className="p-2 bg-amber-50 border-t border-amber-200">
+                            <p className="text-[10px] text-amber-700 font-medium mb-1">
+                              {t.report.multiColumnWarnings || 'Column Inconsistencies Detected:'}
+                            </p>
+                            {((report as any).multi_column_validation.warnings as string[]).slice(0, 2).map((warning: string, idx: number) => (
+                              <p key={idx} className="text-[9px] text-amber-600 leading-tight">• {warning}</p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* Single-column display (original) */
+                      <div className="divide-y divide-slate-100">
+                        {nutritionFacts.slice(0, 12).map((item: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between px-3 py-1.5 text-xs">
+                            <span className="text-slate-700 font-medium">{item.nutrient || item.name}</span>
+                            <span className="text-slate-900 font-semibold">
+                              {item.value}{item.unit}
+                              {item.dailyValue && (
+                                <span className="text-slate-400 font-normal ml-1">({item.dailyValue}% DV)</span>
+                              )}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>
