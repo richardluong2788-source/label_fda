@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateText } from 'ai'
+import Groq from 'groq-sdk'
+
+const groq = new Groq({ 
+  apiKey: process.env.GROQ_API_KEY 
+})
 
 interface TranslateRequest {
   texts: string[]
@@ -86,12 +90,16 @@ ${JSON.stringify(texts, null, 2)}
 
 Output (JSON array only):`
 
-    const { text: response } = await generateText({
-      model: 'openai/gpt-4o-mini',
-      prompt,
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'user', content: prompt }
+      ],
       temperature: 0.3,
-      maxOutputTokens: 4000,
+      max_tokens: 4000,
     })
+
+    const response = completion.choices[0]?.message?.content || ''
 
     // Parse the response
     let translations: string[]
