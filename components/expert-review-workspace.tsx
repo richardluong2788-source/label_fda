@@ -28,6 +28,8 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 import { AppHeader } from '@/components/app-header'
+import { LabelImageGallery } from '@/components/label-image-gallery'
+import type { LabelImageEntry } from '@/lib/types'
 
 interface ViolationReview {
   violation_index: number
@@ -83,6 +85,7 @@ export function ExpertReviewWorkspace({
   const [error, setError] = useState<string | null>(null)
   const [aiDrafting, setAiDrafting] = useState(false)
   const [aiDraftError, setAiDraftError] = useState<string | null>(null)
+  const [aiDrafted, setAiDrafted] = useState(false)
 
   // -- AI Draft Assistant --
   const handleAIDraft = async () => {
@@ -123,6 +126,7 @@ export function ExpertReviewWorkspace({
           }))
         )
       }
+      setAiDrafted(true)
     } catch (err: any) {
       setAiDraftError(err.message)
     } finally {
@@ -309,39 +313,20 @@ export function ExpertReviewWorkspace({
               </div>
             </Card>
 
-            {/* Ảnh nhãn sản phẩm */}
+            {/* Ảnh nhãn sản phẩm - hiển thị tất cả ảnh */}
             <Card className="p-5">
               <h2 className="font-semibold mb-3 flex items-center gap-2">
                 <ImageOff className="h-4 w-4 text-primary" />
-                Nhãn sản phẩm
+                Nhãn sản phẩm {(report?.label_images as LabelImageEntry[])?.length > 1 && (
+                  <Badge variant="secondary" className="text-xs ml-1">
+                    {(report?.label_images as LabelImageEntry[]).length} ảnh
+                  </Badge>
+                )}
               </h2>
-              {labelImageUrl ? (
-                <div className="relative group">
-                  <div
-                    className="relative w-full rounded-lg overflow-hidden border bg-muted cursor-zoom-in"
-                    style={{ maxHeight: 320 }}
-                    onClick={() => setLightboxOpen(true)}
-                  >
-                    <img
-                      src={labelImageUrl}
-                      alt="Nhãn sản phẩm"
-                      className="w-full h-full object-contain"
-                      style={{ maxHeight: 320 }}
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-2 shadow">
-                        <ZoomIn className="h-5 w-5 text-foreground" />
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2 text-center">Bấm vào ảnh để phóng to</p>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
-                  <ImageOff className="h-8 w-8 opacity-40" />
-                  <p className="text-sm">Không có ảnh nhãn</p>
-                </div>
-              )}
+              <LabelImageGallery
+                images={(report?.label_images as LabelImageEntry[]) || []}
+                fallbackUrl={labelImageUrl}
+              />
             </Card>
 
             {/* Danh sách vi phạm — review từng cái */}
@@ -433,24 +418,34 @@ export function ExpertReviewWorkspace({
                           {vr.confirmed && (
                             <>
                               <div>
-                                <Label className="text-xs mb-1 block">Wording đề xuất sửa</Label>
+                                <Label className="text-xs mb-1 block flex items-center gap-1.5">
+                                  Wording đề xuất sửa
+                                  {aiDrafted && vr.wording_fix && (
+                                    <span className="text-[10px] text-green-600 font-normal">(AI soạn)</span>
+                                  )}
+                                </Label>
                                 <Textarea
                                   value={vr.wording_fix}
                                   onChange={(e) => updateVR(i, 'wording_fix', e.target.value)}
                                   placeholder='Ví dụ: Thay "Boosts immunity" bằng "Contains Vitamin C which contributes to normal immune function"'
                                   rows={2}
-                                  className="text-xs"
+                                  className={`text-xs ${aiDrafted && vr.wording_fix ? 'border-green-300 bg-green-50/50' : ''}`}
                                   disabled={isReadOnly}
                                 />
                               </div>
                               <div>
-                                <Label className="text-xs mb-1 block">Ghi chú pháp lý</Label>
+                                <Label className="text-xs mb-1 block flex items-center gap-1.5">
+                                  Ghi chú pháp lý
+                                  {aiDrafted && vr.legal_note && (
+                                    <span className="text-[10px] text-green-600 font-normal">(AI soạn)</span>
+                                  )}
+                                </Label>
                                 <Textarea
                                   value={vr.legal_note}
                                   onChange={(e) => updateVR(i, 'legal_note', e.target.value)}
                                   placeholder="Ví dụ: Theo 21 CFR 101.14, health claims phải được FDA authorize trước..."
                                   rows={2}
-                                  className="text-xs"
+                                  className={`text-xs ${aiDrafted && vr.legal_note ? 'border-green-300 bg-green-50/50' : ''}`}
                                   disabled={isReadOnly}
                                 />
                               </div>
@@ -469,21 +464,33 @@ export function ExpertReviewWorkspace({
           <div className="space-y-6">
             {/* AI Draft Assistant */}
             {!isReadOnly && (
-              <Card className="p-5 border-primary/30 bg-primary/5">
+              <Card className={`p-5 border-primary/30 ${aiDrafted ? 'bg-green-50 border-green-300' : 'bg-primary/5'}`}>
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="font-semibold flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
+                    <Sparkles className={`h-4 w-4 ${aiDrafted ? 'text-green-600' : 'text-primary'}`} />
                     AI Soạn thảo
+                    {aiDrafted && (
+                      <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Đã soạn xong
+                      </Badge>
+                    )}
                   </h2>
                   <Button
                     size="sm"
                     onClick={handleAIDraft}
                     disabled={aiDrafting || findings.length === 0}
+                    variant={aiDrafted ? 'outline' : 'default'}
                   >
                     {aiDrafting ? (
                       <>
                         <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                         Đang soạn...
+                      </>
+                    ) : aiDrafted ? (
+                      <>
+                        <Sparkles className="mr-2 h-3.5 w-3.5" />
+                        Soạn lại
                       </>
                     ) : (
                       <>
@@ -494,7 +501,10 @@ export function ExpertReviewWorkspace({
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  AI sẽ soạn sẵn wording fix, legal notes, summary và recommended actions dựa trên vi phạm. Bạn chỉ cần đọc lại, chỉnh sửa và ký off.
+                  {aiDrafted 
+                    ? 'AI đã soạn xong nội dung. Các trường được đánh dấu viền xanh là do AI tạo - hãy xem xét và chỉnh sửa nếu cần trước khi ký xác nhận.'
+                    : 'AI sẽ soạn sẵn wording fix, legal notes, summary và recommended actions dựa trên vi phạm. Bạn chỉ cần đọc lại, chỉnh sửa và ký off.'
+                  }
                 </p>
                 {aiDraftError && (
                   <div className="mt-2 text-xs text-destructive bg-destructive/10 rounded p-2 flex items-start gap-1.5">
@@ -506,27 +516,39 @@ export function ExpertReviewWorkspace({
             )}
 
             {/* Expert Summary */}
-            <Card className="p-5">
+            <Card className={`p-5 ${aiDrafted && expertSummary ? 'ring-2 ring-green-300 ring-offset-1' : ''}`}>
               <h2 className="font-semibold mb-3 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
                 Nhận xét tổng quan của chuyên gia
+                {aiDrafted && expertSummary && (
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                    AI đã soạn
+                  </Badge>
+                )}
               </h2>
               <Textarea
                 value={expertSummary}
-                onChange={(e) => setExpertSummary(e.target.value)}
+                onChange={(e) => {
+                  setExpertSummary(e.target.value)
+                }}
                 placeholder="Viết đánh giá tổng thể về mức độ tuân thủ, rủi ro pháp lý, và hướng khắc phục chính..."
                 rows={6}
-                className="text-sm"
+                className={`text-sm ${aiDrafted && expertSummary ? 'border-green-300 bg-green-50/30' : ''}`}
                 disabled={isReadOnly}
               />
             </Card>
 
             {/* Recommended Actions */}
-            <Card className="p-5">
+            <Card className={`p-5 ${aiDrafted && recommendedActions.length > 0 ? 'ring-2 ring-green-300 ring-offset-1' : ''}`}>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-semibold flex items-center gap-2">
                   <ArrowRight className="h-4 w-4 text-primary" />
                   Hành động ưu tiên
+                  {aiDrafted && recommendedActions.length > 0 && (
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                      AI đã soạn
+                    </Badge>
+                  )}
                 </h2>
                 {!isReadOnly && (
                   <Button size="sm" variant="outline" onClick={addAction}>
