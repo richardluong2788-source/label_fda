@@ -456,9 +456,29 @@ export function ExpertRequestPanel({
             </div>
           )}
 
-          {/* Show upgrade CTA for users without quota access */}
+          {/* Show addon purchase + upgrade CTA for Starter/Free users */}
           {!expertReviewsIncluded ? (
             <div className="space-y-3">
+              {/* Option A: Buy single addon */}
+              <Button
+                onClick={handleAddonCheckout}
+                disabled={processingAddon}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+              >
+                {processingAddon ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <CreditCard className="mr-2 h-4 w-4" />
+                )}
+                {processingAddon
+                  ? t.expert.processingPayment || 'Processing...'
+                  : t.expert.buyAddon
+                    ? t.expert.buyAddon(expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US'))
+                    : `Mua 1 lần tư vấn - ${expertReviewPrice.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}₫`
+                }
+              </Button>
+
+              {/* Option B: Upgrade to Pro/Business */}
               <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
                 <p className="text-sm font-medium text-amber-800 mb-2">
                   {t.expert.upgradeToAccess || 'Upgrade to access Expert Consultation'}
@@ -468,9 +488,11 @@ export function ExpertRequestPanel({
                 </p>
                 <Button
                   asChild
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                  variant="outline"
+                  className="w-full border-amber-300 text-amber-700 hover:bg-amber-50"
                 >
                   <a href="/pricing?highlight=business#subscription-plans">
+                    <Crown className="mr-2 h-4 w-4" />
                     {t.expert.upgradeToPro || 'Upgrade to Pro/Business'}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </a>
