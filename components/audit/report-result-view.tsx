@@ -32,7 +32,6 @@ import {
   Utensils,
   MessageSquare,
   Landmark,
-  Printer,
 } from 'lucide-react'
 import type { AuditReport, Violation, LabelImageEntry, GeometryViolation } from '@/lib/types'
 import { LabelImageGallery } from '@/components/label-image-gallery'
@@ -172,67 +171,6 @@ function MarkdownContent({ content, className }: { content: string; className?: 
   flushList()
 
   return <div className={`space-y-2 ${className || ''}`}>{elements}</div>
-}
-
-// ────────────────────────────────────────────────────────────
-// Print Header Component - Only visible when printing
-// ────────────────────────────────────────────────────────────
-
-function PrintReportHeader({ 
-  reportId, 
-  productName, 
-  productCategory,
-  serviceType,
-  t 
-}: { 
-  reportId: string
-  productName?: string
-  productCategory?: string
-  serviceType?: string
-  t: ReturnType<typeof useTranslation>['t']
-}) {
-  const currentDate = new Date().toLocaleString('vi-VN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-
-  return (
-    <div className="print-header">
-      {/* Logo and Company Info */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
-          <Shield className="h-6 w-6 text-white" />
-        </div>
-        <div>
-          <h1 className="text-lg font-bold text-slate-900">VEXIM GLOBAL</h1>
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider">FDA Compliance Solutions</p>
-        </div>
-      </div>
-
-      {/* Report Title */}
-      <div className="text-center flex-1 px-6">
-        <h2 className="text-lg font-bold text-slate-900 uppercase tracking-wide">
-          {t.report.printReportTitle || 'BÁO CÁO KIỂM TRA NHÃN TUÂN THỦ'}
-        </h2>
-        {productName && (
-          <p className="text-sm text-slate-600 mt-1">{productName}</p>
-        )}
-      </div>
-
-      {/* Report Metadata */}
-      <div className="text-right text-xs text-slate-500 space-y-0.5">
-        <p><span className="font-medium">{t.report.printServiceType || 'Dịch vụ'}:</span> {serviceType || 'FDA Compliance'}</p>
-        <p><span className="font-medium">{t.report.printReportCode || 'Mã báo cáo'}:</span> {reportId.slice(0, 8).toUpperCase()}</p>
-        <p><span className="font-medium">{t.report.printExportDate || 'Ngày xuất'}:</span> {currentDate}</p>
-        {productCategory && (
-          <p><span className="font-medium">{t.report.printCategory || 'Danh mục'}:</span> {productCategory}</p>
-        )}
-      </div>
-    </div>
-  )
 }
 
 // ────────────────────────────────────────────────────────────
@@ -932,39 +870,15 @@ export function ReportResultView({
 
   // ── PDF Export Handler ────────────────────────────────────
   const handleExportPdf = () => {
-    // 1. Save original document title
-    const originalTitle = document.title
-
-    // 2. Set custom title for PDF filename
-    const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '')
-    const productSlug = (report.product_name || 'Report')
-      .replace(/[^a-zA-Z0-9]/g, '_')
-      .substring(0, 30)
-    document.title = `Bao_cao_FDA_${productSlug}_VeximGlobal_${dateStr}`
-
-    // 3. Trigger browser print dialog
-    window.print()
-
-    // 4. Restore original title after print dialog closes
-    setTimeout(() => {
-      document.title = originalTitle
-    }, 1000)
+    // Navigate to dedicated print page with professional A4 layout
+    window.open(`/audit/${report.id}/print`, '_blank')
   }
 
   return (
-    <div className="bg-slate-50 print-content">
-      {/* Print Header - Only visible when printing */}
-      <PrintReportHeader
-        reportId={report.id}
-        productName={report.product_name}
-        productCategory={report.product_category}
-        serviceType={report.product_type === 'dietary_supplement' ? 'Dietary Supplement' : 'FDA Food Labeling'}
-        t={t}
-      />
-
+    <div className="bg-slate-50">
       <main className="container mx-auto px-4 py-6 max-w-7xl">
         {/* Action Bar */}
-        <div className="flex items-center justify-between mb-6 no-print">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200">
               <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
@@ -1016,9 +930,9 @@ export function ReportResultView({
             {t.report.downloadPdf || 'Tải báo cáo PDF'}
           </Button>
         </div>
-        <div className="grid lg:grid-cols-[320px_1fr] gap-6 print:block print:grid-cols-1">
+        <div className="grid lg:grid-cols-[320px_1fr] gap-6">
           {/* ── LEFT SIDEBAR ───────────────────────────────── */}
-          <aside className="space-y-4 no-print">
+          <aside className="space-y-4">
             {/* Label Images Card */}
             <Card className="bg-white border-slate-200 overflow-hidden">
               <div className="p-4">
