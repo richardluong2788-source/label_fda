@@ -114,27 +114,34 @@ function buildSignData(params: Record<string, string>): string {
 }
 
 /**
- * Build query string cho URL thanh toán.
+ * Build query string cho URL thanh toán — encode giống PHP urlencode().
  *
- * Theo NodeJS sample CHÍNH THỨC của VNPay (tài liệu tích hợp):
- *   vnpUrl += '?' + querystring.stringify(vnp_Params, { encode: false });
+ * Theo NodeJS sample chính thức: encode: false (không encode).
+ * Tuy nhiên thực tế:
+ *  - signData KHÔNG encode (dùng để tính HMAC)
+ *  - URL phải encode khoảng trắng thành '+' và encode ký tự đặc biệt
+ *    → đây là hành vi của PHP urlencode() và querystring.escape() mặc định.
  *
- * → encode: false = KHÔNG encode bất kỳ key hay value nào.
- * → signData cũng được build bằng { encode: false }.
- * → Nếu URL encode khác với signData encode → hash không khớp → "Sai chữ ký".
- *
- * Lưu ý: vnp_OrderInfo phải là ASCII không dấu (sanitizeOrderInfo đã xử lý),
- * nên không có ký tự nào cần encode — việc KHÔNG encode là hoàn toàn an toàn.
+ * sanitizeOrderInfo() đã loại bỏ mọi ký tự đặc biệt, chỉ còn chữ/số/khoảng trắng.
+ * Khoảng trắng trong URL phải được encode → dùng encodeURIComponent (space → %20).
+ * VNPay server sẽ decode %20 → space trước khi tính hash → khớp với signData.
  */
 function buildQueryString(params: Record<string, string>): string {
   return Object.entries(sortObject(params))
-    .map(([k, v]) => `${k}=${v}`)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
     .join('&')
 }
 
-/** HMAC-SHA512 signature theo yêu cầu của VNPay */
+/** HMAC-SHA512 signature theo yêu cầu của VNPay.
+ *  QUAN TRỌNG: padStart(128, '0') để đảm bảo luôn đủ 128 ký tự hex.
+ *  Node.js digest('hex') có thể bỏ leading zeros → hash 126 chars → VNPay báo "Sai chữ ký".
+ */
 export function createHmac512(data: string, secret: string): string {
-  return crypto.createHmac('sha512', secret).update(Buffer.from(data, 'utf-8')).digest('hex')
+  return crypto
+    .createHmac('sha512', secret)
+    .update(Buffer.from(data, 'utf-8'))
+    .digest('hex')
+    .padStart(128, '0')
 }
 
 /** Format date as yyyyMMddHHmmss theo timezone GMT+7 (VNPay format) */
@@ -199,7 +206,8 @@ export function createPaymentUrl(params: CreatePaymentParams): PaymentResult {
   const payUrl      = `${cfg.payUrl}?${queryString}`
 
   console.log('[v0] VNPAY signData:', signData)
-  console.log('[v0] VNPAY secureHash:', secureHash)
+  console.log('[v0] VNPAY secureHash length:', secureHash.length, '| value:', secureHash)
+  console.log('[v0] VNPAY returnUrl:', vnpParams.vnp_ReturnUrl)
   console.log('[v0] VNPAY payUrl:', payUrl)
 
   return { payUrl, txnRef, isDemoMode: false }
