@@ -935,7 +935,7 @@ export const vi = {
     title: 'BÁO CÁO KIỂM TRA NHÃN',
     subtitle: 'FDA Label Compliance Audit Report',
     reportId: 'Báo cáo',
-    date: 'Ng��y',
+    date: 'Ngày',
     confidential: 'TÀI LIỆU MẬT - CHỈ DÀNH CHO MỤC ĐÍCH NỘI BỘ',
     overview: 'Tổng Quan',
     productInfo: 'Thông Tin Sản Phẩm',
