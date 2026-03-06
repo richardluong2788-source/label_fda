@@ -23,6 +23,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import Link from 'next/link'
+import { AppHeader } from '@/components/app-header'
 
 interface ViolationReview {
   violation_index: number
@@ -41,12 +42,14 @@ interface ExpertReviewWorkspaceProps {
   request: any
   report: any
   adminUser: any
+  userEmail?: string
 }
 
 export function ExpertReviewWorkspace({
   request,
   report,
   adminUser,
+  userEmail,
 }: ExpertReviewWorkspaceProps) {
   const router = useRouter()
   const findings = report?.findings ?? []
@@ -217,11 +220,16 @@ export function ExpertReviewWorkspace({
     low:    { label: 'Nên làm',    color: 'border-border text-muted-foreground' },
   }
 
+  const isAdmin = ['admin', 'superadmin', 'expert'].includes(adminUser?.role ?? '')
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      {/* Dùng AppHeader để admin có thể điều hướng sang Phân tích / các trang khác */}
+      <AppHeader email={userEmail ?? adminUser?.email} isAdmin={isAdmin} />
+
+      {/* Breadcrumb / sub-header */}
+      <div className="border-b bg-white/80 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/admin">
@@ -231,9 +239,9 @@ export function ExpertReviewWorkspace({
             </Button>
             <div className="h-6 w-px bg-border" />
             <div>
-              <h1 className="text-lg font-bold">
+              <h2 className="text-base font-bold">
                 {report?.product_name || report?.file_name || 'Expert Review'}
-              </h1>
+              </h2>
               <p className="text-xs text-muted-foreground">
                 Request #{request.id.slice(0, 8)} — Gửi lúc{' '}
                 {new Date(request.created_at).toLocaleString('vi-VN')}
@@ -263,7 +271,7 @@ export function ExpertReviewWorkspace({
             </Badge>
           </div>
         </div>
-      </header>
+      </div>
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="grid lg:grid-cols-2 gap-8">

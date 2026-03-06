@@ -46,6 +46,7 @@ export default async function ExpertReviewPage({
       request={request}
       report={request.audit_reports}
       adminUser={adminUser}
+      userEmail={user.email || ''}
     />
   )
 }

@@ -1,7 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { generateText, Output } from 'ai'
+import { createGroq } from '@ai-sdk/groq'
 import { z } from 'zod'
+
+const groq = createGroq({ apiKey: process.env.GROQ_API_KEY })
 
 // POST /api/admin/ai-draft
 // AI soạn thảo sẵn expert review cho admin — wording fix, legal notes, summary, actions
@@ -60,7 +63,7 @@ ${userContext ? `- Ghi chú từ khách hàng: "${userContext}"` : ''}`
 
   try {
     const result = await generateText({
-      model: 'anthropic/claude-opus-4.6',
+      model: groq('llama-3.3-70b-versatile'),
       system: systemPrompt,
       prompt: `Dưới đây là danh sách vi phạm AI phát hiện:\n\n${findingsText}\n\nHãy soạn expert review draft đầy đủ.`,
       output: Output.object({
