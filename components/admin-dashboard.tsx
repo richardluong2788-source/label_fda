@@ -36,6 +36,7 @@ interface AdminDashboardProps {
   riskReports: any[]
   expertQueueCount: number
   expertInReviewCount: number
+  completedTodayCount: number
   userEmail?: string
 }
 
@@ -44,13 +45,14 @@ export function AdminDashboard({
   riskReports,
   expertQueueCount,
   expertInReviewCount,
+  completedTodayCount,
   userEmail,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<'expert_queue' | 'risk_monitor'>('expert_queue')
   const [expertQueue, setExpertQueue] = useState<any[]>([])
   const [expertQueueLoading, setExpertQueueLoading] = useState(false)
   const [liveExpertCount, setLiveExpertCount] = useState(expertQueueCount)
-  const [queueFilter, setQueueFilter] = useState<'pending' | 'in_review' | 'all'>('pending')
+  const [queueFilter, setQueueFilter] = useState<'pending' | 'in_review' | 'completed' | 'all'>('pending')
   const isAdmin = ['admin', 'superadmin', 'expert'].includes(adminUser.role)
 
   const fetchExpertQueue = async (status: string = queueFilter) => {
@@ -68,7 +70,7 @@ export function AdminDashboard({
     }
   }
 
-  const handleFilterChange = (filter: 'pending' | 'in_review' | 'all') => {
+  const handleFilterChange = (filter: 'pending' | 'in_review' | 'completed' | 'all') => {
     setQueueFilter(filter)
     setActiveTab('expert_queue')
     fetchExpertQueue(filter)
@@ -173,14 +175,17 @@ export function AdminDashboard({
             <p className="text-xs text-muted-foreground mt-1">Chưa có yêu cầu tư vấn</p>
           </Card>
 
-          <Card className="p-5">
+          <Card
+            className="p-5 cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleFilterChange('completed')}
+          >
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Hoàn thành hôm nay
               </span>
               <CheckCircle className="h-4 w-4 text-green-500" />
             </div>
-            <p className="text-3xl font-bold">0</p>
+            <p className="text-3xl font-bold">{completedTodayCount}</p>
             <p className="text-xs text-muted-foreground mt-1">Expert review đã xong</p>
           </Card>
         </div>
@@ -256,6 +261,12 @@ export function AdminDashboard({
                       className={`px-3 py-1.5 font-medium border-l transition-colors ${queueFilter === 'in_review' ? 'bg-blue-500 text-white' : 'bg-background hover:bg-muted text-muted-foreground'}`}
                     >
                       Đang review
+                    </button>
+                    <button
+                      onClick={() => handleFilterChange('completed')}
+                      className={`px-3 py-1.5 font-medium border-l transition-colors ${queueFilter === 'completed' ? 'bg-green-500 text-white' : 'bg-background hover:bg-muted text-muted-foreground'}`}
+                    >
+                      Hoàn thành
                     </button>
                     <button
                       onClick={() => handleFilterChange('all')}
