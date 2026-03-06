@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createPaymentUrl, generateTxnRef, IS_DEMO_MODE } from '@/lib/vnpay'
+import { createPaymentUrl, generateTxnRef } from '@/lib/vnpay'
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,10 +60,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Build VNPay payment URL
+    // sanitizeOrderInfo() sẽ tự loại bỏ dấu & ký tự đặc biệt bên trong createPaymentUrl
     const result = createPaymentUrl({
       txnRef,
       amount,
-      orderInfo: `Thanh toan goi ${plan.name}`,
+      orderInfo: `Thanh toan goi ${plan.name} ${txnRef}`,
       ipAddr,
       orderType: 'other',
     })
