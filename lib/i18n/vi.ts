@@ -270,7 +270,7 @@ export const vi = {
     afterFix: 'SAU KHI SỬA',
     projectedRiskDesc: (score: number) => `Sau khi sửa lỗi nghiêm trọng, điểm rủi ro dự kiến giảm còn ${score.toFixed(1)}/10`,
     // Expert insights / AI summary
-    expertInsightsTitle: 'Phân Tích Chuyên Sâu từ,
+    expertInsightsTitle: 'Phân Tích Chuyên Sâu từ',
     expertInsightsDesc: 'Tóm tắt thương mại và lời khuyên chuyên gia dựa trên dữ liệu FDA',
     aiSummary: 'TÓM TẮT THƯƠNG MẠI',
     expertTipsLabel: 'LỜI KHUYÊN TỪ CHUYÊN GIA',
