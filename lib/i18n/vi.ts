@@ -268,7 +268,7 @@ export const vi = {
     andWord: 'và',
     currentRisk: 'HIỆN TẠI',
     afterFix: 'SAU KHI SỬA',
-    projectedRiskDesc: (score: number) => `Sau khi sửa lỗi nghiêm trọng, điểm rủi ro dự kiến giảm còn ${score.toFixed(1)}/10`,
+    projectedRiskDesc: (score: number) => `Sau khi sửa lỗi nghiêm trọng, đi���m rủi ro dự kiến giảm còn ${score.toFixed(1)}/10`,
     // Expert insights / AI summary
     expertInsightsTitle: 'Phân Tích Chuyên Sâu',
     expertInsightsDesc: 'Tóm tắt thương mại và lời khuyên chuyên gia dựa trên dữ liệu FDA',
@@ -287,6 +287,9 @@ export const vi = {
     netQuantity: 'KHỐI LƯỢNG TỊNH',
     allergenDeclaration: 'CHẤT GÂY DỊ ỨNG',
     healthClaimsTitle: 'CÔNG BỐ SỨC KHỎE (CẢNH BÁO)',
+    structureFunctionClaimsTitle: 'CÔNG BỐ CẤU TRÚC/CHỨC NĂNG (CẦN DSHEA)',
+    factualClaimsTitle: 'CÔNG BỐ THỰC TẾ/PHỦ ĐỊNH (TUÂN THỦ)',
+    otherClaimsTitle: 'CÔNG BỐ KHÁC (CẦN XEM XÉT)',
     specialClaimsTitle: 'CÔNG BỐ ĐẶC BIỆT',
     packagingFormatLabel: 'DẠNG BAO BÌ',
     detectedLanguagesTitle: 'NGÔN NGỮ PHÁT HIỆN',
@@ -930,7 +933,7 @@ export const vi = {
     footerSupportLabel: 'Hỗ trợ khách hàng',
   },
 
-  // ─── PDF Report ──────────────────────────────────────
+  // ─── PDF Report ────────────────────────────────────��─
   pdf: {
     title: 'BÁO CÁO KIỂM TRA NHÃN',
     subtitle: 'FDA Label Compliance Audit Report',

@@ -693,7 +693,7 @@ export class ClaimsValidator {
             type: 'restricted',
             claim: 'Structure/Function claim without disclaimer',
             severity: 'warning',
-            regulation: '21 CFR 101.93(f)',
+            regulation: '21 CFR 101.93(b), (f)',
             description: 'Structure/function claims detected but required DSHEA disclaimer is missing',
             recommendation:
               'Add disclaimer: "These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease."',
