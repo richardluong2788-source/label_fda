@@ -148,6 +148,79 @@ export function expertRequestConfirmTemplate({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 2b. EXPERT REVIEW ASSIGNED — thông báo user khi expert nhận request
+// ─────────────────────────────────────────────────────────────────────────────
+export function expertReviewAssignedTemplate({
+  email,
+  productName,
+  requestId,
+  lang = 'en',
+}: {
+  email: string
+  productName: string
+  requestId: string
+  lang?: Lang
+}) {
+  const t = {
+    en: {
+      subject: `Expert Review In Progress — ${productName}`,
+      preview: `Your expert review for "${productName}" has been assigned to a specialist.`,
+      heading: 'Expert Review In Progress',
+      p1: `Great news! Your expert review request for <strong>${productName}</strong> has been assigned to an FDA compliance specialist. Our expert is now reviewing your label.`,
+      detailsTitle: 'Request Status',
+      requestIdLabel: 'Request ID',
+      productLabel: 'Product',
+      statusLabel: 'Status',
+      statusValue: 'In Review',
+      timeline: 'Expected completion: <strong>1–3 business days</strong>',
+      cta: 'View Request Status',
+      note: 'You will receive another email notification when the expert review is complete.',
+    },
+    vi: {
+      subject: `Expert Review đang được xử lý — ${productName}`,
+      preview: `Yêu cầu expert review cho "${productName}" đã được phân công cho chuyên gia.`,
+      heading: 'Expert Review đang được xử lý',
+      p1: `Tin vui! Yêu cầu expert review cho sản phẩm <strong>${productName}</strong> đã được phân công cho chuyên gia FDA. Chuyên gia của chúng tôi đang xem xét nhãn của bạn.`,
+      detailsTitle: 'Trạng thái yêu cầu',
+      requestIdLabel: 'Mã yêu cầu',
+      productLabel: 'Sản phẩm',
+      statusLabel: 'Trạng thái',
+      statusValue: 'Đang xem xét',
+      timeline: 'Dự kiến hoàn thành: <strong>1–3 ngày làm việc</strong>',
+      cta: 'Xem trạng thái yêu cầu',
+      note: 'Bạn sẽ nhận được email thông báo khi chuyên gia hoàn thành đánh giá.',
+    },
+  }[lang]
+
+  const body = /* html */ `
+    <div style="margin-bottom:20px;">${badge(lang === 'vi' ? 'Đang xử lý' : 'In Progress', 'blue')}</div>
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0f172a;letter-spacing:-0.5px;">${t.heading}</h1>
+    <p style="margin:0 0 20px;color:#64748b;font-size:14px;">${email}</p>
+    <p style="margin:0 0 20px;color:#334155;font-size:15px;line-height:1.7;">${t.p1}</p>
+
+    <div style="padding:20px;background-color:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:20px;">
+      <p style="margin:0 0 12px;color:#1e40af;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">${t.detailsTitle}</p>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        ${infoRow(t.requestIdLabel, `<code style="font-family:monospace;font-size:12px;background:#dbeafe;padding:2px 6px;border-radius:4px;">${requestId.slice(0, 8).toUpperCase()}</code>`)}
+        ${infoRow(t.productLabel, productName)}
+        ${infoRow(t.statusLabel, badge(t.statusValue, 'blue'))}
+      </table>
+    </div>
+
+    <p style="margin:0 0 20px;color:#334155;font-size:14px;line-height:1.6;">${t.timeline}</p>
+
+    ${button(t.cta, `${APP_URL}/history`)}
+
+    <p style="margin-top:24px;color:#94a3b8;font-size:13px;line-height:1.6;">${t.note}</p>
+  `
+
+  return {
+    subject: t.subject,
+    html: emailLayout({ title: t.subject, previewText: t.preview, body, lang }),
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 3. EXPERT REVIEW COMPLETE — thông báo cho user khi expert xong
 // ─────────────────────────────────────────────────────────────────────────────
 export function expertReviewCompleteTemplate({
@@ -294,7 +367,7 @@ export function adminNewExpertRequestTemplate({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 6. VNPAY PAYMENT CONFIRMATION — xác nhận thanh toán thành công
-// ─────���────────���──────────────────────────────────────────────────────────────
+// ─────������───────���──────────────────────────────────────────────────────────────
 export function paymentSuccessTemplate({
   email,
   planName,

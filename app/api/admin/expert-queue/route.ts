@@ -1,10 +1,36 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import {
   sendEmail,
+  expertReviewAssignedTemplate,
   expertReviewCompleteTemplate,
   expertReviewCancelledTemplate,
 } from '@/lib/email'
+
+// Helper function to get user email from auth.users
+async function getUserEmail(userId: string): Promise<{ email: string | null; lang: 'vi' | 'en' }> {
+  try {
+    const adminClient = createAdminClient()
+    const { data: authUser } = await adminClient.auth.admin.getUserById(userId)
+    
+    // Try to get language preference from profiles table
+    const supabase = await createClient()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('language')
+      .eq('id', userId)
+      .maybeSingle()
+    
+    return {
+      email: authUser?.user?.email || null,
+      lang: (profile?.language as 'vi' | 'en') || 'en',
+    }
+  } catch (error) {
+    console.error('[v0] getUserEmail error:', error)
+    return { email: null, lang: 'en' }
+  }
+}
 
 // GET — Admin lấy danh sách requests
 export async function GET(request: Request) {
@@ -106,6 +132,30 @@ export async function PATCH(request: Request) {
         .update({ expert_review_status: 'in_review' })
         .eq('id', reviewReq.audit_report_id)
 
+      // Send assignment notification email to user (fire-and-forget)
+      if (reviewReq.user_id) {
+        const { data: reportInfo } = await supabase
+          .from('audit_reports')
+          .select('product_name')
+          .eq('id', reviewReq.audit_report_id)
+          .maybeSingle()
+
+        const { email: userEmail, lang } = await getUserEmail(reviewReq.user_id)
+        
+        if (userEmail) {
+          const assignedEmail = expertReviewAssignedTemplate({
+            email: userEmail,
+            productName: reportInfo?.product_name || 'Your Product',
+            requestId: request_id,
+            lang,
+          })
+          sendEmail({ to: userEmail, subject: assignedEmail.subject, html: assignedEmail.html })
+          console.log('[v0] Sent expert assigned email to:', userEmail)
+        } else {
+          console.warn('[v0] Could not find email for user_id:', reviewReq.user_id)
+        }
+      }
+
       return NextResponse.json({ success: true, action: 'assigned' })
     }
 
@@ -150,23 +200,21 @@ export async function PATCH(request: Request) {
           .eq('id', reviewReq.audit_report_id)
           .maybeSingle()
 
-        const { data: userInfo } = await supabase
-          .from('profiles')
-          .select('email, language')
-          .eq('id', reviewReq.user_id)
-          .maybeSingle()
+        const { email: userEmail, lang } = await getUserEmail(reviewReq.user_id)
 
-        if (userInfo?.email) {
-          const lang = (userInfo.language as 'vi' | 'en') || 'en'
+        if (userEmail) {
           const completeEmail = expertReviewCompleteTemplate({
-            email: userInfo.email,
+            email: userEmail,
             productName: reportInfo?.product_name || 'Your Product',
             reportId: reviewReq.audit_report_id,
             expertName: signOffName,
             expertSummary: expertSummary,
             lang,
           })
-          sendEmail({ to: userInfo.email, subject: completeEmail.subject, html: completeEmail.html })
+          sendEmail({ to: userEmail, subject: completeEmail.subject, html: completeEmail.html })
+          console.log('[v0] Sent expert complete email to:', userEmail)
+        } else {
+          console.warn('[v0] Could not find email for user_id:', reviewReq.user_id)
         }
       }
 
@@ -193,20 +241,18 @@ export async function PATCH(request: Request) {
           .eq('id', reviewReq.audit_report_id)
           .maybeSingle()
 
-        const { data: userInfo } = await supabase
-          .from('profiles')
-          .select('email, language')
-          .eq('id', reviewReq.user_id)
-          .maybeSingle()
+        const { email: userEmail, lang } = await getUserEmail(reviewReq.user_id)
 
-        if (userInfo?.email) {
-          const lang = (userInfo.language as 'vi' | 'en') || 'en'
+        if (userEmail) {
           const cancelEmail = expertReviewCancelledTemplate({
-            email: userInfo.email,
+            email: userEmail,
             productName: reportInfo?.product_name || 'Your Product',
             lang,
           })
-          sendEmail({ to: userInfo.email, subject: cancelEmail.subject, html: cancelEmail.html })
+          sendEmail({ to: userEmail, subject: cancelEmail.subject, html: cancelEmail.html })
+          console.log('[v0] Sent expert cancelled email to:', userEmail)
+        } else {
+          console.warn('[v0] Could not find email for user_id:', reviewReq.user_id)
         }
       }
 
