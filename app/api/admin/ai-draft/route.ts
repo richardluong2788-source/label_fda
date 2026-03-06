@@ -6,131 +6,91 @@ import { z } from 'zod'
 
 const groq = createGroq({ apiKey: process.env.GROQ_API_KEY })
 
-// POST /api/admin/expert-draft
-// AI tự động soạn thảo expert review dựa trên báo cáo + request context.
-// Chỉ admin mới gọi được. Trả về draft để admin chỉnh sửa trước khi ký off.
-
-async function requireAdmin() {
+// POST /api/admin/ai-draft
+// AI soạn thảo sẵn expert review cho admin — wording fix, legal notes, summary, actions
+export async function POST(request: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { supabase, user: null, isAdmin: false }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Verify admin
   const { data: adminUser } = await supabase
     .from('admin_users')
     .select('role')
     .eq('user_id', user.id)
-    .maybeSingle()
-
-  const isAdmin =
-    adminUser?.role === 'admin' ||
-    adminUser?.role === 'superadmin' ||
-    adminUser?.role === 'expert'
-
-  return { supabase, user, isAdmin }
-}
-
-export async function POST(request: Request) {
-  const { supabase, isAdmin } = await requireAdmin()
-  if (!isAdmin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const { requestId } = await request.json()
-  if (!requestId) {
-    return NextResponse.json({ error: 'requestId is required' }, { status: 400 })
-  }
-
-  // Lấy toàn bộ thông tin request + báo cáo AI
-  const { data: reviewRequest, error: reqError } = await supabase
-    .from('expert_review_requests')
-    .select(`
-      id, user_context, target_market, product_category,
-      audit_report_id,
-      audit_reports (
-        product_name, file_name, overall_result, overall_risk_score,
-        product_category, findings
-      )
-    `)
-    .eq('id', requestId)
     .single()
 
-  if (reqError || !reviewRequest) {
-    return NextResponse.json({ error: 'Request not found' }, { status: 404 })
+  if (!adminUser) {
+    return NextResponse.json({ error: 'Admin only' }, { status: 403 })
   }
 
-  const report = reviewRequest.audit_reports as any
-  const findings = report?.findings ?? []
+  const body = await request.json()
+  const { findings, productName, productCategory, targetMarket, userContext, overallResult, overallRiskScore } = body
 
-  // Build prompt context
-  const violationsSummary = findings
-    .map((v: any, i: number) =>
-      `[${i + 1}] ${v.violation_type ?? v.type ?? 'Unknown'} — ${v.description ?? ''} | Severity: ${v.severity ?? 'unknown'} | CFR: ${v.citations?.join(', ') ?? 'N/A'} | AI suggested fix: ${v.suggested_fix ?? 'N/A'}`
+  if (!findings || !Array.isArray(findings)) {
+    return NextResponse.json({ error: 'findings array required' }, { status: 400 })
+  }
+
+  const findingsText = findings
+    .map(
+      (f: any, i: number) =>
+        `[Vi phạm #${i + 1}] Severity: ${f.severity ?? 'unknown'}\nCategory: ${f.category ?? ''}\nDescription: ${f.description ?? ''}\nAI suggested_fix: ${f.suggested_fix ?? 'N/A'}\nRegulation: ${f.regulation_reference ?? 'N/A'}\nConfidence: ${f.confidence_score ?? 'N/A'}`
     )
-    .join('\n')
+    .join('\n\n')
 
-  const systemPrompt = `You are an expert FDA compliance consultant with 15+ years experience reviewing food, dietary supplement, and cosmetic labels for the US market. You provide precise, actionable, and legally sound guidance based on 21 CFR regulations.
+  const systemPrompt = `Bạn là chuyên gia tư vấn FDA compliance hàng đầu Việt Nam, chuyên về nhãn mác sản phẩm xuất khẩu sang thị trường ${targetMarket ?? 'US'}.
 
-Your task: Review an AI-generated FDA compliance report and produce a structured expert review with:
-1. A professional summary in Vietnamese explaining the overall compliance status and key risks
-2. Per-violation analysis: confirm/dismiss each finding and suggest exact corrected wording
-3. Prioritized recommended actions
+Nhiệm vụ: Dựa vào danh sách vi phạm AI phát hiện, bạn soạn thảo BẢN NHÁP đầy đủ cho expert review:
 
-IMPORTANT:
-- Write the expert_summary in Vietnamese (professional tone)
-- wording_fix should be the EXACT replacement text in English (as it should appear on the label)
-- legal_note should cite the specific CFR section and explain the legal risk in Vietnamese
-- Be precise about which violations are genuinely critical vs. minor`
+NGUYÊN TẮC QUAN TRỌNG:
+1. Wording fix phải CỤ THỂ, có thể copy-paste vào nhãn ngay — không chung chung
+2. Legal note phải trích dẫn CHÍNH XÁC điều luật (21 CFR section cụ thể)
+3. Viết bằng tiếng Việt, wording trên nhãn viết bằng tiếng Anh (vì nhãn xuất khẩu)
+4. Nếu vi phạm có confidence thấp hoặc không rõ — đánh dấu confirmed=false và giải thích
+5. Recommended actions phải thực tế, có thể thực hiện ngay
 
-  const userPrompt = `Product: ${report?.product_name ?? report?.file_name ?? 'Unknown'}
-Category: ${report?.product_category ?? reviewRequest.product_category ?? 'Food'}
-Target Market: ${reviewRequest.target_market ?? 'US'}
-Overall AI Result: ${report?.overall_result ?? 'N/A'} (Risk Score: ${report?.overall_risk_score ?? 'N/A'}/10)
-User Context: ${reviewRequest.user_context ?? 'No additional context provided'}
-
-AI-Detected Violations (${findings.length} total):
-${violationsSummary || 'No violations detected by AI'}
-
-Please provide a complete expert review draft.`
+Thông tin sản phẩm:
+- Tên: ${productName ?? 'Không rõ'}
+- Ngành: ${productCategory ?? 'food'}
+- Thị trường: ${targetMarket ?? 'US'}
+- Kết quả AI: ${overallResult ?? 'N/A'}, Risk score: ${overallRiskScore ?? 'N/A'}/10
+${userContext ? `- Ghi chú từ khách hàng: "${userContext}"` : ''}`
 
   try {
-    const { experimental_output } = await generateText({
+    const result = await generateText({
       model: groq('llama-3.3-70b-specdec'),
       system: systemPrompt,
-      prompt: userPrompt,
-      experimental_output: Output.object({
+      prompt: `Dưới đây là danh sách vi phạm AI phát hiện:\n\n${findingsText}\n\nHãy soạn expert review draft đầy đủ.`,
+      output: Output.object({
         schema: z.object({
-          expert_summary: z.string().describe('Tổng quan đánh giá bằng tiếng Việt, 2-4 câu'),
-          violation_reviews: z.array(
+          expertSummary: z.string().describe('Nhận xét tổng quan 3-5 câu về mức độ tuân thủ, rủi ro chính, hướng khắc phục'),
+          violationReviews: z.array(
             z.object({
-              violation_index: z.number().describe('0-based index of violation'),
-              confirmed: z.boolean().describe('true nếu vi phạm thực sự cần sửa'),
-              wording_fix: z.string().nullable().describe('Exact corrected label text in English'),
-              legal_note: z.string().nullable().describe('Giải thích pháp lý bằng tiếng Việt'),
+              violation_index: z.number().describe('Index vi phạm (bắt đầu từ 0)'),
+              confirmed: z.boolean().describe('true = xác nhận cần sửa, false = không nghiêm trọng/false positive'),
+              wording_fix: z.string().describe('Wording mới đề xuất — cụ thể, copy-paste được. Để trống nếu confirmed=false'),
+              legal_note: z.string().describe('Giải thích pháp lý chi tiết + trích dẫn CFR cụ thể'),
             })
           ),
-          recommended_actions: z.array(
+          recommendedActions: z.array(
             z.object({
-              action: z.string().describe('Hành động cụ thể bằng tiếng Việt'),
+              action: z.string().describe('Mô tả hành động cần làm'),
               priority: z.enum(['high', 'medium', 'low']),
-              cfr_reference: z.string().nullable().describe('e.g. 21 CFR 101.9(d)'),
+              cfr_reference: z.string().describe('Điều luật CFR liên quan'),
             })
           ),
-          overall_assessment: z.enum(['approved', 'needs_revision', 'rejected']),
-          estimated_fix_complexity: z.enum(['simple', 'moderate', 'complex']),
         }),
       }),
-      maxOutputTokens: 2000,
     })
 
-    return NextResponse.json({
-      draft: experimental_output,
-      violations_count: findings.length,
-    })
+    return NextResponse.json({ draft: result.output })
   } catch (err: any) {
-    console.error('[expert-draft] AI generation failed:', err.message)
-    return NextResponse.json(
-      { error: 'AI generation failed. Please draft manually.', details: err.message },
-      { status: 500 }
-    )
+    console.error('[ai-draft] Error:', err.message)
+    return NextResponse.json({ error: 'AI draft generation failed: ' + err.message }, { status: 500 })
   }
 }

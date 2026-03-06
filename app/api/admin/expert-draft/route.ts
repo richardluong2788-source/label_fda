@@ -94,7 +94,7 @@ Please provide a complete expert review draft.`
 
   try {
     const { experimental_output } = await generateText({
-      model: groq('llama-3.3-70b-versatile'),
+      model: groq('llama-3.3-70b-specdec'),
       system: systemPrompt,
       prompt: userPrompt,
       experimental_output: Output.object({
