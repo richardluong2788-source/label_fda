@@ -183,7 +183,7 @@ export function AnalysisProgressView({
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">Tiến trình phân tích</h2>
-                <Badge variant="secondary">{progress}%</Badge>
+                <Badge variant="secondary">{Math.round(progress)}%</Badge>
               </div>
               <Progress value={progress} className="h-2 mb-2" />
               <p className="text-sm text-muted-foreground">
