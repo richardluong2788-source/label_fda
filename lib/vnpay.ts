@@ -22,25 +22,34 @@ import crypto from 'crypto'
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-export const VNPAY_CONFIG = {
-  tmnCode:    process.env.VNPAY_TMN_CODE    ?? '',
-  hashSecret: process.env.VNPAY_HASH_SECRET ?? '',
-  /**
-   * Sandbox:    https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-   * Production: https://pay.vnpay.vn/vpcpay.html
-   */
-  payUrl: process.env.VNPAY_PAY_URL ?? 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
-  returnUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/vnpay/callback`,
-  ipnUrl:    `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/vnpay/ipn`,
-  version:   '2.1.0',
-  command:   'pay',
-  currCode:  'VND',
-  locale:    'vn',
-  /** Expire time in minutes (VNPay recommends 15 minutes) */
-  expireMinutes: 15,
+/**
+ * Dùng function thay vì const để env vars luôn được đọc tại runtime,
+ * tránh trường hợp module được cache khi env chưa có giá trị.
+ */
+export function getVnpayConfig() {
+  return {
+    tmnCode:    process.env.VNPAY_TMN_CODE    ?? '',
+    hashSecret: process.env.VNPAY_HASH_SECRET ?? '',
+    payUrl:     process.env.VNPAY_PAY_URL     ?? 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
+    returnUrl:  `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/vnpay/callback`,
+    ipnUrl:     `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/vnpay/ipn`,
+    version:    '2.1.0',
+    command:    'pay',
+    currCode:   'VND',
+    locale:     'vn',
+    expireMinutes: 15,
+  }
 }
 
-export const IS_DEMO_MODE = !VNPAY_CONFIG.tmnCode || !VNPAY_CONFIG.hashSecret
+/** Kiểm tra demo mode tại runtime — không cache ở module level */
+export function isDemoMode(): boolean {
+  const cfg = getVnpayConfig()
+  return !cfg.tmnCode || !cfg.hashSecret
+}
+
+// Giữ lại export cũ để không break các import hiện có
+export const VNPAY_CONFIG = getVnpayConfig()
+export const IS_DEMO_MODE = isDemoMode()
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -142,8 +151,9 @@ function formatDate(date: Date): string {
  */
 export function createPaymentUrl(params: CreatePaymentParams): PaymentResult {
   const { txnRef, amount, orderInfo, ipAddr, bankCode, orderType, locale } = params
+  const cfg = getVnpayConfig()
 
-  if (IS_DEMO_MODE) {
+  if (isDemoMode()) {
     const demoUrl =
       `/checkout/demo?txnRef=${encodeURIComponent(txnRef)}` +
       `&amount=${amount}` +
@@ -152,34 +162,31 @@ export function createPaymentUrl(params: CreatePaymentParams): PaymentResult {
   }
 
   const now      = new Date()
-  const expireAt = new Date(now.getTime() + VNPAY_CONFIG.expireMinutes * 60 * 1000)
+  const expireAt = new Date(now.getTime() + cfg.expireMinutes * 60 * 1000)
 
   const vnpParams: Record<string, string> = {
-    vnp_Version:    VNPAY_CONFIG.version,
-    vnp_Command:    VNPAY_CONFIG.command,
-    vnp_TmnCode:    VNPAY_CONFIG.tmnCode,
-    vnp_Amount:     String(amount * 100),       // VNPay yêu cầu nhân 100 để bỏ phần thập phân
-    vnp_CurrCode:   VNPAY_CONFIG.currCode,
+    vnp_Version:    cfg.version,
+    vnp_Command:    cfg.command,
+    vnp_TmnCode:    cfg.tmnCode,
+    vnp_Amount:     String(amount * 100),
+    vnp_CurrCode:   cfg.currCode,
     vnp_TxnRef:     txnRef,
     vnp_OrderInfo:  orderInfo,
     vnp_OrderType:  orderType ?? 'other',
-    vnp_Locale:     locale ?? VNPAY_CONFIG.locale,
-    vnp_ReturnUrl:  VNPAY_CONFIG.returnUrl,
+    vnp_Locale:     locale ?? cfg.locale,
+    vnp_ReturnUrl:  cfg.returnUrl,
     vnp_IpAddr:     ipAddr,
     vnp_CreateDate: formatDate(now),
     vnp_ExpireDate: formatDate(expireAt),
   }
 
-  // vnp_BankCode tùy chọn: nếu không gửi, VNPay hiển thị trang chọn ngân hàng
   if (bankCode) vnpParams.vnp_BankCode = bankCode
 
-  // Bước 1: Build signData KHÔNG encode (theo spec VNPay)
   const signData   = buildSignData(vnpParams)
-  const secureHash = createHmac512(signData, VNPAY_CONFIG.hashSecret)
+  const secureHash = createHmac512(signData, cfg.hashSecret)
 
-  // Bước 2: Build URL với value được encode
   const queryString = buildQueryString(vnpParams) + `&vnp_SecureHash=${secureHash}`
-  const payUrl      = `${VNPAY_CONFIG.payUrl}?${queryString}`
+  const payUrl      = `${cfg.payUrl}?${queryString}`
 
   return { payUrl, txnRef, isDemoMode: false }
 }
@@ -195,18 +202,17 @@ export function createPaymentUrl(params: CreatePaymentParams): PaymentResult {
  * - So sánh HMAC-SHA512
  */
 export function verifyCallbackSignature(query: Record<string, string>): boolean {
-  if (IS_DEMO_MODE) return true
+  if (isDemoMode()) return true
 
+  const cfg = getVnpayConfig()
   const params = { ...query }
   const receivedHash = params['vnp_SecureHash'] ?? ''
 
-  // Xóa các tham số hash trước khi tính lại
   delete params['vnp_SecureHash']
   delete params['vnp_SecureHashType']
 
-  // Build signData KHÔNG encode — đúng theo spec VNPay
-  const signData   = buildSignData(params)
-  const checkHash  = createHmac512(signData, VNPAY_CONFIG.hashSecret)
+  const signData  = buildSignData(params)
+  const checkHash = createHmac512(signData, cfg.hashSecret)
 
   return checkHash.toLowerCase() === receivedHash.toLowerCase()
 }
