@@ -31,7 +31,7 @@ export default async function ExpertReviewPage({
       audit_reports (
         id, product_name, file_name, overall_result, overall_risk_score,
         findings, needs_expert_review, product_category, status,
-        label_image_url, ingredient_list, health_claims,
+        label_image_url, label_images, ingredient_list, health_claims,
         allergen_declaration, brand_name, net_quantity,
         commercial_summary, expert_tips, form_data
       )

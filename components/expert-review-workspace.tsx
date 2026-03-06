@@ -106,10 +106,11 @@ export function ExpertReviewWorkspace({
       const { draft } = await res.json()
 
       // Điền dữ liệu AI soạn vào form — admin chỉ cần chỉnh sửa
-      if (draft.expertSummary) setExpertSummary(draft.expertSummary)
-      if (draft.violationReviews?.length) {
+      // API trả về snake_case: expert_summary, violation_reviews, recommended_actions
+      if (draft.expert_summary) setExpertSummary(draft.expert_summary)
+      if (draft.violation_reviews?.length) {
         setViolationReviews(
-          draft.violationReviews.map((vr: any, i: number) => ({
+          draft.violation_reviews.map((vr: any, i: number) => ({
             violation_index: vr.violation_index ?? i,
             confirmed: vr.confirmed ?? true,
             wording_fix: vr.wording_fix ?? '',
@@ -117,9 +118,9 @@ export function ExpertReviewWorkspace({
           }))
         )
       }
-      if (draft.recommendedActions?.length) {
+      if (draft.recommended_actions?.length) {
         setRecommendedActions(
-          draft.recommendedActions.map((ra: any) => ({
+          draft.recommended_actions.map((ra: any) => ({
             action: ra.action ?? '',
             priority: ra.priority ?? 'medium',
             cfr_reference: ra.cfr_reference ?? '',
