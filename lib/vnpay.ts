@@ -114,21 +114,22 @@ function buildSignData(params: Record<string, string>): string {
 }
 
 /**
- * Build query string cho URL thanh toán — encode giống PHP urlencode().
+ * Build query string cho URL thanh toán — KHÔNG encode (encode: false).
  *
- * Theo NodeJS sample chính thức: encode: false (không encode).
- * Tuy nhiên thực tế:
- *  - signData KHÔNG encode (dùng để tính HMAC)
- *  - URL phải encode khoảng trắng thành '+' và encode ký tự đặc biệt
- *    → đây là hành vi của PHP urlencode() và querystring.escape() mặc định.
+ * Theo NodeJS sample CHÍNH THỨC của VNPay:
+ *   var signData = querystring.stringify(vnp_Params, { encode: false })
+ *   vnpUrl += '?' + querystring.stringify(vnp_Params, { encode: false })
  *
- * sanitizeOrderInfo() đã loại bỏ mọi ký tự đặc biệt, chỉ còn chữ/số/khoảng trắng.
- * Khoảng trắng trong URL phải được encode → dùng encodeURIComponent (space → %20).
- * VNPay server sẽ decode %20 → space trước khi tính hash → khớp với signData.
+ * Cả signData lẫn URL đều KHÔNG encode → VNPay server nhận chuỗi nguyên bản
+ * → tính lại hash trên cùng chuỗi đó → khớp 100%.
+ *
+ * Điều kiện tiên quyết: mọi value phải là ASCII thuần, KHÔNG có khoảng trắng
+ * hay ký tự đặc biệt. sanitizeOrderInfo() đã đảm bảo điều này bằng cách
+ * thay khoảng trắng và ký tự đặc biệt bằng dấu gạch dưới.
  */
 function buildQueryString(params: Record<string, string>): string {
   return Object.entries(sortObject(params))
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .map(([k, v]) => `${k}=${v}`)
     .join('&')
 }
 
@@ -205,9 +206,9 @@ export function createPaymentUrl(params: CreatePaymentParams): PaymentResult {
   const queryString = buildQueryString(vnpParams) + `&vnp_SecureHash=${secureHash}`
   const payUrl      = `${cfg.payUrl}?${queryString}`
 
+  console.log('[v0] VNPAY orderInfo (sanitized):', vnpParams.vnp_OrderInfo)
   console.log('[v0] VNPAY signData:', signData)
-  console.log('[v0] VNPAY secureHash length:', secureHash.length, '| value:', secureHash)
-  console.log('[v0] VNPAY returnUrl:', vnpParams.vnp_ReturnUrl)
+  console.log('[v0] VNPAY hash length:', secureHash.length, '| value:', secureHash)
   console.log('[v0] VNPAY payUrl:', payUrl)
 
   return { payUrl, txnRef, isDemoMode: false }
@@ -266,9 +267,19 @@ export function decodeResponseCode(code: string): { success: boolean; message: s
 }
 
 /**
- * Loại bỏ ký tự đặc biệt khỏi orderInfo theo yêu cầu VNPay.
- * VNPay yêu cầu: chỉ chữ cái, số, khoảng trắng — KHÔNG dấu tiếng Việt, KHÔNG ký tự đặc biệt.
- * Nếu orderInfo có ký tự lạ, signData sẽ khác với những gì VNPay nhận → "Sai chữ ký".
+ * Loại bỏ ký tự đặc biệt và khoảng trắng khỏi orderInfo theo yêu cầu VNPay.
+ *
+ * VNPay NodeJS sample dùng encode: false cho CẢ signData lẫn URL → không encode gì hết.
+ * Để cách này hoạt động, orderInfo KHÔNG được chứa khoảng trắng hay ký tự cần encode.
+ *
+ * Nếu orderInfo có khoảng trắng:
+ *   - signData (encode: false): "Thanh toan goi"
+ *   - URL (encode: false):      "Thanh toan goi"  → URL bị broken (space không hợp lệ)
+ *   - URL (encodeURIComponent): "Thanh%20toan%20goi" → VNPay decode → "Thanh toan goi"
+ *     → VNPay tính lại hash bằng PHP urlencode → "Thanh+toan+goi" → KHÔNG KHỚP signData
+ *
+ * Giải pháp: thay khoảng trắng bằng dấu gạch dưới → không có gì cần encode
+ * → signData và URL giống nhau hoàn toàn → VNPay hash khớp 100%.
  */
 export function sanitizeOrderInfo(text: string): string {
   return text
@@ -276,10 +287,10 @@ export function sanitizeOrderInfo(text: string): string {
     .replace(/[\u0300-\u036f]/g, '') // bỏ dấu tổ hợp (à → a, ê → e, ...)
     .replace(/đ/g, 'd')
     .replace(/Đ/g, 'D')
-    .replace(/[^a-zA-Z0-9 ]/g, ' ')  // thay ký tự đặc biệt bằng khoảng trắng
-    .replace(/\s+/g, ' ')             // gộp nhiều khoảng trắng thành 1
-    .trim()
-    .slice(0, 255)                    // giới hạn độ dài
+    .replace(/[^a-zA-Z0-9]/g, '_')  // thay MỌI ký tự không phải chữ/số bằng _
+    .replace(/_+/g, '_')             // gộp nhiều _ liên tiếp thành 1
+    .replace(/^_|_$/g, '')           // bỏ _ đầu/cuối
+    .slice(0, 255)                   // giới hạn độ dài
 }
 
 /**
