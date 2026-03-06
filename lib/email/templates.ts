@@ -197,7 +197,7 @@ export function expertReviewCompleteTemplate({
       <p style="margin:0;color:#166534;font-size:14px;line-height:1.7;">${expertSummary.slice(0, 400)}${expertSummary.length > 400 ? '...' : ''}</p>
     </div>
 
-    ${button(t.cta, `${APP_URL}/history?report=${reportId}`)}
+    ${button(t.cta, `${APP_URL}/audit/${reportId}`)}
 
     <p style="margin-top:24px;color:#94a3b8;font-size:13px;line-height:1.6;">${t.note}</p>
   `
