@@ -352,6 +352,21 @@ export function ExpertRequestPanel({
   // No request yet — show submission form
   const isHighRisk = overallResult === 'fail' || needsExpertReview
 
+  // Determine effective access: a user has unlimited access if their plan includes it
+  // OR if the quota API says can_request=true with limit=0 (unlimited sentinel from DB)
+  const hasUnlimitedAccess =
+    expertReviewsIncluded ||
+    (quotaInfo !== null && quotaInfo.canRequest && quotaInfo.limit === 0)
+
+  // Has a finite quota (Pro with limited slots)
+  const hasFiniteQuota =
+    !hasUnlimitedAccess && quotaInfo !== null && quotaInfo.limit > 0
+
+  // Can submit directly (unlimited OR finite quota with slots remaining)
+  const canSubmitDirectly =
+    hasUnlimitedAccess ||
+    (hasFiniteQuota && quotaInfo !== null && quotaInfo.canRequest)
+
   return (
     <Card className={`border-2 ${isHighRisk ? 'border-amber-300' : 'border-slate-200'}`}>
       <div className={`p-4 rounded-t-lg ${isHighRisk ? 'bg-amber-50 border-b border-amber-200' : 'bg-slate-50 border-b border-slate-200'}`}>
@@ -383,18 +398,18 @@ export function ExpertRequestPanel({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Show "Free in plan" badge for Pro/Business users with quota */}
-          {expertReviewsIncluded && (
+          {/* Show "Free in plan" badge for unlimited users */}
+          {hasUnlimitedAccess && (
             <Badge className="text-xs bg-primary text-primary-foreground">{t.expert.freeInPlan}</Badge>
           )}
-          {/* Show quota remaining for Pro users */}
-          {expertReviewsIncluded && quotaInfo && quotaInfo.limit > 0 && (
+          {/* Show quota remaining for Pro users with finite quota */}
+          {hasFiniteQuota && quotaInfo && (
             <Badge variant="outline" className="text-xs text-muted-foreground">
               {quotaInfo.limit - quotaInfo.used}/{quotaInfo.limit} {t.expert.creditsRemaining || 'remaining'}
             </Badge>
           )}
-          {/* Show upgrade prompt for Free/Starter users (no quota) */}
-          {!expertReviewsIncluded && (
+          {/* Show upgrade prompt only for users with no quota at all */}
+          {!hasUnlimitedAccess && !hasFiniteQuota && (
             <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 bg-amber-50">
               {t.expert.upgradeRequired || 'Pro/Business required'}
             </Badge>
@@ -456,10 +471,10 @@ export function ExpertRequestPanel({
             </div>
           )}
 
-          {/* Show addon purchase + upgrade CTA for Starter/Free users */}
-          {!expertReviewsIncluded ? (
+          {/* Users with no access at all (Free / Starter without addon capability) */}
+          {!canSubmitDirectly && !hasFiniteQuota ? (
             <div className="space-y-3">
-              {/* Option A: Buy single addon — chỉ hiện cho Starter, ẩn với Free */}
+              {/* Option A: Buy single addon — only for Starter (not Free) */}
               {planName && !planName.toLowerCase().includes('free') && (
                 <Button
                   onClick={handleAddonCheckout}
@@ -503,8 +518,8 @@ export function ExpertRequestPanel({
             </div>
           ) : (
             <>
-            {/* Pro users with quota exhausted - show 2 options */}
-            {quotaInfo && !quotaInfo.canRequest && quotaInfo.limit > 0 ? (
+            {/* Finite quota exhausted - show buy addon + upgrade options */}
+            {hasFiniteQuota && quotaInfo && !quotaInfo.canRequest ? (
               <div className="space-y-3">
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                   <p className="text-sm text-amber-800 font-medium mb-1">
@@ -547,7 +562,7 @@ export function ExpertRequestPanel({
                 </Button>
               </div>
             ) : (
-              /* Pro users with quota available */
+              /* Users who can submit directly (unlimited plan or finite quota with slots remaining) */
               <Button
                 onClick={handleSubmit}
                 disabled={submitting}
