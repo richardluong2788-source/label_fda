@@ -59,6 +59,15 @@ export default async function AdminPage() {
     .select('id', { count: 'exact', head: true })
     .eq('status', 'in_review')
 
+  // Hoàn thành hôm nay
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const { count: completedTodayCount } = await supabase
+    .from('expert_review_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'completed')
+    .gte('sign_off_at', todayStart.toISOString())
+
   // Enrich risk reports with user emails
   const userIds = [...new Set((riskReports || []).map((r) => r.user_id).filter(Boolean))]
   let userEmailMap: Record<string, string> = {}
@@ -88,6 +97,7 @@ export default async function AdminPage() {
       riskReports={enrichedRiskReports}
       expertQueueCount={expertQueueCount ?? 0}
       expertInReviewCount={expertInReviewCount ?? 0}
+      completedTodayCount={completedTodayCount ?? 0}
       userEmail={user.email || ''}
     />
   )
