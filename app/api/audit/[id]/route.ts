@@ -98,7 +98,7 @@ export async function GET(
     const enrichedReport = {
       ...report,
       plan_name: plan?.name ?? 'Free Trial',
-      expert_reviews_included: (plan?.expert_reviews_limit ?? 0) > 0,
+      expert_reviews_included: (plan?.expert_reviews_limit ?? 0) !== 0,
       expert_review_price_vnd: plan?.expert_review_price_vnd ?? 499000,
       // Feature flags for gating
       can_export_pdf: plan ? true : false, // Free trial = no PDF export
