@@ -5,10 +5,15 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { verifyCallbackSignature, decodeResponseCode } from '@/lib/vnpay'
+import { verifyCallbackSignature, decodeResponseCode, getVnpayConfig } from '@/lib/vnpay'
 import { sendEmail, paymentSuccessTemplate } from '@/lib/email'
 
 export async function GET(request: NextRequest) {
+  // Dùng baseUrl từ getVnpayConfig (ưu tiên NEXT_PUBLIC_APP_URL → VERCEL_URL → localhost)
+  // KHÔNG dùng request.url vì VNPay redirect về returnUrl cũ (có thể là localhost)
+  const { returnUrl } = getVnpayConfig()
+  const baseUrl = returnUrl.replace('/api/vnpay/callback', '')
+
   const searchParams = request.nextUrl.searchParams
   const query: Record<string, string> = {}
   searchParams.forEach((value, key) => { query[key] = value })
@@ -25,7 +30,7 @@ export async function GET(request: NextRequest) {
   const isValid = verifyCallbackSignature(query)
   if (!isValid) {
     return NextResponse.redirect(
-      new URL(`/checkout/result?status=error&message=Invalid+signature`, request.url)
+      new URL(`/checkout/result?status=error&message=Invalid+signature`, baseUrl)
     )
   }
 
@@ -44,7 +49,7 @@ export async function GET(request: NextRequest) {
   if (txnFetchError || !txn) {
     console.error('[vnpay-callback] Transaction not found for txnRef:', txnRef)
     return NextResponse.redirect(
-      new URL(`/checkout/result?status=error&message=Transaction+not+found`, request.url)
+      new URL(`/checkout/result?status=error&message=Transaction+not+found`, baseUrl)
     )
   }
 
@@ -193,5 +198,5 @@ export async function GET(request: NextRequest) {
     ...(isSingleReport && txn.addon_audit_report_id ? { reportId: txn.addon_audit_report_id } : {}),
   })
 
-  return NextResponse.redirect(new URL(`/checkout/result?${params}`, request.url))
+  return NextResponse.redirect(new URL(`/checkout/result?${params}`, baseUrl))
 }

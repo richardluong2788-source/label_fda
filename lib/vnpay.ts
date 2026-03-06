@@ -26,13 +26,30 @@ import crypto from 'crypto'
  * Dùng function thay vì const để env vars luôn được đọc tại runtime,
  * tránh trường hợp module được cache khi env chưa có giá trị.
  */
+/**
+ * Lấy base URL của app theo thứ tự ưu tiên:
+ * 1. NEXT_PUBLIC_APP_URL (set thủ công, ưu tiên cao nhất)
+ * 2. VERCEL_URL (Vercel tự inject cho mỗi deployment/preview, không có https://)
+ * 3. Fallback localhost (chỉ dùng khi dev local và đã cấu hình ngrok/tunnel riêng)
+ */
+function getAppBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
+  return 'http://localhost:3000'
+}
+
 export function getVnpayConfig() {
+  const baseUrl = getAppBaseUrl()
   return {
     tmnCode:    process.env.VNPAY_TMN_CODE    ?? '',
     hashSecret: process.env.VNPAY_HASH_SECRET ?? '',
     payUrl:     process.env.VNPAY_PAY_URL     ?? 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
-    returnUrl:  `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/vnpay/callback`,
-    ipnUrl:     `${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/api/vnpay/ipn`,
+    returnUrl:  `${baseUrl}/api/vnpay/callback`,
+    ipnUrl:     `${baseUrl}/api/vnpay/ipn`,
     version:    '2.1.0',
     command:    'pay',
     currCode:   'VND',
