@@ -5,6 +5,26 @@ import type { AuditReport, Violation, Citation } from './types'
 
 type SupportedLang = 'vi' | 'en'
 
+interface ExpertReviewData {
+  id: string
+  status: string
+  created_at: string
+  expert_summary?: string
+  violation_reviews?: Array<{
+    violation_index: number
+    confirmed: boolean
+    wording_fix?: string
+    legal_note?: string
+  }>
+  recommended_actions?: Array<{
+    action: string
+    priority: string
+    cfr_reference?: string
+  }>
+  sign_off_name?: string
+  sign_off_at?: string
+}
+
 interface PDFReportData {
   report: AuditReport
   violations: Violation[]
@@ -19,6 +39,7 @@ interface PDFReportData {
     certificationId: string
   }
   lang?: SupportedLang
+  expertReview?: ExpertReviewData | null
 }
 
 // ── i18n label map ────────────────────────────────────────────────────
@@ -214,6 +235,19 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     imageTypeNutrition: 'Bảng dinh dưỡng',
     imageTypeIngredients: 'Thành phần',
     imageTypeOther: 'Khác',
+    // Expert Consultation Section
+    expertConsultation: 'Tư Vấn Chuyên Gia Vexim',
+    expertConsultationSubtitle: 'Đánh giá và hướng dẫn từ chuyên gia tuân thủ FDA',
+    expertOverview: 'Tổng quan đánh giá chuyên gia',
+    violationFixGuide: 'Hướng dẫn khắc phục từng vi phạm',
+    violationConfirmed: 'Xác nhận - cần sửa',
+    violationNotConfirmed: 'Không nghiêm trọng',
+    suggestedWording: 'Văn bản đề xuất:',
+    expertPriorityActions: 'Hành động ưu tiên',
+    priorityUrgent: 'Khẩn cấp',
+    signedOffBy: 'Ký xác nhận bởi',
+    requestSentAt: 'Yêu cầu gửi lúc',
+    resultsAvailable: 'Kết quả sẵn sàng',
   },
   en: {
     downloadTitle: 'FDA Compliance Audit Report',
@@ -406,6 +440,19 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     imageTypeNutrition: 'Nutrition Facts',
     imageTypeIngredients: 'Ingredients',
     imageTypeOther: 'Other',
+    // Expert Consultation Section
+    expertConsultation: 'Vexim Expert Consultation',
+    expertConsultationSubtitle: 'Review and guidance from FDA compliance experts',
+    expertOverview: 'Expert overview assessment',
+    violationFixGuide: 'Fix guidance per violation',
+    violationConfirmed: 'Confirmed - needs fix',
+    violationNotConfirmed: 'Not serious',
+    suggestedWording: 'Suggested wording:',
+    expertPriorityActions: 'Priority actions',
+    priorityUrgent: 'Urgent',
+    signedOffBy: 'Signed off by',
+    requestSentAt: 'Request sent at',
+    resultsAvailable: 'Results available',
   },
 }
 
@@ -620,7 +667,7 @@ function pageHeader(L: Record<string, string>, reportId: string, dateStr: string
 // ── Main Generator ────────────────────────────────────────────────────
 
 export function generatePDFReportHTML(data: PDFReportData): string {
-  const { report, violations, generatedAt, generatedBy, companyInfo, lang = 'vi' } = data
+  const { report, violations, generatedAt, generatedBy, companyInfo, lang = 'vi', expertReview } = data
   const L = PDF_LABELS[lang] || PDF_LABELS.vi
 
   const importAlertViolations = violations.filter(v => v.source_type === 'import_alert')
@@ -1363,6 +1410,107 @@ ${report.commercial_summary ? `
       ${markdownToHtml(report.commercial_summary)}
     </div>
   </div>
+  <div class="page-footer">
+    <div>${L.pageFooter} | ${companyInfo.name}</div>
+    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
+  </div>
+</div>` : ''}
+
+${expertReview && expertReview.status === 'completed' ? `
+<!-- ═══════════════════════ EXPERT CONSULTATION PAGE ═══════════════════════ -->
+<div class="page content-page page-break">
+  ${pageHeader(L, shortId, dateFormatted)}
+
+  <!-- Expert Consultation Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding:14px 18px;background:linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);border-radius:10px;color:white;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;">&#128101;</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;">${L.expertConsultation}</div>
+        <div style="font-size:9px;opacity:0.85;">${L.requestSentAt}: ${formatDate(expertReview.created_at, lang)}</div>
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,0.2);padding:6px 12px;border-radius:6px;font-size:9px;font-weight:600;">&#10003; ${L.resultsAvailable}</div>
+  </div>
+
+  <!-- Expert Overview Assessment -->
+  ${expertReview.expert_summary ? `
+  <div class="section">
+    <div style="font-size:11px;font-weight:700;color:#1e40af;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:14px;">&#10024;</span> ${L.expertOverview}
+    </div>
+    <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:16px;font-size:10px;color:#1e40af;line-height:1.7;overflow-wrap:break-word;">
+      ${escapeHtml(expertReview.expert_summary)}
+    </div>
+  </div>` : ''}
+
+  <!-- Fix Guidance per Violation -->
+  ${expertReview.violation_reviews && expertReview.violation_reviews.length > 0 ? `
+  <div class="section">
+    <div style="font-size:11px;font-weight:700;color:#334155;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:14px;">&#128221;</span> ${L.violationFixGuide}
+    </div>
+    <div style="space-y:10px;">
+      ${expertReview.violation_reviews.map((vr) => {
+        const isConfirmed = vr.confirmed
+        const bgColor = isConfirmed ? '#FEF2F2' : '#F0FDF4'
+        const borderColor = isConfirmed ? '#FECACA' : '#BBF7D0'
+        const iconColor = isConfirmed ? '#DC2626' : '#16A34A'
+        const icon = isConfirmed ? '&#9888;' : '&#10003;'
+        return `
+      <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:8px;padding:14px;margin-bottom:10px;page-break-inside:avoid;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <span style="color:${iconColor};font-size:12px;">${icon}</span>
+          <span style="font-size:10px;font-weight:600;color:#334155;">
+            Violation #${vr.violation_index + 1} — ${isConfirmed ? L.violationConfirmed : L.violationNotConfirmed}
+          </span>
+        </div>
+        ${vr.wording_fix ? `
+        <div style="margin-top:8px;">
+          <div style="font-size:8px;color:#64748b;margin-bottom:4px;">${L.suggestedWording}</div>
+          <div style="background:white;border:1px solid #e2e8f0;border-radius:6px;padding:10px;font-size:10px;color:#0f172a;line-height:1.6;overflow-wrap:break-word;">
+            ${escapeHtml(vr.wording_fix)}
+          </div>
+        </div>` : ''}
+        ${vr.legal_note ? `
+        <div style="margin-top:8px;font-size:9px;color:#64748b;font-style:italic;overflow-wrap:break-word;">
+          ${escapeHtml(vr.legal_note)}
+        </div>` : ''}
+      </div>`
+      }).join('')}
+    </div>
+  </div>` : ''}
+
+  <!-- Priority Actions -->
+  ${expertReview.recommended_actions && expertReview.recommended_actions.length > 0 ? `
+  <div class="section">
+    <div style="font-size:11px;font-weight:700;color:#334155;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:14px;">&#10145;</span> ${L.expertPriorityActions}
+    </div>
+    <div>
+      ${expertReview.recommended_actions.map((ra) => {
+        const priorityColor = ra.priority === 'high' ? '#DC2626' : ra.priority === 'medium' ? '#F59E0B' : '#64748B'
+        const priorityBg = ra.priority === 'high' ? '#FEE2E2' : ra.priority === 'medium' ? '#FEF3C7' : '#F1F5F9'
+        const priorityLabel = ra.priority === 'high' ? L.priorityUrgent : ra.priority === 'medium' ? L.priorityHigh : L.priorityMedium
+        return `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+        <span style="font-size:8px;font-weight:700;color:${priorityColor};background:${priorityBg};padding:3px 8px;border-radius:4px;white-space:nowrap;">${priorityLabel}</span>
+        <span style="font-size:10px;color:#334155;flex:1;overflow-wrap:break-word;">${escapeHtml(ra.action)}</span>
+        ${ra.cfr_reference ? `<span style="font-size:8px;color:#64748b;white-space:nowrap;">(${escapeHtml(ra.cfr_reference)})</span>` : ''}
+      </div>`
+      }).join('')}
+    </div>
+  </div>` : ''}
+
+  <!-- Sign Off -->
+  ${expertReview.sign_off_name ? `
+  <div style="margin-top:20px;padding-top:14px;border-top:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;font-size:9px;color:#64748b;">
+    <span style="font-size:12px;">&#128100;</span>
+    <span>${L.signedOffBy} <strong style="color:#0f172a;">${escapeHtml(expertReview.sign_off_name)}</strong></span>
+    <span>•</span>
+    <span>${formatDate(expertReview.sign_off_at || expertReview.created_at, lang)}</span>
+  </div>` : ''}
+
   <div class="page-footer">
     <div>${L.pageFooter} | ${companyInfo.name}</div>
     <div>${L.reportId}: ${escapeHtml(shortId)}</div>

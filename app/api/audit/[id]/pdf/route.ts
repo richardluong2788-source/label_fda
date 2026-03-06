@@ -85,6 +85,14 @@ export async function GET(
 
     const violations = report.findings || report.violations || []
 
+    // Fetch expert review data if exists
+    const { data: expertReview } = await supabase
+      .from('expert_review_requests')
+      .select('*')
+      .eq('report_id', id)
+      .eq('status', 'completed')
+      .maybeSingle()
+
     // Determine language from query param (default: vi for backward compat)
     const langParam = request.nextUrl.searchParams.get('lang')
     const lang = (langParam === 'en' ? 'en' : 'vi') as 'vi' | 'en'
@@ -116,6 +124,7 @@ export async function GET(
       generatedBy,
       companyInfo: VEXIM_COMPANY_INFO,
       lang,
+      expertReview: expertReview || null,
     })
 
     // Return as downloadable HTML file that opens as print-ready PDF layout
