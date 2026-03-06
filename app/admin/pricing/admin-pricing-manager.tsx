@@ -499,6 +499,8 @@ export function AdminPricingManager({ initialPlans }: Props) {
                   />
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Số lượt AI / tháng</Label>
                   <Input
