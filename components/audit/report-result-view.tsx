@@ -377,7 +377,7 @@ function ViolationCard({ violation, index, t, showExpertCta }: { violation: Viol
   const hasCitations = violation.citations && violation.citations.length > 0
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden violation-card print-no-break">
+    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
       {/* Header */}
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="flex items-start gap-3">
@@ -523,7 +523,7 @@ function ViolationCard({ violation, index, t, showExpertCta }: { violation: Viol
 
 function WarningLetterCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
-    <div className="rounded-xl border border-orange-200 bg-white overflow-hidden violation-card print-no-break">
+    <div className="rounded-xl border border-orange-200 bg-white overflow-hidden">
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="flex items-start gap-3">
           <ViolationIcon severity={violation.severity} type="warning_letter" />
@@ -572,7 +572,7 @@ function WarningLetterCard({ violation, t }: { violation: Violation; t: ReturnTy
 
 function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
-    <div className="rounded-xl border border-purple-200 bg-white overflow-hidden violation-card print-no-break">
+    <div className="rounded-xl border border-purple-200 bg-white overflow-hidden">
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="flex items-start gap-3">
           <ViolationIcon severity={violation.severity} type="recall" />
@@ -616,7 +616,7 @@ function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<type
 
 function ImportAlertCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
-    <div className="rounded-xl border border-cyan-200 bg-white overflow-hidden violation-card print-no-break">
+    <div className="rounded-xl border border-cyan-200 bg-white overflow-hidden">
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="flex items-start gap-3">
           <ViolationIcon severity={violation.severity} type="import_alert" />
@@ -751,7 +751,7 @@ function ContrastViolationCard({
 
 function GeometryViolationCard({ violation, t }: { violation: GeometryViolation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
-    <div className="rounded-xl border border-indigo-200 bg-white overflow-hidden violation-card print-no-break">
+    <div className="rounded-xl border border-indigo-200 bg-white overflow-hidden">
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="flex items-start gap-3">
           <div className="rounded-full bg-indigo-100 p-2.5 shrink-0">
@@ -795,10 +795,14 @@ function GeometryViolationCard({ violation, t }: { violation: GeometryViolation;
 
 interface ReportResultViewProps {
   report: AuditReport
+  onDownloadPdf: () => void
+  pdfLoading: boolean
 }
 
 export function ReportResultView({
   report,
+  onDownloadPdf,
+  pdfLoading,
 }: ReportResultViewProps) {
   const router = useRouter()
   const { t, locale } = useTranslation()
@@ -868,12 +872,6 @@ export function ReportResultView({
   const packagingFormat = report.packaging_format
   const specialClaims = report.special_claims || []
 
-  // ── PDF Export Handler ────────────────────────────────────
-  const handleExportPdf = () => {
-    // Navigate to dedicated print page with professional A4 layout
-    window.open(`/audit/${report.id}/print`, '_blank')
-  }
-
   return (
     <div className="bg-slate-50">
       <main className="container mx-auto px-4 py-6 max-w-7xl">
@@ -919,15 +917,18 @@ export function ReportResultView({
               </div>
             )}
           </div>
-
-          {/* PDF Export Button */}
           <Button
-            onClick={handleExportPdf}
+            onClick={onDownloadPdf}
+            disabled={pdfLoading}
             className="bg-red-600 hover:bg-red-700 text-white gap-2 text-sm font-semibold"
             size="sm"
           >
-            <Download className="h-4 w-4" />
-            {t.report.downloadPdf || 'Tải báo cáo PDF'}
+            {pdfLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {pdfLoading ? t.report.generating : t.report.exportReport}
           </Button>
         </div>
         <div className="grid lg:grid-cols-[320px_1fr] gap-6">

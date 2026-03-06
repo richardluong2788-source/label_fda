@@ -34,7 +34,7 @@ export default function AuditPage() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [scanPosition, setScanPosition] = useState(0)
   const [scanDirection, setScanDirection] = useState<'down' | 'up'>('down')
-
+  const [pdfLoading, setPdfLoading] = useState(false)
   const [quotaError, setQuotaError] = useState<{
     message: string
     plan_name: string
@@ -50,6 +50,31 @@ export default function AuditPage() {
     errorCode: string
     details?: string[]
   } | null>(null)
+
+  // ── PDF Download ──────────────────────────────────────────
+  const handleDownloadPdf = async () => {
+    if (!params.id) return
+    setPdfLoading(true)
+    try {
+      const res = await fetch(`/api/audit/${params.id}/pdf?lang=${locale}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || a.cannotCreateReport)
+      }
+      const html = await res.text()
+      
+      const blob = new Blob([html], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      const win = window.open(url, '_blank')
+      if (win) win.focus()
+      setTimeout(() => URL.revokeObjectURL(url), 120000)
+    } catch (err: any) {
+      console.error('[v0] PDF download error:', err)
+      alert(err.message || a.pdfDownloadError)
+    } finally {
+      setPdfLoading(false)
+    }
+  }
 
   // ── Load Report on Mount ──────────────────────────────────
   useEffect(() => {
@@ -503,6 +528,8 @@ export default function AuditPage() {
     <div>
       <ReportResultView
         report={report}
+        onDownloadPdf={handleDownloadPdf}
+        pdfLoading={pdfLoading}
       />
 
       {/* Expert Request Panel */}

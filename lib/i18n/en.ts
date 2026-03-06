@@ -246,14 +246,9 @@ export const en: TranslationKeys = {
       importAlerts: 'FDA Import Alerts',
       contrastIssues: 'Color Contrast Issues',
     },
+    downloadPdf: 'Download PDF',
+    downloading: 'Downloading...',
     backToHistory: 'Audit History',
-    // PDF Export
-    downloadPdf: 'Download PDF Report',
-    printReportTitle: 'LABEL COMPLIANCE AUDIT REPORT',
-    printServiceType: 'Service',
-    printReportCode: 'Report Code',
-    printExportDate: 'Export Date',
-    printCategory: 'Category',
     // Translation status
     translating: 'Translating content...',
     translationFailed: 'Translation unavailable',
