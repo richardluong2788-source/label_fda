@@ -50,9 +50,10 @@ export function AdminDashboard({
   const [expertQueue, setExpertQueue] = useState<any[]>([])
   const [expertQueueLoading, setExpertQueueLoading] = useState(false)
   const [liveExpertCount, setLiveExpertCount] = useState(expertQueueCount)
+  const [queueFilter, setQueueFilter] = useState<'pending' | 'in_review' | 'all'>('pending')
   const isAdmin = ['admin', 'superadmin', 'expert'].includes(adminUser.role)
 
-  const fetchExpertQueue = async (status = 'pending') => {
+  const fetchExpertQueue = async (status: string = queueFilter) => {
     setExpertQueueLoading(true)
     try {
       const res = await fetch(`/api/admin/expert-queue?status=${status}`)
@@ -67,12 +68,20 @@ export function AdminDashboard({
     }
   }
 
+  const handleFilterChange = (filter: 'pending' | 'in_review' | 'all') => {
+    setQueueFilter(filter)
+    setActiveTab('expert_queue')
+    fetchExpertQueue(filter)
+  }
+
   useEffect(() => {
-    fetchExpertQueue()
+    fetchExpertQueue('pending')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
-    if (activeTab === 'expert_queue') fetchExpertQueue()
+    if (activeTab === 'expert_queue') fetchExpertQueue(queueFilter)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
   return (
@@ -125,7 +134,10 @@ export function AdminDashboard({
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Summary cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="p-5 border-l-4 border-l-primary">
+          <Card
+            className="p-5 border-l-4 border-l-primary cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleFilterChange('pending')}
+          >
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Chờ tư vấn
@@ -136,7 +148,10 @@ export function AdminDashboard({
             <p className="text-xs text-muted-foreground mt-1">User đã trả phí / dùng quota</p>
           </Card>
 
-          <Card className="p-5">
+          <Card
+            className="p-5 cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleFilterChange('in_review')}
+          >
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Đang review
@@ -228,14 +243,36 @@ export function AdminDashboard({
                     Chỉ hiển thị các yêu cầu user đã trả phí hoặc sử dụng quota gói. Đây là nhiệm vụ có cam kết dịch vụ.
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => fetchExpertQueue()}
-                  disabled={expertQueueLoading}
-                >
-                  {expertQueueLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Làm mới'}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <div className="flex rounded-lg border overflow-hidden text-xs">
+                    <button
+                      onClick={() => handleFilterChange('pending')}
+                      className={`px-3 py-1.5 font-medium transition-colors ${queueFilter === 'pending' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`}
+                    >
+                      Chờ xử lý
+                    </button>
+                    <button
+                      onClick={() => handleFilterChange('in_review')}
+                      className={`px-3 py-1.5 font-medium border-l transition-colors ${queueFilter === 'in_review' ? 'bg-blue-500 text-white' : 'bg-background hover:bg-muted text-muted-foreground'}`}
+                    >
+                      Đang review
+                    </button>
+                    <button
+                      onClick={() => handleFilterChange('all')}
+                      className={`px-3 py-1.5 font-medium border-l transition-colors ${queueFilter === 'all' ? 'bg-muted text-foreground' : 'bg-background hover:bg-muted text-muted-foreground'}`}
+                    >
+                      Tất cả
+                    </button>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => fetchExpertQueue(queueFilter)}
+                    disabled={expertQueueLoading}
+                  >
+                    {expertQueueLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Làm mới'}
+                  </Button>
+                </div>
               </div>
 
               {expertQueueLoading ? (
