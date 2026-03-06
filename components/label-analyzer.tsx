@@ -46,6 +46,7 @@ type ProductType = 'food' | 'beverage' | 'dietary_supplement' | 'infant_formula'
 interface ImageSlotConfig {
   label: string
   description: string
+  hint?: string
   required: boolean
   icon: string
 }
@@ -432,6 +433,11 @@ export function LabelAnalyzer() {
                 <div>
                   <h3 className="font-bold text-foreground">{info.label}</h3>
                   <p className="text-xs text-muted-foreground mt-0.5">{info.description}</p>
+                  {info.hint && (
+                    <p className="text-[11px] text-amber-600 bg-amber-50 px-2 py-1 rounded mt-1.5 border border-amber-200">
+                      {info.hint}
+                    </p>
+                  )}
                   <Link
                     href={`/guide#${key}`}
                     target="_blank"

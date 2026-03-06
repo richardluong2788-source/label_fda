@@ -45,7 +45,7 @@ export const vi = {
   analyze: {
     imageTypes: {
       pdp: { label: 'Mặt trước (PDP)', description: 'Principal Display Panel - Có Net Weight, Brand, Product Name' },
-      nutrition: { label: 'Bảng Nutrition Facts', description: 'Bảng thành phần dinh dưỡng chi tiết' },
+      nutrition: { label: 'Bảng Nutrition Facts', description: 'Bảng thành phần dinh dưỡng chi tiết', hint: 'Không có Nutrition Facts? Gói nhỏ có thể được miễn trừ - hãy upload mặt sau có thông tin thành phần' },
       supplementFacts: { label: 'Bảng Supplement Facts', description: 'Bảng thành phần thực phẩm chức năng' },
       drugFacts: { label: 'Bảng Drug Facts', description: 'Bảng thông tin dược phẩm OTC' },
       inciIngredients: { label: 'Bảng INCI Ingredients', description: 'Danh sách thành phần mỹ phẩm (INCI)' },

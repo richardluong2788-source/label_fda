@@ -47,7 +47,7 @@ export const en: TranslationKeys = {
   analyze: {
     imageTypes: {
       pdp: { label: 'Front Panel (PDP)', description: 'Principal Display Panel - Net Weight, Brand, Product Name' },
-      nutrition: { label: 'Nutrition Facts', description: 'Detailed nutrition information panel' },
+      nutrition: { label: 'Nutrition Facts', description: 'Detailed nutrition information panel', hint: 'No Nutrition Facts? Small packages may be exempt - upload the back panel with ingredients instead' },
       supplementFacts: { label: 'Supplement Facts', description: 'Dietary supplement information panel' },
       drugFacts: { label: 'Drug Facts', description: 'OTC drug information panel' },
       inciIngredients: { label: 'INCI Ingredients', description: 'Cosmetic ingredients list (INCI)' },
