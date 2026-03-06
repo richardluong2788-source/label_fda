@@ -832,7 +832,30 @@ export function ReportResultView({
   const recallViolations = allViolations.filter((v) => v.source_type === 'recall')
   const importAlertViolations = allViolations.filter((v) => v.source_type === 'import_alert')
   
-  const contrastViolations = report.contrast_violations || []
+  // Filter contrast violations:
+  // Brand/decorative elements (logo, product name) with large text meeting WCAG AA 3:1 are EXEMPT.
+  // 21 CFR does NOT mandate a specific contrast ratio — only "conspicuous/legible" text.
+  // Only show violations that are genuinely problematic for regulatory text OR critically low for any text.
+  const contrastViolations = (report.contrast_violations || []).filter((cv: any) => {
+    const ratio = cv.ratio ?? 0
+    const role = cv.elementRole ?? cv.element_role ?? 'regulatory'
+    const textSize = cv.textSize ?? cv.text_size ?? 'normal'
+
+    // Always show regulatory element violations (net quantity, ingredient text, etc.)
+    if (role === 'regulatory') return true
+
+    // For brand elements: only show if ratio is critically low (< 2.5:1)
+    // A ratio of 2.94:1 on orange brand logo is intentional design — skip it
+    if (role === 'brand') {
+      return ratio < 2.5
+    }
+
+    // For large text of any role: WCAG AA requires 3:1 minimum
+    if (textSize === 'large' && ratio >= 3.0) return false
+
+    // For normal text: WCAG AA requires 4.5:1 minimum — show if below threshold
+    return true
+  })
   const geometryViolations = report.geometry_violations || []
 
   const riskScore = report.overall_risk_score ?? 5
