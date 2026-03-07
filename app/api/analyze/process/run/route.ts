@@ -170,6 +170,9 @@ export async function POST(request: Request) {
             ...(nutritionData.validationWarnings || []).map((w: string) => `[Nutrition] ${w}`),
             ...(ingredientsData.validationWarnings || []).map((w: string) => `[Ingredients] ${w}`),
           ].filter(Boolean),
+          // CRITICAL: Include multi-column nutrition facts data from nutrition image
+          isMultiColumnNutrition: nutritionData.isMultiColumnNutrition || pdpData.isMultiColumnNutrition || false,
+          nutritionFactsColumns: nutritionData.nutritionFactsColumns || pdpData.nutritionFactsColumns || [],
         }
 
         totalTokensUsed = visionResult.tokensUsed
