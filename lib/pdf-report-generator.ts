@@ -134,8 +134,9 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     issueCount: 'vấn đề',
     expected: 'Yêu cầu',
     actual: 'Thực tế',
-    colorContrast: 'Độ tương phản màu',
-    contrastRatio: 'Tỷ lệ tương phản',
+colorContrast: 'Độ tương phản màu',
+  contrastDesignNote: 'Đây là gợi ý thiết kế để cải thiện khả năng đọc. FDA chỉ yêu cầu văn bản "dễ nhận biết" (§101.2), không quy định tỷ lệ tương phản cụ thể.',
+  contrastRatio: 'Tỷ lệ tương phản',
     minimum: 'tối thiểu',
     on: 'trên',
     multiLangCompliance: 'Tuân thủ đa ngôn ngữ',
@@ -355,8 +356,9 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     issueCount: 'issues',
     expected: 'Required',
     actual: 'Actual',
-    colorContrast: 'Color Contrast',
-    contrastRatio: 'Contrast ratio',
+colorContrast: 'Color Contrast',
+  contrastDesignNote: 'This is a design suggestion to improve readability. FDA only requires text be "conspicuous" (§101.2) — no specific contrast ratio is mandated.',
+  contrastRatio: 'Contrast ratio',
     minimum: 'minimum',
     on: 'on',
     multiLangCompliance: 'Multi-language Compliance',
@@ -795,7 +797,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     (report.contrast_violations && report.contrast_violations.length > 0) ||
     (report.multilanguage_issues && report.multilanguage_issues.length > 0)
   const secTechnical = hasTech ? toc(L.technicalChecks) : null
-  const secCommercial = report.commercial_summary ? toc(L.commercialSummary) : null
+  const secCommercial = toc(L.commercialSummary) // Always show commercial summary with fallback
   const secExpert = toc(L.expertRecommendations)
   const secAction = toc(L.actionItems)
 
@@ -987,7 +989,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
 <div class="page-content-wrapper">
 
-<!-- ═══════════════════════ COVER PAGE ═══════════════════════ -->
+<!-- ═════════════��═════════ COVER PAGE ═══════════════════════ -->
 <div class="page cover-page">
   <div class="cover-accent"></div>
   <div class="cover-header">
@@ -1150,8 +1152,8 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   </div>
 </div>
 
-<!-- ═══════════════════════ PRODUCT INFO PAGE ═══════════════════════ -->
-<div class="page content-page page-break">
+  <!-- ═══════════════════════ PRODUCT INFO (flows from previous) ═══════════════════════ -->
+<div class="page content-page"><!-- No page-break: flows naturally from Executive Summary -->
   ${pageHeader(L, shortId, dateFormatted)}
 
   <div class="section">
@@ -1253,31 +1255,77 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     </div>
   </div>` : ''}
 
-  <!-- Nutrition Facts -->
-  ${!isCosmetic ? `
+  <!-- Nutrition Facts - show multi-column OR single-column, not both -->
+  ${!isCosmetic ? (() => {
+    const hasMultiColumn = (report as any).nutrition_facts_columns && (report as any).nutrition_facts_columns.length > 1
+    if (hasMultiColumn) {
+      // Multi-column NF: render table in Product Info section
+      const allColumns: any[] = (report as any).nutrition_facts_columns
+      const nutrientNames = Array.from(
+        new Set(allColumns.flatMap((col: any) => (col.nutritionFacts || []).map((n: any) => n.name as string)))
+      )
+      return `
+  <div class="section">
+    <div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #e2e8f0;">${L.multiColumnNF}</div>
+    <div style="font-size:9px;color:#64748b;margin-bottom:10px;">${L.multiColumnNFDesc}</div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:8.5px;table-layout:fixed;">
+        <colgroup>
+          <col style="width:22%;" />
+          ${allColumns.map(() => '<col style="width:' + Math.floor(78 / allColumns.length) + '%;" />').join('')}
+        </colgroup>
+        <thead>
+          <tr style="background:#1e40af;color:white;">
+            <th style="padding:7px 8px;text-align:left;font-weight:700;">Nutrient</th>
+            ${allColumns.map((col: any) => '<th style="padding:7px 8px;text-align:center;font-weight:700;font-size:8px;">' + escapeHtml(col.columnName || col.name || L.multiColumnVariant) + '</th>').join('')}
+          </tr>
+          <tr style="background:#dbeafe;">
+            <td style="padding:5px 8px;font-size:7.5px;font-weight:600;color:#334155;">${L.multiColumnServingSize}</td>
+            ${allColumns.map((col: any) => '<td style="padding:5px 8px;text-align:center;font-size:7.5px;color:#475569;">' + escapeHtml(col.servingSize || '—') + '</td>').join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${nutrientNames.map((nutrientName, rowIdx) => {
+            const bg = rowIdx % 2 === 0 ? 'background:#f8fafc;' : ''
+            return '<tr style="' + bg + '">' +
+              '<td style="padding:5px 8px;font-weight:600;color:#334155;font-size:8px;text-transform:capitalize;">' + escapeHtml(nutrientName) + '</td>' +
+              allColumns.map((col: any) => {
+                const fact = (col.nutritionFacts || []).find((n: any) => n.name === nutrientName)
+                const val = fact ? (fact.value ?? '') + (fact.unit ? fact.unit : '') + (fact.dailyValue != null ? ' <span style="color:#94a3b8;">(' + fact.dailyValue + '%)</span>' : '') : '<span style="color:#d1d5db;">—</span>'
+                return '<td style="padding:5px 8px;text-align:center;color:#475569;font-size:8px;">' + val + '</td>'
+              }).join('') +
+            '</tr>'
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`
+    } else {
+      // Single-column NF or fallback
+      return `
   <div class="section">
     <div style="font-size:10px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.nutritionInfo}</div>
     <div class="data-box">
       <div class="data-box-label">${L.nutritionDetected}</div>
       ${report.nutrition_facts ? `
       <table class="info-table" style="margin: 0;">
-        ${report.nutrition_facts.servingSize ? `<tr><td>${L.servingSize}</td><td>${escapeHtml(report.nutrition_facts.servingSize)}</td></tr>` : ''}
-        ${report.nutrition_facts.servingsPerContainer ? `<tr><td>${L.servingsPerContainer}</td><td>${escapeHtml(String(report.nutrition_facts.servingsPerContainer))}</td></tr>` : ''}
-        ${report.nutrition_facts.calories !== undefined ? `<tr><td>${L.calories}</td><td>${formatNutrientValue(report.nutrition_facts.calories)}</td></tr>` : ''}
-        ${report.nutrition_facts.totalFat ? `<tr><td>${L.totalFat}</td><td>${formatNutrientValue(report.nutrition_facts.totalFat)}</td></tr>` : ''}
-        ${report.nutrition_facts.saturatedFat ? `<tr><td>${L.saturatedFat}</td><td>${formatNutrientValue(report.nutrition_facts.saturatedFat)}</td></tr>` : ''}
-        ${report.nutrition_facts.transFat ? `<tr><td>${L.transFat}</td><td>${formatNutrientValue(report.nutrition_facts.transFat)}</td></tr>` : ''}
-        ${report.nutrition_facts.cholesterol ? `<tr><td>${L.cholesterol}</td><td>${formatNutrientValue(report.nutrition_facts.cholesterol)}</td></tr>` : ''}
-        ${report.nutrition_facts.sodium ? `<tr><td>${L.sodium}</td><td>${formatNutrientValue(report.nutrition_facts.sodium)}</td></tr>` : ''}
-        ${report.nutrition_facts.totalCarbohydrate ? `<tr><td>${L.totalCarb}</td><td>${formatNutrientValue(report.nutrition_facts.totalCarbohydrate)}</td></tr>` : ''}
-        ${report.nutrition_facts.dietaryFiber ? `<tr><td>${L.dietaryFiber}</td><td>${formatNutrientValue(report.nutrition_facts.dietaryFiber)}</td></tr>` : ''}
-        ${report.nutrition_facts.totalSugars ? `<tr><td>${L.totalSugars}</td><td>${formatNutrientValue(report.nutrition_facts.totalSugars)}</td></tr>` : ''}
-        ${report.nutrition_facts.addedSugars ? `<tr><td>${L.addedSugars}</td><td>${formatNutrientValue(report.nutrition_facts.addedSugars)}</td></tr>` : ''}
-        ${report.nutrition_facts.protein ? `<tr><td>${L.protein}</td><td>${formatNutrientValue(report.nutrition_facts.protein)}</td></tr>` : ''}
-        ${report.nutrition_facts.vitaminD ? `<tr><td>${L.vitaminD}</td><td>${formatNutrientValue(report.nutrition_facts.vitaminD)}</td></tr>` : ''}
-        ${report.nutrition_facts.calcium ? `<tr><td>${L.calcium}</td><td>${formatNutrientValue(report.nutrition_facts.calcium)}</td></tr>` : ''}
-        ${report.nutrition_facts.iron ? `<tr><td>${L.iron}</td><td>${formatNutrientValue(report.nutrition_facts.iron)}</td></tr>` : ''}
-        ${report.nutrition_facts.potassium ? `<tr><td>${L.potassium}</td><td>${formatNutrientValue(report.nutrition_facts.potassium)}</td></tr>` : ''}
+        ${report.nutrition_facts.servingSize ? '<tr><td>' + L.servingSize + '</td><td>' + escapeHtml(report.nutrition_facts.servingSize) + '</td></tr>' : ''}
+        ${report.nutrition_facts.servingsPerContainer ? '<tr><td>' + L.servingsPerContainer + '</td><td>' + escapeHtml(String(report.nutrition_facts.servingsPerContainer)) + '</td></tr>' : ''}
+        ${report.nutrition_facts.calories !== undefined ? '<tr><td>' + L.calories + '</td><td>' + formatNutrientValue(report.nutrition_facts.calories) + '</td></tr>' : ''}
+        ${report.nutrition_facts.totalFat ? '<tr><td>' + L.totalFat + '</td><td>' + formatNutrientValue(report.nutrition_facts.totalFat) + '</td></tr>' : ''}
+        ${report.nutrition_facts.saturatedFat ? '<tr><td>' + L.saturatedFat + '</td><td>' + formatNutrientValue(report.nutrition_facts.saturatedFat) + '</td></tr>' : ''}
+        ${report.nutrition_facts.transFat ? '<tr><td>' + L.transFat + '</td><td>' + formatNutrientValue(report.nutrition_facts.transFat) + '</td></tr>' : ''}
+        ${report.nutrition_facts.cholesterol ? '<tr><td>' + L.cholesterol + '</td><td>' + formatNutrientValue(report.nutrition_facts.cholesterol) + '</td></tr>' : ''}
+        ${report.nutrition_facts.sodium ? '<tr><td>' + L.sodium + '</td><td>' + formatNutrientValue(report.nutrition_facts.sodium) + '</td></tr>' : ''}
+        ${report.nutrition_facts.totalCarbohydrate ? '<tr><td>' + L.totalCarb + '</td><td>' + formatNutrientValue(report.nutrition_facts.totalCarbohydrate) + '</td></tr>' : ''}
+        ${report.nutrition_facts.dietaryFiber ? '<tr><td>' + L.dietaryFiber + '</td><td>' + formatNutrientValue(report.nutrition_facts.dietaryFiber) + '</td></tr>' : ''}
+        ${report.nutrition_facts.totalSugars ? '<tr><td>' + L.totalSugars + '</td><td>' + formatNutrientValue(report.nutrition_facts.totalSugars) + '</td></tr>' : ''}
+        ${report.nutrition_facts.addedSugars ? '<tr><td>' + L.addedSugars + '</td><td>' + formatNutrientValue(report.nutrition_facts.addedSugars) + '</td></tr>' : ''}
+        ${report.nutrition_facts.protein ? '<tr><td>' + L.protein + '</td><td>' + formatNutrientValue(report.nutrition_facts.protein) + '</td></tr>' : ''}
+        ${report.nutrition_facts.vitaminD ? '<tr><td>' + L.vitaminD + '</td><td>' + formatNutrientValue(report.nutrition_facts.vitaminD) + '</td></tr>' : ''}
+        ${report.nutrition_facts.calcium ? '<tr><td>' + L.calcium + '</td><td>' + formatNutrientValue(report.nutrition_facts.calcium) + '</td></tr>' : ''}
+        ${report.nutrition_facts.iron ? '<tr><td>' + L.iron + '</td><td>' + formatNutrientValue(report.nutrition_facts.iron) + '</td></tr>' : ''}
+        ${report.nutrition_facts.potassium ? '<tr><td>' + L.potassium + '</td><td>' + formatNutrientValue(report.nutrition_facts.potassium) + '</td></tr>' : ''}
       </table>` : `
       <div style="padding:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#92400e;font-size:8.5px;text-align:center;">
         ${lang === 'vi'
@@ -1285,7 +1333,9 @@ export function generatePDFReportHTML(data: PDFReportData): string {
           : 'Could not extract nutrition facts from the provided image. Please upload a clearer Nutrition Facts panel image.'}
       </div>`}
     </div>
-  </div>` : ''}
+  </div>`
+    }
+  })() : ''}
 
   <div class="page-footer">
     <div>${L.pageFooter} | ${companyInfo.name}</div>
@@ -1293,8 +1343,8 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   </div>
 </div>
 
-<!-- ═══════════════════════ AUDIT SCOPE PAGE ═══════════════════════ -->
-<div class="page content-page page-break">
+  <!-- ═══════════════════════ AUDIT SCOPE (flows from previous) ═══════════════════════ -->
+<div class="page content-page"><!-- No page-break: flows naturally -->
   ${pageHeader(L, shortId, dateFormatted)}
 
   <div class="section">
@@ -1331,53 +1381,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       </ul>
     </div>
 
-    ${/* Multi-column NF breakdown */ (report as any).nutrition_facts_columns && (report as any).nutrition_facts_columns.length > 1 ? `
-    <div class="section" style="margin-top:20px;">
-      <div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #e2e8f0;">${L.multiColumnNF}</div>
-      <div style="font-size:9px;color:#64748b;margin-bottom:10px;">${L.multiColumnNFDesc}</div>
 
-      <!-- Responsive column comparison table -->
-      <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;font-size:8.5px;table-layout:fixed;">
-          <colgroup>
-            <col style="width:22%;" />
-            ${(report as any).nutrition_facts_columns.map(() => `<col style="width:${Math.floor(78 / (report as any).nutrition_facts_columns.length)}%;" />`).join('')}
-          </colgroup>
-          <thead>
-            <tr style="background:#1e40af;color:white;">
-              <th style="padding:7px 8px;text-align:left;font-weight:700;">Nutrient</th>
-              ${(report as any).nutrition_facts_columns.map((col: any) => `
-              <th style="padding:7px 8px;text-align:center;font-weight:700;font-size:8px;">${escapeHtml(col.columnName || col.name || L.multiColumnVariant)}</th>`).join('')}
-            </tr>
-            <tr style="background:#dbeafe;">
-              <td style="padding:5px 8px;font-size:7.5px;font-weight:600;color:#334155;">${L.multiColumnServingSize}</td>
-              ${(report as any).nutrition_facts_columns.map((col: any) => `
-              <td style="padding:5px 8px;text-align:center;font-size:7.5px;color:#475569;">${escapeHtml(col.servingSize || '—')}</td>`).join('')}
-            </tr>
-          </thead>
-          <tbody>
-            ${(() => {
-              // Collect all unique nutrient names across all columns
-              const allColumns: any[] = (report as any).nutrition_facts_columns
-              const nutrientNames = Array.from(
-                new Set(allColumns.flatMap((col: any) => (col.nutritionFacts || []).map((n: any) => n.name as string)))
-              )
-              return nutrientNames.map((nutrientName, rowIdx) => {
-                const bg = rowIdx % 2 === 0 ? 'background:#f8fafc;' : ''
-                return `<tr style="${bg}">
-                  <td style="padding:5px 8px;font-weight:600;color:#334155;font-size:8px;text-transform:capitalize;">${escapeHtml(nutrientName)}</td>
-                  ${allColumns.map((col: any) => {
-                    const fact = (col.nutritionFacts || []).find((n: any) => n.name === nutrientName)
-                    const val = fact ? `${fact.value ?? ''}${fact.unit ? fact.unit : ''}${fact.dailyValue != null ? ` <span style="color:#94a3b8;">(${fact.dailyValue}%)</span>` : ''}` : '<span style="color:#d1d5db;">—</span>'
-                    return `<td style="padding:5px 8px;text-align:center;color:#475569;font-size:8px;">${val}</td>`
-                  }).join('')}
-                </tr>`
-              }).join('')
-            })()}
-          </tbody>
-        </table>
-      </div>
-    </div>` : ''}
   </div>
 
   <div class="page-footer">
@@ -1387,7 +1391,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 </div>
 
 
-<div class="page content-page page-break">
+<div class="page content-page${sortedViolations.length > 3 ? ' page-break' : ''}"><!-- Page-break only if many violations -->
   ${pageHeader(L, shortId, dateFormatted)}
 
   <div class="section">
@@ -1458,9 +1462,9 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   </div>
 </div>
 
-${importAlertViolations.length > 0 ? `
-<!-- ═══════════════════════ IMPORT ALERT PAGE ═══════════════════════ -->
-<div class="page content-page page-break">
+  ${importAlertViolations.length > 0 ? `
+  <!-- ═══════════════════════ IMPORT ALERTS (flows from previous) ═══════════════════════ -->
+<div class="page content-page"><!-- No page-break: flows naturally -->
   ${pageHeader(L, shortId, dateFormatted)}
   <div class="section">
     <div class="section-title"><span class="section-number">${secImportAlerts}</span>${L.importAlerts}</div>
@@ -1501,9 +1505,9 @@ ${importAlertViolations.length > 0 ? `
   </div>
 </div>` : ''}
 
-${hasTech ? `
-<!-- ═══════════════════════ TECHNICAL CHECKS PAGE ═══════════════════════ -->
-<div class="page content-page page-break">
+  ${hasTech ? `
+  <!-- ═══════════════════════ TECHNICAL CHECKS (flows from previous) ═══════════════════════ -->
+<div class="page content-page"><!-- No page-break: flows naturally -->
   ${pageHeader(L, shortId, dateFormatted)}
   <div class="section">
     <div class="section-title"><span class="section-number">${secTechnical}</span>${L.technicalChecks}</div>
@@ -1535,7 +1539,7 @@ ${hasTech ? `
           ${cv.ratio !== undefined ? `
           <div style="margin-top: 4px; font-size: 9px;">
             ${L.contrastRatio}: <strong style="color: ${cv.ratio >= (cv.requiredMinRatio || 4.5) ? '#16a34a' : cv.ratio >= 3 ? '#f59e0b' : '#dc2626'}">${cv.ratio.toFixed(2)}:1</strong>
-            <span style="color: #94a3b8;">(${L.minimum} ${(cv.requiredMinRatio || 4.5).toFixed(1)}:1${cv.textSize === 'large' ? ' — large text' : ''}${cv.elementRole === 'brand' ? ' — brand/decorative' : ''})</span>
+            <span style="color: #94a3b8;">(${L.minimum} ${(cv.requiredMinRatio || 3.0).toFixed(1)}:1${cv.textSize === 'large' ? ' — large text' : ''}${cv.elementRole === 'brand' ? ' — brand/decorative' : ''})</span>
           </div>` : ''}
           ${cv.colors ? `
           <div style="margin-top: 4px; font-size: 8px; display: flex; align-items: center; gap: 8px;">
@@ -1545,6 +1549,9 @@ ${hasTech ? `
           </div>` : ''}
           ${cv.recommendation ? `<div style="margin-top: 4px; font-size: 8px; color: #16a34a;">${escapeHtml(cv.recommendation)}</div>` : ''}
         </div>`).join('')}
+        <div style="margin-top:10px;padding:8px;background:#fefce8;border:1px solid #fde68a;border-radius:6px;font-size:8px;color:#92400e;">
+          ${L.contrastDesignNote}
+        </div>
       </div>` : ''}
     </div>
     ${report.multilanguage_issues && report.multilanguage_issues.length > 0 ? `
@@ -1576,8 +1583,8 @@ ${(() => {
       : (lang === 'vi'
         ? 'Phát hiện một số vấn đề tuân thủ cần được khắc phục trước khi phân phối. Vui lòng xem Chi Tiết Phát Hiện và Danh Sách Hành Động bên dưới.'
         : 'Compliance issues were identified that require remediation before distribution. Please review the Findings Detail and Action Items sections.'))
-  return `<!-- ═══════════════════════ COMMERCIAL SUMMARY PAGE ═══════════════════════ -->
-<div class="page content-page page-break">
+  return `<!-- ═══════════════════════ COMMERCIAL SUMMARY (flows from previous) ═══════════════════════ -->
+<div class="page content-page"><!-- No page-break: flows naturally -->
   ${pageHeader(L, shortId, dateFormatted)}
   <div class="section">
     <div class="section-title"><span class="section-number">${secCommercial}</span>${L.commercialSummary}</div>
@@ -1592,9 +1599,9 @@ ${(() => {
 </div>`
 })()} 
 
-${expertReview && expertReview.status === 'completed' ? `
-<!-- ═══════════════════════ EXPERT CONSULTATION PAGE ═══════════════════════ -->
-<div class="page content-page page-break">
+  ${expertReview && expertReview.status === 'completed' ? `
+  <!-- ═══════════════════════ EXPERT CONSULTATION (flows from previous) ═══════════════════════ -->
+<div class="page content-page"><!-- No page-break: flows naturally -->
   ${pageHeader(L, shortId, dateFormatted)}
 
   <!-- Expert Consultation Header -->
@@ -1693,8 +1700,8 @@ ${expertReview && expertReview.status === 'completed' ? `
   </div>
 </div>` : ''}
 
-<!-- ═══════════════════════ EXPERT RECOMMENDATIONS PAGE ═══════════════════════ -->
-<div class="page content-page page-break">
+  <!-- ═══════════════════════ EXPERT RECOMMENDATIONS (flows from previous) ═══════════════════════ -->
+<div class="page content-page"><!-- No page-break: flows naturally -->
   ${pageHeader(L, shortId, dateFormatted)}
 
   <div class="section">

@@ -98,19 +98,19 @@ export class ContrastChecker {
       if (elementRole === 'brand' && textSize === 'large') {
         isReadable = true
       } else {
-        isReadable = false
+        isReadable = elementRole === 'brand' // Brand text is considered readable even at lower ratios
         warning = elementRole === 'brand'
-          ? `Contrast ratio ${ratio.toFixed(2)}:1 is below WCAG AA (${minRatioAA}:1). This is brand/decorative text — may be an intentional design choice, but FDA requires all text be "conspicuous".`
-          : `Contrast ratio is below industry best practices for readability (WCAG AA). FDA may consider this insufficient for "conspicuous" labeling.`
-        recommendation = `Current ratio ${ratio.toFixed(2)}:1 — increase to at least ${minRatioAA}:1 (${textSize} text, WCAG AA) for optimal readability`
+          ? `Brand text contrast ${ratio.toFixed(2)}:1 is below recommended minimum. This may be intentional design, but FDA requires text be "conspicuous".`
+          : `Contrast ratio is below industry best practices for readability. FDA may consider this insufficient for "conspicuous" labeling.`
+        recommendation = `Current ratio ${ratio.toFixed(2)}:1 — increase to at least 3:1 (WCAG AA standard for large text) for proper readability`
       }
     } else {
       wcagLevel = 'Fail'
       isReadable = false
       warning = elementRole === 'brand'
-        ? `CRITICAL: Brand text contrast ${ratio.toFixed(2)}:1 is very low. Even for decorative text, this may not meet FDA "conspicuous" labeling requirements (21 CFR 701.11 / 101.15).`
-        : 'CRITICAL: Text contrast is very low and may not meet FDA "conspicuous" labeling requirements. This could result in regulatory action.'
-      recommendation = `Current ratio ${ratio.toFixed(2)}:1 — increase to at least ${minRatioAA}:1 (WCAG AA standard for ${textSize} text) for proper readability`
+        ? `Brand text contrast ${ratio.toFixed(2)}:1 is very low. Even for decorative text, this may not meet FDA "conspicuous" labeling requirements (21 CFR 101.15).`
+        : 'Text contrast is very low and may not meet FDA "conspicuous" labeling requirements.'
+      recommendation = `Current ratio ${ratio.toFixed(2)}:1 — increase to at least 3:1 for proper readability`
     }
 
     return {
