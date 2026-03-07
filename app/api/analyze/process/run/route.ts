@@ -485,8 +485,10 @@ export async function POST(request: Request) {
     })
     for (const { finding, originalViolation } of professionalFindings) {
       const relevantCitations = realCitations.filter(c => {
-        const findingRef = finding.cfr_reference.toLowerCase()
-        return findingRef.includes(c.section.toLowerCase()) || (c.regulation_id + ' ' + c.section).toLowerCase().includes(finding.cfr_reference.split(' ')[2]?.split('(')[0] || '')
+        const findingRef = (finding?.cfr_reference || '').toLowerCase()
+        const cSection = (c?.section || '').toLowerCase()
+        const cRegId = c?.regulation_id || ''
+        return findingRef.includes(cSection) || (cRegId + ' ' + cSection).toLowerCase().includes(findingRef.split(' ')[2]?.split('(')[0] || '')
       })
       
       // Determine raw text for "Currently on Label" display
