@@ -390,6 +390,10 @@ export class NutritionValidator {
       }
     }
 
+    // 5. Impossible value checks (NF-MATH-003 to NF-MATH-008)
+    const impossibleValueResult = this.validateImpossibleValues(facts)
+    errors.push(...impossibleValueResult.errors)
+
     return {
       isValid: errors.length === 0,
       errors,
@@ -402,6 +406,396 @@ export class NutritionValidator {
   // NEW: Multi-Column Nutrition Facts Validation (21 CFR §101.9(b)(12))
   // For variety packs with multiple products in one package
   // ═══════════════════════════════════════════════════════════════════════════
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // IMPOSSIBLE VALUE DETECTION (NF-MATH-003, NF-MATH-005)
+  // These are CRITICAL checks - missing them = false negatives
+  // Reference: VXG-DEV-SPEC-NF-001 Section 4.1
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * NF-MATH-003: Added Sugars ≤ Total Sugars
+   * Added sugars cannot exceed total sugars - this is a physical impossibility
+   * Reference: 21 CFR 101.9(c)(6)(iii)
+   */
+  static validateAddedSugarsLessThanTotal(
+    totalSugars: number | undefined,
+    addedSugars: number | undefined
+  ): { isValid: boolean; error?: string } {
+    if (totalSugars === undefined || addedSugars === undefined) {
+      return { isValid: true } // Can't validate if values missing
+    }
+
+    // Allow small tolerance for rounding (0.5g)
+    if (addedSugars > totalSugars + 0.5) {
+      return {
+        isValid: false,
+        error: `[NF-MATH-003] Added Sugars (${addedSugars}g) exceeds Total Sugars (${totalSugars}g). ` +
+          `This is physically impossible - Added Sugars must be ≤ Total Sugars per 21 CFR 101.9(c)(6)(iii).`,
+      }
+    }
+
+    return { isValid: true }
+  }
+
+  /**
+   * NF-MATH-005: Saturated Fat ≤ Total Fat
+   * Saturated fat cannot exceed total fat - this is a physical impossibility
+   * Reference: 21 CFR 101.9(c)(2)
+   */
+  static validateSaturatedFatLessThanTotal(
+    totalFat: number | undefined,
+    saturatedFat: number | undefined
+  ): { isValid: boolean; error?: string } {
+    if (totalFat === undefined || saturatedFat === undefined) {
+      return { isValid: true } // Can't validate if values missing
+    }
+
+    // Allow small tolerance for rounding (0.5g)
+    if (saturatedFat > totalFat + 0.5) {
+      return {
+        isValid: false,
+        error: `[NF-MATH-005] Saturated Fat (${saturatedFat}g) exceeds Total Fat (${totalFat}g). ` +
+          `This is physically impossible - Saturated Fat must be ≤ Total Fat per 21 CFR 101.9(c)(2).`,
+      }
+    }
+
+    return { isValid: true }
+  }
+
+  /**
+   * NF-MATH-009: Trans Fat ≤ Total Fat (additional impossible value check)
+   * Trans fat cannot exceed total fat
+   * 
+   * NOTE: NF-MATH-004 in spec is "%DV Math Verification" which is handled by validateDailyValue()
+   * This rule (Trans Fat check) is an additional impossible value check beyond spec
+   */
+  static validateTransFatLessThanTotal(
+    totalFat: number | undefined,
+    transFat: number | undefined
+  ): { isValid: boolean; error?: string } {
+    if (totalFat === undefined || transFat === undefined) {
+      return { isValid: true }
+    }
+
+    if (transFat > totalFat + 0.5) {
+      return {
+        isValid: false,
+        error: `[NF-MATH-009] Trans Fat (${transFat}g) exceeds Total Fat (${totalFat}g). ` +
+          `This is physically impossible - Trans Fat must be ≤ Total Fat.`,
+      }
+    }
+
+    return { isValid: true }
+  }
+
+  /**
+   * NF-MATH-006: Saturated + Trans ≤ Total Fat
+   * Combined saturated and trans fat cannot exceed total fat
+   */
+  static validateCombinedFatsLessThanTotal(
+    totalFat: number | undefined,
+    saturatedFat: number | undefined,
+    transFat: number | undefined
+  ): { isValid: boolean; error?: string } {
+    if (totalFat === undefined) {
+      return { isValid: true }
+    }
+
+    const combined = (saturatedFat || 0) + (transFat || 0)
+    
+    // Allow 1g tolerance for rounding
+    if (combined > totalFat + 1) {
+      return {
+        isValid: false,
+        error: `[NF-MATH-006] Saturated Fat (${saturatedFat || 0}g) + Trans Fat (${transFat || 0}g) = ${combined}g exceeds Total Fat (${totalFat}g). ` +
+          `This is physically impossible.`,
+      }
+    }
+
+    return { isValid: true }
+  }
+
+  /**
+   * NF-MATH-007: Dietary Fiber ≤ Total Carbohydrate
+   * Dietary fiber is part of carbohydrates
+   */
+  static validateFiberLessThanCarbs(
+    totalCarbs: number | undefined,
+    dietaryFiber: number | undefined
+  ): { isValid: boolean; error?: string } {
+    if (totalCarbs === undefined || dietaryFiber === undefined) {
+      return { isValid: true }
+    }
+
+    if (dietaryFiber > totalCarbs + 0.5) {
+      return {
+        isValid: false,
+        error: `[NF-MATH-007] Dietary Fiber (${dietaryFiber}g) exceeds Total Carbohydrate (${totalCarbs}g). ` +
+          `This is physically impossible - Dietary Fiber is a component of Total Carbohydrate.`,
+      }
+    }
+
+    return { isValid: true }
+  }
+
+  /**
+   * NF-MATH-008: Total Sugars ≤ Total Carbohydrate
+   * Total sugars is part of carbohydrates
+   */
+  static validateSugarsLessThanCarbs(
+    totalCarbs: number | undefined,
+    totalSugars: number | undefined
+  ): { isValid: boolean; error?: string } {
+    if (totalCarbs === undefined || totalSugars === undefined) {
+      return { isValid: true }
+    }
+
+    if (totalSugars > totalCarbs + 0.5) {
+      return {
+        isValid: false,
+        error: `[NF-MATH-008] Total Sugars (${totalSugars}g) exceeds Total Carbohydrate (${totalCarbs}g). ` +
+          `This is physically impossible - Total Sugars is a component of Total Carbohydrate.`,
+      }
+    }
+
+    return { isValid: true }
+  }
+
+  /**
+   * Run all impossible value checks on a set of nutrition facts
+   * Returns all errors found
+   */
+  static validateImpossibleValues(
+    facts: NutritionFact[]
+  ): { isValid: boolean; errors: string[] } {
+    const errors: string[] = []
+
+    // Helper to find nutrient value
+    const getValue = (patterns: string[]): number | undefined => {
+      for (const pattern of patterns) {
+        const fact = facts.find(f => f.name.toLowerCase().includes(pattern))
+        if (fact) return fact.value
+      }
+      return undefined
+    }
+
+    // Extract values
+    const totalFat = getValue(['total fat'])
+    const saturatedFat = getValue(['saturated fat', 'sat fat'])
+    const transFat = getValue(['trans fat'])
+    const totalCarbs = getValue(['total carbohydrate', 'total carb'])
+    const dietaryFiber = getValue(['dietary fiber', 'fiber'])
+    const totalSugars = getValue(['total sugar'])
+    const addedSugars = getValue(['added sugar'])
+
+    // NF-MATH-003: Added Sugars ≤ Total Sugars
+    const sugarsCheck = this.validateAddedSugarsLessThanTotal(totalSugars, addedSugars)
+    if (!sugarsCheck.isValid && sugarsCheck.error) {
+      errors.push(sugarsCheck.error)
+    }
+
+    // NF-MATH-005: Saturated Fat ≤ Total Fat
+    const satFatCheck = this.validateSaturatedFatLessThanTotal(totalFat, saturatedFat)
+    if (!satFatCheck.isValid && satFatCheck.error) {
+      errors.push(satFatCheck.error)
+    }
+
+    // NF-MATH-009: Trans Fat ≤ Total Fat
+    const transFatCheck = this.validateTransFatLessThanTotal(totalFat, transFat)
+    if (!transFatCheck.isValid && transFatCheck.error) {
+      errors.push(transFatCheck.error)
+    }
+
+    // NF-MATH-006: Saturated + Trans ≤ Total Fat
+    const combinedFatCheck = this.validateCombinedFatsLessThanTotal(totalFat, saturatedFat, transFat)
+    if (!combinedFatCheck.isValid && combinedFatCheck.error) {
+      errors.push(combinedFatCheck.error)
+    }
+
+    // NF-MATH-007: Dietary Fiber ≤ Total Carbohydrate
+    const fiberCheck = this.validateFiberLessThanCarbs(totalCarbs, dietaryFiber)
+    if (!fiberCheck.isValid && fiberCheck.error) {
+      errors.push(fiberCheck.error)
+    }
+
+    // NF-MATH-008: Total Sugars ≤ Total Carbohydrate
+    const sugarsVsCarbsCheck = this.validateSugarsLessThanCarbs(totalCarbs, totalSugars)
+    if (!sugarsVsCarbsCheck.isValid && sugarsVsCarbsCheck.error) {
+      errors.push(sugarsVsCarbsCheck.error)
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CROSS-COLUMN MATH VALIDATION (NF-MATH-001, NF-MATH-002)
+  // These validate Per Serving vs Per Container consistency
+  // Reference: VXG-DEV-SPEC-NF-001 Section 4.1
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * NF-MATH-001: Calorie Consistency (Per Serving vs Per Container)
+   * Validates: Per Container Calories = Per Serving Calories × Servings Per Container
+   * 
+   * Example: If Per Serving = 120 kcal and Servings = 2, then Per Container should = 240 kcal
+   * Tolerance: ±5 kcal (fixed, accounts for rounding per 21 CFR 101.9(c))
+   * Reference: 21 CFR 101.9(c) - Rounding rules for calories
+   */
+  static validateCalorieConsistency(
+    perServingCalories: number,
+    perContainerCalories: number,
+    servingsPerContainer: number
+  ): { isValid: boolean; error?: string; expected: number } {
+    const expected = perServingCalories * servingsPerContainer
+    
+    // Tolerance: ±5 kcal (fixed, not percentage-based)
+    // Per 21 CFR 101.9(c): calories can be rounded to nearest 5 or 10
+    // So ±5 kcal tolerance accounts for cumulative rounding errors across columns
+    const tolerance = 5
+    
+    const diff = Math.abs(perContainerCalories - expected)
+    const isValid = diff <= tolerance
+    
+    if (!isValid) {
+      return {
+        isValid: false,
+        expected,
+        error: `[NF-MATH-001] Calorie cross-column math error: Per Serving (${perServingCalories} kcal) × ` +
+          `Servings (${servingsPerContainer}) = ${expected} kcal, but Per Container shows ${perContainerCalories} kcal. ` +
+          `Difference: ${diff} kcal (tolerance: ±${Math.round(tolerance)} kcal).`,
+      }
+    }
+    
+    return { isValid: true, expected }
+  }
+
+  /**
+   * NF-MATH-002: Macro Nutrient Consistency (Per Serving vs Per Container)
+   * Validates: Per Container value = Per Serving value × Servings Per Container
+   * 
+   * Applies to: Total Fat, Saturated Fat, Trans Fat, Cholesterol, Sodium,
+   * Total Carbohydrate, Dietary Fiber, Total Sugars, Added Sugars, Protein
+   * 
+   * Tolerance: ±0.5g for gram-based nutrients, ±5mg for milligram-based nutrients
+   * Reference: 21 CFR 101.9(c) - Per nutrient rounding rules
+   */
+  static validateMacroConsistency(
+    nutrientName: string,
+    perServingValue: number,
+    perContainerValue: number,
+    servingsPerContainer: number,
+    unit: string
+  ): { isValid: boolean; error?: string; expected: number } {
+    const expected = perServingValue * servingsPerContainer
+    
+    // Fixed tolerance per unit, not percentage-based
+    // This catches real labeling errors while allowing for FDA rounding
+    let tolerance: number
+    if (unit === 'mg') {
+      tolerance = 5 // ±5mg tolerance per FDA rounding rules
+    } else {
+      tolerance = 0.5 // ±0.5g tolerance (per rounding rules: 0.5g for fats, 1g for carbs/protein)
+    }
+    
+    const diff = Math.abs(perContainerValue - expected)
+    const isValid = diff <= tolerance
+    
+    if (!isValid) {
+      return {
+        isValid: false,
+        expected,
+        error: `[NF-MATH-002] ${nutrientName} cross-column math error: Per Serving (${perServingValue}${unit}) × ` +
+          `Servings (${servingsPerContainer}) = ${expected}${unit}, but Per Container shows ${perContainerValue}${unit}. ` +
+          `Difference: ${diff}${unit} (tolerance: ±${tolerance.toFixed(1)}${unit}).`,
+      }
+    }
+    
+    return { isValid: true, expected }
+  }
+
+  /**
+   * Run cross-column math validation for Per Serving / Per Container dual-column format
+   * This is the primary validation for Case 1 multi-column labels
+   */
+  static validateCrossColumnMath(
+    perServingColumn: { nutritionFacts: NutritionFact[] },
+    perContainerColumn: { nutritionFacts: NutritionFact[] },
+    servingsPerContainer: number
+  ): { isValid: boolean; errors: string[]; warnings: string[] } {
+    const errors: string[] = []
+    const warnings: string[] = []
+
+    if (servingsPerContainer <= 0) {
+      warnings.push('[NF-MATH] Cannot validate cross-column math: servingsPerContainer is missing or invalid')
+      return { isValid: true, errors, warnings }
+    }
+
+    // Helper to find nutrient value
+    const findNutrient = (facts: NutritionFact[], patterns: string[]): NutritionFact | undefined => {
+      for (const pattern of patterns) {
+        const found = facts.find(f => f.name.toLowerCase().includes(pattern))
+        if (found) return found
+      }
+      return undefined
+    }
+
+    // NF-MATH-001: Calorie Consistency
+    const perServingCalories = findNutrient(perServingColumn.nutritionFacts, ['calorie'])
+    const perContainerCalories = findNutrient(perContainerColumn.nutritionFacts, ['calorie'])
+    
+    if (perServingCalories && perContainerCalories) {
+      const calorieCheck = this.validateCalorieConsistency(
+        perServingCalories.value,
+        perContainerCalories.value,
+        servingsPerContainer
+      )
+      if (!calorieCheck.isValid && calorieCheck.error) {
+        errors.push(calorieCheck.error)
+      }
+    }
+
+    // NF-MATH-002: Macro Consistency for each nutrient
+    const nutrientsToCheck = [
+      { patterns: ['total fat'], name: 'Total Fat', unit: 'g' },
+      { patterns: ['saturated fat', 'sat fat'], name: 'Saturated Fat', unit: 'g' },
+      { patterns: ['trans fat'], name: 'Trans Fat', unit: 'g' },
+      { patterns: ['cholesterol'], name: 'Cholesterol', unit: 'mg' },
+      { patterns: ['sodium'], name: 'Sodium', unit: 'mg' },
+      { patterns: ['total carbohydrate', 'total carb'], name: 'Total Carbohydrate', unit: 'g' },
+      { patterns: ['dietary fiber', 'fiber'], name: 'Dietary Fiber', unit: 'g' },
+      { patterns: ['total sugar'], name: 'Total Sugars', unit: 'g' },
+      { patterns: ['added sugar'], name: 'Added Sugars', unit: 'g' },
+      { patterns: ['protein'], name: 'Protein', unit: 'g' },
+    ]
+
+    for (const nutrient of nutrientsToCheck) {
+      const perServing = findNutrient(perServingColumn.nutritionFacts, nutrient.patterns)
+      const perContainer = findNutrient(perContainerColumn.nutritionFacts, nutrient.patterns)
+      
+      if (perServing && perContainer) {
+        const macroCheck = this.validateMacroConsistency(
+          nutrient.name,
+          perServing.value,
+          perContainer.value,
+          servingsPerContainer,
+          nutrient.unit
+        )
+        if (!macroCheck.isValid && macroCheck.error) {
+          errors.push(macroCheck.error)
+        }
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings,
+    }
+  }
 
   /**
    * Represents a single column in multi-column Nutrition Facts
@@ -557,6 +951,48 @@ export class NutritionValidator {
         `Multi-column panel has different serving sizes: ${Array.from(uniqueServingSizes).join(' | ')}. ` +
         `This is allowed if products are genuinely different, but verify serving size declarations are accurate.`
       )
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // NF-MATH-001 & NF-MATH-002: Cross-Column Math Validation
+    // Detect Per Serving / Per Container format and validate math consistency
+    // ══════════════════════════════════════════════════════════════════════
+    
+    // Detect Per Serving / Per Container dual-column format
+    const perServingColumn = columns.find(c => {
+      const name = (c.columnName || '').toLowerCase()
+      return name.includes('per serving') || name.includes('serving') || name === ''
+    })
+    
+    const perContainerColumn = columns.find(c => {
+      const name = (c.columnName || '').toLowerCase()
+      return name.includes('per container') || name.includes('per package') || name.includes('container')
+    })
+    
+    // If we have Per Serving / Per Container format, validate cross-column math
+    if (perServingColumn && perContainerColumn && perServingColumn !== perContainerColumn) {
+      // Get servings per container from the Per Serving column (if available)
+      const servingsPerContainer = perServingColumn.servingsPerContainer || 
+        perContainerColumn.servingsPerContainer || 
+        columns.find(c => c.servingsPerContainer)?.servingsPerContainer
+
+      if (servingsPerContainer && servingsPerContainer > 1) {
+        console.log(`[v0] Detected Per Serving / Per Container format. Running cross-column math validation (servings: ${servingsPerContainer})`)
+        
+        const crossColumnResult = this.validateCrossColumnMath(
+          perServingColumn,
+          perContainerColumn,
+          servingsPerContainer
+        )
+        
+        errors.push(...crossColumnResult.errors)
+        warnings.push(...crossColumnResult.warnings)
+      } else {
+        warnings.push(
+          `Detected Per Serving / Per Container columns but servingsPerContainer is missing or invalid. ` +
+          `Cannot validate NF-MATH-001/002 cross-column math consistency.`
+        )
+      }
     }
 
     // Generate error if critical inconsistencies found

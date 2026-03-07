@@ -3,6 +3,74 @@ export interface LabelImageEntry {
   url: string
 }
 
+// ====== Multi-Column Nutrition Facts Types (21 CFR §101.9(b)(12)) ======
+
+/**
+ * Column Type Classification for Multi-Column Nutrition Facts
+ * Reference: VXG-DEV-SPEC-NF-001 Section 2
+ */
+export type ColumnType = 
+  | 'PER_SERVING'      // Standard per-serving column
+  | 'PER_CONTAINER'    // Per-container/package column (§101.9(b)(12))
+  | 'AS_PACKAGED'      // As-packaged column for prepared foods (§101.9(b)(9))
+  | 'AS_PREPARED'      // As-prepared with additions (e.g., "with milk")
+  | 'VARIANT_SKU'      // Variety pack - different product variants (§101.9(h)(1))
+  | 'PER_100G'         // International format (EU/Asia imports)
+  | 'UNKNOWN'          // Could not determine - requires human review
+
+/**
+ * Source of column type classification (audit trail)
+ */
+export type ColumnTypeSource = 'AI' | 'RULE_BASED' | 'FALLBACK' | 'HUMAN_OVERRIDE'
+
+/**
+ * Enhanced Nutrition Facts Column with Column Type Detection
+ */
+export interface NutritionFactsColumn {
+  columnName: string              // Variant/column name: "Cheddar", "Original", "As Prepared"
+  columnType?: ColumnType         // Classified column type
+  columnTypeSource?: ColumnTypeSource  // How was column type determined (audit trail)
+  headerText?: string             // RAW header text from label - never modified
+  headerTextNormalized?: string   // Normalized for display/matching
+  needsHumanReview?: boolean      // True if column type could not be determined
+  reviewReason?: string           // Why human review is needed
+  servingSize?: string
+  servingsPerContainer?: number
+  nutritionFacts: Array<{
+    name: string
+    value: number
+    unit?: string
+    dailyValue?: number
+    ocrConfidence?: number        // Per-cell OCR confidence (0-1)
+    flagReview?: boolean          // True if confidence < 0.75
+  }>
+  columnConfidence?: number       // Overall confidence for this column (0-1)
+}
+
+/**
+ * Multi-Column Validation Result with Cross-Column Math Checks
+ */
+export interface MultiColumnValidationResult {
+  isValid: boolean
+  errors: string[]
+  warnings: string[]
+  columnIssues: Array<{
+    column: string
+    missingNutrients: string[]
+    inconsistentNutrients: string[]
+  }>
+  crossColumnMathErrors?: Array<{
+    ruleId: string              // e.g., 'NF-MATH-001'
+    description: string
+    column1: string
+    column2: string
+    expected: number
+    actual: number
+  }>
+  humanReviewRequired?: boolean
+  humanReviewReasons?: string[]
+}
+
 export interface AuditReport {
   id: string
   user_id: string

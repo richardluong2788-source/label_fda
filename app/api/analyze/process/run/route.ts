@@ -279,6 +279,20 @@ export async function POST(request: Request) {
     const extractedNutritionFacts = visionResult.nutritionFacts
     const nutritionValidation = NutritionValidator.validateNutritionFacts(extractedNutritionFacts, productDomain)
 
+    // Multi-column Nutrition Facts validation (21 CFR §101.9(b)(12))
+    // CRITICAL: This validation was implemented but never called - now active
+    const isMultiColumn = visionResult.isMultiColumnNutrition || (visionResult.nutritionFactsColumns?.length ?? 0) >= 2
+    let multiColumnValidation: ReturnType<typeof NutritionValidator.validateMultiColumnNutritionFacts> | null = null
+    
+    if (isMultiColumn && visionResult.nutritionFactsColumns?.length >= 2) {
+      console.log(`[v0] Multi-column Nutrition Facts detected: ${visionResult.nutritionFactsColumns.length} columns`)
+      multiColumnValidation = NutritionValidator.validateMultiColumnNutritionFacts(
+        visionResult.nutritionFactsColumns,
+        productDomain
+      )
+      console.log(`[v0] Multi-column validation result: isValid=${multiColumnValidation.isValid}, errors=${multiColumnValidation.errors.length}, warnings=${multiColumnValidation.warnings.length}`)
+    }
+
     const textElements = {
       brandName:           visionResult.textElements.brandName,
       productName:         visionResult.textElements.productName,
@@ -526,6 +540,32 @@ export async function POST(request: Request) {
       }
     }
 
+    // Multi-column Nutrition Facts violations (21 CFR §101.9(b)(12))
+    if (multiColumnValidation) {
+      for (const error of multiColumnValidation.errors) {
+        violations.push({
+          category: 'Multi-Column Nutrition Facts',
+          severity: 'critical' as const,
+          description: error,
+          regulation_reference: '21 CFR 101.9(b)(12)',
+          suggested_fix: 'Ensure all columns declare consistent mandatory nutrients or include "not a significant source of..." statement.',
+          citations: [],
+          confidence_score: 0.95,
+        })
+      }
+      for (const warning of multiColumnValidation.warnings) {
+        violations.push({
+          category: 'Multi-Column Nutrition Facts',
+          severity: 'warning' as const,
+          description: warning,
+          regulation_reference: '21 CFR 101.9(b)(12)',
+          suggested_fix: 'Review nutrient declarations across all columns for consistency.',
+          citations: [],
+          confidence_score: 0.85,
+        })
+      }
+    }
+
     violations.push(...dimensionViolations)
 
     for (const claimViolation of claimViolations) {
@@ -610,6 +650,14 @@ export async function POST(request: Request) {
         commercial_summary:      commercialSummary,
         expert_tips:             expertTips,
         nutrition_facts:         visionResult.nutritionFacts || [],
+        is_multi_column_nutrition: isMultiColumn,
+        nutrition_facts_columns: isMultiColumn ? visionResult.nutritionFactsColumns : null,
+        multi_column_validation: multiColumnValidation ? {
+          isValid: multiColumnValidation.isValid,
+          errors: multiColumnValidation.errors,
+          warnings: multiColumnValidation.warnings,
+          columnIssues: multiColumnValidation.columnIssues,
+        } : null,
         ingredient_list:         visionResult.ingredients?.join(', ') || null,
         allergen_declaration:    visionResult.allergens?.join(', ') || null,
         health_claims:           visionResult.detectedClaims || [],
