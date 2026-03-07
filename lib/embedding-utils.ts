@@ -139,13 +139,29 @@ export interface KnowledgeSearchResult {
  */
 export async function searchKnowledge(
   query: string,
-  limit: number = 5
+  limit: number = 5,
+  precomputedEmbedding?: number[],
+  preloadedData?: any[]
 ): Promise<KnowledgeSearchResult[]> {
   try {
-    const queryEmbedding = await generateEmbedding(query)
-    // Use admin client to bypass RLS on compliance_knowledge RPC calls
+    const queryEmbedding = precomputedEmbedding ?? await generateEmbedding(query)
     const supabase = createAdminClient()
-    
+
+    // If caller already fetched data, skip DB call
+    if (preloadedData) {
+      const rawResults = preloadedData.slice(0, limit * 3)
+      return rawResults.slice(0, limit).map((r: any) => ({
+        id: r.id,
+        regulation_id: r.section || r.source || r.id,
+        section: r.section || 'General',
+        content: r.content,
+        category: r.metadata?.category || 'General',
+        metadata: r.metadata,
+        similarity: r.similarity,
+        relevance_tier: r.similarity >= 0.7 ? 'primary' : r.similarity >= 0.5 ? 'supporting' : 'related' as any,
+      }))
+    }
+
     // Try deduplicated function first (dedup by metadata.section in DB)
     let rawResults: any[] = []
     const fetchCount = Math.min(limit * 3, 60)
@@ -336,22 +352,27 @@ export async function searchKnowledge(
 export async function searchWarningLetters(
   query: string,
   limit: number = 3,
-  productCategory?: string
+  productCategory?: string,
+  precomputedEmbedding?: number[],
+  preloadedData?: any[]
 ): Promise<KnowledgeSearchResult[]> {
   try {
-    const queryEmbedding = await generateEmbedding(query)
-    const supabase = createAdminClient()
+    // Use preloaded data if available (avoids extra DB call + duplicate embedding)
+    let data: any[] = preloadedData ?? []
 
-    // Use base vector search then filter by document_type in app layer
-    const { data, error } = await supabase.rpc('match_compliance_knowledge', {
-      query_embedding: queryEmbedding,
-      match_threshold: 0.40,
-      match_count: limit * 5,
-    })
-
-    if (error) {
-      console.error('[v0] Warning Letter search error:', error)
-      return []
+    if (!preloadedData) {
+      const queryEmbedding = precomputedEmbedding ?? await generateEmbedding(query)
+      const supabase = createAdminClient()
+      const { data: rpcData, error } = await supabase.rpc('match_compliance_knowledge', {
+        query_embedding: queryEmbedding,
+        match_threshold: 0.30,
+        match_count: 100, // Cast wider net to include WL records
+      })
+      if (error) {
+        console.error('[v0] Warning Letter search error:', error)
+        return []
+      }
+      data = (rpcData || []).filter((r: any) => r.metadata?.document_type === 'FDA Warning Letter')
     }
 
     // Normalise the category for matching
@@ -363,10 +384,9 @@ export async function searchWarningLetters(
       .split(/\s+/)
       .filter(w => w.length > 2)
 
-    const warningResults = (data || [])
+    const warningResults = data
       .filter((r: any) => {
-        if (r.metadata?.document_type !== 'FDA Warning Letter') return false
-        // Temporal filter: exclude inactive (emergency/expired) chunks
+        // Already filtered to FDA Warning Letter by caller or above; skip inactive
         if (r.is_active === false) return false
         // Category pre-filter
         if (normCat) {
@@ -461,11 +481,36 @@ export async function getRelevantContext(
   try {
     const searchQuery = `${productCategory} ${labelContent.slice(0, 500)}`
 
+    // Generate embedding ONCE and share across all searches to avoid 5x duplicate API calls
+    const sharedEmbedding = await generateEmbedding(searchQuery)
+    const supabase = createAdminClient()
+
+    // Fetch ALL relevant records in ONE query, then split by document_type in app layer
+    const { data: allData, error: allError } = await supabase.rpc('match_compliance_knowledge', {
+      query_embedding: sharedEmbedding,
+      match_threshold: 0.30, // Lower threshold to cast wider net
+      match_count: 150,       // Fetch enough to get WL+Recall in top results
+    })
+
+    if (allError) {
+      console.error('[v0] RAG unified search error:', allError)
+    }
+
+    const allRecords = allData || []
+    console.log('[v0] RAG unified search: total records =', allRecords.length)
+
+    // Split by document_type
+    const regulationRecords = allRecords.filter((r: any) => r.metadata?.document_type !== 'FDA Warning Letter' && r.metadata?.document_type !== 'FDA Recall')
+    const warningLetterRecords = allRecords.filter((r: any) => r.metadata?.document_type === 'FDA Warning Letter')
+    const recallRecords = allRecords.filter((r: any) => r.metadata?.document_type === 'FDA Recall')
+
+    console.log('[v0] RAG split: regulations=', regulationRecords.length, 'warnings=', warningLetterRecords.length, 'recalls=', recallRecords.length)
+
     // QUAD QUERY: Run all four searches in parallel — pass productCategory for category pre-filter
     const [regulations, warnings, recalls] = await Promise.all([
-      searchKnowledge(searchQuery, 10),
-      searchWarningLetters(searchQuery, 5, productCategory),
-      searchRecalls(searchQuery, 3, productCategory),
+      searchKnowledge(searchQuery, 10, sharedEmbedding, regulationRecords),
+      searchWarningLetters(searchQuery, 5, productCategory, sharedEmbedding, warningLetterRecords),
+      searchRecalls(searchQuery, 3, productCategory, sharedEmbedding, recallRecords),
       // Note: Import Alerts (L4) are fetched separately in analyze route via getImportAlertContext()
       // because they use different data structures (not KnowledgeSearchResult)
     ])
@@ -515,36 +560,39 @@ export async function getWarningLetterContext(
 export async function searchRecalls(
   query: string,
   limit: number = 3,
-  productCategory?: string
+  productCategory?: string,
+  precomputedEmbedding?: number[],
+  preloadedData?: any[]
 ): Promise<KnowledgeSearchResult[]> {
   try {
-    const queryEmbedding = await generateEmbedding(query)
-    const supabase = createAdminClient()
+    // Use preloaded data if available
+    let data: any[] = preloadedData ?? []
 
-    // Use base vector search then filter by document_type = 'FDA Recall'
-    const { data, error } = await supabase.rpc('match_compliance_knowledge', {
-      query_embedding: queryEmbedding,
-      match_threshold: 0.40,
-      match_count: limit * 5,
-    })
-
-    if (error) {
-      console.error('[v0] Recall search error:', error)
-      return []
+    if (!preloadedData) {
+      const queryEmbedding = precomputedEmbedding ?? await generateEmbedding(query)
+      const supabase = createAdminClient()
+      const { data: rpcData, error } = await supabase.rpc('match_compliance_knowledge', {
+        query_embedding: queryEmbedding,
+        match_threshold: 0.30,
+        match_count: 100,
+      })
+      if (error) {
+        console.error('[v0] Recall search error:', error)
+        return []
+      }
+      data = (rpcData || []).filter((r: any) => r.metadata?.document_type === 'FDA Recall')
     }
 
     const normCat = productCategory?.toLowerCase().replace(/[^a-z]/g, '') || ''
 
-    // Filter to FDA Recalls only + category pre-filter + boost by keyword matches
     const keywords = query.toLowerCase()
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
       .filter(w => w.length > 2)
 
-    const recallResults = (data || [])
+    const recallResults = data
       .filter((r: any) => {
-        if (r.metadata?.document_type !== 'FDA Recall') return false
-        // Temporal filter: exclude inactive (expired/closed) recall chunks
+        // Already filtered to FDA Recall; skip inactive
         if (r.is_active === false) return false
         if (normCat) {
           const chunkCat = (r.metadata?.category || '').toLowerCase().replace(/[^a-z]/g, '')
