@@ -1022,7 +1022,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
           <div style="font-size: 8px; color: #64748b; text-transform: uppercase;">${L.info}</div>
         </div>
         <div style="text-align: center;">
-          <div style="font-size: 20px; font-weight: 800; color: #6366f1;">${totalCitations}</div>
+          <div style="font-size: 20px; font-weight: 800; color: #6366f1;">${totalCitations > 0 ? totalCitations : '—'}</div>
           <div style="font-size: 8px; color: #64748b; text-transform: uppercase;">${L.cfrCitations}</div>
         </div>
       </div>
@@ -1235,11 +1235,12 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   </div>` : ''}
 
   <!-- Nutrition Facts -->
-  ${report.nutrition_facts && !isCosmetic ? `
+  ${!isCosmetic ? `
   <div class="section">
     <div style="font-size:10px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.nutritionInfo}</div>
     <div class="data-box">
       <div class="data-box-label">${L.nutritionDetected}</div>
+      ${report.nutrition_facts ? `
       <table class="info-table" style="margin: 0;">
         ${report.nutrition_facts.servingSize ? `<tr><td>${L.servingSize}</td><td>${escapeHtml(report.nutrition_facts.servingSize)}</td></tr>` : ''}
         ${report.nutrition_facts.servingsPerContainer ? `<tr><td>${L.servingsPerContainer}</td><td>${escapeHtml(String(report.nutrition_facts.servingsPerContainer))}</td></tr>` : ''}
@@ -1258,7 +1259,12 @@ export function generatePDFReportHTML(data: PDFReportData): string {
         ${report.nutrition_facts.calcium ? `<tr><td>${L.calcium}</td><td>${escapeHtml(report.nutrition_facts.calcium)}</td></tr>` : ''}
         ${report.nutrition_facts.iron ? `<tr><td>${L.iron}</td><td>${escapeHtml(report.nutrition_facts.iron)}</td></tr>` : ''}
         ${report.nutrition_facts.potassium ? `<tr><td>${L.potassium}</td><td>${escapeHtml(report.nutrition_facts.potassium)}</td></tr>` : ''}
-      </table>
+      </table>` : `
+      <div style="padding:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#92400e;font-size:8.5px;text-align:center;">
+        ${lang === 'vi'
+          ? 'Không thể đọc bảng dinh dưỡng từ hình ảnh. Vui lòng upload ảnh Nutrition Facts rõ hơn.'
+          : 'Could not extract nutrition facts from the provided image. Please upload a clearer Nutrition Facts panel image.'}
+      </div>`}
     </div>
   </div>` : ''}
 
@@ -1541,21 +1547,31 @@ ${hasTech ? `
   </div>
 </div>` : ''}
 
-${report.commercial_summary ? `
-<!-- ═══════════════════════ COMMERCIAL SUMMARY PAGE ═══════════════════════ -->
+${(() => {
+  // Fallback when commercial_summary is missing or empty
+  const summaryContent = report.commercial_summary?.trim()
+    || (report.overall_result === 'pass' || report.overall_result === 'approved'
+      ? (lang === 'vi'
+        ? 'Nhãn sản phẩm đáp ứng các yêu cầu ghi nhãn FDA theo 21 CFR Part 101. Không phát hiện vi phạm nghiêm trọng. Sản phẩm có thể phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.'
+        : 'The product label meets FDA labeling requirements under 21 CFR Part 101. No critical violations detected. The product may be distributed in the US market with low legal risk.')
+      : (lang === 'vi'
+        ? 'Phát hiện một số vấn đề tuân thủ cần được khắc phục trước khi phân phối. Vui lòng xem Chi Tiết Phát Hiện và Danh Sách Hành Động bên dưới.'
+        : 'Compliance issues were identified that require remediation before distribution. Please review the Findings Detail and Action Items sections.'))
+  return `<!-- ═══════════════════════ COMMERCIAL SUMMARY PAGE ═══════════════════════ -->
 <div class="page content-page page-break">
   ${pageHeader(L, shortId, dateFormatted)}
   <div class="section">
     <div class="section-title"><span class="section-number">${secCommercial}</span>${L.commercialSummary}</div>
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;overflow-wrap:break-word;word-break:break-word;">
-      ${markdownToHtml(report.commercial_summary)}
+      ${markdownToHtml(summaryContent)}
     </div>
   </div>
   <div class="page-footer">
     <div>${L.pageFooter} | ${companyInfo.name}</div>
     <div>${L.reportId}: ${escapeHtml(shortId)}</div>
   </div>
-</div>` : ''}
+</div>`
+})()} 
 
 ${expertReview && expertReview.status === 'completed' ? `
 <!-- ═══════════════════════ EXPERT CONSULTATION PAGE ═══════════════════════ -->
@@ -1736,6 +1752,14 @@ ${expertReview && expertReview.status === 'completed' ? `
           <td style="overflow-wrap:break-word;word-break:break-word;">${escapeHtml((v.suggested_fix || L.seeDetails).slice(0, 100))}${(v.suggested_fix || '').length > 100 ? '...' : ''}</td>
         </tr>`
         }).join('')}
+        ${sortedViolations.length === 0 ? `
+        <tr>
+          <td colspan="5" style="text-align:center;padding:20px;color:#16a34a;font-size:9px;font-weight:600;">
+            <span style="display:inline-block;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 24px;">
+              ✓ ${lang === 'vi' ? 'Không có hành động nào cần thực hiện. Duy trì tiêu chuẩn ghi nhãn hiện tại.' : 'No actions required. Maintain current labeling standards.'}
+            </span>
+          </td>
+        </tr>` : ''}
       </tbody>
     </table>
   </div>

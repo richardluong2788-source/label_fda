@@ -116,13 +116,19 @@ export async function GET(
       generatedBy = `Vexim Expert Team – Verified`
     }
 
+    // Generate dynamic cert code: VXM-FDA-[YEAR]-[6 chars of report ID]
+    // This ensures no two reports share the same cert code and year is always current
+    const certYear = new Date(report.created_at || Date.now()).getFullYear()
+    const certSeq = report.id.slice(0, 6).toUpperCase()
+    const dynamicCertId = `VXM-FDA-${certYear}-${certSeq}`
+
     // Generate PDF HTML
     const html = generatePDFReportHTML({
       report,
       violations,
       generatedAt: new Date().toISOString(),
       generatedBy,
-      companyInfo: VEXIM_COMPANY_INFO,
+      companyInfo: { ...VEXIM_COMPANY_INFO, certificationId: dynamicCertId },
       lang,
       expertReview: expertReview || null,
     })
