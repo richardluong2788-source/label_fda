@@ -264,6 +264,7 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     multiColumnNFDesc: 'Sản phẩm có nhiều biến thể — mỗi cột tương ứng một sản phẩm riêng biệt.',
     multiColumnVariant: 'Biến thể',
     multiColumnServingSize: 'Khẩu phần',
+  },
   en: {
     downloadTitle: 'FDA Compliance Audit Report',
     downloadBtn: 'Download PDF',
