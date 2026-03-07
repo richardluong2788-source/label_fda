@@ -107,16 +107,22 @@ export default function AuditPage() {
   // ── Smooth fake progress while queued/processing ──────────
   // Giữ thanh tiến trình luôn nhích dần, tránh user nghĩ app bị đơ.
   // Server sẽ override với giá trị thật khi các bước hoàn thành.
+  // NOTE: Bước 1 (Vision API) thường mất 30-90s, nên fake progress cần chạy nhanh hơn
+  // để user thấy progress thay đổi liên tục (psychological comfort).
   useEffect(() => {
     if (!analyzing) return
     const ticker = setInterval(() => {
       setProgress(prev => {
         const next = (() => {
-          if (prev < 14) return prev + 0.08      // giai đoạn queued: lên đến ~14%
-          if (prev < 30) return prev + 0.04      // bước 1 đang chạy: 14→30
-          if (prev < 50) return prev + 0.02      // bước 2: 30→50
-          if (prev < 70) return prev + 0.015     // bước 3-4: 50→70
-          if (prev < 88) return prev + 0.008     // bước 5-6: 70→88
+          // Giai đoạn queued → bước 1 bắt đầu: tăng nhanh hơn để user thấy có tiến triển
+          if (prev < 8) return prev + 0.5        // 0→8% trong ~5s (8 / 0.5 * 0.3s)
+          if (prev < 14) return prev + 0.25      // 8→14% trong ~8s
+          // Bước 1 (Vision API - thường mất 30-90s): tăng chậm nhưng đều
+          if (prev < 28) return prev + 0.12      // 14→28% trong ~35s (14 / 0.12 * 0.3s)
+          // Bước 2-6 (thường nhanh hơn vì không call external API)
+          if (prev < 50) return prev + 0.15      // 28→50% trong ~45s
+          if (prev < 70) return prev + 0.1       // 50→70% trong ~60s
+          if (prev < 88) return prev + 0.08      // 70→88% trong ~68s
           return prev                             // dừng tại 88 — server sẽ đẩy lên 100
         })()
 

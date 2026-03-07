@@ -122,13 +122,20 @@ export async function POST(request: Request) {
       try {
         const labelImages = report.label_images || [{ type: 'main', url: report.label_image_url }]
         const packagingFormatCtx = packagingFormat ? buildPackagingFormatPrompt(packagingFormat, productDomain) : undefined
+        const totalImages = labelImages.length
 
-        const visionResults = await Promise.all(
-          labelImages.map(async (img: { type: string; url: string }) => {
-            const result = await analyzeLabel(img.url, packagingFormatCtx)
-            return { type: img.type, result }
-          })
-        )
+        // Process images sequentially with progress updates per image
+        // (instead of Promise.all which gives no intermediate feedback)
+        const visionResults: { type: string; result: any }[] = []
+        for (let i = 0; i < totalImages; i++) {
+          const img = labelImages[i]
+          // Progress: 15% base + (i/total) * 12% = up to 27% by end of all images
+          const imageProgress = 15 + Math.round((i / totalImages) * 12)
+          await updateJobProgress(jobId, `Analyzing image ${i + 1}/${totalImages}: ${img.type}`, imageProgress)
+          
+          const result = await analyzeLabel(img.url, packagingFormatCtx)
+          visionResults.push({ type: img.type, result })
+        }
 
         const imageAnalyses: any = {}
         for (const { type, result } of visionResults) {
