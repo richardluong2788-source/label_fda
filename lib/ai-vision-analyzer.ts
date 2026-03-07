@@ -1,6 +1,7 @@
 import { openai, retryWithBackoff } from './openai-client'
 import type { NutritionFact, TextElement } from './types'
 import { lookupVisionCache, setVisionCache } from './cache/vision-cache'
+import sharp from 'sharp'
 
 export interface ColorInfo {
   foreground: string // Hex color code
@@ -182,27 +183,46 @@ CRITICAL NUTRITION FACTS RULES - READ EVERY WORD:
 MULTI-COLUMN NUTRITION FACTS (VARIETY PACKS) - CRITICAL - READ CAREFULLY:
 🚨 YOU MUST DETECT MULTI-COLUMN FORMAT - THIS IS A COMMON FAILURE POINT 🚨
 
-HOW TO IDENTIFY MULTI-COLUMN:
-- Look for 2+ "Nutrition Facts" titles or 2+ "Calories" values side-by-side
-- Look for variant/flavor headers like: "Cheddar | Colors | Pretzel" or "Original | BBQ | Sour Cream"
-- If you see DIFFERENT calorie values (e.g., 220, 190, 180) for different variants → IT IS MULTI-COLUMN
-- Variety packs with multiple product types ALWAYS have multi-column panels
-- Example: "Toast Chee 220 cal | Captain's Wafers 190 cal | Toasty 180 cal" = 3 COLUMNS
+MULTI-COLUMN CAN APPEAR IN TWO FORMATS:
 
-WHEN YOU DETECT MULTI-COLUMN (set isMultiColumnNutrition = true):
-1. Count the number of columns (typically 2-6 columns)
-2. Identify each column's variant name (e.g., "Toast Chee PEANUT", "Captain's Wafers", "Toasty")
-3. EXTRACT EACH COLUMN INDEPENDENTLY into nutritionFactsColumns array
+FORMAT 1 — SINGLE PANEL WITH MULTIPLE COLUMNS:
+One Nutrition Facts panel with side-by-side columns for different variants.
+Example: A table with headers "Cheddar | Colors | Pretzel" showing different values per column.
+
+FORMAT 2 — MULTIPLE SEPARATE PANELS (ALSO COUNTS AS MULTI-COLUMN!):
+Multiple SEPARATE Nutrition Facts panels/boxes on the same image.
+Example: 3 separate "Nutrition Facts" boxes, each for a different product variant.
+🚨 THIS IS STILL isMultiColumnNutrition = true! Each separate panel = one column.
+
+HOW TO IDENTIFY MULTI-COLUMN — SET isMultiColumnNutrition = true IF YOU SEE:
+- 2+ separate "Nutrition Facts" headers/boxes in the image (even if they are separate panels!)
+- Variant/flavor headers like: "Cheddar | Colors | Pretzel" or "Original | BBQ | Sour Cream"
+- DIFFERENT calorie values (e.g., 130, 120, 120) for different variants
+- Variety packs with multiple product types
+
+Example: Goldfish Big Smiles Variety with 3 SEPARATE Nutrition Facts panels:
+→ isMultiColumnNutrition = true
+→ nutritionFactsColumns = [
+    {columnName: "Cheddar Goldfish Crackers", servingSize: "1 Pack (28g)", ...},
+    {columnName: "Colors Goldfish Crackers", servingSize: "1 Pack (26g)", ...},
+    {columnName: "Pretzel Goldfish Crackers", servingSize: "1 Pack (28g)", ...}
+  ]
+
+WHEN YOU DETECT MULTI-COLUMN:
+1. Count the number of columns/panels (typically 2-6)
+2. Identify each column's variant name from the panel header or nearby text
+3. EXTRACT EACH COLUMN/PANEL INDEPENDENTLY into nutritionFactsColumns array
 4. Each column MUST have its own: columnName, servingSize, servingsPerContainer, and full nutritionFacts array
 5. Use null for missing nutrients, NOT 0 (0 means "zero grams present", null means "not declared")
 6. Still populate the main "nutritionFacts" array with the FIRST column data for backwards compatibility
 
 COMMON MULTI-COLUMN EXAMPLES:
+- Goldfish Big Smiles Variety: 3 SEPARATE panels (Cheddar, Colors, Pretzel) — isMultiColumnNutrition = true
 - Lance Variety Pack crackers: 4 columns (Toast Chee, Captain's Wafers, Toasty, Nekot)
 - Frito-Lay variety snacks: 6 columns (Doritos, Cheetos, Lays, etc.)
 - Cereal with "As Packaged" / "With Milk": 2 columns
 
-IF UNSURE: Set isMultiColumnNutrition = true if you see ANY evidence of multiple nutrition value sets
+IF UNSURE: Set isMultiColumnNutrition = true if you see ANY evidence of multiple nutrition panels or multiple sets of values
 
 NET QUANTITY / NET WEIGHT EXTRACTION:
 - Look for "Net Wt", "Net Weight", "NET WT" anywhere on the label
@@ -211,10 +231,72 @@ NET QUANTITY / NET WEIGHT EXTRACTION:
 - Format: Include both imperial and metric if both present, e.g. "2 oz (56g)" or "1 pack (70g)"
 - NEVER leave netQuantity empty if you see any weight measurement on the label`
 
+// Image compression settings for Vision API
+const MAX_IMAGE_DIMENSION = 1024 // Max width or height in pixels
+const JPEG_QUALITY = 85 // Quality percentage (85% is good balance)
+const MAX_FILE_SIZE_BYTES = 1024 * 1024 // 1MB max
+
 /**
- * Downloads an image from a URL and converts it to a base64 data URL.
+ * Compresses an image buffer to reduce size for Vision API.
+ * - Resizes to max 1024px on longest side (preserves aspect ratio)
+ * - Converts to JPEG at 85% quality
+ * - Ensures file size < 1MB
+ */
+async function compressImageForVision(inputBuffer: Buffer): Promise<Buffer> {
+  const image = sharp(inputBuffer)
+  const metadata = await image.metadata()
+  
+  const originalWidth = metadata.width || 0
+  const originalHeight = metadata.height || 0
+  const originalSize = inputBuffer.length
+  
+  console.log(`[v0] Original image: ${originalWidth}x${originalHeight}, ${(originalSize / 1024).toFixed(1)}KB`)
+  
+  // Calculate new dimensions (max 1024px on longest side)
+  let newWidth = originalWidth
+  let newHeight = originalHeight
+  
+  if (originalWidth > MAX_IMAGE_DIMENSION || originalHeight > MAX_IMAGE_DIMENSION) {
+    if (originalWidth > originalHeight) {
+      newWidth = MAX_IMAGE_DIMENSION
+      newHeight = Math.round((originalHeight / originalWidth) * MAX_IMAGE_DIMENSION)
+    } else {
+      newHeight = MAX_IMAGE_DIMENSION
+      newWidth = Math.round((originalWidth / originalHeight) * MAX_IMAGE_DIMENSION)
+    }
+  }
+  
+  // First pass: resize and convert to JPEG
+  let compressedBuffer = await image
+    .resize(newWidth, newHeight, { fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: JPEG_QUALITY })
+    .toBuffer()
+  
+  console.log(`[v0] Compressed image: ${newWidth}x${newHeight}, ${(compressedBuffer.length / 1024).toFixed(1)}KB`)
+  
+  // If still too large, progressively reduce quality
+  let quality = JPEG_QUALITY
+  while (compressedBuffer.length > MAX_FILE_SIZE_BYTES && quality > 50) {
+    quality -= 10
+    compressedBuffer = await sharp(inputBuffer)
+      .resize(newWidth, newHeight, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality })
+      .toBuffer()
+    console.log(`[v0] Re-compressed at quality ${quality}: ${(compressedBuffer.length / 1024).toFixed(1)}KB`)
+  }
+  
+  return compressedBuffer
+}
+
+/**
+ * Downloads an image from a URL, compresses it, and converts to base64 data URL.
  * This is required because OpenAI Vision cannot reliably fetch images from
  * Supabase Storage URLs (returns 400 "Timeout while downloading").
+ * 
+ * Compression ensures:
+ * - Max dimension: 1024px (prevents timeout on large PDP images)
+ * - Format: JPEG at 85% quality
+ * - Max size: < 1MB
  */
 async function fetchImageAsBase64(imageUrl: string): Promise<string> {
   const response = await fetch(imageUrl, {
@@ -227,10 +309,14 @@ async function fetchImageAsBase64(imageUrl: string): Promise<string> {
     throw new Error(`Failed to download image: HTTP ${response.status} for ${imageUrl}`)
   }
 
-  const contentType = response.headers.get('content-type') || 'image/jpeg'
   const arrayBuffer = await response.arrayBuffer()
-  const base64 = Buffer.from(arrayBuffer).toString('base64')
-  return `data:${contentType};base64,${base64}`
+  const inputBuffer = Buffer.from(arrayBuffer)
+  
+  // Compress image before sending to Vision API
+  const compressedBuffer = await compressImageForVision(inputBuffer)
+  
+  const base64 = compressedBuffer.toString('base64')
+  return `data:image/jpeg;base64,${base64}`
 }
 
 export async function analyzeLabel(imageUrl: string, packagingFormatContext?: string): Promise<VisionAnalysisResult> {
