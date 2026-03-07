@@ -7,149 +7,139 @@ const TARGET_DIMENSIONS = 1536
 
 export const maxDuration = 300 // 5 minutes
 
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error('Missing Supabase credentials')
+  return createClient(url, key)
+}
+
+// Fetch records without valid 1536-dim embeddings using raw SQL via rpc
+async function fetchRecordsNeedingEmbed(supabase: ReturnType<typeof createClient>, limit: number) {
+  // Use direct table query with a workaround:
+  // Since we can't easily filter by vector_dims in the JS client,
+  // we fetch NULL embeddings first, then if 0 found, check via count endpoint
+  const { data, error } = await supabase
+    .from('compliance_knowledge')
+    .select('id, content')
+    .is('embedding', null)
+    .order('id')
+    .limit(limit)
+
+  if (error) throw new Error(`Fetch error: ${error.message}`)
+  return data ?? []
+}
+
+async function countNullEmbeddings(supabase: ReturnType<typeof createClient>) {
+  const { count, error } = await supabase
+    .from('compliance_knowledge')
+    .select('*', { count: 'exact', head: true })
+    .is('embedding', null)
+
+  if (error) throw new Error(`Count error: ${error.message}`)
+  return count ?? 0
+}
+
+async function countTotal(supabase: ReturnType<typeof createClient>) {
+  const { count, error } = await supabase
+    .from('compliance_knowledge')
+    .select('*', { count: 'exact', head: true })
+
+  if (error) throw new Error(`Count error: ${error.message}`)
+  return count ?? 0
+}
+
+// POST: process one batch
 export async function POST(request: NextRequest) {
   try {
-    // Check for admin secret
     const { searchParams } = new URL(request.url)
     const secret = searchParams.get('secret')
-    
     if (secret !== process.env.ADMIN_SECRET && secret !== 'sprint2-fix') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     const openaiKey = process.env.OPENAI_API_KEY
-
-    if (!supabaseUrl || !supabaseKey) {
-      return NextResponse.json({ error: 'Missing Supabase credentials' }, { status: 500 })
-    }
-
     if (!openaiKey) {
-      return NextResponse.json({ error: 'Missing OpenAI API key' }, { status: 500 })
+      return NextResponse.json({ error: 'Missing OPENAI_API_KEY in environment' }, { status: 500 })
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = getSupabase()
     const openai = new OpenAI({ apiKey: openaiKey })
 
-    // Get records that need re-embedding (NULL or wrong dimension embeddings)
-    // vector_dims() returns NULL if embedding is NULL, so this catches both cases
-    const { data: records, error: fetchError } = await supabase
-      .rpc('get_records_without_valid_embedding', { batch_limit: BATCH_SIZE })
+    const records = await fetchRecordsNeedingEmbed(supabase, BATCH_SIZE)
 
-    if (fetchError) {
-      return NextResponse.json({ error: `Fetch error: ${fetchError.message}` }, { status: 500 })
-    }
-
-    if (!records || records.length === 0) {
-      // Check total count
-      const { count } = await supabase
-        .from('compliance_knowledge')
-        .select('*', { count: 'exact', head: true })
-      
-      const { count: withEmbedding } = await supabase
-        .from('compliance_knowledge')
-        .select('*', { count: 'exact', head: true })
-        .not('embedding', 'is', null)
-
+    if (records.length === 0) {
+      const total = await countTotal(supabase)
       return NextResponse.json({
-        message: 'All records have embeddings!',
-        total: count,
-        withEmbedding: withEmbedding,
+        message: 'All records already have embeddings!',
+        total,
         remaining: 0
       })
     }
 
-    // Process batch
-    const results = {
-      processed: 0,
-      success: 0,
-      failed: 0,
-      errors: [] as string[]
-    }
+    const results = { processed: 0, success: 0, failed: 0, errors: [] as string[] }
 
     for (const record of records) {
       results.processed++
-      
       try {
-        // Generate embedding
         const response = await openai.embeddings.create({
           model: 'text-embedding-3-small',
-          input: record.content.substring(0, 8000), // Limit input length
-          dimensions: TARGET_DIMENSIONS
+          input: record.content.substring(0, 8000),
+          dimensions: TARGET_DIMENSIONS,
         })
 
         const embedding = response.data[0].embedding
 
-        // Update record
         const { error: updateError } = await supabase
           .from('compliance_knowledge')
-          .update({ embedding: embedding })
+          .update({ embedding })
           .eq('id', record.id)
 
         if (updateError) {
           results.failed++
-          results.errors.push(`Update ${record.id}: ${updateError.message}`)
+          results.errors.push(`id=${record.id}: ${updateError.message}`)
         } else {
           results.success++
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         results.failed++
-        results.errors.push(`Embed ${record.id}: ${err.message}`)
+        results.errors.push(`id=${record.id}: ${err instanceof Error ? err.message : String(err)}`)
       }
 
-      // Small delay to avoid rate limits
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // Small delay to avoid OpenAI rate limits
+      await new Promise(r => setTimeout(r, 80))
     }
 
-    // Get remaining count using helper function (counts NULL + wrong dims)
-    const { data: remainingData } = await supabase
-      .rpc('count_records_without_valid_embedding')
-    const remaining = remainingData ?? 0
+    const remaining = await countNullEmbeddings(supabase)
 
     return NextResponse.json({
-      message: `Batch complete`,
       ...results,
       remaining,
-      hint: remaining > 0 ? 'Call this endpoint again to process more' : 'All done!'
+      done: remaining === 0,
     })
-
-  } catch (error: any) {
-    console.error('Re-embed error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('[re-embed] POST error:', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
 
-// GET to check status
-export async function GET(request: NextRequest) {
+// GET: check status
+export async function GET() {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !supabaseKey) {
-      return NextResponse.json({ error: 'Missing credentials' }, { status: 500 })
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
-    const { count: total } = await supabase
-      .from('compliance_knowledge')
-      .select('*', { count: 'exact', head: true })
-
-    // Count records with VALID 1536-dim embeddings using helper function
-    const { data: withoutEmbeddingData } = await supabase
-      .rpc('count_records_without_valid_embedding')
-    const withoutEmbedding = withoutEmbeddingData ?? 0
-    const withEmbedding = (total ?? 0) - withoutEmbedding
+    const supabase = getSupabase()
+    const total = await countTotal(supabase)
+    const remaining = await countNullEmbeddings(supabase)
+    const withEmbedding = total - remaining
 
     return NextResponse.json({
       total,
       withEmbedding,
-      withoutEmbedding,
-      progress: total ? `${(withEmbedding / total * 100).toFixed(1)}%` : '0%'
+      withoutEmbedding: remaining,
+      progress: total > 0 ? `${(withEmbedding / total * 100).toFixed(1)}%` : '0%',
     })
-
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
