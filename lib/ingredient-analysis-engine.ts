@@ -53,10 +53,33 @@ const FDA_MAJOR_ALLERGENS = [
   { name: 'shellfish', keywords: ['shellfish', 'shrimp', 'crab', 'lobster', 'crawfish', 'prawn', 'scallop', 'clam', 'mussel', 'oyster'] },
   { name: 'tree nuts', keywords: ['almond', 'cashew', 'walnut', 'pecan', 'pistachio', 'macadamia', 'hazelnut', 'brazil nut', 'chestnut', 'pine nut'] },
   { name: 'peanuts', keywords: ['peanut', 'groundnut', 'arachis'] },
-  { name: 'wheat', keywords: ['wheat', 'flour', 'bread', 'durum', 'semolina', 'spelt', 'kamut', 'bulgur', 'couscous', 'farina'] },
-  { name: 'soybeans', keywords: ['soy', 'soybean', 'soya', 'edamame', 'tofu', 'tempeh', 'miso', 'lecithin'] },
+  // FIXED: 'flour' alone causes false positives (rice flour, corn flour)
+  // Use 'wheat flour', 'enriched flour' etc. to avoid flagging non-wheat flours
+  { name: 'wheat', keywords: ['wheat', 'wheat flour', 'enriched flour', 'bleached flour', 'all-purpose flour', 'bread flour', 'durum', 'semolina', 'spelt', 'kamut', 'bulgur', 'couscous', 'farina', 'gluten'] },
+  { name: 'soybeans', keywords: ['soy', 'soybean', 'soya', 'edamame', 'tofu', 'tempeh', 'miso', 'soy lecithin'] },
   { name: 'sesame', keywords: ['sesame', 'tahini', 'halvah', 'hummus'] }, // Added 2023
 ]
+
+// Canonical allergen name mapping - normalize all variants to single display name
+// Prevents duplicates like "Soy" and "Soybeans" appearing together
+const ALLERGEN_CANONICAL: Record<string, string> = {
+  'soy': 'Soybeans',
+  'soya': 'Soybeans', 
+  'soybean': 'Soybeans',
+  'soybeans': 'Soybeans',
+  'milk': 'Milk',
+  'dairy': 'Milk',
+  'wheat': 'Wheat',
+  'gluten': 'Wheat',
+  'eggs': 'Eggs',
+  'egg': 'Eggs',
+  'fish': 'Fish',
+  'shellfish': 'Shellfish',
+  'tree nuts': 'Tree Nuts',
+  'peanuts': 'Peanuts',
+  'peanut': 'Peanuts',
+  'sesame': 'Sesame',
+}
 
 // ─── COMMON NAME VIOLATIONS (Vietnamese labels commonly make these mistakes) ──
 const COMMON_NAME_ISSUES: Array<{
@@ -140,24 +163,33 @@ export function analyzeIngredientList(
   }
   
   // ─── 2. Detect allergens from ingredient text ───────────────────────────────
-  // First normalize existing allergens to lowercase for comparison
-  const normalizedExisting = detectedAllergens.map(a => a.toLowerCase().trim())
-  const foundAllergensSet = new Set<string>(normalizedExisting)
+  // Use canonical names to prevent duplicates like "Soy" + "Soybeans"
+  const foundCanonicalAllergens = new Set<string>()
   
+  // First, normalize existing detected allergens to canonical names
+  for (const allergen of detectedAllergens) {
+    const lower = allergen.toLowerCase().trim()
+    const canonical = ALLERGEN_CANONICAL[lower] || (lower.charAt(0).toUpperCase() + lower.slice(1))
+    foundCanonicalAllergens.add(canonical)
+  }
+  
+  // Then scan ingredient text for allergen keywords
   for (const allergen of FDA_MAJOR_ALLERGENS) {
     for (const keyword of allergen.keywords) {
-      if (fullText.includes(keyword.toUpperCase())) {
-        // Add normalized allergen name (lowercase)
-        foundAllergensSet.add(allergen.name.toLowerCase())
+      // Use word boundary check for multi-word keywords
+      const keywordUpper = keyword.toUpperCase()
+      if (fullText.includes(keywordUpper)) {
+        // Map to canonical name to prevent duplicates
+        const canonical = ALLERGEN_CANONICAL[allergen.name.toLowerCase()] || 
+          (allergen.name.charAt(0).toUpperCase() + allergen.name.slice(1))
+        foundCanonicalAllergens.add(canonical)
         break
       }
     }
   }
   
-  // Convert back to properly formatted array (capitalize first letter)
-  const foundAllergens = Array.from(foundAllergensSet).map(a => 
-    a.charAt(0).toUpperCase() + a.slice(1)
-  )
+  // Convert Set to array - already properly capitalized via ALLERGEN_CANONICAL
+  const foundAllergens = Array.from(foundCanonicalAllergens)
   
   // ─── 3. Check allergen declaration completeness ─────────────────────────────
   const hasContainsStatement = /contains\s*:/i.test(ingredientListText)
@@ -173,17 +205,12 @@ export function analyzeIngredientList(
     )
   }
   
-  // ─── 4. Add order verification issue (always for food products) ─────────────
-  if (ingredients.length >= 3) {
-    issues.push({
-      type: 'order_verification',
-      severity: 'warning',
-      originalText: `Ingredients: ${ingredients.slice(0, 3).join(', ')}...`,
-      cfrReference: '21 CFR §101.4(a)(1)',
-      riskLevel: 'Class II',
-      riskExplanation: 'Incorrect ingredient order violates FDCA Section 403(i)(2). FDA may issue Warning Letter or detention.'
-    })
-  }
+  // ─── 4. Order verification - only flag when there's actual signal ───────────
+  // REMOVED: Previously always added warning for any product with >= 3 ingredients
+  // This created noise because 100% of food products have >= 3 ingredients
+  // Now: order verification is handled separately through SmartCitationFormatter
+  // when the violation type is 'ingredient_order' (flagged by AI analysis)
+  // The requiresFormulaVerification flag below indicates order should be verified
   
   // ─── 5. Generate formatted guidance ─────────────────────────────────────────
   const formattedGuidance = generateDetailedGuidance(issues, foundAllergens, allergenDeclarationIssues, ingredients)

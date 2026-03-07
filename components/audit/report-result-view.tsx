@@ -1121,10 +1121,12 @@ export function ReportResultView({
                   {/* Health Claims (NEW) - Split into Structure/Function vs Factual */}
                   {healthClaims && healthClaims.length > 0 && (() => {
                     // Structure/Function indicators that require DSHEA disclaimer
-                    const structureFunctionKeywords = ['supports', 'maintains', 'promotes', 'helps', 'contributes to', 'assists', 'aids', 'healthy blood', 'nitric oxide', 'antioxidant']
+                    // REMOVED 'antioxidant' - FDA allows "good source of antioxidants" as nutrient content claim without DSHEA
+                    // ADDED more DSHEA-triggering keywords: 'boosts', 'enhances', 'strengthens', 'fights', 'protects', 'reduces risk'
+                    const structureFunctionKeywords = ['supports', 'maintains', 'promotes', 'helps', 'contributes to', 'assists', 'aids', 'healthy blood', 'nitric oxide', 'boosts', 'enhances', 'strengthens', 'fights', 'protects', 'reduces risk', 'immune', 'energy', 'metabolism']
                     
                     // Factual/Negative claims that are compliant
-                    const factualClaimPatterns = ['no artificial', 'no added', 'no preservatives', 'free', 'organic', 'natural', 'non-gmo', 'gluten-free', 'allergen-free', 'sulfate-free']
+                    const factualClaimPatterns = ['no artificial', 'no added', 'no preservatives', 'free', 'organic', 'natural', 'non-gmo', 'gluten-free', 'allergen-free', 'sulfate-free', 'antioxidant', 'source of', 'contains']
                     
                     const structureFunctionClaims = healthClaims.filter(claim => 
                       structureFunctionKeywords.some(keyword => claim.toLowerCase().includes(keyword))

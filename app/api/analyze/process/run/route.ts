@@ -458,33 +458,38 @@ export async function POST(request: Request) {
     let violations: any[] = []
 
     // Prepare ingredient context for enhanced analysis
-    // Dedupe allergens: normalize to lowercase, map variants to canonical names, then capitalize
+    // Dedupe allergens using CANONICAL names to prevent "Soy" + "Soybeans" duplicates
     const rawAllergens = visionResult.allergens || []
-    // Map Vietnamese variants and duplicates to canonical English names
-    const allergenNormalizationMap: Record<string, string> = {
-      'hạt đậu nành': 'soybeans',
-      'đậu nành': 'soybeans',
-      'soy': 'soybeans',
-      'soya': 'soybeans',
-      'sữa': 'milk',
-      'lúa mì': 'wheat',
-      'lúa mỳ': 'wheat',
-      'trứng': 'eggs',
-      'cá': 'fish',
-      'hải sản có vỏ': 'shellfish',
-      'các loại hạt': 'tree nuts',
-      'đậu phộng': 'peanuts',
-      'lạc': 'peanuts',
-      'mè': 'sesame',
-      'vừng': 'sesame',
+    // Map all variants (Vietnamese, English, abbreviations) to canonical display names
+    const allergenCanonicalMap: Record<string, string> = {
+      // Soybeans - all variants map to "Soybeans"
+      'hạt đậu nành': 'Soybeans', 'đậu nành': 'Soybeans', 'soy': 'Soybeans', 
+      'soya': 'Soybeans', 'soybean': 'Soybeans', 'soybeans': 'Soybeans',
+      // Milk
+      'sữa': 'Milk', 'milk': 'Milk', 'dairy': 'Milk',
+      // Wheat  
+      'lúa mì': 'Wheat', 'lúa mỳ': 'Wheat', 'wheat': 'Wheat', 'gluten': 'Wheat',
+      // Eggs
+      'trứng': 'Eggs', 'egg': 'Eggs', 'eggs': 'Eggs',
+      // Fish
+      'cá': 'Fish', 'fish': 'Fish',
+      // Shellfish
+      'hải sản có vỏ': 'Shellfish', 'shellfish': 'Shellfish',
+      // Tree Nuts
+      'các loại hạt': 'Tree Nuts', 'tree nuts': 'Tree Nuts',
+      // Peanuts
+      'đậu phộng': 'Peanuts', 'lạc': 'Peanuts', 'peanut': 'Peanuts', 'peanuts': 'Peanuts',
+      // Sesame
+      'mè': 'Sesame', 'vừng': 'Sesame', 'sesame': 'Sesame',
     }
-    const normalizedAllergenSet = new Set(rawAllergens.map((a: string) => {
-      const lower = a.toLowerCase().trim()
-      return allergenNormalizationMap[lower] || lower
-    }))
-    const deduplicatedAllergens = Array.from(normalizedAllergenSet).map((a: string) => 
-      a.charAt(0).toUpperCase() + a.slice(1)
-    )
+    // Use Set with canonical names to auto-dedupe
+    const canonicalAllergenSet = new Set<string>()
+    for (const allergen of rawAllergens) {
+      const lower = allergen.toLowerCase().trim()
+      const canonical = allergenCanonicalMap[lower] || (lower.charAt(0).toUpperCase() + lower.slice(1))
+      canonicalAllergenSet.add(canonical)
+    }
+    const deduplicatedAllergens = Array.from(canonicalAllergenSet)
     
     const ingredientContext = {
       ingredients: visionResult.ingredients || [],
