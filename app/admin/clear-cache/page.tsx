@@ -22,23 +22,25 @@ export default function ClearVisionCachePage() {
     setReanalyzing(true)
 
     try {
-      // First delete the report to force re-analysis
-      const deleteRes = await fetch('/api/admin/delete-report', {
+      // Delete vision cache for the report
+      const deleteRes = await fetch('/api/admin/delete-vision-cache-direct', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reportId: reportId.trim() }),
       })
       
+      const data = await deleteRes.json()
+      
       if (!deleteRes.ok) {
-        const data = await deleteRes.json()
-        setError(data.error || 'Không thể xóa báo cáo')
+        setError(data.error || 'Không thể xóa cache')
         return
       }
       
       setResult({ 
         success: true, 
-        message: 'Báo cáo đã được xóa. Vui lòng upload lại ảnh để phân tích mới với cache bị bỏ qua.',
-        reportId: reportId.trim()
+        message: data.message || 'Cache vision đã được xóa. Upload lại ảnh để phân tích mới.',
+        reportId: reportId.trim(),
+        cachedImagesDeleted: data.cachedImagesDeleted
       })
       setReportId('')
     } catch (err) {
@@ -51,9 +53,9 @@ export default function ClearVisionCachePage() {
   return (
     <div className="container py-8">
       <div className="max-w-md mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Quản lý Phân tích</h1>
+        <h1 className="text-2xl font-bold mb-4">Xóa Vision Cache</h1>
         <p className="text-muted-foreground mb-6">
-          Xóa báo cáo để phân tích lại với logic mới (multi-column, v.v.)
+          Nhập Report ID để xóa cache phân tích vision và phân tích lại với logic mới
         </p>
 
         <div className="space-y-4">
@@ -73,11 +75,11 @@ export default function ClearVisionCachePage() {
             className="w-full"
             variant="default"
           >
-            {reanalyzing ? 'Đang xóa báo cáo...' : 'Xóa báo cáo & Phân tích lại'}
+            {reanalyzing ? 'Đang xóa cache...' : 'Xóa Vision Cache'}
           </Button>
           
           <p className="text-xs text-muted-foreground">
-            Lưu ý: Sau khi xóa, bạn cần upload lại ảnh sản phẩm để chạy phân tích mới.
+            Cache vision sẽ bị xóa. Upload lại ảnh sản phẩm để phân tích mới với logic multi-column.
           </p>
 
           {error && (
