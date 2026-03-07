@@ -418,7 +418,7 @@ FONT SIZE CHART (use these values):
             ],
           },
         ],
-        max_tokens: 4000,
+        max_tokens: 2000, // Reduced from 4000 to speed up response (~30s vs ~56s)
         temperature: 0, // Zero temperature for maximum consistency
         seed: 12345, // Fixed seed for reproducible outputs
         response_format: { type: 'json_object' },
