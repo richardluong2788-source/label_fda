@@ -41,6 +41,66 @@ import { useTranslation } from '@/lib/i18n'
 import { useTranslateViolations } from '@/hooks/use-translate-violations'
 
 // ────────────────────────────────────────────────────────────
+// Nutrition Value Parser - Fixes OCR merge bugs like "0mg0"
+// ────────────────────────────────────────────────────────────
+
+/**
+ * Parse and clean nutrition fact value that may have merged value+unit+dv
+ * Fixes OCR bug where "0mg" + "0%" becomes "0mg0" 
+ * Pattern: {value}{unit}{number} → separate into value+unit and dailyValue
+ */
+function parseNutritionValue(fact: any): { displayValue: string; displayDV: string | null } {
+  const value = fact.value
+  const unit = fact.unit || ''
+  let dailyValue = fact.dailyValue
+  
+  // If value is already a clean number, just format it
+  if (typeof value === 'number') {
+    return {
+      displayValue: `${value}${unit}`,
+      displayDV: dailyValue != null ? String(dailyValue) : null
+    }
+  }
+  
+  // If value is a string that might have merged unit+dv (e.g., "0mg0" or "330mg14")
+  if (typeof value === 'string') {
+    // Pattern: number + unit + number (e.g., "0mg0", "330mg14", "2.5g12")
+    const mergedPattern = /^(\d+(?:\.\d+)?)\s*(mg|g|mcg|kcal|cal)(\d+)$/i
+    const match = value.match(mergedPattern)
+    
+    if (match) {
+      const [, numValue, parsedUnit, dvValue] = match
+      return {
+        displayValue: `${numValue}${parsedUnit}`,
+        displayDV: dvValue
+      }
+    }
+    
+    // Check if value already has unit attached but no DV merged
+    const valueWithUnit = /^(\d+(?:\.\d+)?)\s*(mg|g|mcg|kcal|cal)?$/i
+    const unitMatch = value.match(valueWithUnit)
+    if (unitMatch) {
+      return {
+        displayValue: value,
+        displayDV: dailyValue != null ? String(dailyValue) : null
+      }
+    }
+    
+    // Default: return as-is
+    return {
+      displayValue: value + (unit && !value.includes(unit) ? unit : ''),
+      displayDV: dailyValue != null ? String(dailyValue) : null
+    }
+  }
+  
+  // Fallback
+  return {
+    displayValue: `${value ?? ''}${unit}`,
+    displayDV: dailyValue != null ? String(dailyValue) : null
+  }
+}
+
+// ────────────────────────────────────────────────────────────
 // Simple Markdown Renderer for AI-generated content
 // ────────────────────────────────────────────────────────────
 
@@ -1287,12 +1347,17 @@ export function ReportResultView({
                                         {isMissing ? (
                                           <span className="text-[9px]">—</span>
                                         ) : (
-                                          <span className="whitespace-nowrap">
-                                            <span className="font-medium">{fact.value}{fact.unit}</span>
-                                            {fact.dailyValue && (
-                                              <span className="text-slate-400 text-[10px] ml-1">({fact.dailyValue}%)</span>
-                                            )}
-                                          </span>
+                                          (() => {
+                                            const { displayValue, displayDV } = parseNutritionValue(fact)
+                                            return (
+                                              <span className="whitespace-nowrap">
+                                                <span className="font-medium">{displayValue}</span>
+                                                {displayDV && (
+                                                  <span className="text-slate-400 text-[10px] ml-1">({displayDV}%)</span>
+                                                )}
+                                              </span>
+                                            )
+                                          })()
                                         )}
                                       </td>
                                     )
@@ -1419,7 +1484,7 @@ export function ReportResultView({
               </div>
             </Card>
 
-            {/* ── EXPERT TIPS & AI SUMMARY (NEW) ─────────────── */}
+            {/* ── EXPERT TIPS & AI SUMMARY (NEW) ──────────────�� */}
             {(expertTips.length > 0 || commercialSummary) && (
               <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 overflow-hidden">
                 <button

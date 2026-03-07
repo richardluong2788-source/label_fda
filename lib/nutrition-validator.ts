@@ -944,13 +944,41 @@ export class NutritionValidator {
     }
 
     // Check for serving size consistency warning (informational)
+    // IMPORTANT: Only flag as warning if columnType is NOT VARIANT_SKU
+    // For variety packs (VARIANT_SKU), different serving sizes are EXPECTED and compliant
     const servingSizes = columns.map(c => c.servingSize).filter(Boolean)
     const uniqueServingSizes = new Set(servingSizes)
+    
+    // Detect if this is a VARIANT_SKU panel (variety pack)
+    const isVarietyPack = columns.some(c => {
+      const colType = (c as any).columnType
+      return colType === 'VARIANT_SKU'
+    })
+    
+    // Also detect variety pack by column names (fallback if columnType not set)
+    const looksLikeVarietyPack = columns.length >= 2 && columns.every(c => {
+      const name = (c.columnName || '').toLowerCase()
+      // Variety pack columns typically have short product names, not "per serving", "per container", "as prepared"
+      return name.length < 40 && 
+        !name.includes('per serving') && 
+        !name.includes('per container') &&
+        !name.includes('as prepared') &&
+        !name.includes('as packaged') &&
+        !name.includes('per 100')
+    })
+    
     if (uniqueServingSizes.size > 1) {
-      warnings.push(
-        `Multi-column panel has different serving sizes: ${Array.from(uniqueServingSizes).join(' | ')}. ` +
-        `This is allowed if products are genuinely different, but verify serving size declarations are accurate.`
-      )
+      if (isVarietyPack || looksLikeVarietyPack) {
+        // For variety packs, this is EXPECTED - just log as informational, not as warning
+        console.log(`[v0] Variety pack detected with different serving sizes (expected): ${Array.from(uniqueServingSizes).join(' | ')}`)
+        // Don't add to warnings - this is not a compliance issue for variety packs
+      } else {
+        // For non-variety packs (e.g., Per Serving/Per Container), different serving sizes might be an issue
+        warnings.push(
+          `Multi-column panel has different serving sizes: ${Array.from(uniqueServingSizes).join(' | ')}. ` +
+          `This is allowed if products are genuinely different, but verify serving size declarations are accurate.`
+        )
+      }
     }
 
     // ══════════════════════════════════════════════════════════════════════
