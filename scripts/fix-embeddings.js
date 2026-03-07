@@ -4,10 +4,21 @@
  * 
  * Current problem: embeddings have 19,161 dimensions (wrong model)
  * Required: 1,536 dimensions (text-embedding-3-small)
+ * 
+ * USAGE:
+ * 1. First run SQL script 036_diagnose_and_fix_embeddings.sql in Supabase Dashboard
+ * 2. Then run: node scripts/fix-embeddings.js
  */
 
-import { createClient } from '@supabase/supabase-js'
-import OpenAI from 'openai'
+const { createClient } = require('@supabase/supabase-js')
+const OpenAI = require('openai').default
+
+// Load .env.local if exists
+try {
+  require('dotenv').config({ path: '.env.local' })
+} catch (e) {
+  // dotenv not installed, skip
+}
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
