@@ -120,11 +120,15 @@ export function analyzeIngredientList(
   
   // ─── 1. Check for non-standard names ────────────────────────────────────────
   for (const check of COMMON_NAME_ISSUES) {
-    if (check.pattern.test(ingredientListText)) {
+    const match = ingredientListText.match(check.pattern)
+    if (match) {
+      // Use actual matched text instead of generic issue name
+      // This shows user EXACTLY which ingredient needs fixing
+      const actualMatchedText = match[0].trim()
       issues.push({
         type: 'non_standard_name',
         severity: check.severity,
-        originalText: check.issue,
+        originalText: actualMatchedText, // e.g., "THIAMINE MONONITRATE [VITAMIN B1]"
         suggestedFix: check.suggestedFix,
         cfrReference: '21 CFR §101.4(b)',
         riskLevel: check.severity === 'critical' ? 'Class II' : 'Class III',

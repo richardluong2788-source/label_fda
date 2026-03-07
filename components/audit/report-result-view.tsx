@@ -434,7 +434,9 @@ function ViolationCard({ violation, index, t, showExpertCta }: { violation: Viol
     return fix
   }
 
-  const hasCitations = violation.citations && violation.citations.length > 0
+  // Filter out invalid citations (missing section, section="0", or missing text)
+  const validCitations = (violation.citations || []).filter(cit => cit.section && cit.section !== '0' && cit.text)
+  const hasCitations = validCitations.length > 0
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -525,13 +527,13 @@ function ViolationCard({ violation, index, t, showExpertCta }: { violation: Viol
           >
             <span className="flex items-center gap-1.5">
               <BookOpen className="h-3 w-3" />
-              {t.report.citationsCount(violation.citations.length)}
+              {t.report.citationsCount(validCitations.length)}
             </span>
             {showCitations ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           </button>
           {showCitations && (
             <div className="px-5 pb-4 space-y-2">
-              {violation.citations.map((cit, ci) => (
+              {validCitations.map((cit, ci) => (
                 <div key={ci} className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-mono font-medium text-slate-600">{cit.section}</span>
