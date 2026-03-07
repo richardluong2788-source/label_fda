@@ -1227,6 +1227,23 @@ export function ReportResultView({
                       )}
                     </div>
                     
+                    {/* Multi-column detection warning when columns data is missing */}
+                    {(report as any).is_multi_column_nutrition && !((report as any).nutrition_facts_columns?.length > 0) && (
+                      <div className="p-3 bg-amber-50 border-b border-amber-200">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-medium text-amber-800">
+                              {t.report.multiColumnDetectedNoData || 'Multi-column Nutrition Facts Detected'}
+                            </p>
+                            <p className="text-[10px] text-amber-700 mt-0.5">
+                              {t.report.multiColumnDetectedNoDataDesc || 'This label appears to have multiple Nutrition Facts panels (variety pack format), but only the first panel data was extracted. For complete analysis, please ensure the image clearly shows all panels.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Multi-column display for variety packs */}
                     {(report as any).is_multi_column_nutrition && (report as any).nutrition_facts_columns?.length > 0 ? (
                       <div className="overflow-x-auto">

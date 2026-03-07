@@ -296,6 +296,8 @@ export const en: TranslationKeys = {
     nutritionFactsTitle: 'NUTRITION FACTS',
     multiColumnLabel: 'MULTI-COLUMN',
     multiColumnWarnings: 'Column Inconsistencies Detected:',
+    multiColumnDetectedNoData: 'Multi-column Nutrition Facts Detected',
+    multiColumnDetectedNoDataDesc: 'This label appears to have multiple Nutrition Facts panels (variety pack format), but only the first panel data was extracted. For complete analysis, please ensure the image clearly shows all panels.',
     // Confidence metrics
     confidenceMetrics: 'ANALYSIS CONFIDENCE',
     ocrLabel: 'OCR (Text reading)',

@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing internal context' }, { status: 400 })
   }
 
-  const { phase = 'full', visionDataConfirmed = false, skipCache = false } = body
+  const { phase = 'full', visionDataConfirmed = false } = body
 
   const supabase = createAdminClient()
 
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
 
         const visionResults = await Promise.all(
           labelImages.map(async (img: { type: string; url: string }) => {
-            const result = await analyzeLabel(img.url, packagingFormatCtx, { skipCache })
+            const result = await analyzeLabel(img.url, packagingFormatCtx)
             return { type: img.type, result }
           })
         )
@@ -284,8 +284,21 @@ export async function POST(request: Request) {
     const isMultiColumn = visionResult.isMultiColumnNutrition || (visionResult.nutritionFactsColumns?.length ?? 0) >= 2
     let multiColumnValidation: ReturnType<typeof NutritionValidator.validateMultiColumnNutritionFacts> | null = null
     
+    // Detailed logging for multi-column detection debugging
+    console.log('[v0] Multi-column detection check:', {
+      isMultiColumnNutrition: visionResult.isMultiColumnNutrition,
+      nutritionFactsColumnsLength: visionResult.nutritionFactsColumns?.length ?? 0,
+      computedIsMultiColumn: isMultiColumn,
+      columnNames: visionResult.nutritionFactsColumns?.map(c => c.columnName) ?? [],
+    })
+    
     if (isMultiColumn && visionResult.nutritionFactsColumns?.length >= 2) {
-      console.log(`[v0] Multi-column Nutrition Facts detected: ${visionResult.nutritionFactsColumns.length} columns`)
+      console.log(`[v0] Multi-column Nutrition Facts CONFIRMED: ${visionResult.nutritionFactsColumns.length} columns detected`)
+      console.log('[v0] Column details:', visionResult.nutritionFactsColumns.map(c => ({
+        name: c.columnName,
+        servingSize: c.servingSize,
+        nutritionFactsCount: c.nutritionFacts?.length ?? 0,
+      })))
       multiColumnValidation = NutritionValidator.validateMultiColumnNutritionFacts(
         visionResult.nutritionFactsColumns,
         productDomain

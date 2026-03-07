@@ -268,7 +268,7 @@ export const vi = {
     andWord: 'và',
     currentRisk: 'HIỆN TẠI',
     afterFix: 'SAU KHI SỬA',
-    projectedRiskDesc: (score: number) => `Sau khi sửa lỗi nghiêm trọng, đi�����m rủi ro dự kiến giảm còn ${score.toFixed(1)}/10`,
+    projectedRiskDesc: (score: number) => `Sau khi sửa lỗi nghiêm trọng, đi�������m rủi ro dự kiến giảm còn ${score.toFixed(1)}/10`,
     // Expert insights / AI summary
     expertInsightsTitle: 'Phân Tích Chuyên Sâu',
     expertInsightsDesc: 'Tóm tắt thương mại và lời khuyên chuyên gia dựa trên dữ liệu FDA',
@@ -296,6 +296,8 @@ export const vi = {
     nutritionFactsTitle: 'THÀNH PHẦN DINH DƯỠNG',
     multiColumnLabel: 'ĐA CỘT',
     multiColumnWarnings: 'Phát hiện không nhất quán giữa các cột:',
+    multiColumnDetectedNoData: 'Phát hiện Nutrition Facts đa cột',
+    multiColumnDetectedNoDataDesc: 'Nhãn này có vẻ có nhiều bảng Nutrition Facts (định dạng gói đa sản phẩm), nhưng chỉ dữ liệu bảng đầu tiên được trích xuất. Để phân tích đầy đủ, vui lòng đảm bảo hình ảnh hiển thị rõ tất cả các bảng.',
     // Confidence metrics
     confidenceMetrics: 'ĐỘ TIN CẬY PHÂN TÍCH',
     ocrLabel: 'OCR (Đọc văn bản)',
@@ -930,7 +932,7 @@ export const vi = {
     footerAbout: 'Về Vexim Global',
     footerContact: 'Liên hệ hợp tác',
     footerTerms: 'Điều khoản dịch vụ',
-    footerPrivacy: 'Chính sách bảo mật',
+    footerPrivacy: 'Chính sách b��o mật',
     footerDescFull: 'Nền tảng kiểm tra tuân thủ FDA bằng AI dành cho doanh nghiệp Việt Nam xuất khẩu sang thị trường Mỹ.',
     footerSupportLabel: 'Hỗ trợ khách hàng',
   },

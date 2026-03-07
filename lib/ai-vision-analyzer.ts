@@ -160,30 +160,30 @@ CRITICAL NUTRITION FACTS RULES - READ EVERY WORD:
 9. Infants/toddlers often have LOWER values than adult foods - this is NORMAL
 10. Cross-check: Does your extracted data match the serving size type (70g vs 355ml)?
 
-MULTI-COLUMN NUTRITION FACTS (VARIETY PACKS) - CRITICAL:
-1. DETECT multi-column format: Look for 2+ VERTICAL COLUMNS of nutrition data side-by-side
-2. KEY INDICATORS of multi-column:
-   - Product names at top: "Cheddar | Colors | Pretzel" or "Toast Chee | Captain's Wafers | Toasty"
-   - Different serving sizes per column: "1 Pack (28g)" vs "1 Pack (39g)" vs "1 Pack (36g)"
-   - Different calorie values: 220 cal vs 190 cal vs 180 cal (NOT the same across columns)
-   - Column divider lines separating nutrition data vertically
-   - Multiple "Nutrition Facts" headers (one per variant/column)
-3. If you see 2+ product variants with DIFFERENT nutrition values → isMultiColumnNutrition = TRUE
-4. EXTRACT EACH COLUMN INDEPENDENTLY into nutritionFactsColumns array
-5. Each column MUST have its own: columnName, servingSize, servingsPerContainer, and full nutritionFacts array
-6. CRITICAL: Verify column independence - if Column A has "220 Calories" and Column B has "190 Calories", they are separate columns
-7. If a nutrient appears in Column A but NOT in Column B, note this as the value being MISSING (do NOT assume 0)
-8. Use null for missing nutrients, NOT 0 (0 means "zero grams present", null means "not declared")
-9. Still populate the main "nutritionFacts" array with the FIRST column data for backwards compatibility
-10. EXAMPLE - Lance Variety Pack with 3 columns:
-    {
-      "isMultiColumnNutrition": true,
-      "nutritionFactsColumns": [
-        {"columnName": "Toast Chee", "servingSize": "1 Pack (28g)", "nutritionFacts": [{"name": "Calories", "value": 220}, ...]},
-        {"columnName": "Captain's Wafers", "servingSize": "1 Pack (39g)", "nutritionFacts": [{"name": "Calories", "value": 190}, ...]},
-        {"columnName": "Toasty", "servingSize": "1 Pack (36g)", "nutritionFacts": [{"name": "Calories", "value": 180}, ...]}
-      ]
-    }
+MULTI-COLUMN NUTRITION FACTS (VARIETY PACKS) - CRITICAL - READ CAREFULLY:
+🚨 YOU MUST DETECT MULTI-COLUMN FORMAT - THIS IS A COMMON FAILURE POINT 🚨
+
+HOW TO IDENTIFY MULTI-COLUMN:
+- Look for 2+ "Nutrition Facts" titles or 2+ "Calories" values side-by-side
+- Look for variant/flavor headers like: "Cheddar | Colors | Pretzel" or "Original | BBQ | Sour Cream"
+- If you see DIFFERENT calorie values (e.g., 220, 190, 180) for different variants → IT IS MULTI-COLUMN
+- Variety packs with multiple product types ALWAYS have multi-column panels
+- Example: "Toast Chee 220 cal | Captain's Wafers 190 cal | Toasty 180 cal" = 3 COLUMNS
+
+WHEN YOU DETECT MULTI-COLUMN (set isMultiColumnNutrition = true):
+1. Count the number of columns (typically 2-6 columns)
+2. Identify each column's variant name (e.g., "Toast Chee PEANUT", "Captain's Wafers", "Toasty")
+3. EXTRACT EACH COLUMN INDEPENDENTLY into nutritionFactsColumns array
+4. Each column MUST have its own: columnName, servingSize, servingsPerContainer, and full nutritionFacts array
+5. Use null for missing nutrients, NOT 0 (0 means "zero grams present", null means "not declared")
+6. Still populate the main "nutritionFacts" array with the FIRST column data for backwards compatibility
+
+COMMON MULTI-COLUMN EXAMPLES:
+- Lance Variety Pack crackers: 4 columns (Toast Chee, Captain's Wafers, Toasty, Nekot)
+- Frito-Lay variety snacks: 6 columns (Doritos, Cheetos, Lays, etc.)
+- Cereal with "As Packaged" / "With Milk": 2 columns
+
+IF UNSURE: Set isMultiColumnNutrition = true if you see ANY evidence of multiple nutrition value sets
 
 NET QUANTITY / NET WEIGHT EXTRACTION:
 - Look for "Net Wt", "Net Weight", "NET WT" anywhere on the label
@@ -214,13 +214,8 @@ async function fetchImageAsBase64(imageUrl: string): Promise<string> {
   return `data:${contentType};base64,${base64}`
 }
 
-export async function analyzeLabel(
-  imageUrl: string,
-  packagingFormatContext?: string,
-  options?: { skipCache?: boolean }
-): Promise<VisionAnalysisResult> {
-  const skipCache = options?.skipCache ?? false
-  console.log('[v0] Analyzing label with GPT-4o Vision:', imageUrl, skipCache ? '(skipCache=true)' : '')
+export async function analyzeLabel(imageUrl: string, packagingFormatContext?: string): Promise<VisionAnalysisResult> {
+  console.log('[v0] Analyzing label with GPT-4o Vision:', imageUrl)
   if (packagingFormatContext) {
     console.log('[v0] Packaging format context provided for AI analysis')
   }
@@ -231,18 +226,12 @@ export async function analyzeLabel(
   // Note: we intentionally do NOT include packagingFormatContext in the key
   // because the Vision prompt appends it as a minor context hint and the
   // extracted facts should be identical regardless.
-  let imageHash: string | null = null
-  if (!skipCache) {
-    const { hit: cacheHit, hash, result: cachedResult } = await lookupVisionCache(imageUrl)
-    imageHash = hash
-    if (cacheHit && cachedResult) {
-      console.log('[v0] Vision cache HIT — skipping GPT-4o call')
-      return cachedResult
-    }
-    console.log('[v0] Vision cache MISS — calling GPT-4o')
-  } else {
-    console.log('[v0] Vision cache SKIPPED — forcing fresh analysis')
+  const { hit: cacheHit, hash: imageHash, result: cachedResult } = await lookupVisionCache(imageUrl)
+  if (cacheHit && cachedResult) {
+    console.log('[v0] Vision cache HIT — skipping GPT-4o call')
+    return cachedResult
   }
+  console.log('[v0] Vision cache MISS — calling GPT-4o')
   // ─────────────────────────────────────────────────────────────────────────
 
   // Download image server-side and convert to base64 to avoid OpenAI timeout
@@ -636,8 +625,57 @@ FONT SIZE CHART (use these values):
       normalized.validationWarnings = validationWarnings
     }
     
+    // ── Multi-Column Detection Logging & Auto-Detection ──────────────────────
+    console.log('[v0] Multi-column detection result:', {
+      isMultiColumnNutrition: normalized.isMultiColumnNutrition,
+      nutritionFactsColumnsCount: normalized.nutritionFactsColumns?.length || 0,
+      rawParsedIsMultiColumn: parsed.isMultiColumnNutrition,
+      rawParsedColumnsLength: parsed.nutritionFactsColumns?.length || 0,
+    })
+    
+    // AUTO-DETECTION HEURISTIC: If AI missed multi-column but allText suggests it
+    // Look for patterns like "Calories 220 ... Calories 190 ... Calories 180" which indicate multiple panels
+    if (!normalized.isMultiColumnNutrition && normalized.textElements.allText) {
+      const allTextLower = normalized.textElements.allText.toLowerCase()
+      
+      // Count occurrences of "calories" followed by a number
+      const caloriesMatches = allTextLower.match(/calories\s*\d+/g) || []
+      const servingSizeMatches = allTextLower.match(/serving\s*size/gi) || []
+      const nutritionFactsMatches = allTextLower.match(/nutrition\s*facts/gi) || []
+      
+      console.log('[v0] Multi-column auto-detection heuristics:', {
+        caloriesOccurrences: caloriesMatches.length,
+        servingSizeOccurrences: servingSizeMatches.length,
+        nutritionFactsOccurrences: nutritionFactsMatches.length,
+        caloriesMatches: caloriesMatches.slice(0, 5),
+      })
+      
+      // If we see 2+ different Calories values or 2+ "Nutrition Facts" headers, it's likely multi-column
+      if (caloriesMatches.length >= 2 || nutritionFactsMatches.length >= 2) {
+        console.warn('[v0] AUTO-DETECTION: Multi-column format suspected but AI did not report isMultiColumnNutrition=true')
+        console.warn('[v0] This is a known issue - the AI should have extracted separate columns')
+        
+        // Add warning for user
+        if (!normalized.validationWarnings) normalized.validationWarnings = []
+        normalized.validationWarnings.push(
+          `Multi-column Nutrition Facts format detected (${caloriesMatches.length} Calories values found) but AI extraction may be incomplete. ` +
+          `For variety packs with multiple Nutrition Facts panels, the system should show all columns. Please check if all variants are displayed.`
+        )
+        
+        // Force set the flag so UI knows to look for it
+        normalized.isMultiColumnNutrition = true
+        // If AI provided columns, use them; if not, add a placeholder warning
+        if (!normalized.nutritionFactsColumns || normalized.nutritionFactsColumns.length === 0) {
+          console.error('[v0] CRITICAL: Multi-column detected but nutritionFactsColumns is empty!')
+          console.error('[v0] The AI failed to extract individual columns. Nutrition data shown is only from the first panel.')
+        }
+      }
+    }
+    
     console.log('[v0] Vision analysis validated successfully. Sample:', {
       nutritionFactsCount: normalized.nutritionFacts.length,
+      isMultiColumnNutrition: normalized.isMultiColumnNutrition,
+      nutritionFactsColumnsCount: normalized.nutritionFactsColumns?.length || 0,
       brandName: normalized.textElements.brandName.text.substring(0, 30),
       detectedLanguages: normalized.detectedLanguages,
       totalTextLength: normalized.textElements.allText.length
@@ -647,7 +685,7 @@ FONT SIZE CHART (use these values):
     if (imageHash) {
       setVisionCache(imageHash, normalized).catch(() => {})
     }
-    // ────────���───────────────────────────────────────────────────────────────
+    // ────────────────────────────────────────────────────────────────────────
 
     return normalized
   } catch (error: any) {
