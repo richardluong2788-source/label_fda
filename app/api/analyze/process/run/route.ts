@@ -458,9 +458,30 @@ export async function POST(request: Request) {
     let violations: any[] = []
 
     // Prepare ingredient context for enhanced analysis
-    // Dedupe allergens: normalize to lowercase, then capitalize for display
+    // Dedupe allergens: normalize to lowercase, map variants to canonical names, then capitalize
     const rawAllergens = visionResult.allergens || []
-    const normalizedAllergenSet = new Set(rawAllergens.map((a: string) => a.toLowerCase().trim()))
+    // Map Vietnamese variants and duplicates to canonical English names
+    const allergenNormalizationMap: Record<string, string> = {
+      'hạt đậu nành': 'soybeans',
+      'đậu nành': 'soybeans',
+      'soy': 'soybeans',
+      'soya': 'soybeans',
+      'sữa': 'milk',
+      'lúa mì': 'wheat',
+      'lúa mỳ': 'wheat',
+      'trứng': 'eggs',
+      'cá': 'fish',
+      'hải sản có vỏ': 'shellfish',
+      'các loại hạt': 'tree nuts',
+      'đậu phộng': 'peanuts',
+      'lạc': 'peanuts',
+      'mè': 'sesame',
+      'vừng': 'sesame',
+    }
+    const normalizedAllergenSet = new Set(rawAllergens.map((a: string) => {
+      const lower = a.toLowerCase().trim()
+      return allergenNormalizationMap[lower] || lower
+    }))
     const deduplicatedAllergens = Array.from(normalizedAllergenSet).map((a: string) => 
       a.charAt(0).toUpperCase() + a.slice(1)
     )

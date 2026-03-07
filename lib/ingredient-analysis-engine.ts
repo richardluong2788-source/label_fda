@@ -94,8 +94,14 @@ const COMMON_NAME_ISSUES: Array<{
   // Xanthan gum
   { pattern: /gum\s*guar/i, issue: 'GUM GUAR', suggestedFix: 'GUAR GUM', severity: 'info' },
   
-  // Vitamins - common issues
+  // Vitamins - ALL vitamin declarations with square brackets need parentheses per FDA
   { pattern: /thiamine\s*mononitrate\s*\[vitamin\s*b1\]/i, issue: 'Vitamin declaration in brackets', suggestedFix: 'THIAMINE MONONITRATE (VITAMIN B1) - use parentheses', severity: 'info' },
+  { pattern: /riboflavin\s*\[vitamin\s*b2\]/i, issue: 'Vitamin declaration in brackets', suggestedFix: 'RIBOFLAVIN (VITAMIN B2) - use parentheses', severity: 'info' },
+  { pattern: /niacin(?:amide)?\s*\[vitamin\s*b3\]/i, issue: 'Vitamin declaration in brackets', suggestedFix: 'NIACIN (VITAMIN B3) - use parentheses', severity: 'info' },
+  { pattern: /pyridoxine\s*(?:hydrochloride|hcl)?\s*\[vitamin\s*b6\]/i, issue: 'Vitamin declaration in brackets', suggestedFix: 'PYRIDOXINE HYDROCHLORIDE (VITAMIN B6) - use parentheses', severity: 'info' },
+  { pattern: /cyanocobalamin\s*\[vitamin\s*b12\]/i, issue: 'Vitamin declaration in brackets', suggestedFix: 'CYANOCOBALAMIN (VITAMIN B12) - use parentheses', severity: 'info' },
+  { pattern: /folic\s*acid\s*\[vitamin\s*b9\]/i, issue: 'Vitamin declaration in brackets', suggestedFix: 'FOLIC ACID (VITAMIN B9) - use parentheses', severity: 'info' },
+  { pattern: /\w+\s*\[vitamin\s*[a-z]\d*\]/i, issue: 'Vitamin declaration in brackets', suggestedFix: 'Use parentheses ( ) instead of brackets [ ] for ALL vitamin declarations', severity: 'info' },
   
   // Generic "flavor" without proper declaration
   { pattern: /hương\s*liệu(?!\s*tự\s*nhiên|\s*nhân\s*tạo)/i, issue: 'HƯƠNG LIỆU (unclear natural/artificial)', suggestedFix: 'NATURAL FLAVOR or ARTIFICIAL FLAVOR - must specify', severity: 'warning' },

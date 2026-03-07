@@ -476,10 +476,10 @@ function ViolationCard({ violation, index, t, showExpertCta }: { violation: Viol
       </div>
 
       {/* Enforcement context bar */}
-      {(violation.enforcement_frequency || violation.legal_basis) && (
+      {((violation.enforcement_frequency && violation.enforcement_frequency > 0) || violation.legal_basis) && (
         <div className="mx-5 mb-3 p-2.5 rounded-lg bg-slate-50 border border-slate-100">
           <div className="flex flex-wrap items-center gap-3 text-[11px]">
-            {violation.enforcement_frequency && violation.enforcement_frequency > 0 && (
+            {violation.enforcement_frequency && typeof violation.enforcement_frequency === 'number' && violation.enforcement_frequency > 0 && (
               <span className="flex items-center gap-1 text-slate-600">
                 <ShieldAlert className="h-3 w-3" />
                 {t.report.enforcementFrequency(violation.enforcement_frequency)}
