@@ -831,19 +831,19 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   /* Cover page */
   .cover-page { min-height: auto; display: flex; flex-direction: column; position: relative; background: #ffffff; color: #0f172a; padding: 15mm 20mm; overflow: hidden; }
   .cover-accent { position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #1e40af 0%, #2563eb 40%, #3b82f6 70%, #60a5fa 100%); }
-  .cover-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 2px solid #e2e8f0; margin-bottom: 24px; }
+  .cover-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0; margin-bottom: 16px; }
   .cover-logo { display: flex; align-items: center; gap: 12px; }
   .cover-logo-icon { width: 48px; height: 48px; background: #1e40af; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; color: white; }
   .cover-logo-text { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: #0f172a; }
   .cover-logo-sub { font-size: 11px; color: #64748b; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; }
   .cover-badge { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 16px; font-size: 11px; color: #475569; font-weight: 600; }
   .cover-title { font-size: 28px; font-weight: 800; line-height: 1.3; margin-bottom: 10px; letter-spacing: -0.5px; color: #0f172a; overflow-wrap: break-word; }
-  .cover-subtitle { font-size: 15px; color: #64748b; font-weight: 500; margin-bottom: 30px; overflow-wrap: break-word; }
-  .cover-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 30px; }
+  .cover-subtitle { font-size: 15px; color: #64748b; font-weight: 500; margin-bottom: 20px; overflow-wrap: break-word; }
+  .cover-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
   .cover-meta-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; overflow: hidden; }
   .cover-meta-label { font-size: 8px; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
   .cover-meta-value { font-size: 13px; font-weight: 600; color: #0f172a; overflow-wrap: break-word; }
-  .cover-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 8px; color: #64748b; }
+  .cover-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 8px; border-top: 1px solid #e2e8f0; font-size: 8px; color: #64748b; }
 
   /* Content pages */
   .content-page { padding: 12mm 18mm; min-height: auto; overflow: hidden; }
@@ -1146,16 +1146,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     </div>` : ''}
   </div>
 
-  <div class="page-footer">
-    <div>${L.pageFooter} | ${companyInfo.name}</div>
-    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
-  </div>
-</div>
-
-  <!-- ═══════════════════════ PRODUCT INFO (flows from previous) ═══════════════════════ -->
-<div class="page content-page"><!-- No page-break: flows naturally from Executive Summary -->
-  ${pageHeader(L, shortId, dateFormatted)}
-
+  <!-- ═══════════════ PRODUCT INFO (inline section) ═══════════════ -->
   <div class="section">
     <div class="section-title"><span class="section-number">${secProduct}</span>${L.productInfo}</div>
     ${(() => {
@@ -1337,20 +1328,11 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     }
   })() : ''}
 
-  <div class="page-footer">
-    <div>${L.pageFooter} | ${companyInfo.name}</div>
-    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
-  </div>
-</div>
-
-  <!-- ═══════════════════════ AUDIT SCOPE (flows from previous) ═══════════════════════ -->
-<div class="page content-page"><!-- No page-break: flows naturally -->
-  ${pageHeader(L, shortId, dateFormatted)}
-
+  <!-- ═══════════════ AUDIT SCOPE (inline section) ═══════════════ -->
   <div class="section">
     <div class="section-title"><span class="section-number">${secAuditScope}</span>${L.auditScope}</div>
 
-    <table class="info-table" style="margin-bottom:16px;">
+    <table class="info-table" style="margin-bottom:12px;">
       <tr><td>${L.auditScopeReviewDate}</td><td>${dateFormatted}</td></tr>
       <tr><td>${L.auditScopeCfrVersion}</td><td>${L.auditScopeCfrVersionValue}</td></tr>
       <tr><td>${L.auditScopeOcrMethod}</td><td>${L.auditScopeOcrMethodValue}</td></tr>
@@ -1370,9 +1352,9 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     </table>
 
     <!-- What was NOT checked (scope boundaries) -->
-    <div style="background:#FEF3C7;border:1px solid #FDE68A;border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;padding:12px 14px;font-size:9px;color:#92400E;line-height:1.6;">
-      <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;color:#B45309;">Out of Scope — Not Reviewed</div>
-      <ul style="margin:0 0 0 14px;padding:0;list-style:disc;">
+    <div style="background:#FEF3C7;border:1px solid #FDE68A;border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;padding:10px 12px;font-size:8.5px;color:#92400E;line-height:1.5;">
+      <div style="font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;color:#B45309;">Out of Scope — Not Reviewed</div>
+      <ul style="margin:0 0 0 12px;padding:0;list-style:disc;">
         <li>Product formulation and ingredient safety</li>
         <li>Manufacturing practices (GMP / 21 CFR §111)</li>
         <li>Clinical or structure/function claim substantiation</li>
@@ -1380,27 +1362,17 @@ export function generatePDFReportHTML(data: PDFReportData): string {
         <li>State/local labeling requirements (California Prop 65, etc.)</li>
       </ul>
     </div>
-
-
   </div>
 
-  <div class="page-footer">
-    <div>${L.pageFooter} | ${companyInfo.name}</div>
-    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
-  </div>
-</div>
 
-
-<div class="page content-page${sortedViolations.length > 3 ? ' page-break' : ''}"><!-- Page-break only if many violations -->
-  ${pageHeader(L, shortId, dateFormatted)}
-
+  <!-- ═══════════════ FINDINGS DETAIL (inline section) ═══════════════ -->
   <div class="section">
     <div class="section-title"><span class="section-number">${secFindings}</span>${L.findingsDetail}</div>
     ${sortedViolations.length === 0 ? `
-      <div style="text-align: center; padding: 40px; color: #16a34a;">
-        <div style="font-size: 48px; margin-bottom: 12px;">&#10003;</div>
-        <div style="font-size: 16px; font-weight: 700;">${L.noViolations}</div>
-        <div style="font-size: 11px; color: #64748b; margin-top: 8px;">${L.noViolationsDesc}</div>
+      <div style="text-align: center; padding: 30px; color: #16a34a;">
+        <div style="font-size: 36px; margin-bottom: 10px;">&#10003;</div>
+        <div style="font-size: 14px; font-weight: 700;">${L.noViolations}</div>
+        <div style="font-size: 10px; color: #64748b; margin-top: 6px;">${L.noViolationsDesc}</div>
       </div>
     ` : sortedViolations.map((v, i) => {
       const colors = getSeverityColor(v.severity)
@@ -1456,16 +1428,8 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     }).join('')}
   </div>
 
-  <div class="page-footer">
-    <div>${L.pageFooter} | ${companyInfo.name}</div>
-    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
-  </div>
-</div>
-
   ${importAlertViolations.length > 0 ? `
-  <!-- ═══════════════════════ IMPORT ALERTS (flows from previous) ═══════════════════════ -->
-<div class="page content-page"><!-- No page-break: flows naturally -->
-  ${pageHeader(L, shortId, dateFormatted)}
+  <!-- ═══════════════ IMPORT ALERTS (inline section) ═══════════════ -->
   <div class="section">
     <div class="section-title"><span class="section-number">${secImportAlerts}</span>${L.importAlerts}</div>
     <div class="port-warning" style="background: #FEF3C7; border-left-color: #dc2626; margin-bottom: 20px;">
@@ -1498,17 +1462,10 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       </div>
     </div>`
     }).join('')}
-  </div>
-  <div class="page-footer">
-    <div>${L.pageFooter} | ${companyInfo.name}</div>
-    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
-  </div>
-</div>` : ''}
+  </div>` : ''}
 
   ${hasTech ? `
-  <!-- ═══════════════════════ TECHNICAL CHECKS (flows from previous) ═══════════════════════ -->
-<div class="page content-page"><!-- No page-break: flows naturally -->
-  ${pageHeader(L, shortId, dateFormatted)}
+  <!-- ═══════════════ TECHNICAL CHECKS (inline section) ═══════════════ -->
   <div class="section">
     <div class="section-title"><span class="section-number">${secTechnical}</span>${L.technicalChecks}</div>
     <div class="tech-grid">
@@ -1566,41 +1523,45 @@ export function generatePDFReportHTML(data: PDFReportData): string {
         <div style="margin-top: 4px; font-size: 8px; color: #dc2626;">${L.missingTranslations}: ${ml.missingFields.map((f: string) => escapeHtml(f)).join(', ')}</div>` : ''}
       </div>`).join('')}
     </div>` : ''}
-  </div>
-  <div class="page-footer">
-    <div>${L.pageFooter} | ${companyInfo.name}</div>
-    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
-  </div>
-</div>` : ''}
+  </div>` : ''}
 
 ${(() => {
-  // Fallback when commercial_summary is missing or empty
-  const summaryContent = report.commercial_summary?.trim()
-    || (report.overall_result === 'pass' || report.overall_result === 'approved'
+  // Only show commercial summary if it has meaningful content
+  const rawSummary = report.commercial_summary?.trim() || ''
+  // Skip generic boilerplate like "FDA LABEL COMPLIANCE REPORT - VEXIM GLOBAL"
+  const isBoilerplate = rawSummary.length < 50 || /^FDA LABEL|^VEXIM/i.test(rawSummary)
+  
+  if (isBoilerplate && !report.commercial_summary) {
+    // Generate contextual fallback based on result
+    const fallbackContent = (report.overall_result === 'pass' || report.overall_result === 'approved')
       ? (lang === 'vi'
         ? 'Nhãn sản phẩm đáp ứng các yêu cầu ghi nhãn FDA theo 21 CFR Part 101. Không phát hiện vi phạm nghiêm trọng. Sản phẩm có thể phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.'
         : 'The product label meets FDA labeling requirements under 21 CFR Part 101. No critical violations detected. The product may be distributed in the US market with low legal risk.')
       : (lang === 'vi'
         ? 'Phát hiện một số vấn đề tuân thủ cần được khắc phục trước khi phân phối. Vui lòng xem Chi Tiết Phát Hiện và Danh Sách Hành Động bên dưới.'
-        : 'Compliance issues were identified that require remediation before distribution. Please review the Findings Detail and Action Items sections.'))
-  return `<!-- ═══════════════════════ COMMERCIAL SUMMARY (flows from previous) ═══════════════════════ -->
-<div class="page content-page"><!-- No page-break: flows naturally -->
-  ${pageHeader(L, shortId, dateFormatted)}
+        : 'Compliance issues were identified that require remediation before distribution. Please review the Findings Detail and Action Items sections.')
+    
+    return `<!-- ═══════════════ COMMERCIAL SUMMARY (inline section) ═══════════════ -->
   <div class="section">
     <div class="section-title"><span class="section-number">${secCommercial}</span>${L.commercialSummary}</div>
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;overflow-wrap:break-word;word-break:break-word;">
-      ${markdownToHtml(summaryContent)}
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;overflow-wrap:break-word;">
+      ${markdownToHtml(fallbackContent)}
     </div>
-  </div>
-  <div class="page-footer">
-    <div>${L.pageFooter} | ${companyInfo.name}</div>
-    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
-  </div>
-</div>`
+  </div>`
+  }
+  
+  // Has real content - render inline without page wrapper
+  return `<!-- ═══════════════ COMMERCIAL SUMMARY (inline section) ═══════════════ -->
+  <div class="section">
+    <div class="section-title"><span class="section-number">${secCommercial}</span>${L.commercialSummary}</div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;overflow-wrap:break-word;">
+      ${markdownToHtml(rawSummary)}
+    </div>
+  </div>`
 })()} 
 
   ${expertReview && expertReview.status === 'completed' ? `
-  <!-- ═══════════════════════ EXPERT CONSULTATION (flows from previous) ═══════════════════════ -->
+  <!-- ═══════════════════════ EXPERT CONSULTATION (flows from previous) ════════════���══════════ -->
 <div class="page content-page"><!-- No page-break: flows naturally -->
   ${pageHeader(L, shortId, dateFormatted)}
 
@@ -1700,10 +1661,7 @@ ${(() => {
   </div>
 </div>` : ''}
 
-  <!-- ═══════════════════════ EXPERT RECOMMENDATIONS (flows from previous) ═══════════════════════ -->
-<div class="page content-page"><!-- No page-break: flows naturally -->
-  ${pageHeader(L, shortId, dateFormatted)}
-
+  <!-- ═══════════════ EXPERT RECOMMENDATIONS (inline section) ═══════════════ -->
   <div class="section">
     <div class="section-title"><span class="section-number">${secExpert}</span>${L.expertRecommendations}</div>
     ${report.expert_tips && report.expert_tips.length > 0 ? `
@@ -1721,10 +1679,10 @@ ${(() => {
 
     <!-- Enforcement Insights -->
     ${enforcementInsights.length > 0 ? `
-    <div style="margin-top:16px;">
-      <div style="font-size:10px;font-weight:700;color:#b45309;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">${L.enforcementInsights}</div>
+    <div style="margin-top:12px;">
+      <div style="font-size:9px;font-weight:700;color:#b45309;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.enforcementInsights}</div>
       ${enforcementInsights.map((insight: string) => `
-      <div class="port-warning" style="margin-bottom:8px;">
+      <div class="port-warning" style="margin-bottom:6px;">
         ${markdownToHtml(insight)}
       </div>`).join('')}
     </div>` : ''}
