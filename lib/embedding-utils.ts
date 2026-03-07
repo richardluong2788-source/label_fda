@@ -143,7 +143,8 @@ export async function searchKnowledge(
 ): Promise<KnowledgeSearchResult[]> {
   try {
     const queryEmbedding = await generateEmbedding(query)
-    const supabase = await createClient()
+    // Use admin client to bypass RLS on compliance_knowledge RPC calls
+    const supabase = createAdminClient()
     
     // Try deduplicated function first (dedup by metadata.section in DB)
     let rawResults: any[] = []
@@ -339,12 +340,12 @@ export async function searchWarningLetters(
 ): Promise<KnowledgeSearchResult[]> {
   try {
     const queryEmbedding = await generateEmbedding(query)
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     // Use base vector search then filter by document_type in app layer
     const { data, error } = await supabase.rpc('match_compliance_knowledge', {
       query_embedding: queryEmbedding,
-      match_threshold: 0.40, // Increased from 0.30 for higher quality warning letter matches
+      match_threshold: 0.40,
       match_count: limit * 5,
     })
 
@@ -518,7 +519,7 @@ export async function searchRecalls(
 ): Promise<KnowledgeSearchResult[]> {
   try {
     const queryEmbedding = await generateEmbedding(query)
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     // Use base vector search then filter by document_type = 'FDA Recall'
     const { data, error } = await supabase.rpc('match_compliance_knowledge', {
