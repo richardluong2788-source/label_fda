@@ -149,24 +149,30 @@ export async function searchKnowledge(
     let rawResults: any[] = []
     const fetchCount = Math.min(limit * 3, 60)
 
+    console.log('[v0] RAG query embedding dims:', queryEmbedding.length, 'threshold: 0.35')
+
     const { data: dedupData, error: dedupError } = await supabase.rpc(
       'match_compliance_knowledge_deduplicated',
       {
         query_embedding: queryEmbedding,
-        match_threshold: 0.45, // Increased from 0.35 to reduce false positives
+        match_threshold: 0.35, // Lowered from 0.45 — real cross-doc similarity is 0.40-0.73
         match_count: fetchCount,
       }
     )
 
-    if (!dedupError && dedupData) {
+    console.log('[v0] RAG dedup results:', dedupData?.length ?? 0, 'dedupError:', dedupError?.message ?? 'none')
+
+    if (!dedupError && dedupData && dedupData.length > 0) {
       rawResults = dedupData
     } else {
       // Fallback to basic function + app-level dedup by metadata.section
       const { data, error } = await supabase.rpc('match_compliance_knowledge', {
         query_embedding: queryEmbedding,
-        match_threshold: 0.45, // Increased from 0.35 for better precision
+        match_threshold: 0.35, // Lowered from 0.45 for better recall
         match_count: Math.min(limit * 5, 100),
       })
+
+      console.log('[v0] RAG fallback results:', data?.length ?? 0, 'error:', error?.message ?? 'none')
 
       if (error) {
         console.error('[v0] Vector search error:', error)

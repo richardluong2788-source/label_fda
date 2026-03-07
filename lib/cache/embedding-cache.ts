@@ -29,8 +29,10 @@ import { getRedisClient } from './redis'
 // 30-day TTL in seconds
 const EMBEDDING_CACHE_TTL_S = 30 * 24 * 60 * 60
 
-// Redis key prefix
-const PREFIX = 'emb:v1:'
+// Redis key prefix — bump version to invalidate stale 19161-dim embeddings
+// v1: old wrong-dimension embeddings (19161-dim)
+// v2: correct text-embedding-3-small embeddings (1536-dim)
+const PREFIX = 'emb:v2:'
 
 /**
  * Normalise text before hashing to maximise cache hit-rate.
@@ -60,7 +62,13 @@ export async function getEmbeddingCache(text: string): Promise<number[] | null> 
   if (!redis) return null
   try {
     const cached = await redis.get<number[]>(embeddingCacheKey(text))
-    return cached ?? null
+    if (!cached) return null
+    // Validate dimension — reject stale vectors from old embedding models
+    if (!Array.isArray(cached) || cached.length !== 1536) {
+      console.warn('[embedding-cache] Stale/invalid cached embedding (dims=' + cached?.length + '), ignoring')
+      return null
+    }
+    return cached
   } catch (err) {
     console.error('[embedding-cache] Redis GET error:', err)
     return null
