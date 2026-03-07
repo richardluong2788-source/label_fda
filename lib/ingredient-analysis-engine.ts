@@ -130,15 +130,24 @@ export function analyzeIngredientList(
   }
   
   // ─── 2. Detect allergens from ingredient text ───────────────────────────────
-  const foundAllergens: string[] = [...detectedAllergens]
+  // First normalize existing allergens to lowercase for comparison
+  const normalizedExisting = detectedAllergens.map(a => a.toLowerCase().trim())
+  const foundAllergensSet = new Set<string>(normalizedExisting)
+  
   for (const allergen of FDA_MAJOR_ALLERGENS) {
     for (const keyword of allergen.keywords) {
-      if (fullText.includes(keyword.toUpperCase()) && !foundAllergens.includes(allergen.name)) {
-        foundAllergens.push(allergen.name)
+      if (fullText.includes(keyword.toUpperCase())) {
+        // Add normalized allergen name (lowercase)
+        foundAllergensSet.add(allergen.name.toLowerCase())
         break
       }
     }
   }
+  
+  // Convert back to properly formatted array (capitalize first letter)
+  const foundAllergens = Array.from(foundAllergensSet).map(a => 
+    a.charAt(0).toUpperCase() + a.slice(1)
+  )
   
   // ─── 3. Check allergen declaration completeness ─────────────────────────────
   const hasContainsStatement = /contains\s*:/i.test(ingredientListText)
@@ -309,9 +318,11 @@ export function createEnhancedIngredientViolation(
     : `Hệ thống đã xác định danh sách thành phần: ${ingredients.slice(0, 5).join(', ')}${ingredients.length > 5 ? '...' : ''}. `
   
   if (nameIssues.length > 0) {
+    // List specific non-compliant names so user knows exactly what to fix
+    const issueNames = nameIssues.map(i => `"${i.originalText}"`).join(', ')
     expertLogic += lang === 'en'
-      ? `Additionally, ${nameIssues.length} ingredient name(s) do not comply with FDA common name requirements. `
-      : `Ngoài ra, ${nameIssues.length} tên thành phần không tuân thủ yêu cầu về tên phổ thông của FDA. `
+      ? `Additionally, ${nameIssues.length} ingredient name(s) do not comply with FDA common name requirements: ${issueNames}. `
+      : `Ngoài ra, ${nameIssues.length} tên thành phần không tuân thủ yêu cầu về tên phổ thông của FDA: ${issueNames}. `
   }
   
   if (analysis.detectedAllergens.length > 0) {

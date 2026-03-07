@@ -969,10 +969,17 @@ export async function POST(request: Request) {
     let violations = []
     
     // Prepare ingredient context for enhanced analysis
+    // Dedupe allergens: normalize to lowercase, then capitalize for display
+    const rawAllergens = visionResult.allergens || []
+    const normalizedAllergenSet = new Set(rawAllergens.map((a: string) => a.toLowerCase().trim()))
+    const deduplicatedAllergens = Array.from(normalizedAllergenSet).map((a: string) => 
+      a.charAt(0).toUpperCase() + a.slice(1)
+    )
+    
     const ingredientContext = {
       ingredients: visionResult.ingredients || [],
       ingredientListText: visionResult.ingredients?.join(', ') || '',
-      detectedAllergens: visionResult.allergens || []
+      detectedAllergens: deduplicatedAllergens
     }
     
     const professionalFindings = detectedViolations.map(violation => {
@@ -990,7 +997,10 @@ export async function POST(request: Request) {
     })
     
     // Add formatted findings to violations array
-    for (const finding of professionalFindings) {
+    for (let i = 0; i < professionalFindings.length; i++) {
+      const finding = professionalFindings[i]
+      const originalViolation = detectedViolations[i]
+      
       // Find relevant citations by matching regulation sections
       const relevantCitations = realCitations.filter(c => {
         const findingRef = finding.cfr_reference.toLowerCase()
@@ -999,6 +1009,19 @@ export async function POST(request: Request) {
         return findingRef.includes(c.section.toLowerCase()) || 
                citationRef.includes(finding.cfr_reference.split(' ')[2]?.split('(')[0] || '')
       })
+      
+      // Determine raw text for "Currently on Label" display
+      // Use RAW extracted data, NOT AI-rewritten description
+      let rawTextOnLabel: string | undefined
+      if (originalViolation?.type === 'ingredient_order') {
+        // For ingredient violations, use the raw ingredient list from vision extraction
+        rawTextOnLabel = (visionResult.ingredients || []).join(', ')
+      } else if (originalViolation?.detectedValue) {
+        // For other violations, use the detected value as raw text
+        rawTextOnLabel = typeof originalViolation.detectedValue === 'string' 
+          ? originalViolation.detectedValue 
+          : JSON.stringify(originalViolation.detectedValue)
+      }
       
       violations.push({
         category: finding.summary,
@@ -1009,6 +1032,7 @@ export async function POST(request: Request) {
         citations: relevantCitations.length > 0 ? relevantCitations : realCitations.slice(0, 3), // Fallback to top 3
         confidence_score: finding.confidence_score,
         legal_basis: finding.legal_basis,
+        raw_text_on_label: rawTextOnLabel, // Raw OCR text, not AI rewritten
       })
     }
     
@@ -1143,15 +1167,15 @@ export async function POST(request: Request) {
         violations.push({
           category: 'Allergen Declaration',
           severity: 'critical' as const,
-          description: `Detected allergens: ${visionResult.allergens.join(', ')}. No "Contains:" statement found - allergens must be declared separately per FALCPA.`,
+          description: `Detected allergens: ${deduplicatedAllergens.map((a: string) => a.toUpperCase()).join(', ')}. No "Contains:" statement found - allergens must be declared separately per FALCPA.`,
           regulation_reference: allergenCitation?.regulation_id || 'FALCPA Section 203',
-          suggested_fix: 'Add "Contains: [allergens]" statement immediately after ingredient list in plain language',
+          suggested_fix: `Add "Contains: ${deduplicatedAllergens.join(', ')}" statement immediately after ingredient list in plain language`,
           citations: allergenCitation ? [allergenCitation] : [],
           confidence_score: allergenCitation ? allergenCitation.relevance_score : 0.8,
         })
       } else {
         // Allergens properly declared - log as informational, NOT a violation
-        console.log(`[v0] Allergen declaration appears proper: found "Contains:" or allergen section for: ${visionResult.allergens.join(', ')}`)
+        console.log(`[v0] Allergen declaration appears proper: found "Contains:" or allergen section for: ${deduplicatedAllergens.join(', ')}`)
       }
     }
     

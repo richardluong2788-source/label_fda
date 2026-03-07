@@ -458,28 +458,50 @@ export async function POST(request: Request) {
     let violations: any[] = []
 
     // Prepare ingredient context for enhanced analysis
+    // Dedupe allergens: normalize to lowercase, then capitalize for display
+    const rawAllergens = visionResult.allergens || []
+    const normalizedAllergenSet = new Set(rawAllergens.map((a: string) => a.toLowerCase().trim()))
+    const deduplicatedAllergens = Array.from(normalizedAllergenSet).map((a: string) => 
+      a.charAt(0).toUpperCase() + a.slice(1)
+    )
+    
     const ingredientContext = {
       ingredients: visionResult.ingredients || [],
       ingredientListText: visionResult.ingredients?.join(', ') || '',
-      detectedAllergens: visionResult.allergens || []
+      detectedAllergens: deduplicatedAllergens
     }
 
     // Professional findings from smart mapper
-    const professionalFindings = detectedViolations.map(violation => {
+    const professionalFindings = detectedViolations.map((violation, idx) => {
       const relevantReg = regulationsOnly.find(r => r.regulation_id === violation.regulationSection || r.section.includes(violation.regulationSection))
       // Pass ingredient context for enhanced ingredient_order violation analysis
-      return SmartCitationFormatter.formatProfessionalFinding(
+      const finding = SmartCitationFormatter.formatProfessionalFinding(
         violation, 
         relevantReg || null, 
         userLang,
         violation.type === 'ingredient_order' ? ingredientContext : undefined
       )
+      return { finding, originalViolation: violation }
     })
-    for (const finding of professionalFindings) {
+    for (const { finding, originalViolation } of professionalFindings) {
       const relevantCitations = realCitations.filter(c => {
         const findingRef = finding.cfr_reference.toLowerCase()
         return findingRef.includes(c.section.toLowerCase()) || (c.regulation_id + ' ' + c.section).toLowerCase().includes(finding.cfr_reference.split(' ')[2]?.split('(')[0] || '')
       })
+      
+      // Determine raw text for "Currently on Label" display
+      // Use RAW extracted data, NOT AI-rewritten description
+      let rawTextOnLabel: string | undefined
+      if (originalViolation?.type === 'ingredient_order') {
+        // For ingredient violations, use the raw ingredient list from vision extraction
+        rawTextOnLabel = (visionResult.ingredients || []).join(', ')
+      } else if (originalViolation?.detectedValue) {
+        // For other violations, use the detected value as raw text
+        rawTextOnLabel = typeof originalViolation.detectedValue === 'string' 
+          ? originalViolation.detectedValue 
+          : JSON.stringify(originalViolation.detectedValue)
+      }
+      
       violations.push({
         category: finding.summary,
         severity: finding.severity,
@@ -489,6 +511,7 @@ export async function POST(request: Request) {
         citations: relevantCitations.length > 0 ? relevantCitations : realCitations.slice(0, 3),
         confidence_score: finding.confidence_score,
         legal_basis: finding.legal_basis,
+        raw_text_on_label: rawTextOnLabel,
       })
     }
 
@@ -549,13 +572,21 @@ export async function POST(request: Request) {
       })
     }
 
-    // Allergen check
-    if (visionResult.allergens.length > 0) {
+    // Allergen check - use deduplicatedAllergens for clean output
+    if (deduplicatedAllergens.length > 0) {
       const allergenCitation = realCitations.find(c => c.regulation_id.includes('FALCPA') || c.section.toLowerCase().includes('allergen'))
       const allTextLower = visionResult.textElements.allText.toLowerCase()
       const hasProperDeclaration = allTextLower.includes('contains:') || allTextLower.includes('contains ') || allTextLower.includes('allergen') || allTextLower.includes('allergy')
       if (!hasProperDeclaration) {
-        violations.push({ category: 'Allergen Declaration', severity: 'critical' as const, description: `Detected allergens: ${visionResult.allergens.join(', ')}. No "Contains:" statement found.`, regulation_reference: allergenCitation?.regulation_id || 'FALCPA Section 203', suggested_fix: 'Add "Contains: [allergens]" statement immediately after ingredient list.', citations: allergenCitation ? [allergenCitation] : [], confidence_score: allergenCitation ? allergenCitation.relevance_score : 0.8 })
+        violations.push({ 
+          category: 'Allergen Declaration', 
+          severity: 'critical' as const, 
+          description: `Detected allergens: ${deduplicatedAllergens.map((a: string) => a.toUpperCase()).join(', ')}. No "Contains:" statement found.`, 
+          regulation_reference: allergenCitation?.regulation_id || 'FALCPA Section 203', 
+          suggested_fix: `Add "Contains: ${deduplicatedAllergens.join(', ')}" statement immediately after ingredient list.`, 
+          citations: allergenCitation ? [allergenCitation] : [], 
+          confidence_score: allergenCitation ? allergenCitation.relevance_score : 0.8 
+        })
       }
     }
 
@@ -671,7 +702,7 @@ export async function POST(request: Request) {
     const commercialSummary = SmartCitationFormatter.createReportSummary(allFindingsForSummary, userLang)
     const expertTips = SmartCitationFormatter.generateExpertTips(allFindingsForSummary, userLang)
 
-    // ── Save results ───────────────────────────────────────────
+    // ── Save results ──────────────────��────────────────────────
     const { error: updateError } = await supabase
       .from('audit_reports')
       .update({

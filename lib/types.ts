@@ -207,6 +207,8 @@ export interface Violation {
   source_type?: string // e.g. 'warning_letter', 'regulation', 'recall', 'import_alert'
   warning_letter_id?: string // Reference to FDA warning letter if applicable
   import_alert_number?: string // Reference to FDA Import Alert if source_type === 'import_alert'
+  /** Raw OCR text from label - NOT AI rewritten. For "Currently on Label" display */
+  raw_text_on_label?: string
 }
 
 export interface Citation {

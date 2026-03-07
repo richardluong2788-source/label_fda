@@ -497,13 +497,13 @@ function ViolationCard({ violation, index, t, showExpertCta }: { violation: Viol
 
       {/* A/B Comparison Grid */}
       <div className="grid md:grid-cols-2 gap-0">
-        {/* Left: Current on label (red) */}
+        {/* Left: Current on label (red) - Use raw_text_on_label (raw OCR) if available, fallback to description */}
         <div className="p-5 bg-red-50/60 border-t border-r border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-red-700 mb-3">
             {t.report.currentOnLabel}
           </p>
           <p className="text-sm text-slate-700 leading-relaxed italic">
-            &ldquo;{violation.description}&rdquo;
+            &ldquo;{violation.raw_text_on_label || violation.description}&rdquo;
           </p>
         </div>
 
