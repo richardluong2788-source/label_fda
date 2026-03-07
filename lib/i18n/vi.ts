@@ -77,7 +77,7 @@ export const vi = {
     waitForAI: 'Vui lòng đợi AI kiểm tra xong.',
     advancedSettings: 'Thông số nâng cao',
     advancedSettingsDesc: 'Tùy chỉnh thêm thông tin để AI phân tích chính xác hơn',
-    ctaTitle: 'Quét nhã?',
+    ctaTitle: 'Sẵn sàng Quét Vi phạm FDA?',
     ctaDescWithKb: (count: number) => `AI sẽ so sánh nhãn của bạn với ${count.toLocaleString()} tài liệu FDA và 21 CFR Regulations. `,
     ctaDescNoKb: 'AI sẽ kiểm tra nhãn của bạn với 21 CFR Regulations. ',
     ctaDescSuffix: 'Nhận báo cáo chi tiết với citations và hướng dẫn sửa lỗi trong vài phút.',
@@ -759,7 +759,7 @@ export const vi = {
   // ─── Landing Page ────��───────────────────────────────
   landing: {
     // Phần Badge nhỏ phía trên tiêu đề để tạo bằng chứng số liệu
-    heroBadge: 'Đối soát trực tiếp dữ liệu từ 2.346 vi phạm thực tế của FDA',
+    heroBadge: 'Đối soát trực tiếp dữ liệu từ 5.346 vi phạm thực tế của FDA',
 
     // Tiêu đề chính: Ngắn gọn, đánh thẳng vào thời gian và tiền bạc
     heroTitle: 'Kiểm tra tuân thủ nhãn FDA theo 21 CFR -',
@@ -769,7 +769,7 @@ export const vi = {
     heroDesc1: 'Bạn có chắc nhãn sản phẩm không nằm trong danh sách ',
     heroDesc2: 'Warning Letters của FDA',
     heroDesc3: '? Vexim AI tự động hóa quy trình thẩm định phức tạp bằng cách đối soát với ',
-    heroDesc4: '2.346 vi phạm thực tế',
+    heroDesc4: '5.346 vi phạm thực tế',
     heroDesc5: '. Chúng tôi phát hiện những ',
     heroDesc6: 'lỗi mà mắt thường dễ dàng bỏ sót',
     heroDesc7: ', giúp doanh nghiệp loại bỏ rủi ro lưu kho bãi và chi phí thu hồi hàng tỷ đồng.',
@@ -777,7 +777,7 @@ export const vi = {
     ctaCheckLabel: 'Kiểm tra nhãn của bạn ngay',
     ctaViewCases: 'Xem các trường hợp vi phạm thực tế',
     trustStats: [
-      { num: '2.346', label: 'Vi phạm FDA trong cơ sở dữ liệu' },
+      { num: '5.346', label: 'Vi phạm FDA trong cơ sở dữ liệu' },
       { num: '4 ngành', label: 'Thực phẩm . Mỹ phẩm . TPCN . OTC' },
       { num: '~2 phút', label: 'Thời gian nhận kết quả' },
       { num: '99,5%', label: 'Tỷ lệ thông quan sau khi sửa' },
@@ -862,7 +862,7 @@ export const vi = {
     // Flow steps
     flowSteps: [
       { title: 'Tải nhãn lên hệ thống', desc: 'Chụp ảnh hoặc tải file nhãn sản phẩm. AI Vision OCR trích xuất toàn bộ nội dung, bố cục và cấu trúc hình ảnh với độ chính xác cao.', detail: 'Hỗ trợ JPG, PNG, PDF - tối đa 4 mặt nhãn cùng lúc.' },
-      { title: 'Đối chiếu dữ liệu thực tế', desc: 'Từng yếu tố trên nhãn được đối chiếu trực tiếp với 2.346 Warning Letters, Recall, Alerts và toàn bộ 21 CFR liên quan.', detail: 'Cơ sở dữ liệu cập nhật hàng tuần từ FDA.gov.' },
+      { title: 'Đối chiếu dữ liệu thực tế', desc: 'Từng yếu tố trên nhãn được đối chiếu trực tiếp với 5.346 Warning Letters, Recall, Alerts và toàn bộ 21 CFR liên quan.', detail: 'Cơ sở dữ liệu cập nhật hàng tuần từ FDA.gov.' },
       { title: 'Phân tích chuyên sâu', desc: 'Mô hình AI chuyên biệt xác định từng điểm vi phạm, trích dẫn mã CFR cụ thể và đánh giá mức độ nghiêm trọng.', detail: 'Phân loại: Critical / Major / Minor - Hoàn thành trong ~2 phút.' },
       { title: 'Chuyên gia rà soát', desc: 'FDA Compliance Specialist rà soát báo cáo AI và bổ sung nhận định chuyên sâu dựa trên kinh nghiệm thực tế.', detail: 'Thời gian rà soát: 4–24 giờ làm việc.' },
       { title: 'Báo cáo & Chứng nhận', desc: 'Báo cáo đầy đủ kèm trích dẫn CFR, hướng dẫn khắc phục từng lỗi, Risk Score tổng thể và xác nhận tuân thủ.', detail: 'Xuất PDF chuyên nghiệp - dùng để đàm phán với buyer và importer.' },
@@ -874,7 +874,7 @@ export const vi = {
     samplePass1: 'Mặt hiển thị chính có đầy đủ Tên sản phẩm, Khối lượng tịnh, Nhãn hiệu. Kích thước chữ đạt yêu cầu tối thiểu.',
     // Why trust
     whyTrustItems: [
-      { title: '2.346 FDA Warning Letters & Recalls (2021–2025)', desc: 'Toàn bộ vi phạm thực tế trên cả 4 ngành. AI học từ chính những lỗi mà doanh nghiệp đã bị FDA xử phạt.' },
+      { title: '5.346 FDA Warning Letters & Recalls (2021–2025)', desc: 'Toàn bộ vi phạm thực tế trên cả 4 ngành. AI học từ chính những lỗi mà doanh nghiệp đã bị FDA xử phạt.' },
       { title: '21 CFR Part 101, 111, 701, 801', desc: 'Toàn bộ quy định ghi nhãn cho Thực phẩm, TPCN, Mỹ phẩm và Thiết bị y tế. Cập nhật theo Federal Register.' },
       { title: 'Tài liệu hướng dẫn của FDA (Draft + Final)', desc: 'Draft Guidance, CPG, Import Alerts và Q&A - các tài liệu diễn giải quy định được FDA sử dụng trong thực tế.' },
       { title: 'Dữ liệu cảnh báo nhập khẩu (Alerts FDA)', desc: 'Hồ sơ các lô hàng bị từ chối tại cảng Mỹ - giúp AI hiểu pattern vi phạm phổ biến nhất theo từng loại sản phẩm.' },
@@ -902,7 +902,7 @@ export const vi = {
     // Comparison table
     vsRows: [
       ['Thời gian phân tích', '2–3 phút', '3–7 ngày làm việc'],
-      ['Chi phí', '499.000đ–899.000đ/tháng', '$500–2.000 mỗi lần kiểm tra'],
+      ['Chi phí', '299.000đ–899.000đ/tháng', '$500–2.000 mỗi lần kiểm tra'],
       ['Phạm vi ngành', 'Thực phẩm, Mỹ phẩm, TPCN, OTC', 'Thường chuyên sâu 1 ngành duy nhất'],
       ['Nguồn dữ liệu', '2.346 Warning Letters + toàn bộ 21 CFR', 'Dựa vào kinh nghiệm cá nhân'],
       ['Tính nhất quán', '100% nhất quán giữa các lần kiểm tra', 'Phụ thuộc trạng thái chuyên gia'],
@@ -924,7 +924,7 @@ export const vi = {
     ],
     commitmentQuote: '"Vexim Global kết hợp công nghệ AI với đội ngũ chuyên gia tuân thủ FDA, phân tích dữ liệu cưỡng chế thực tế (Regulation — Warning Letter — Recall) nhằm đánh giá rủi ro nhãn dán và hồ sơ xuất khẩu. Chúng tôi đã đồng hành cùng hàng trăm doanh nghiệp Việt Nam chuẩn hóa nhãn sản phẩm trước khi xuất khẩu sang Mỹ, tập trung giảm thiểu nguy cơ bị giữ hàng, ghi nhãn sai quy cách và thu hồi sản phẩm."',
     finalCtaDesc: 'Hơn 200 doanh nghiệp Việt Nam đã sử dụng Vexim để bảo vệ lô hàng, giữ vững uy tín thương hiệu và đảm bảo hợp đồng xuất khẩu không bị gián đoạn.',
-    finalCtaButton: 'Bát đầu kiểm tra nhãn miễn phí',
+    finalCtaButton: 'Kiểm tra nhãn miễn phí — Bắt đầu trong 2 phút',
     finalCtaPricing: 'Xem bảng giá chi tiết',
     footerAnalyze: 'Phân tích nhãn sản phẩm',
     footerPricing: 'Bảng giá dịch vụ',
@@ -932,7 +932,7 @@ export const vi = {
     footerAbout: 'Về Vexim Global',
     footerContact: 'Liên hệ hợp tác',
     footerTerms: 'Điều khoản dịch vụ',
-    footerPrivacy: 'Chính sách bảo mật',
+    footerPrivacy: 'Chính sách b��o mật',
     footerDescFull: 'Nền tảng kiểm tra tuân thủ FDA bằng AI dành cho doanh nghiệp Việt Nam xuất khẩu sang thị trường Mỹ.',
     footerSupportLabel: 'Hỗ trợ khách hàng',
   },

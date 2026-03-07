@@ -457,10 +457,23 @@ export async function POST(request: Request) {
 
     let violations: any[] = []
 
+    // Prepare ingredient context for enhanced analysis
+    const ingredientContext = {
+      ingredients: visionResult.ingredients || [],
+      ingredientListText: visionResult.ingredients?.join(', ') || '',
+      detectedAllergens: visionResult.allergens || []
+    }
+
     // Professional findings from smart mapper
     const professionalFindings = detectedViolations.map(violation => {
       const relevantReg = regulationsOnly.find(r => r.regulation_id === violation.regulationSection || r.section.includes(violation.regulationSection))
-      return SmartCitationFormatter.formatProfessionalFinding(violation, relevantReg || null, userLang)
+      // Pass ingredient context for enhanced ingredient_order violation analysis
+      return SmartCitationFormatter.formatProfessionalFinding(
+        violation, 
+        relevantReg || null, 
+        userLang,
+        violation.type === 'ingredient_order' ? ingredientContext : undefined
+      )
     })
     for (const finding of professionalFindings) {
       const relevantCitations = realCitations.filter(c => {

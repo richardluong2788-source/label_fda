@@ -18,6 +18,60 @@ import {
 import type { Violation } from '@/lib/types'
 
 // ────────────────────────────────────────────────────────────
+// HELPER: Simple Markdown Renderer for Remediation Text
+// Supports: **bold**, numbered lists, bullet lists, newlines
+// ────────────────────────────────────────────────────────────
+
+function SimpleMarkdown({ content }: { content: string }) {
+  if (!content) return null
+  
+  // Split by double newlines for paragraphs, then process each
+  const lines = content.split('\n')
+  
+  return (
+    <div className="space-y-2">
+      {lines.map((line, idx) => {
+        if (!line.trim()) return null
+        
+        // Check if it's a numbered list item (①, ②, ③ or 1., 2., 3.)
+        const isNumberedItem = /^[①②③④⑤⑥⑦⑧⑨⑩]|\d+\./.test(line.trim())
+        // Check if it's a bullet point
+        const isBulletItem = /^[•\-\*]/.test(line.trim())
+        // Check if it's a warning/risk line
+        const isWarning = line.includes('⚠️') || line.toLowerCase().includes('risk') || line.toLowerCase().includes('rủi ro')
+        
+        // Process bold text (**text** -> <strong>)
+        const processedLine = line.split(/\*\*([^*]+)\*\*/g).map((part, i) => 
+          i % 2 === 1 ? <strong key={i} className="font-semibold">{part}</strong> : part
+        )
+        
+        if (isWarning) {
+          return (
+            <div key={idx} className="mt-3 pt-3 border-t border-warning/30">
+              <p className="text-sm text-warning font-medium">{processedLine}</p>
+            </div>
+          )
+        }
+        
+        if (isNumberedItem || isBulletItem) {
+          return (
+            <div key={idx} className={`text-sm ${isNumberedItem ? 'pl-1' : 'pl-4'}`}>
+              {processedLine}
+            </div>
+          )
+        }
+        
+        return (
+          <p key={idx} className="text-sm">
+            {processedLine}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+// ────────────────────────────────────────────────────────────
 // SHARED: Single Violation Card
 // ────────────────────────────────────────────────────────────
 
@@ -116,7 +170,9 @@ export function CFRViolationsSection({ violations }: CFRViolationsSectionProps) 
                     </Badge>
                   </div>
 
-                  <p className="text-sm mb-4 leading-relaxed">{violation.description}</p>
+                  <div className="text-sm mb-4 leading-relaxed">
+                    <SimpleMarkdown content={violation.description} />
+                  </div>
 
                   {/* Regulation Reference with quote excerpt */}
                   {violation.regulation_reference && (
@@ -133,13 +189,15 @@ export function CFRViolationsSection({ violations }: CFRViolationsSectionProps) 
                     </div>
                   )}
 
-                  {/* Suggested Fix - fully Vietnamese */}
+                  {/* Suggested Fix - supports markdown formatting for detailed guidance */}
                   {violation.suggested_fix && (
                     <div className="bg-info/10 rounded-lg p-4 mb-4">
                       <p className="text-xs font-medium text-info mb-2">
-                        Hướng dẫn khắc phục:
+                        Hướng dẫn khắc phục (VEXIM):
                       </p>
-                      <p className="text-sm text-info/80">{violation.suggested_fix}</p>
+                      <div className="text-info/80">
+                        <SimpleMarkdown content={violation.suggested_fix} />
+                      </div>
                     </div>
                   )}
 

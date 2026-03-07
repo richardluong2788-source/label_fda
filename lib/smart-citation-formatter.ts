@@ -1,5 +1,6 @@
 import type { ViolationMapping, MappedFinding } from './violation-to-cfr-mapper'
 import type { KnowledgeSearchResult } from './embedding-utils'
+import { createEnhancedIngredientViolation, analyzeIngredientList } from './ingredient-analysis-engine'
 
 export type FormatterLang = 'vi' | 'en'
 
@@ -7,17 +8,54 @@ export type FormatterLang = 'vi' | 'en'
  * SMART CITATION FORMATTER
  * Converts technical findings into professional business language with CFR citations.
  * Supports Vietnamese (vi) and English (en) — defaults to English.
+ * 
+ * Updated: Now includes enhanced ingredient analysis with:
+ * - Non-standard name detection
+ * - Allergen verification
+ * - Step-by-step remediation
+ * - Risk/consequence warnings
  */
 export class SmartCitationFormatter {
   /**
    * Format a violation into a professional finding with expert language
+   * 
+   * For ingredient_order violations, uses enhanced analysis engine that provides:
+   * - Specific ingredient name issues (non-standard FDA names)
+   * - Allergen declaration verification
+   * - Detailed step-by-step remediation
+   * - Risk warnings
    */
   static formatProfessionalFinding(
     violation: ViolationMapping,
     regulation: KnowledgeSearchResult | null,
-    lang: FormatterLang = 'en'
+    lang: FormatterLang = 'en',
+    additionalContext?: {
+      ingredients?: string[]
+      ingredientListText?: string
+      detectedAllergens?: string[]
+    }
   ): MappedFinding {
     const templates = this.getTemplateByType(violation.type, lang)
+    
+    // Special handling for ingredient_order violations - use enhanced analysis
+    if (violation.type === 'ingredient_order' && additionalContext?.ingredients) {
+      const enhanced = createEnhancedIngredientViolation(
+        additionalContext.ingredients,
+        additionalContext.ingredientListText || additionalContext.ingredients.join(', '),
+        additionalContext.detectedAllergens || [],
+        lang
+      )
+      
+      return {
+        summary: templates.summary(violation),
+        legal_basis: templates.legalBasis(violation, regulation),
+        expert_logic: enhanced.expertLogic,
+        remediation: enhanced.remediation,
+        severity: violation.severity,
+        cfr_reference: violation.regulationSection,
+        confidence_score: regulation?.similarity || 0.8
+      }
+    }
     
     return {
       summary: templates.summary(violation),
@@ -28,6 +66,18 @@ export class SmartCitationFormatter {
       cfr_reference: violation.regulationSection,
       confidence_score: regulation?.similarity || 0.8
     }
+  }
+  
+  /**
+   * Analyze ingredient list for detailed issues
+   * Returns comprehensive analysis including non-standard names, allergens, and remediation steps
+   */
+  static analyzeIngredients(
+    ingredients: string[],
+    ingredientListText: string,
+    detectedAllergens: string[] = []
+  ) {
+    return analyzeIngredientList(ingredients, ingredientListText, detectedAllergens)
   }
 
   /**
@@ -68,6 +118,15 @@ export class SmartCitationFormatter {
 
     const roundingIssues = findings.filter(f => f.summary.includes('rounding') || f.summary.includes('làm tròn'))
     if (roundingIssues.length > 0) tips.push(L.roundingTip)
+
+    // Ingredient order/naming issues - check for 101.4 (ingredient list) violations
+    const ingredientIssues = findings.filter(f => 
+      f.cfr_reference.includes('101.4') || 
+      f.summary.toLowerCase().includes('ingredient') || 
+      f.summary.includes('nguyên liệu') ||
+      f.summary.includes('thành phần')
+    )
+    if (ingredientIssues.length > 0) tips.push(L.ingredientTip)
 
     return tips
   }
@@ -356,12 +415,14 @@ const EN_TIPS = {
   fontTip: 'Vexim Tip: US port inspectors (especially at Long Beach, LA) frequently check font sizes. We recommend increasing to 18pt to be safe.',
   allergenTip: 'Vexim Tip: Products with undeclared allergens are subject to FDA detention. Bold all allergens to minimize risk.',
   roundingTip: 'Vexim Tip: Rounding errors are the most common mistake for international brands. Use the FDA Rounding Calculator before printing labels.',
+  ingredientTip: 'Vexim Tip: Ingredient list issues are the #1 cause of FDA Warning Letters for imported foods. Always use FDA common names (English) and verify order matches your manufacturing formula weight percentages.',
 }
 
 const VI_TIPS = {
-  fontTip: 'L\u1eddi khuy\u00ean t\u1eeb Vexim: H\u1ea3i quan t\u1ea1i c\u1ea3ng Long Beach (Los Angeles) th\u01b0\u1eddng ki\u1ec3m tra k\u1ef9 k\u00edch th\u01b0\u1edbc ch\u1eef. \u0110\u1ec1 xu\u1ea5t t\u0103ng font l\u00ean 18pt \u0111\u1ec3 an to\u00e0n.',
-  allergenTip: 'L\u1eddi khuy\u00ean t\u1eeb Vexim: V\u1edbi s\u1ea3n ph\u1ea9m c\u00f3 allergen, FDA th\u01b0\u1eddng y\u00eau c\u1ea7u gi\u1eef h\u00e0ng (detention) n\u1ebfu kh\u00f4ng khai b\u00e1o \u0111\u00fang. H\u00e3y in \u0111\u1eadm t\u1ea5t c\u1ea3 allergen \u0111\u1ec3 tr\u00e1nh r\u1ee7i ro.',
-  roundingTip: 'L\u1eddi khuy\u00ean t\u1eeb Vexim: L\u1ed7i l\u00e0m tr\u00f2n l\u00e0 l\u1ed7i ph\u1ed5 bi\u1ebfn nh\u1ea5t c\u1ee7a doanh nghi\u1ec7p Vi\u1ec7t Nam. H\u00e3y s\u1eed d\u1ee5ng FDA Rounding Calculator tr\u01b0\u1edbc khi in nh\u00e3n.',
+  fontTip: 'Lời khuyên từ Vexim: Hải quan tại cảng Long Beach (Los Angeles) thường kiểm tra kỹ kích thước chữ. Đề xuất tăng font lên 18pt để an toàn.',
+  allergenTip: 'Lời khuyên từ Vexim: Với sản phẩm có allergen, FDA thường yêu cầu giữ hàng (detention) nếu không khai báo đúng. Hãy in đậm tất cả allergen để tránh rủi ro.',
+  roundingTip: 'Lời khuyên từ Vexim: Lỗi làm tròn là lỗi phổ biến nhất của doanh nghiệp Việt Nam. Hãy sử dụng FDA Rounding Calculator trước khi in nhãn.',
+  ingredientTip: 'Lời khuyên từ Vexim: Lỗi danh sách thành phần là nguyên nhân #1 gây ra Warning Letter của FDA cho thực phẩm nhập khẩu. Luôn sử dụng tên phổ thông FDA (tiếng Anh) và xác minh thứ tự khớp với % trọng lượng trong công thức sản xuất.',
 }
 
 // ─── REPORT SUMMARY LABELS ───────────────────────────────────────────────────
