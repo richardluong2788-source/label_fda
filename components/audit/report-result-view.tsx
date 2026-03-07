@@ -1381,19 +1381,22 @@ export function ReportResultView({
                         )}
                       </div>
                     ) : (
-                      /* Single-column display (original) */
+                      /* Single-column display */
                       <div className="divide-y divide-slate-100">
-                        {nutritionFacts.slice(0, 12).map((item: any, idx: number) => (
-                          <div key={idx} className="flex items-center justify-between px-3 py-1.5 text-xs">
-                            <span className="text-slate-700 font-medium">{item.nutrient || item.name}</span>
-                            <span className="text-slate-900 font-semibold">
-                              {item.value}{item.unit}
-                              {item.dailyValue && (
-                                <span className="text-slate-400 font-normal ml-1">({item.dailyValue}% DV)</span>
-                              )}
-                            </span>
-                          </div>
-                        ))}
+                        {nutritionFacts.map((item: any, idx: number) => {
+                          const { displayValue, displayDV } = parseNutritionValue(item)
+                          return (
+                            <div key={idx} className="flex items-center justify-between px-3 py-1.5 text-xs">
+                              <span className="text-slate-700 font-medium">{item.nutrient || item.name}</span>
+                              <span className="text-slate-900 font-semibold">
+                                {displayValue}
+                                {displayDV != null && (
+                                  <span className="text-slate-400 font-normal ml-1">({displayDV}%)</span>
+                                )}
+                              </span>
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
                   </div>

@@ -498,6 +498,25 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;')
 }
 
+/**
+ * Formats a nutrition field value for display in the PDF.
+ * Handles merged OCR strings like "0mg0", "11g14", "0.1mcg0"
+ * Returns clean HTML like "11g <span>(14%)</span>"
+ */
+function formatNutrientValue(rawValue: any): string {
+  if (rawValue == null) return '—'
+  const str = String(rawValue)
+  // Pattern: number + unit + number (merged DV) e.g. "0g0", "11g14", "630mg27"
+  const mergedMatch = str.match(/^(\d+(?:\.\d+)?)\s*(mg|g|mcg|kcal|cal)\s*(\d+)$/i)
+  if (mergedMatch) {
+    const [, val, unit, dv] = mergedMatch
+    return dv === '0'
+      ? `${val}${unit} <span style="color:#94a3b8;font-size:8px;">(0%)</span>`
+      : `${val}${unit} <span style="color:#94a3b8;font-size:8px;">(${dv}%)</span>`
+  }
+  return escapeHtml(str)
+}
+
 /** Convert markdown text to styled HTML. Handles ## / ### headings, **bold**, *italic*, - bullets, 1. numbered lists. */
 function markdownToHtml(md: string | undefined | null): string {
   if (!md) return ''
@@ -1244,21 +1263,21 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       <table class="info-table" style="margin: 0;">
         ${report.nutrition_facts.servingSize ? `<tr><td>${L.servingSize}</td><td>${escapeHtml(report.nutrition_facts.servingSize)}</td></tr>` : ''}
         ${report.nutrition_facts.servingsPerContainer ? `<tr><td>${L.servingsPerContainer}</td><td>${escapeHtml(String(report.nutrition_facts.servingsPerContainer))}</td></tr>` : ''}
-        ${report.nutrition_facts.calories !== undefined ? `<tr><td>${L.calories}</td><td>${report.nutrition_facts.calories}</td></tr>` : ''}
-        ${report.nutrition_facts.totalFat ? `<tr><td>${L.totalFat}</td><td>${escapeHtml(report.nutrition_facts.totalFat)}</td></tr>` : ''}
-        ${report.nutrition_facts.saturatedFat ? `<tr><td>${L.saturatedFat}</td><td>${escapeHtml(report.nutrition_facts.saturatedFat)}</td></tr>` : ''}
-        ${report.nutrition_facts.transFat ? `<tr><td>${L.transFat}</td><td>${escapeHtml(report.nutrition_facts.transFat)}</td></tr>` : ''}
-        ${report.nutrition_facts.cholesterol ? `<tr><td>${L.cholesterol}</td><td>${escapeHtml(report.nutrition_facts.cholesterol)}</td></tr>` : ''}
-        ${report.nutrition_facts.sodium ? `<tr><td>${L.sodium}</td><td>${escapeHtml(report.nutrition_facts.sodium)}</td></tr>` : ''}
-        ${report.nutrition_facts.totalCarbohydrate ? `<tr><td>${L.totalCarb}</td><td>${escapeHtml(report.nutrition_facts.totalCarbohydrate)}</td></tr>` : ''}
-        ${report.nutrition_facts.dietaryFiber ? `<tr><td>${L.dietaryFiber}</td><td>${escapeHtml(report.nutrition_facts.dietaryFiber)}</td></tr>` : ''}
-        ${report.nutrition_facts.totalSugars ? `<tr><td>${L.totalSugars}</td><td>${escapeHtml(report.nutrition_facts.totalSugars)}</td></tr>` : ''}
-        ${report.nutrition_facts.addedSugars ? `<tr><td>${L.addedSugars}</td><td>${escapeHtml(report.nutrition_facts.addedSugars)}</td></tr>` : ''}
-        ${report.nutrition_facts.protein ? `<tr><td>${L.protein}</td><td>${escapeHtml(report.nutrition_facts.protein)}</td></tr>` : ''}
-        ${report.nutrition_facts.vitaminD ? `<tr><td>${L.vitaminD}</td><td>${escapeHtml(report.nutrition_facts.vitaminD)}</td></tr>` : ''}
-        ${report.nutrition_facts.calcium ? `<tr><td>${L.calcium}</td><td>${escapeHtml(report.nutrition_facts.calcium)}</td></tr>` : ''}
-        ${report.nutrition_facts.iron ? `<tr><td>${L.iron}</td><td>${escapeHtml(report.nutrition_facts.iron)}</td></tr>` : ''}
-        ${report.nutrition_facts.potassium ? `<tr><td>${L.potassium}</td><td>${escapeHtml(report.nutrition_facts.potassium)}</td></tr>` : ''}
+        ${report.nutrition_facts.calories !== undefined ? `<tr><td>${L.calories}</td><td>${formatNutrientValue(report.nutrition_facts.calories)}</td></tr>` : ''}
+        ${report.nutrition_facts.totalFat ? `<tr><td>${L.totalFat}</td><td>${formatNutrientValue(report.nutrition_facts.totalFat)}</td></tr>` : ''}
+        ${report.nutrition_facts.saturatedFat ? `<tr><td>${L.saturatedFat}</td><td>${formatNutrientValue(report.nutrition_facts.saturatedFat)}</td></tr>` : ''}
+        ${report.nutrition_facts.transFat ? `<tr><td>${L.transFat}</td><td>${formatNutrientValue(report.nutrition_facts.transFat)}</td></tr>` : ''}
+        ${report.nutrition_facts.cholesterol ? `<tr><td>${L.cholesterol}</td><td>${formatNutrientValue(report.nutrition_facts.cholesterol)}</td></tr>` : ''}
+        ${report.nutrition_facts.sodium ? `<tr><td>${L.sodium}</td><td>${formatNutrientValue(report.nutrition_facts.sodium)}</td></tr>` : ''}
+        ${report.nutrition_facts.totalCarbohydrate ? `<tr><td>${L.totalCarb}</td><td>${formatNutrientValue(report.nutrition_facts.totalCarbohydrate)}</td></tr>` : ''}
+        ${report.nutrition_facts.dietaryFiber ? `<tr><td>${L.dietaryFiber}</td><td>${formatNutrientValue(report.nutrition_facts.dietaryFiber)}</td></tr>` : ''}
+        ${report.nutrition_facts.totalSugars ? `<tr><td>${L.totalSugars}</td><td>${formatNutrientValue(report.nutrition_facts.totalSugars)}</td></tr>` : ''}
+        ${report.nutrition_facts.addedSugars ? `<tr><td>${L.addedSugars}</td><td>${formatNutrientValue(report.nutrition_facts.addedSugars)}</td></tr>` : ''}
+        ${report.nutrition_facts.protein ? `<tr><td>${L.protein}</td><td>${formatNutrientValue(report.nutrition_facts.protein)}</td></tr>` : ''}
+        ${report.nutrition_facts.vitaminD ? `<tr><td>${L.vitaminD}</td><td>${formatNutrientValue(report.nutrition_facts.vitaminD)}</td></tr>` : ''}
+        ${report.nutrition_facts.calcium ? `<tr><td>${L.calcium}</td><td>${formatNutrientValue(report.nutrition_facts.calcium)}</td></tr>` : ''}
+        ${report.nutrition_facts.iron ? `<tr><td>${L.iron}</td><td>${formatNutrientValue(report.nutrition_facts.iron)}</td></tr>` : ''}
+        ${report.nutrition_facts.potassium ? `<tr><td>${L.potassium}</td><td>${formatNutrientValue(report.nutrition_facts.potassium)}</td></tr>` : ''}
       </table>` : `
       <div style="padding:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#92400e;font-size:8.5px;text-align:center;">
         ${lang === 'vi'
