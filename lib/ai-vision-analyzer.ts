@@ -199,8 +199,13 @@ async function fetchImageAsBase64(imageUrl: string): Promise<string> {
   return `data:${contentType};base64,${base64}`
 }
 
-export async function analyzeLabel(imageUrl: string, packagingFormatContext?: string): Promise<VisionAnalysisResult> {
-  console.log('[v0] Analyzing label with GPT-4o Vision:', imageUrl)
+export async function analyzeLabel(
+  imageUrl: string,
+  packagingFormatContext?: string,
+  options?: { skipCache?: boolean }
+): Promise<VisionAnalysisResult> {
+  const skipCache = options?.skipCache ?? false
+  console.log('[v0] Analyzing label with GPT-4o Vision:', imageUrl, skipCache ? '(skipCache=true)' : '')
   if (packagingFormatContext) {
     console.log('[v0] Packaging format context provided for AI analysis')
   }
@@ -211,12 +216,18 @@ export async function analyzeLabel(imageUrl: string, packagingFormatContext?: st
   // Note: we intentionally do NOT include packagingFormatContext in the key
   // because the Vision prompt appends it as a minor context hint and the
   // extracted facts should be identical regardless.
-  const { hit: cacheHit, hash: imageHash, result: cachedResult } = await lookupVisionCache(imageUrl)
-  if (cacheHit && cachedResult) {
-    console.log('[v0] Vision cache HIT — skipping GPT-4o call')
-    return cachedResult
+  let imageHash: string | null = null
+  if (!skipCache) {
+    const { hit: cacheHit, hash, result: cachedResult } = await lookupVisionCache(imageUrl)
+    imageHash = hash
+    if (cacheHit && cachedResult) {
+      console.log('[v0] Vision cache HIT — skipping GPT-4o call')
+      return cachedResult
+    }
+    console.log('[v0] Vision cache MISS — calling GPT-4o')
+  } else {
+    console.log('[v0] Vision cache SKIPPED — forcing fresh analysis')
   }
-  console.log('[v0] Vision cache MISS — calling GPT-4o')
   // ─────────────────────────────────────────────────────────────────────────
 
   // Download image server-side and convert to base64 to avoid OpenAI timeout

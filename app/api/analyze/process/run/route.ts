@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing internal context' }, { status: 400 })
   }
 
-  const { phase = 'full', visionDataConfirmed = false } = body
+  const { phase = 'full', visionDataConfirmed = false, skipCache = false } = body
 
   const supabase = createAdminClient()
 
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
 
         const visionResults = await Promise.all(
           labelImages.map(async (img: { type: string; url: string }) => {
-            const result = await analyzeLabel(img.url, packagingFormatCtx)
+            const result = await analyzeLabel(img.url, packagingFormatCtx, { skipCache })
             return { type: img.type, result }
           })
         )
