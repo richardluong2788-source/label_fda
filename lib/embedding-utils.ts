@@ -481,38 +481,51 @@ export async function getRelevantContext(
   try {
     const searchQuery = `${productCategory} ${labelContent.slice(0, 500)}`
 
-    // Generate embedding ONCE and share across all searches to avoid 5x duplicate API calls
+    // Generate embedding ONCE and share across all searches to avoid duplicate API calls
     const sharedEmbedding = await generateEmbedding(searchQuery)
     const supabase = createAdminClient()
 
-    // Fetch ALL relevant records in ONE query, then split by document_type in app layer
-    const { data: allData, error: allError } = await supabase.rpc('match_compliance_knowledge', {
-      query_embedding: sharedEmbedding,
-      match_threshold: 0.30, // Lower threshold to cast wider net
-      match_count: 150,       // Fetch enough to get WL+Recall in top results
-    })
+    // THREE parallel queries — each targeted at its own document_type
+    // WL/Recall use threshold=0.0 because their similarity scores are 0.32-0.36
+    // (too low for a shared threshold but still semantically relevant)
+    const [regulationData, wlData, recallData] = await Promise.all([
+      supabase.rpc('match_compliance_knowledge', {
+        query_embedding: sharedEmbedding,
+        match_threshold: 0.35,
+        match_count: 20,
+      }),
+      supabase.rpc('match_compliance_knowledge', {
+        query_embedding: sharedEmbedding,
+        match_threshold: 0.0, // No threshold — WL scores are 0.32-0.36
+        match_count: 48,      // Total WL records in DB = 48, fetch all then sort
+      }),
+      supabase.rpc('match_compliance_knowledge', {
+        query_embedding: sharedEmbedding,
+        match_threshold: 0.0, // No threshold — Recall scores are 0.32-0.36
+        match_count: 73,      // Total Recall records in DB = 73, fetch all then sort
+      }),
+    ])
 
-    if (allError) {
-      console.error('[v0] RAG unified search error:', allError)
-    }
-
-    const allRecords = allData || []
-    console.log('[v0] RAG unified search: total records =', allRecords.length)
-
-    // Split by document_type
-    const regulationRecords = allRecords.filter((r: any) => r.metadata?.document_type !== 'FDA Warning Letter' && r.metadata?.document_type !== 'FDA Recall')
-    const warningLetterRecords = allRecords.filter((r: any) => r.metadata?.document_type === 'FDA Warning Letter')
-    const recallRecords = allRecords.filter((r: any) => r.metadata?.document_type === 'FDA Recall')
+    const regulationRecords = (regulationData.data || []).filter(
+      (r: any) => r.metadata?.document_type !== 'FDA Warning Letter' && r.metadata?.document_type !== 'FDA Recall'
+    )
+    const warningLetterRecords = (wlData.data || [])
+      .filter((r: any) => r.metadata?.document_type === 'FDA Warning Letter')
+      .sort((a: any, b: any) => b.similarity - a.similarity)
+      .slice(0, 5)
+    const recallRecords = (recallData.data || [])
+      .filter((r: any) => r.metadata?.document_type === 'FDA Recall')
+      .sort((a: any, b: any) => b.similarity - a.similarity)
+      .slice(0, 5)
 
     console.log('[v0] RAG split: regulations=', regulationRecords.length, 'warnings=', warningLetterRecords.length, 'recalls=', recallRecords.length)
 
-    // QUAD QUERY: Run all four searches in parallel — pass productCategory for category pre-filter
+    // QUAD QUERY: Run all four searches in parallel
     const [regulations, warnings, recalls] = await Promise.all([
       searchKnowledge(searchQuery, 10, sharedEmbedding, regulationRecords),
       searchWarningLetters(searchQuery, 5, productCategory, sharedEmbedding, warningLetterRecords),
       searchRecalls(searchQuery, 3, productCategory, sharedEmbedding, recallRecords),
       // Note: Import Alerts (L4) are fetched separately in analyze route via getImportAlertContext()
-      // because they use different data structures (not KnowledgeSearchResult)
     ])
 
     console.log('[v0] RAG retrieved', regulations.length, 'regulations with avg similarity:',
