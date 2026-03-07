@@ -34,10 +34,13 @@ WHERE table_name = 'compliance_knowledge'
 -- IF DIMENSIONS ARE WRONG (not 1536), RUN THESE:
 -- ============================================
 
--- STEP 4: Drop dependent objects first
+-- STEP 4: Drop dependent objects first (including view!)
+DROP VIEW IF EXISTS public.active_compliance_knowledge CASCADE;
 DROP INDEX IF EXISTS compliance_knowledge_embedding_idx;
 DROP FUNCTION IF EXISTS match_compliance_knowledge(vector, float, int);
+DROP FUNCTION IF EXISTS match_compliance_knowledge(vector(1536), float, int);
 DROP FUNCTION IF EXISTS match_compliance_knowledge_deduplicated(vector, float, int);
+DROP FUNCTION IF EXISTS match_compliance_knowledge_deduplicated(vector(1536), float, int);
 
 -- STEP 5: Alter column to remove dimension constraint temporarily
 ALTER TABLE compliance_knowledge 
@@ -128,6 +131,20 @@ $$;
 -- STEP 10: Grant permissions
 GRANT EXECUTE ON FUNCTION match_compliance_knowledge TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION match_compliance_knowledge_deduplicated TO anon, authenticated;
+
+-- STEP 11: Recreate the view that was dropped
+CREATE OR REPLACE VIEW public.active_compliance_knowledge AS
+SELECT
+  id, content, metadata, embedding, source, section,
+  is_active, valid_from, valid_until, temporal_scope,
+  CASE
+    WHEN temporal_scope = 'permanent' THEN 'Permanent regulation'
+    WHEN valid_until IS NULL THEN 'No expiry set'
+    WHEN valid_until > CURRENT_DATE THEN 'Active until ' || valid_until::text
+    ELSE 'Expired ' || valid_until::text
+  END as validity_status
+FROM public.compliance_knowledge
+WHERE is_active = true;
 
 -- VERIFY: Check column is now correct
 SELECT 
