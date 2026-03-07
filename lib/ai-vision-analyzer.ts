@@ -161,14 +161,29 @@ CRITICAL NUTRITION FACTS RULES - READ EVERY WORD:
 10. Cross-check: Does your extracted data match the serving size type (70g vs 355ml)?
 
 MULTI-COLUMN NUTRITION FACTS (VARIETY PACKS) - CRITICAL:
-1. DETECT multi-column format: Look for 2+ vertical columns of nutrition data side-by-side
-2. Common in variety packs: "Cheddar | Colors | Pretzel" or "Original | BBQ | Sour Cream"
-3. If you see column headers (product variant names) above nutrition values → isMultiColumnNutrition = true
+1. DETECT multi-column format: Look for 2+ VERTICAL COLUMNS of nutrition data side-by-side
+2. KEY INDICATORS of multi-column:
+   - Product names at top: "Cheddar | Colors | Pretzel" or "Toast Chee | Captain's Wafers | Toasty"
+   - Different serving sizes per column: "1 Pack (28g)" vs "1 Pack (39g)" vs "1 Pack (36g)"
+   - Different calorie values: 220 cal vs 190 cal vs 180 cal (NOT the same across columns)
+   - Column divider lines separating nutrition data vertically
+   - Multiple "Nutrition Facts" headers (one per variant/column)
+3. If you see 2+ product variants with DIFFERENT nutrition values → isMultiColumnNutrition = TRUE
 4. EXTRACT EACH COLUMN INDEPENDENTLY into nutritionFactsColumns array
 5. Each column MUST have its own: columnName, servingSize, servingsPerContainer, and full nutritionFacts array
-6. CRITICAL: If a nutrient appears in Column A but NOT in Column B, note this as the value being MISSING (do NOT assume 0)
-7. Use null for missing nutrients, NOT 0 (0 means "zero grams present", null means "not declared")
-8. Still populate the main "nutritionFacts" array with the FIRST column data for backwards compatibility
+6. CRITICAL: Verify column independence - if Column A has "220 Calories" and Column B has "190 Calories", they are separate columns
+7. If a nutrient appears in Column A but NOT in Column B, note this as the value being MISSING (do NOT assume 0)
+8. Use null for missing nutrients, NOT 0 (0 means "zero grams present", null means "not declared")
+9. Still populate the main "nutritionFacts" array with the FIRST column data for backwards compatibility
+10. EXAMPLE - Lance Variety Pack with 3 columns:
+    {
+      "isMultiColumnNutrition": true,
+      "nutritionFactsColumns": [
+        {"columnName": "Toast Chee", "servingSize": "1 Pack (28g)", "nutritionFacts": [{"name": "Calories", "value": 220}, ...]},
+        {"columnName": "Captain's Wafers", "servingSize": "1 Pack (39g)", "nutritionFacts": [{"name": "Calories", "value": 190}, ...]},
+        {"columnName": "Toasty", "servingSize": "1 Pack (36g)", "nutritionFacts": [{"name": "Calories", "value": 180}, ...]}
+      ]
+    }
 
 NET QUANTITY / NET WEIGHT EXTRACTION:
 - Look for "Net Wt", "Net Weight", "NET WT" anywhere on the label
@@ -632,7 +647,7 @@ FONT SIZE CHART (use these values):
     if (imageHash) {
       setVisionCache(imageHash, normalized).catch(() => {})
     }
-    // ────────────────────────────────────────────────────────────────────────
+    // ────────���───────────────────────────────────────────────────────────────
 
     return normalized
   } catch (error: any) {
