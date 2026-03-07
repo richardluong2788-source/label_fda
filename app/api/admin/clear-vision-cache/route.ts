@@ -13,35 +13,25 @@ import { deleteVisionCache } from '@/lib/cache/vision-cache'
  */
 export async function POST(req: Request) {
   try {
-    // Check authorization
-    const authHeader = req.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
+    // Simple authorization check using API_ADMIN_KEY
+    const authHeader = req.headers.get('x-admin-key')
+    const expectedKey = process.env.API_ADMIN_KEY
 
-    if (!token) {
-      return NextResponse.json({ error: 'Missing authorization token' }, { status: 401 })
+    // Allow if admin key matches OR if in development
+    const isAuthorized =
+      (expectedKey && authHeader === expectedKey) || process.env.NODE_ENV === 'development'
+
+    if (!isAuthorized && expectedKey) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Invalid admin key' },
+        { status: 403 }
+      )
     }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || '',
       process.env.SUPABASE_SERVICE_ROLE_KEY || ''
     )
-
-    // Verify token is admin
-    const { data, error } = await supabase.auth.getUser(token)
-    if (error || !data.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
-    }
-
-    // Check if user is admin
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', data.user.id)
-      .maybeSingle()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
-    }
 
     const body = await req.json()
     const { reportId, imageUrl } = body
