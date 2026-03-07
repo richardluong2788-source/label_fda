@@ -171,7 +171,7 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     veximAiSystem: 'Hệ thống phân tích AI Label Pro (Vexim Global)',
     certId: 'Mã chứng nhận',
     disclaimer: 'Tuyên bố miễn trừ trách nhiệm',
-    disclaimerText: 'Báo cáo này chỉ được cung cấp cho mục đích thông tin và không cấu thành tư vấn pháp lý. Mặc dù Vexim Compliance AI sử dụng công nghệ AI tiên tiến và cơ sở dữ liệu quy định FDA toàn diện (bao gồm hơn 4.064 quy định, Thư cảnh báo FDA, Thu hồi FDA và Cảnh báo nhập khẩu FDA) để xác định các vấn đề tuân thủ tiềm năng, nó không nên được sử dụng thay thế cho tư vấn với chuyên gia quản lý quy định FDA có trình độ. Các phát hiện Import Alert chỉ là tín hiệu rủi ro và không cấu thành vi phạm quy định hoặc trích dẫn pháp lý. Vexim Global không chịu trách nhiệm cho bất kỳ quyết định nào được đưa ra dựa trên báo cáo này. Các quy định FDA có thể thay đổi, và chủ sở hữu nhãn có trách nhiệm đảm bảo tuân thủ liên tục. Báo cáo này có hiệu lực kể từ ngày tạo và cần được xem xét lại nếu quy định thay đổi.',
+    disclaimerText: 'Báo cáo này được tạo theo 21 CFR đã sửa đổi ngày 1 tháng 4, 2025. Báo cáo có hiệu lực trong 12 tháng kể từ ngày phát hành; cần xem xét lại nếu quy định thay đổi. Báo cáo này chỉ bao gồm nhãn sản phẩm và KHÔNG cấu thành đánh giá về công thức sản phẩm, thực hành sản xuất (GMP), hay tuyên bố lâm sàng. Không nên sử dụng thay thế cho tư vấn với chuyên gia quản lý quy định FDA có trình độ. Các phát hiện Import Alert chỉ là tín hiệu rủi ro và không cấu thành vi phạm quy định hoặc trích dẫn pháp lý. Vexim Global không chịu trách nhiệm pháp lý cho bất kỳ quyết định nào được đưa ra dựa trên báo cáo này.',
     defaultRiskHigh: (score: string, critical: number) => `Nhãn sản phẩm có điểm rủi ro ${score}/10. Các vấn đề nghiêm trọng cần được khắc phục trước khi phân phối.`,
     defaultRiskLow: (score: string) => `Nhãn sản phẩm có điểm rủi ro ${score}/10. Không phát hiện vấn đề nghiêm trọng, nhưng cần cải thiện một số điểm.`,
     expertTipCritical: 'Nhãn sản phẩm này có các vấn đề tuân thủ FDA nghiêm trọng cần được khắc phục trước khi phân phối tại thị trường Hoa Kỳ. Không tuân thủ có thể dẫn đến Import Alert, hàng bị giữ tại cảng, hoặc Thư cảnh báo FDA.',
@@ -248,7 +248,22 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     signedOffBy: 'Ký xác nhận bởi',
     requestSentAt: 'Yêu cầu gửi lúc',
     resultsAvailable: 'Kết quả sẵn sàng',
-  },
+    // Audit Scope
+    auditScope: 'Phạm Vi Kiểm Tra',
+    auditScopeRegulations: 'Quy định đã kiểm tra',
+    auditScopePanels: 'Mặt nhãn đã xem xét',
+    auditScopeImages: 'Hình ảnh đã phân tích',
+    auditScopeOcrMethod: 'Phương pháp OCR',
+    auditScopeReviewDate: 'Ngày kiểm tra',
+    auditScopeCfrVersion: 'Phiên bản CFR',
+    auditScopeCfrVersionValue: '21 CFR sửa đổi ngày 1 tháng 4, 2025',
+    auditScopeOcrMethodValue: 'GPT-4o Vision (AI Vision Analysis)',
+    auditScopePanelsValue: 'PDP (Principal Display Panel), Information Panel, Nutrition Facts Panel',
+    // Multi-column NF
+    multiColumnNF: 'Bảng Dinh Dưỡng Đa Cột',
+    multiColumnNFDesc: 'Sản phẩm có nhiều biến thể — mỗi cột tương ứng một sản phẩm riêng biệt.',
+    multiColumnVariant: 'Biến thể',
+    multiColumnServingSize: 'Khẩu phần',
   en: {
     downloadTitle: 'FDA Compliance Audit Report',
     downloadBtn: 'Download PDF',
@@ -376,7 +391,7 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     veximAiSystem: 'AI Label Pro Analysis System (Vexim Global)',
     certId: 'Certification ID',
     disclaimer: 'Disclaimer',
-    disclaimerText: 'This report is provided for informational purposes only and does not constitute legal advice. While Vexim Compliance AI uses advanced AI technology and a comprehensive FDA regulatory database (including over 4,064 regulations, FDA Warning Letters, FDA Recalls and FDA Import Alerts) to identify potential compliance issues, it should not be used as a substitute for consultation with qualified FDA regulatory professionals. Import Alert findings are risk signals only and do not constitute regulatory violations or legal citations. Vexim Global is not responsible for any decisions made based on this report. FDA regulations are subject to change, and label owners are responsible for ensuring ongoing compliance. This report is valid as of the date of creation and should be reviewed if regulations change.',
+    disclaimerText: 'Report generated against 21 CFR revised April 1, 2025. This report is valid for 12 months from issue date; re-review if regulations change. This report covers label artwork only and does NOT constitute review of product formulation, manufacturing practices (GMP), or clinical claims. It should not be used as a substitute for consultation with qualified FDA regulatory professionals. Import Alert findings are risk signals only and do not constitute regulatory violations or legal citations. Vexim Global bears no legal liability for any decisions made based on this report.',
     defaultRiskHigh: (score: string, critical: number) => `Product label has a risk score of ${score}/10. Critical issues must be addressed before distribution.`,
     defaultRiskLow: (score: string) => `Product label has a risk score of ${score}/10. No critical issues found, but some areas need improvement.`,
     expertTipCritical: 'This product label has critical FDA compliance issues that must be addressed before distribution in the US market. Non-compliance could lead to Import Alerts, port detention, or FDA Warning Letters.',
@@ -453,6 +468,22 @@ const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
     signedOffBy: 'Signed off by',
     requestSentAt: 'Request sent at',
     resultsAvailable: 'Results available',
+    // Audit Scope
+    auditScope: 'Audit Scope',
+    auditScopeRegulations: 'Regulations checked',
+    auditScopePanels: 'Label panels reviewed',
+    auditScopeImages: 'Images analyzed',
+    auditScopeOcrMethod: 'OCR method',
+    auditScopeReviewDate: 'Review date',
+    auditScopeCfrVersion: 'CFR version',
+    auditScopeCfrVersionValue: '21 CFR revised April 1, 2025',
+    auditScopeOcrMethodValue: 'GPT-4o Vision (AI Vision Analysis)',
+    auditScopePanelsValue: 'PDP (Principal Display Panel), Information Panel, Nutrition Facts Panel',
+    // Multi-column NF
+    multiColumnNF: 'Multi-Column Nutrition Facts',
+    multiColumnNFDesc: 'Product contains multiple variants — each column represents a separate product.',
+    multiColumnVariant: 'Variant',
+    multiColumnServingSize: 'Serving Size',
   },
 }
 
@@ -705,7 +736,20 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   const defaultExpertTip = criticalCount > 0 ? L.expertTipCritical : warningCount > 0 ? L.expertTipWarning : L.expertTipPass
 
-  const shortId = report.id.slice(0, 8).toUpperCase()
+  // ── Report Reference Number (VXG-[TYPE]-[YEAR]-[SEQ]) ────────────────
+  // Format: VXG = Vexim Global, TYPE = FD/DS/CP/OTC, YEAR = year, SEQ = last 4 of ID
+  const domainTypeCode = (() => {
+    const cat = (report.product_category || report.product_type || '').toLowerCase()
+    if (cat.includes('supplement') || cat.includes('vitamin') || cat.includes('thực phẩm chức năng')) return 'DS'
+    if (cat.includes('cosmetic') || cat.includes('mỹ phẩm') || cat.includes('skincare')) return 'CP'
+    if (cat.includes('otc') || cat.includes('drug') || cat.includes('thuốc')) return 'OTC'
+    return 'FD' // Food (default)
+  })()
+  const reportYear = new Date(generatedAt).getFullYear()
+  const reportSeq = report.id.slice(-4).toUpperCase()
+  const reportRefNumber = `VXG-${domainTypeCode}-${reportYear}-${reportSeq}`
+
+  const shortId = reportRefNumber
   const dateFormatted = formatDate(generatedAt, lang)
 
   // Data from report (with safe access)
@@ -724,6 +768,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   // Pre-calculate section numbers
   const secOverview = toc(L.overview)
   const secProduct = toc(L.productInfo)
+  const secAuditScope = toc(L.auditScope)
   const secFindings = toc(L.findingsDetail)
   const secImportAlerts = importAlertViolations.length > 0 ? toc(L.importAlerts) : null
   const hasTech = (report.geometry_violations && report.geometry_violations.length > 0) ||
@@ -757,7 +802,9 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   /* Page layout */
   .page { width: 210mm; min-height: auto; margin: 0 auto; padding: 0; background: white; overflow: hidden; }
   @media print { body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .page { margin: 0; padding: 0; width: 100%; box-shadow: none; min-height: auto; overflow: hidden; } .page-break { page-break-before: always; } .no-break { page-break-inside: avoid; } .content-page { min-height: auto; } }
-  @page { size: A4; margin: 12mm 15mm; }
+  /* Use @page-level margins so PDF engines (Chrome, wkhtmltopdf, Puppeteer) respect them.
+     Do NOT rely on padding-only when margin:0 — content can be clipped. */
+  @page { size: A4 portrait; margin: 12mm 15mm; }
 
   /* Cover page */
   .cover-page { min-height: auto; display: flex; flex-direction: column; position: relative; background: #ffffff; color: #0f172a; padding: 15mm 20mm; overflow: hidden; }
@@ -1220,7 +1267,100 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   </div>
 </div>
 
-<!-- ═══════════════════════ FINDINGS PAGES ═══════════════════════ -->
+<!-- ═══════════════════════ AUDIT SCOPE PAGE ═══════════════════════ -->
+<div class="page content-page page-break">
+  ${pageHeader(L, shortId, dateFormatted)}
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">${secAuditScope}</span>${L.auditScope}</div>
+
+    <table class="info-table" style="margin-bottom:16px;">
+      <tr><td>${L.auditScopeReviewDate}</td><td>${dateFormatted}</td></tr>
+      <tr><td>${L.auditScopeCfrVersion}</td><td>${L.auditScopeCfrVersionValue}</td></tr>
+      <tr><td>${L.auditScopeOcrMethod}</td><td>${L.auditScopeOcrMethodValue}</td></tr>
+      <tr><td>${L.auditScopePanels}</td><td>${L.auditScopePanelsValue}</td></tr>
+      <tr><td>${L.auditScopeImages}</td><td>${((report.label_images && report.label_images.length > 0) ? report.label_images.length : 1)} image(s) analyzed</td></tr>
+      <tr>
+        <td>${L.auditScopeRegulations}</td>
+        <td>
+          <span style="display:inline-block;background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;padding:2px 8px;border-radius:4px;font-size:8.5px;font-weight:600;margin:2px 4px 2px 0;">21 CFR §101 — Food Labeling</span>
+          ${!isCosmetic ? `<span style="display:inline-block;background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;padding:2px 8px;border-radius:4px;font-size:8.5px;font-weight:600;margin:2px 4px 2px 0;">21 CFR §101.9 — Nutrition Facts</span>
+          <span style="display:inline-block;background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;padding:2px 8px;border-radius:4px;font-size:8.5px;font-weight:600;margin:2px 4px 2px 0;">21 CFR §101.4 — Ingredient Listing</span>
+          <span style="display:inline-block;background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;padding:2px 8px;border-radius:4px;font-size:8.5px;font-weight:600;margin:2px 4px 2px 0;">21 CFR §101.2 — Mandatory Label Statements</span>
+          <span style="display:inline-block;background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;padding:2px 8px;border-radius:4px;font-size:8.5px;font-weight:600;margin:2px 4px 2px 0;">FD&amp;C Act §403 — Misbranding</span>` : ''}
+          ${isCosmetic ? `<span style="display:inline-block;background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE;padding:2px 8px;border-radius:4px;font-size:8.5px;font-weight:600;margin:2px 4px 2px 0;">21 CFR §701 — Cosmetic Labeling</span>` : ''}
+        </td>
+      </tr>
+    </table>
+
+    <!-- What was NOT checked (scope boundaries) -->
+    <div style="background:#FEF3C7;border:1px solid #FDE68A;border-left:4px solid #F59E0B;border-radius:0 8px 8px 0;padding:12px 14px;font-size:9px;color:#92400E;line-height:1.6;">
+      <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;color:#B45309;">Out of Scope — Not Reviewed</div>
+      <ul style="margin:0 0 0 14px;padding:0;list-style:disc;">
+        <li>Product formulation and ingredient safety</li>
+        <li>Manufacturing practices (GMP / 21 CFR §111)</li>
+        <li>Clinical or structure/function claim substantiation</li>
+        <li>Supply chain and distribution compliance</li>
+        <li>State/local labeling requirements (California Prop 65, etc.)</li>
+      </ul>
+    </div>
+
+    ${/* Multi-column NF breakdown */ (report as any).nutrition_facts_columns && (report as any).nutrition_facts_columns.length > 1 ? `
+    <div class="section" style="margin-top:20px;">
+      <div style="font-size:11px;font-weight:700;color:#0f172a;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #e2e8f0;">${L.multiColumnNF}</div>
+      <div style="font-size:9px;color:#64748b;margin-bottom:10px;">${L.multiColumnNFDesc}</div>
+
+      <!-- Responsive column comparison table -->
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:8.5px;table-layout:fixed;">
+          <colgroup>
+            <col style="width:22%;" />
+            ${(report as any).nutrition_facts_columns.map(() => `<col style="width:${Math.floor(78 / (report as any).nutrition_facts_columns.length)}%;" />`).join('')}
+          </colgroup>
+          <thead>
+            <tr style="background:#1e40af;color:white;">
+              <th style="padding:7px 8px;text-align:left;font-weight:700;">Nutrient</th>
+              ${(report as any).nutrition_facts_columns.map((col: any) => `
+              <th style="padding:7px 8px;text-align:center;font-weight:700;font-size:8px;">${escapeHtml(col.columnName || col.name || L.multiColumnVariant)}</th>`).join('')}
+            </tr>
+            <tr style="background:#dbeafe;">
+              <td style="padding:5px 8px;font-size:7.5px;font-weight:600;color:#334155;">${L.multiColumnServingSize}</td>
+              ${(report as any).nutrition_facts_columns.map((col: any) => `
+              <td style="padding:5px 8px;text-align:center;font-size:7.5px;color:#475569;">${escapeHtml(col.servingSize || '—')}</td>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${(() => {
+              // Collect all unique nutrient names across all columns
+              const allColumns: any[] = (report as any).nutrition_facts_columns
+              const nutrientNames = Array.from(
+                new Set(allColumns.flatMap((col: any) => (col.nutritionFacts || []).map((n: any) => n.name as string)))
+              )
+              return nutrientNames.map((nutrientName, rowIdx) => {
+                const bg = rowIdx % 2 === 0 ? 'background:#f8fafc;' : ''
+                return `<tr style="${bg}">
+                  <td style="padding:5px 8px;font-weight:600;color:#334155;font-size:8px;text-transform:capitalize;">${escapeHtml(nutrientName)}</td>
+                  ${allColumns.map((col: any) => {
+                    const fact = (col.nutritionFacts || []).find((n: any) => n.name === nutrientName)
+                    const val = fact ? `${fact.value ?? ''}${fact.unit ? fact.unit : ''}${fact.dailyValue != null ? ` <span style="color:#94a3b8;">(${fact.dailyValue}%)</span>` : ''}` : '<span style="color:#d1d5db;">—</span>'
+                    return `<td style="padding:5px 8px;text-align:center;color:#475569;font-size:8px;">${val}</td>`
+                  }).join('')}
+                </tr>`
+              }).join('')
+            })()}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ''}
+  </div>
+
+  <div class="page-footer">
+    <div>${L.pageFooter} | ${companyInfo.name}</div>
+    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
+  </div>
+</div>
+
+
 <div class="page content-page page-break">
   ${pageHeader(L, shortId, dateFormatted)}
 
