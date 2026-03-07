@@ -473,7 +473,7 @@ export async function POST(request: Request) {
 
     // Professional findings from smart mapper
     const professionalFindings = detectedViolations.map((violation, idx) => {
-      const relevantReg = regulationsOnly.find(r => r.regulation_id === violation.regulationSection || r.section.includes(violation.regulationSection))
+      const relevantReg = regulationsOnly.find(r => r.regulation_id === violation.regulationSection || (r.section && r.section.includes(violation.regulationSection)))
       // Pass ingredient context for enhanced ingredient_order violation analysis
       const finding = SmartCitationFormatter.formatProfessionalFinding(
         violation, 
@@ -576,7 +576,7 @@ export async function POST(request: Request) {
 
     // Allergen check - use deduplicatedAllergens for clean output
     if (deduplicatedAllergens.length > 0) {
-      const allergenCitation = realCitations.find(c => c.regulation_id.includes('FALCPA') || c.section.toLowerCase().includes('allergen'))
+      const allergenCitation = realCitations.find(c => (c.regulation_id && c.regulation_id.includes('FALCPA')) || (c.section && c.section.toLowerCase().includes('allergen')))
       const allTextLower = visionResult.textElements.allText.toLowerCase()
       const hasProperDeclaration = allTextLower.includes('contains:') || allTextLower.includes('contains ') || allTextLower.includes('allergen') || allTextLower.includes('allergy')
       if (!hasProperDeclaration) {
@@ -602,7 +602,7 @@ export async function POST(request: Request) {
           const headingWord = allTextLow.indexOf('ingredients:') !== -1 ? 'ingredients:' : 'contains:'
           const afterHeading = allTextLow.slice(headingIdx + headingWord.length).trim()
           if (afterHeading.replace(/\s+/g, '').length < 3) {
-            const ingredientCitation = realCitations.find(c => c.regulation_id.includes('101.4') || c.section.toLowerCase().includes('ingredient'))
+            const ingredientCitation = realCitations.find(c => (c.regulation_id && c.regulation_id.includes('101.4')) || (c.section && c.section.toLowerCase().includes('ingredient')))
             violations.push({ category: 'Ingredient List', severity: 'critical' as const, description: 'Ingredient list heading detected but no ingredient text follows it.', regulation_reference: ingredientCitation?.regulation_id || '21 CFR 101.4', suggested_fix: 'Add a complete ingredient list in descending order by weight.', citations: ingredientCitation ? [ingredientCitation] : [], confidence_score: 0.8 })
           }
         }
@@ -698,9 +698,9 @@ export async function POST(request: Request) {
 
     // Commercial summary
     const additionalFindings = violations
-      .filter((v: any) => !professionalFindings.some(pf => pf.cfr_reference === v.regulation_reference || pf.summary.includes(v.category)))
+      .filter((v: any) => !professionalFindings.some(pf => pf?.finding?.cfr_reference === v.regulation_reference || (pf?.finding?.summary && pf.finding.summary.includes(v.category || ''))))
       .map((v: any) => ({ summary: v.category, legal_basis: v.regulation_reference ? `Per ${v.regulation_reference}` : '', expert_logic: v.description, remediation: v.suggested_fix || 'See finding details', severity: v.severity, cfr_reference: v.regulation_reference || '', confidence_score: v.confidence_score ?? 0.8 }))
-    const allFindingsForSummary = [...professionalFindings, ...additionalFindings]
+    const allFindingsForSummary = [...professionalFindings.map(pf => pf.finding), ...additionalFindings]
     const commercialSummary = SmartCitationFormatter.createReportSummary(allFindingsForSummary, userLang)
     const expertTips = SmartCitationFormatter.generateExpertTips(allFindingsForSummary, userLang)
 
