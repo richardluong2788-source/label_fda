@@ -302,6 +302,13 @@ export async function POST(request: Request) {
         servingSize: c.servingSize,
         nutritionFactsCount: c.nutritionFacts?.length ?? 0,
       })))
+      // Debug: Log full nutrient names per column to verify Riboflavin/Niacin extraction
+      console.log('[v0] Column nutrients detail:', 
+        visionResult.nutritionFactsColumns.map(c => ({
+          name: c.columnName,
+          nutrients: c.nutritionFacts?.map(n => n.name) ?? []
+        }))
+      )
       multiColumnValidation = NutritionValidator.validateMultiColumnNutritionFacts(
         visionResult.nutritionFactsColumns,
         productDomain
@@ -438,7 +445,7 @@ export async function POST(request: Request) {
     const hasClaims = claimViolations.length > 0
     const disclaimers = ClaimsValidator.generateRequiredDisclaimers(productType, hasClaims)
 
-    // ── Step 4: Build violations ───────────────────────────────
+    // ── Step 4: Build violations ��──────────────────────────────
     await updateJobProgress(jobId, 'Validating allergen declarations', 85)
 
     let violations: any[] = []

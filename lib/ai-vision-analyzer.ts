@@ -152,7 +152,26 @@ CRITICAL NUTRITION FACTS RULES - READ EVERY WORD:
 1. READ the EXACT numbers you see - never use placeholder/example values
 2. If Calories shows "25", enter 25 (NOT 110, NOT 230, NOT any other number)
 3. If Sodium shows "75mg", enter 75 (NOT 0, NOT 140, NOT any beverage value)
-4. Extract EVERY nutrient visible: Calories, Fats, Cholesterol, Sodium, Carbs, Fiber, Sugars, Protein, Vitamins, Minerals
+4. Extract EVERY nutrient visible on the label including:
+
+   MANDATORY (must extract):
+   Calories, Total Fat, Saturated Fat, Trans Fat,
+   Cholesterol, Sodium, Total Carbohydrate, 
+   Dietary Fiber, Total Sugars, Added Sugars,
+   Protein, Vitamin D, Calcium, Iron, Potassium
+
+   VOLUNTARY (extract if present - do NOT skip):
+   Thiamin (Vitamin B1), Riboflavin (Vitamin B2), 
+   Niacin (Vitamin B3), Vitamin B6, Folate,
+   Vitamin B12, Biotin, Pantothenic Acid,
+   Phosphorus, Iodine, Magnesium, Zinc, Selenium,
+   Copper, Manganese, Chromium, Molybdenum, Chloride,
+   Vitamin A, Vitamin C, Vitamin E, Vitamin K
+
+   CRITICAL: Voluntary nutrients often appear in small text
+   at the bottom of the panel. Do NOT skip them.
+   If a nutrient is listed on the label, extract it.
+
 5. For sub-nutrients (Saturated Fat, Trans Fat, Dietary Fiber, Added Sugars), include as separate entries
 6. If value is "0g" or "0mg", enter value: 0
 7. For % Daily Value, use exact % shown or null if missing
@@ -625,7 +644,7 @@ FONT SIZE CHART (use these values):
       normalized.validationWarnings = validationWarnings
     }
     
-    // ── Multi-Column Detection Logging & Auto-Detection ──────────────────────
+    // ── Multi-Column Detection Logging & Auto-Detection ─────────────────────���
     console.log('[v0] Multi-column detection result:', {
       isMultiColumnNutrition: normalized.isMultiColumnNutrition,
       nutritionFactsColumnsCount: normalized.nutritionFactsColumns?.length || 0,
