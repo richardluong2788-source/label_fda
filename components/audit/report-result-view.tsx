@@ -1280,19 +1280,19 @@ export function ReportResultView({
                                     return (
                                       <td 
                                         key={colIdx} 
-                                        className={`text-center px-2 py-1 border-l border-slate-200 ${
+                                        className={`text-left px-2 py-1 border-l border-slate-200 ${
                                           isMissing ? 'bg-amber-50 text-amber-600' : 'text-slate-900'
                                         }`}
                                       >
                                         {isMissing ? (
                                           <span className="text-[9px]">—</span>
                                         ) : (
-                                          <>
-                                            {fact.value}{fact.unit}
+                                          <span className="whitespace-nowrap">
+                                            <span className="font-medium">{fact.value}{fact.unit}</span>
                                             {fact.dailyValue && (
-                                              <span className="text-slate-400 ml-0.5">({fact.dailyValue}%)</span>
+                                              <span className="text-slate-400 text-[10px] ml-1">({fact.dailyValue}%)</span>
                                             )}
-                                          </>
+                                          </span>
                                         )}
                                       </td>
                                     )
