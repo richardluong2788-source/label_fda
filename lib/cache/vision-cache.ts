@@ -94,3 +94,29 @@ export async function lookupVisionCache(imageUrl: string): Promise<{
   const result = await getVisionCache(hash)
   return { hit: result !== null, hash, result }
 }
+
+/**
+ * Delete a cached vision result by image content hash.
+ * Returns true if deleted, false on miss / error.
+ */
+export async function deleteVisionCache(imageHash: string): Promise<boolean> {
+  const redis = getRedisClient()
+  if (!redis) return false
+  try {
+    const deleted = await redis.del(`${PREFIX}${imageHash}`)
+    return deleted > 0
+  } catch (err) {
+    console.error('[vision-cache] Redis DEL error:', err)
+    return false
+  }
+}
+
+/**
+ * Delete vision cache by image URL (hashes the URL first).
+ * Returns true if deleted, false on miss / error.
+ */
+export async function deleteVisionCacheByUrl(imageUrl: string): Promise<boolean> {
+  const hash = await hashImageUrl(imageUrl)
+  if (!hash) return false
+  return deleteVisionCache(hash)
+}
