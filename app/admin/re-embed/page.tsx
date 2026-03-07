@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -29,6 +29,7 @@ export default function ReEmbedPage() {
   const [isRunning, setIsRunning] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
+  const shouldStopRef = React.useRef(false)
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -76,24 +77,29 @@ export default function ReEmbedPage() {
   }
 
   const startAutoRun = async () => {
+    shouldStopRef.current = false
     setIsRunning(true)
     setLogs([`Starting auto re-embed at ${new Date().toLocaleTimeString()}`])
 
     let hasMore = true
-    while (hasMore && isRunning) {
+    let batchCount = 0
+    while (hasMore && !shouldStopRef.current) {
       hasMore = await runBatch()
-      if (hasMore) {
-        await new Promise(resolve => setTimeout(resolve, 1000)) // 1s delay between batches
+      batchCount++
+      setLogs(prev => [...prev, `Batch #${batchCount} done`])
+      if (hasMore && !shouldStopRef.current) {
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
     }
 
-    setLogs(prev => [...prev, `Completed at ${new Date().toLocaleTimeString()}`])
+    setLogs(prev => [...prev, shouldStopRef.current ? 'Stopped by user' : `Completed at ${new Date().toLocaleTimeString()}`])
     setIsRunning(false)
   }
 
   const stopRun = () => {
+    shouldStopRef.current = true
     setIsRunning(false)
-    setLogs(prev => [...prev, 'Stopped by user'])
+    setLogs(prev => [...prev, 'Stopping after current batch...'])
   }
 
   const progressPercent = status 
