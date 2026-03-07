@@ -15,13 +15,15 @@ interface Status {
 }
 
 interface BatchResult {
-  message: string
+  message?: string
   processed: number
   success: number
   failed: number
   remaining: number
   errors?: string[]
+  firstErrors?: string[]
   hint?: string
+  error?: string
 }
 
 export default function ReEmbedPage() {
@@ -62,10 +64,9 @@ export default function ReEmbedPage() {
         return false
       }
 
-      setLogs(prev => [
-        ...prev,
-        `Batch: ${data.success}/${data.processed} success, ${data.remaining} remaining`
-      ])
+      const batchLog = `Batch: ${data.success}/${data.processed} success, ${data.remaining} remaining`
+      const errorLogs = (data.firstErrors ?? []).map((e: string) => `  ERROR: ${e}`)
+      setLogs(prev => [...prev, batchLog, ...errorLogs])
 
       await fetchStatus()
 

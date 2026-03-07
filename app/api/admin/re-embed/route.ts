@@ -90,20 +90,24 @@ export async function POST(request: NextRequest) {
 
         const embedding = response.data[0].embedding
 
-        const { error: updateError } = await supabase
+        const { error: updateError, status: updateStatus } = await supabase
           .from('compliance_knowledge')
-          .update({ embedding })
+          .update({ embedding: embedding as unknown as string })
           .eq('id', record.id)
 
         if (updateError) {
           results.failed++
-          results.errors.push(`id=${record.id}: ${updateError.message}`)
+          const errMsg = `id=${record.id}: [${updateStatus}] ${updateError.message} | code=${updateError.code} | details=${updateError.details}`
+          results.errors.push(errMsg)
+          console.error('[v0] Update error:', errMsg)
         } else {
           results.success++
         }
       } catch (err: unknown) {
         results.failed++
-        results.errors.push(`id=${record.id}: ${err instanceof Error ? err.message : String(err)}`)
+        const errMsg = `id=${record.id}: ${err instanceof Error ? err.message : String(err)}`
+        results.errors.push(errMsg)
+        console.error('[v0] Catch error:', errMsg)
       }
 
       // Small delay to avoid OpenAI rate limits
@@ -116,6 +120,7 @@ export async function POST(request: NextRequest) {
       ...results,
       remaining,
       done: remaining === 0,
+      firstErrors: results.errors.slice(0, 3), // Show first 3 errors for diagnosis
     })
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error)
