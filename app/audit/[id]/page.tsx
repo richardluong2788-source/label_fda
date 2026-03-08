@@ -105,29 +105,34 @@ export default function AuditPage() {
   }, [analyzing, scanDirection])
 
   // ── Smooth fake progress while queued/processing ──────────
-  // Giữ thanh tiến trình luôn nhích dần, tránh user nghĩ app bị đơ.
-  // Server sẽ override với giá trị thật khi các bước hoàn thành.
-  // NOTE: Bước 1 (Vision API) thường mất 30-90s, nên fake progress cần chạy nhanh hơn
-  // để user thấy progress thay đổi liên tục (psychological comfort).
+  // Progress percentages now reflect ACTUAL time spent:
+  // - Vision API (Step 1): ~70% of progress bar (takes 30-90s = ~80% of real time)
+  // - Steps 2-6: ~30% of progress bar (fast internal processing)
+  // This ensures progress moves consistently and feels authentic to users.
   useEffect(() => {
     if (!analyzing) return
     const ticker = setInterval(() => {
       setProgress(prev => {
         const next = (() => {
-          // Giai đoạn queued → bước 1 bắt đầu: tăng nhanh hơn để user thấy có tiến triển
-          if (prev < 8) return prev + 0.5        // 0→8% trong ~5s (8 / 0.5 * 0.3s)
-          if (prev < 14) return prev + 0.25      // 8→14% trong ~8s
-          // Bước 1 (Vision API - thường mất 30-90s): tăng chậm nhưng đều
-          if (prev < 28) return prev + 0.12      // 14→28% trong ~35s (14 / 0.12 * 0.3s)
-          // Bước 2-6 (thường nhanh hơn vì không call external API)
-          if (prev < 50) return prev + 0.15      // 28→50% trong ~45s
-          if (prev < 70) return prev + 0.1       // 50→70% trong ~60s
-          if (prev < 88) return prev + 0.08      // 70→88% trong ~68s
-          return prev                             // dừng tại 88 — server sẽ đẩy lên 100
+          // Phase 1: Quick initial feedback (0-10% in ~6s)
+          if (prev < 10) return prev + 0.5
+          
+          // Phase 2: Vision API processing (10-65% over ~60s)
+          // This is the slow part - move steadily so user sees continuous progress
+          if (prev < 30) return prev + 0.35     // 10→30% in ~18s
+          if (prev < 50) return prev + 0.25     // 30→50% in ~24s  
+          if (prev < 65) return prev + 0.18     // 50→65% in ~25s
+          
+          // Phase 3: Slow down as we approach Vision completion
+          // Server will push to 70%+ when Vision actually completes
+          if (prev < 68) return prev + 0.08     // 65→68% in ~12s (buffer zone)
+          
+          // Don't go past 68% with fake progress - wait for server
+          return prev
         })()
 
-        // Đồng bộ stepIndex với fake progress (chỉ khi server chưa override)
-        // Tìm step CUỐI CÙNG có progress <= next
+        // Sync stepIndex with fake progress
+        // Find the LAST step whose progress threshold <= current progress
         let bestIdx = 0
         for (let i = 0; i < ANALYSIS_STEPS.length; i++) {
           if (ANALYSIS_STEPS[i].progress <= next) bestIdx = i
@@ -269,14 +274,13 @@ export default function AuditPage() {
             }
 
             // Update UI progress from server-driven step.
-            // Dùng smooth animation thay vì nhảy cóc:
-            // - Nếu server chưa trả progress (0 / queued), tăng dần theo thời gian để user thấy đang chạy
-            // - Nếu server trả progress > 0, dùng giá trị thật nhưng không bao giờ giảm
+            // - Server sends real progress when steps complete (e.g., 70% after Vision)
+            // - Never decrease progress (only increase)
+            // - If server hasn't reported yet, let the ticker handle fake progress
             const serverProgress = statusData.progress ?? 0
             setProgress(prev => {
               if (serverProgress > 0) return Math.max(prev, serverProgress)
-              // Slow fake crawl while queued: tăng tối đa đến 12% (trước khi bước 1 bắt đầu)
-              if (prev < 12) return prev + 0.5
+              // While queued, let the useEffect ticker handle fake progress
               return prev
             })
             // Map progress → stepIndex: tìm step CÓ progress nhỏ nhất nhưng >= serverProgress

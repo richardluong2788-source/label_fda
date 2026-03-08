@@ -26,13 +26,17 @@ import { LabelPreview } from '@/components/label-preview'
 import { LabelImageGallery } from '@/components/label-image-gallery'
 import { getLabelConfig } from '@/lib/label-field-config'
 
+// Progress percentages reflect ACTUAL time spent:
+// - Vision API (Step 1): takes ~80% of total time (30-90s)
+// - Steps 2-6: fast internal processing (~20% of time)
+// This ensures progress bar moves consistently and feels authentic
 const ANALYSIS_STEPS = [
   {
     id: 'vision',
     title: 'Phân tích hình ảnh bằng GPT-4 Vision',
     description: 'Đang quét và trích xuất văn bản, màu sắc, kích thước chữ, và layout từ nhãn...',
     icon: ScanLine,
-    progress: 15,
+    progress: 70, // Vision takes ~70-80% of actual time
     details: [
       'Optical Character Recognition (OCR)',
       'Phát hiện Nutrition Facts panel',
@@ -45,7 +49,7 @@ const ANALYSIS_STEPS = [
     title: 'Tra cứu FDA Regulations (Knowledge Base)',
     description: 'Đang tìm kiếm quy định FDA trong Knowledge Base với RAG AI (Độ tương đồng 99%)...',
     icon: Database,
-    progress: 35,
+    progress: 80, // RAG search is fast
     details: [
       '21 CFR Phần 101 - Nhãn dinh dưỡng',
       'FALCPA - Luật chất gây dị ứng',
@@ -58,7 +62,7 @@ const ANALYSIS_STEPS = [
     title: 'Kiểm tra hình học và kích thước',
     description: 'Đang xác minh kích thước panel, font size, và spacing theo quy định FDA...',
     icon: FileSearch,
-    progress: 55,
+    progress: 85,
     details: [
       'Tính diện tích Principal Display Panel',
       'Kiểm tra minimum font size',
@@ -71,7 +75,7 @@ const ANALYSIS_STEPS = [
     title: 'Phân tích chất gây dị ứng (Allergens)',
     description: 'Đang kiểm tra khai báo allergen theo FALCPA Section 203...',
     icon: Shield,
-    progress: 70,
+    progress: 90,
     details: [
       'Milk, Eggs, Fish, Shellfish',
       'Tree nuts, Peanuts, Wheat, Soybeans',
@@ -84,7 +88,7 @@ const ANALYSIS_STEPS = [
     title: 'Xác thực Nutrition Facts',
     description: 'Đang kiểm tra format, rounding, và thứ tự nutrients...',
     icon: FileText,
-    progress: 85,
+    progress: 95,
     details: [
       'Tuân thủ khẩu phần (Serving size)',
       'Khai báo Calorie',
@@ -97,7 +101,7 @@ const ANALYSIS_STEPS = [
     title: 'Ánh xạ vi phạm với trích dẫn CFR',
     description: 'Đang tạo báo cáo thương mại với trích dẫn chính xác từ FDA...',
     icon: Sparkles,
-    progress: 95,
+    progress: 98,
     details: [
       'Định dạng trích dẫn thông minh',
       'Ánh xạ vi phạm → CFR',
