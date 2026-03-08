@@ -325,7 +325,7 @@ export async function POST(request: Request) {
           detectedProductType: visionResult.detectedProductType,
         })
 
-        // ─���� AUTO-DETECT PRODUCT DOMAIN FROM VISION ───────────────────────────
+        // ─����� AUTO-DETECT PRODUCT DOMAIN FROM VISION ───────────────────────────
         // When user hasn't selected a product type, upgrade productDomain from
         // Vision AI's label analysis instead of defaulting blindly to 'food'.
         const userChoseProductType = !!(report.product_type || report.product_category)
@@ -1215,22 +1215,6 @@ export async function POST(request: Request) {
           })
         }
       }
-    }
-
-          violations.push({
-            category: `Mẫu Thu hồi: ${meta.recall_issue_type || 'Yếu tố tiềm ẩn rủi ro'}`,
-            severity: meta.recall_classification === 'Class I' ? 'critical' : meta.recall_classification === 'Class II' ? 'warning' : 'info',
-            description: `Nhãn này chứa c��c yếu tố tương đồng v���i sản phẩm đã bị FDA thu hồi. Recall ${meta.recall_number || 'N/A'} (${meta.recalling_firm || 'một doanh nghiệp'}): ${meta.why_recalled || 'Xem chi tiết sự kiện thu hồi.'}. Từ khóa nhận diện: "${matchedKeywords.join('", "')}".`,
-            regulation_reference: meta.regulation_related || 'Xem Cơ sở dữ liệu FDA Recall',
-            suggested_fix: meta.preventive_action || 'Xem xét và khắc phục các yếu tố bị gắn cờ để tránh nguy cơ thu hồi tiềm ẩn.',
-            citations: [recallCitation],
-            confidence_score: Math.min(0.95, 0.5 + (matchedKeywords.length * 0.15)),
-            source_type: 'recall',
-          })
-        }
-      }
-
-
     }
 
     // IMPORT ALERT CHECKS: Flag potential DWPE risk based on FDA Import Alerts (Layer 4)
