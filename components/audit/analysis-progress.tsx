@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -25,17 +25,84 @@ import type { AuditReport, LabelImageEntry } from '@/lib/types'
 import { LabelPreview } from '@/components/label-preview'
 import { LabelImageGallery } from '@/components/label-image-gallery'
 import { getLabelConfig } from '@/lib/label-field-config'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 // Progress thresholds define the START point of each step.
 // Steps are distributed EVENLY so fake progress cycles through ALL steps
 // while waiting for server. This gives users visual feedback that work is progressing.
+// NOTE: Text content is now provided via i18n - see getLocalizedSteps()
+const ANALYSIS_STEP_CONFIG = [
+  { id: 'vision', icon: ScanLine, progress: 0 },
+  { id: 'fda_search', icon: Database, progress: 20 },
+  { id: 'geometry', icon: FileSearch, progress: 40 },
+  { id: 'allergen', icon: Shield, progress: 55 },
+  { id: 'nutrition', icon: FileText, progress: 70 },
+  { id: 'mapping', icon: Sparkles, progress: 85 },
+]
+
+// Build localized steps from i18n
+function getLocalizedSteps(t: ReturnType<typeof useTranslation>['t']) {
+  const ap = t.analysisProgress
+  return [
+    {
+      id: 'vision',
+      title: ap.visionTitle,
+      description: ap.visionDesc,
+      icon: ScanLine,
+      progress: 0,
+      details: [ap.visionDetail1, ap.visionDetail2, ap.visionDetail3, ap.visionDetail4],
+    },
+    {
+      id: 'fda_search',
+      title: ap.fdaSearchTitle,
+      description: ap.fdaSearchDesc,
+      icon: Database,
+      progress: 20,
+      details: [ap.fdaSearchDetail1, ap.fdaSearchDetail2, ap.fdaSearchDetail3, ap.fdaSearchDetail4],
+    },
+    {
+      id: 'geometry',
+      title: ap.geometryTitle,
+      description: ap.geometryDesc,
+      icon: FileSearch,
+      progress: 40,
+      details: [ap.geometryDetail1, ap.geometryDetail2, ap.geometryDetail3, ap.geometryDetail4],
+    },
+    {
+      id: 'allergen',
+      title: ap.allergenTitle,
+      description: ap.allergenDesc,
+      icon: Shield,
+      progress: 55,
+      details: [ap.allergenDetail1, ap.allergenDetail2, ap.allergenDetail3, ap.allergenDetail4],
+    },
+    {
+      id: 'nutrition',
+      title: ap.nutritionTitle,
+      description: ap.nutritionDesc,
+      icon: FileText,
+      progress: 70,
+      details: [ap.nutritionDetail1, ap.nutritionDetail2, ap.nutritionDetail3, ap.nutritionDetail4],
+    },
+    {
+      id: 'mapping',
+      title: ap.mappingTitle,
+      description: ap.mappingDesc,
+      icon: Sparkles,
+      progress: 85,
+      details: [ap.mappingDetail1, ap.mappingDetail2, ap.mappingDetail3, ap.mappingDetail4],
+    },
+  ]
+}
+
+// Legacy export for compatibility (uses Vietnamese hardcoded)
 const ANALYSIS_STEPS = [
   {
     id: 'vision',
     title: 'Phân tích hình ảnh bằng GPT-4 Vision',
     description: 'Đang quét và trích xuất văn bản, màu sắc, kích thước chữ, và layout từ nhãn...',
     icon: ScanLine,
-    progress: 0, // Step 1: 0-19%
+    progress: 0,
     details: [
       'Optical Character Recognition (OCR)',
       'Phát hiện Nutrition Facts panel',
@@ -48,7 +115,7 @@ const ANALYSIS_STEPS = [
     title: 'Tra cứu FDA Regulations (Knowledge Base)',
     description: 'Đang tìm kiếm quy định FDA trong Knowledge Base với RAG AI (Độ tương đồng 99%)...',
     icon: Database,
-    progress: 20, // Step 2: 20-39%
+    progress: 20,
     details: [
       '21 CFR Phần 101 - Nhãn dinh dưỡng',
       'FALCPA - Luật chất gây dị ứng',
@@ -61,7 +128,7 @@ const ANALYSIS_STEPS = [
     title: 'Kiểm tra hình học và kích thước',
     description: 'Đang xác minh kích thước panel, font size, và spacing theo quy định FDA...',
     icon: FileSearch,
-    progress: 40, // Step 3: 40-54%
+    progress: 40,
     details: [
       'Tính diện tích Principal Display Panel',
       'Kiểm tra minimum font size',
@@ -74,7 +141,7 @@ const ANALYSIS_STEPS = [
     title: 'Phân tích chất gây dị ứng (Allergens)',
     description: 'Đang kiểm tra khai báo allergen theo FALCPA Section 203...',
     icon: Shield,
-    progress: 55, // Step 4: 55-69%
+    progress: 55,
     details: [
       'Milk, Eggs, Fish, Shellfish',
       'Tree nuts, Peanuts, Wheat, Soybeans',
@@ -87,7 +154,7 @@ const ANALYSIS_STEPS = [
     title: 'Xác thực Nutrition Facts',
     description: 'Đang kiểm tra format, rounding, và thứ tự nutrients...',
     icon: FileText,
-    progress: 70, // Step 5: 70-84%
+    progress: 70,
     details: [
       'Tuân thủ khẩu phần (Serving size)',
       'Khai báo Calorie',
@@ -100,7 +167,7 @@ const ANALYSIS_STEPS = [
     title: 'Ánh xạ vi phạm với trích dẫn CFR',
     description: 'Đang tạo báo cáo thương mại với trích dẫn chính xác từ FDA...',
     icon: Sparkles,
-    progress: 85, // Step 6: 85-100%
+    progress: 85,
     details: [
       'Định dạng trích dẫn thông minh',
       'Ánh xạ vi phạm → CFR',
@@ -127,11 +194,15 @@ export function AnalysisProgressView({
   analyzing,
   onBack,
 }: AnalysisProgressViewProps) {
-  const currentStep = ANALYSIS_STEPS[currentStepIndex]
+  const { t } = useTranslation()
+  const ap = t.analysisProgress
+  
+  // Get localized steps based on current language
+  const localizedSteps = useMemo(() => getLocalizedSteps(t), [t])
+  const currentStep = localizedSteps[currentStepIndex]
   const StepIcon = currentStep.icon
 
   // Auto-scroll: giữ bước active hiển thị ở cuối danh sách
-  // để user thấy đang chạy đến gần bước cuối "Ánh xạ vi phạm..."
   const stepListRef = useRef<HTMLDivElement>(null)
   const activeStepRef = useRef<HTMLDivElement>(null)
 
@@ -140,7 +211,6 @@ export function AnalysisProgressView({
     const activeEl  = activeStepRef.current
     if (!container || !activeEl) return
 
-    // Scroll sao cho bước active nằm ở cuối vùng nhìn thấy của container
     const containerTop    = container.getBoundingClientRect().top
     const activeBottom    = activeEl.getBoundingClientRect().bottom
     const containerHeight = container.clientHeight
@@ -169,10 +239,10 @@ export function AnalysisProgressView({
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <ScanLine className="h-5 w-5 text-primary" />
-              {report.label_image_url === 'manual-entry' ? 'Xem trước Nhãn' : 'Hình ảnh Nhãn'}
+              {report.label_image_url === 'manual-entry' ? ap.labelPreview : ap.labelImages}
               {report.label_images && report.label_images.length > 1 && (
                 <Badge variant="secondary" className="text-xs ml-auto">
-                  {report.label_images.length} hình ảnh
+                  {report.label_images.length} {ap.images}
                 </Badge>
               )}
             </h2>
@@ -184,7 +254,7 @@ export function AnalysisProgressView({
                     formData={report.form_data}
                   />
                 ) : (
-                  <div className="text-muted-foreground">Không có dữ liệu dinh dưỡng</div>
+                  <div className="text-muted-foreground">{ap.noNutritionData}</div>
                 )}
               </div>
             ) : (
@@ -205,12 +275,12 @@ export function AnalysisProgressView({
           <div className="space-y-6">
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Tiến trình phân tích</h2>
+                <h2 className="text-lg font-semibold">{ap.title}</h2>
                 <Badge variant="secondary">{Math.round(progress)}%</Badge>
               </div>
               <Progress value={progress} className="h-2 mb-2" />
               <p className="text-sm text-muted-foreground">
-                Bước {currentStepIndex + 1} / {ANALYSIS_STEPS.length}
+                {ap.step} {currentStepIndex + 1} {ap.of} {localizedSteps.length}
               </p>
             </Card>
 
@@ -237,12 +307,12 @@ export function AnalysisProgressView({
 
             {/* All Steps Timeline */}
             <Card className="p-6">
-              <h3 className="font-semibold mb-4">Quy trình phân tích FDA</h3>
+              <h3 className="font-semibold mb-4">{ap.fdaProcessTitle}</h3>
               <div
                 ref={stepListRef}
                 className="space-y-3 max-h-72 overflow-y-auto pr-1 scroll-smooth"
               >
-                {ANALYSIS_STEPS.map((step, idx) => {
+                {localizedSteps.map((step, idx) => {
                   const Icon = step.icon
                   const isCompleted = idx < currentStepIndex
                   const isCurrent = idx === currentStepIndex
@@ -288,7 +358,7 @@ export function AnalysisProgressView({
                       </div>
                       {isCompleted && (
                         <Badge variant="secondary" className="text-xs">
-                          Hoàn thành
+                          {ap.completed}
                         </Badge>
                       )}
                     </div>
@@ -305,6 +375,8 @@ export function AnalysisProgressView({
 
 /** Shared badge strip showing the analysis configuration applied */
 export function AnalysisConfigBadges({ report }: { report: AuditReport }) {
+  const { t } = useTranslation()
+  
   if (
     !report.target_market &&
     !report.packaging_format &&
@@ -319,7 +391,7 @@ export function AnalysisConfigBadges({ report }: { report: AuditReport }) {
       <div className="flex items-center gap-2 mb-2">
         <Settings className="h-4 w-4 text-muted-foreground" />
         <span className="text-xs font-medium text-muted-foreground">
-          Cấu hình phân tích
+          {t.analysisProgress.analysisConfig}
         </span>
       </div>
       <div className="flex flex-wrap gap-1.5">
