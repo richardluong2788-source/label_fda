@@ -25,7 +25,7 @@ import type { AuditReport, LabelImageEntry } from '@/lib/types'
 import { LabelPreview } from '@/components/label-preview'
 import { LabelImageGallery } from '@/components/label-image-gallery'
 import { getLabelConfig } from '@/lib/label-field-config'
-import { useTranslation } from '@/lib/i18n/useTranslation'
+import { useTranslation } from '@/lib/i18n'
 
 // Progress thresholds define the START point of each step.
 // Steps are distributed EVENLY so fake progress cycles through ALL steps
