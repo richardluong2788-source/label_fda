@@ -239,9 +239,22 @@ export const en: TranslationKeys = {
       return s
     },
     cfrComplianceDetail: 'CFR COMPLIANCE DETAILS (21 CFR)',
-    noCfrViolations: 'No CFR Violations',
-    labelCompliant: 'Your label complies with all FDA regulations checked',
-    warningLettersSection: 'FDA WARNING LETTERS',
+  noCfrViolations: 'No CFR Violations',
+  labelCompliant: 'Your label complies with all FDA regulations checked',
+  // Commercial Summary - Compliant
+  commercialSummaryTitle: 'FDA LABEL COMPLIANCE REPORT - VEXIM GLOBAL',
+  commercialCompliantTitle: 'NO CFR VIOLATIONS DETECTED',
+  commercialCompliantDesc: 'Your label complies with all FDA regulations checked. Vexim AI did not find any critical violations during the inspection process.',
+  commercialCompliantRecommendation: 'The product can be distributed in the US market with low legal risk. We recommend periodic re-inspection when updating label content.',
+  // Commercial Summary - With violations
+  commercialCriticalLabel: 'CRITICAL ISSUES',
+  commercialCriticalNote: 'These issues may result in detention at port:',
+  commercialWarningLabel: 'WARNINGS',
+  commercialWarningNote: 'Presentation issues that should be fixed to avoid risk:',
+  commercialInfoLabel: 'INFORMATION',
+  commercialInfoNote: 'Additional notes to improve label:',
+  commercialLegalBasis: 'Legal basis',
+  warningLettersSection: 'FDA WARNING LETTERS',
     recallsSection: 'RELATED PRODUCT RECALLS',
     importAlertsSection: 'FDA IMPORT ALERTS',
     categoryNames: {
@@ -730,7 +743,7 @@ export const en: TranslationKeys = {
     deleteConfirmDesc: 'This action cannot be undone. This will permanently delete the audit report and all associated data.',
   },
 
-  // ─── Settings ────────────────────────────────────────
+  // ─── Settings ─��──────────────────────────────────────
   settings: {
     title: 'Settings',
     subtitle: 'Manage your account and subscription',

@@ -121,7 +121,7 @@ export const vi = {
     productTypeDrugOTC: 'Dược phẩm OTC',
     productTypeInfant: 'Sữa công thức trẻ em',
     productTypeMedical: 'Thực phẩm y học',
-    selectProductType: 'Chọn loại sản phẩm...',
+    selectProductType: 'Chọn lo��i sản phẩm...',
     notApplicable: 'Không áp dụng',
     recommended: 'Khuyến nghị',
     // Guide banner
@@ -239,8 +239,21 @@ export const vi = {
       return s
     },
     cfrComplianceDetail: 'CHI TIẾT KIỂM TRA TUÂN THỦ (21 CFR)',
-    noCfrViolations: 'Không có vi phạm CFR',
-    labelCompliant: 'Nhãn của bạn tuân thủ tất cả các quy định FDA được kiểm tra',
+  noCfrViolations: 'Không có vi phạm CFR',
+  labelCompliant: 'Nhãn của bạn tuân thủ tất cả các quy định FDA được kiểm tra',
+  // Commercial Summary - Compliant
+  commercialSummaryTitle: 'BÁO CÁO KIỂM TRA NHÃN FDA - VEXIM GLOBAL',
+  commercialCompliantTitle: 'KHÔNG CÓ VI PHẠM CFR',
+  commercialCompliantDesc: 'Nhãn của bạn tuân thủ tất cả các quy định FDA được kiểm tra. Vexim AI không phát hiện vi phạm nghiêm trọng nào trong quá trình kiểm tra.',
+  commercialCompliantRecommendation: 'Sản phẩm có thể được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp. Khuyến nghị kiểm tra lại định kỳ khi cập nhật nội dung nhãn.',
+  // Commercial Summary - With violations
+  commercialCriticalLabel: 'LỖI NGHIÊM TRỌNG',
+  commercialCriticalNote: 'Các lỗi này có thể dẫn đến giữ hàng (detention) tại cảng:',
+  commercialWarningLabel: 'CẢNH BÁO',
+  commercialWarningNote: 'Các lỗi về trình bày, nên sửa để tránh rủi ro:',
+  commercialInfoLabel: 'THÔNG TIN',
+  commercialInfoNote: 'Các ghi chú bổ sung để cải thiện nhãn:',
+  commercialLegalBasis: 'Căn cứ pháp lý',
     warningLettersSection: 'CẢNH BÁO TỪ FDA WARNING LETTERS',
     recallsSection: 'LIÊN QUAN ĐẾN SẢN PHẨM BỊ THU HỒI',
     importAlertsSection: 'CẢNH BÁO NHẬP KHẨU FDA',
