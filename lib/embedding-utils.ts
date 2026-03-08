@@ -486,37 +486,78 @@ export async function getRelevantContext(
     const supabase = createAdminClient()
 
     // THREE parallel queries — each targeted at its own document_type
+    // Using match_compliance_knowledge_by_type if available, fallback to basic function
     // WL/Recall use threshold=0.0 because their similarity scores are 0.32-0.36
-    // (too low for a shared threshold but still semantically relevant)
-    const [regulationData, wlData, recallData] = await Promise.all([
-      supabase.rpc('match_compliance_knowledge', {
+    
+    // Try to use the new typed function first
+    let regulationRecords: any[] = []
+    let warningLetterRecords: any[] = []
+    let recallRecords: any[] = []
+
+    // Attempt to use match_compliance_knowledge_by_type (from migration 038)
+    const [regResult, wlResult, recallResult] = await Promise.all([
+      supabase.rpc('match_compliance_knowledge_by_type', {
         query_embedding: sharedEmbedding,
+        doc_type: null, // All regulations (non-WL/Recall filtered in code)
         match_threshold: 0.35,
-        match_count: 20,
-      }),
-      supabase.rpc('match_compliance_knowledge', {
+        match_count: 30,
+      }).catch(() => ({ data: null, error: { message: 'function not found' } })),
+      supabase.rpc('match_compliance_knowledge_by_type', {
         query_embedding: sharedEmbedding,
-        match_threshold: 0.0, // No threshold — WL scores are 0.32-0.36
-        match_count: 48,      // Total WL records in DB = 48, fetch all then sort
-      }),
-      supabase.rpc('match_compliance_knowledge', {
+        doc_type: 'FDA Warning Letter',
+        match_threshold: 0.0,
+        match_count: 10,
+      }).catch(() => ({ data: null, error: { message: 'function not found' } })),
+      supabase.rpc('match_compliance_knowledge_by_type', {
         query_embedding: sharedEmbedding,
-        match_threshold: 0.0, // No threshold — Recall scores are 0.32-0.36
-        match_count: 73,      // Total Recall records in DB = 73, fetch all then sort
-      }),
+        doc_type: 'FDA Recall',
+        match_threshold: 0.0,
+        match_count: 10,
+      }).catch(() => ({ data: null, error: { message: 'function not found' } })),
     ])
 
-    const regulationRecords = (regulationData.data || []).filter(
-      (r: any) => r.metadata?.document_type !== 'FDA Warning Letter' && r.metadata?.document_type !== 'FDA Recall'
-    )
-    const warningLetterRecords = (wlData.data || [])
-      .filter((r: any) => r.metadata?.document_type === 'FDA Warning Letter')
-      .sort((a: any, b: any) => b.similarity - a.similarity)
-      .slice(0, 5)
-    const recallRecords = (recallData.data || [])
-      .filter((r: any) => r.metadata?.document_type === 'FDA Recall')
-      .sort((a: any, b: any) => b.similarity - a.similarity)
-      .slice(0, 5)
+    // Check if typed function is available
+    const useTypedFunction = regResult.data !== null && !regResult.error?.message?.includes('function')
+    
+    console.log('[v0] RAG function check:', {
+      useTypedFunction,
+      regResultData: regResult.data?.length ?? 'null',
+      regResultError: regResult.error?.message ?? 'none',
+      wlResultData: wlResult.data?.length ?? 'null',
+      recallResultData: recallResult.data?.length ?? 'null',
+    })
+    
+    if (useTypedFunction) {
+      console.log('[v0] Using match_compliance_knowledge_by_type for targeted RAG queries')
+      regulationRecords = (regResult.data || []).filter(
+        (r: any) => r.metadata?.document_type !== 'FDA Warning Letter' && r.metadata?.document_type !== 'FDA Recall'
+      )
+      warningLetterRecords = (wlResult.data || []).slice(0, 5)
+      recallRecords = (recallResult.data || []).slice(0, 5)
+    } else {
+      // Fallback: fetch ALL records with very low threshold, then filter by document_type
+      console.log('[v0] Fallback: using basic match_compliance_knowledge with post-filter')
+      const { data: allData } = await supabase.rpc('match_compliance_knowledge', {
+        query_embedding: sharedEmbedding,
+        match_threshold: 0.0,  // No threshold to get ALL documents
+        match_count: 500,      // Fetch enough to include WL/Recalls (total ~3900 records)
+      })
+      
+      const allRecords = allData || []
+      regulationRecords = allRecords.filter(
+        (r: any) => r.metadata?.document_type !== 'FDA Warning Letter' && r.metadata?.document_type !== 'FDA Recall'
+      ).slice(0, 30)
+      
+      warningLetterRecords = allRecords
+        .filter((r: any) => r.metadata?.document_type === 'FDA Warning Letter')
+        .sort((a: any, b: any) => b.similarity - a.similarity)
+        .slice(0, 5)
+      
+      recallRecords = allRecords
+        .filter((r: any) => r.metadata?.document_type === 'FDA Recall')
+        .sort((a: any, b: any) => b.similarity - a.similarity)
+        .slice(0, 5)
+    }
 
     console.log('[v0] RAG split: regulations=', regulationRecords.length, 'warnings=', warningLetterRecords.length, 'recalls=', recallRecords.length)
 

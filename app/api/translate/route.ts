@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
 
-const groq = new Groq({ 
-  apiKey: process.env.GROQ_API_KEY 
-})
+// Lazy initialize Groq client to avoid build errors when API key is not set
+function getGroqClient() {
+  const apiKey = process.env.GROQ_API_KEY
+  if (!apiKey) {
+    return null
+  }
+  return new Groq({ apiKey })
+}
 
 interface TranslateRequest {
   texts: string[]
@@ -31,6 +36,15 @@ function detectSourceLanguage(texts: string[]): 'en' | 'vi' {
 
 export async function POST(request: NextRequest) {
   try {
+    const groq = getGroqClient()
+    
+    if (!groq) {
+      return NextResponse.json(
+        { error: 'Translation service not configured - GROQ_API_KEY is missing' },
+        { status: 503 }
+      )
+    }
+
     const body: TranslateRequest = await request.json()
     const { texts, targetLocale, context = 'violation' } = body
 

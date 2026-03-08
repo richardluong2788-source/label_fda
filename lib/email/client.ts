@@ -4,7 +4,11 @@ if (!process.env.RESEND_API_KEY) {
   console.warn('[email] RESEND_API_KEY is not set. Emails will not be sent.')
 }
 
-export const resend = new Resend(process.env.RESEND_API_KEY)
+// Only create Resend client if API key is available, otherwise use null
+// This prevents build errors when RESEND_API_KEY is not configured
+export const resend = process.env.RESEND_API_KEY 
+  ? new Resend(process.env.RESEND_API_KEY) 
+  : null
 
 export const EMAIL_FROM = process.env.EMAIL_FROM || 'AI Label Pro <noreply@ailabelpro.com>'
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || ''
@@ -22,7 +26,7 @@ export async function sendEmail({
   subject: string
   html: string
 }) {
-  if (!process.env.RESEND_API_KEY) {
+  if (!resend) {
     console.warn('[email] Skipping send — RESEND_API_KEY not configured')
     return
   }

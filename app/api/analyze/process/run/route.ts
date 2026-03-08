@@ -7,7 +7,7 @@ import { VisualGeometryAnalyzer } from '@/lib/visual-geometry-analyzer'
 import { DimensionConverter } from '@/lib/dimension-converter'
 import { ContrastChecker } from '@/lib/contrast-checker'
 import { ClaimsValidator } from '@/lib/claims-validator'
-import { getRelevantContext, getWarningLetterContext, getRecallContext, getImportAlertContext } from '@/lib/embedding-utils'
+import { getRelevantContext, getImportAlertContext } from '@/lib/embedding-utils'
 import { checkKnowledgeBaseStatus } from '@/lib/knowledge-base-check'
 import { analyzeLabel } from '@/lib/ai-vision-analyzer'
 import { ViolationToCFRMapper } from '@/lib/violation-to-cfr-mapper'
@@ -220,12 +220,22 @@ export async function POST(request: Request) {
     const labelText = visionResult.textElements.allText
     const manufacturerInfo = report.manufacturer_info || {}
 
-    const [regulatoryContext, warningLetterContext, recallContext, importAlertContext] = await Promise.all([
+    // OPTIMIZED: getRelevantContext already returns regulations + warnings + recalls
+    // with a SINGLE shared embedding call. No need to call separate getWarningLetterContext
+    // and getRecallContext which would generate duplicate embeddings.
+    const [ragContext, importAlertContext] = await Promise.all([
       getRelevantContext(labelText, productCategory),
-      getWarningLetterContext(labelText, productCategory),
-      getRecallContext(labelText, productCategory),
       getImportAlertContext(labelText, productCategory, manufacturerInfo.company_name, manufacturerInfo.country_of_origin),
     ])
+
+    // Split RAG results by document_type for separate prompt injection
+    const regulatoryContext = ragContext
+    const warningLetterContext = ragContext.filter(ctx => 
+      ctx.metadata?.document_type === 'FDA Warning Letter'
+    )
+    const recallContext = ragContext.filter(ctx => 
+      ctx.metadata?.document_type === 'FDA Recall'
+    )
 
     const regulationsOnly = regulatoryContext.filter(ctx => {
       const docType = (ctx.metadata?.document_type || '').toLowerCase()

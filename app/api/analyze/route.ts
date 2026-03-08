@@ -35,7 +35,7 @@ import { DimensionConverter } from '@/lib/dimension-converter'
 import { ContrastChecker } from '@/lib/contrast-checker'
 import { ClaimsValidator } from '@/lib/claims-validator'
 import { getRelevantRegulations } from '@/lib/product-categories'
-import { getRelevantContext, getWarningLetterContext, getRecallContext, getImportAlertContext } from '@/lib/embedding-utils'
+import { getRelevantContext, getImportAlertContext } from '@/lib/embedding-utils'
 import { checkKnowledgeBaseStatus } from '@/lib/knowledge-base-check'
 import { analyzeLabel } from '@/lib/ai-vision-analyzer'
 import { ViolationToCFRMapper } from '@/lib/violation-to-cfr-mapper'
@@ -568,14 +568,23 @@ export async function POST(request: Request) {
     const countryOfOrigin = manufacturerInfo.country_of_origin || undefined
     console.log('[v0] Import Alert context params — company:', explicitCompanyName || 'auto-detect', '| country:', countryOfOrigin || 'not specified')
 
-    // QUAD QUERY: Regulations (L1) + Warning Letters (L2) + Recalls (L3) + Import Alerts (L4) in parallel
-    const [regulatoryContext, warningLetterContext, recallContext, importAlertContext] = await Promise.all([
+    // QUAD QUERY: Regulations (L1) + Warning Letters (L2) + Recalls (L3) + Import Alerts (L4)
+    // OPTIMIZED: getRelevantContext now returns regulations + warnings + recalls with
+    // a SINGLE shared embedding call. No need for separate getWarningLetterContext/getRecallContext.
+    const [ragContext, importAlertContext] = await Promise.all([
       getRelevantContext(labelText, productCategory),
-      getWarningLetterContext(labelText, productCategory),
-      getRecallContext(labelText, productCategory),
       // Pass explicit company name (normalized in embedding-utils) + country for precision filtering
       getImportAlertContext(labelText, productCategory, explicitCompanyName, countryOfOrigin),
     ])
+
+    // Split RAG results by document_type for separate prompt injection
+    const regulatoryContext = ragContext
+    const warningLetterContext = ragContext.filter(ctx => 
+      ctx.metadata?.document_type === 'FDA Warning Letter'
+    )
+    const recallContext = ragContext.filter(ctx => 
+      ctx.metadata?.document_type === 'FDA Recall'
+    )
 
     console.log('[v0] Retrieved', regulatoryContext.length, 'relevant regulations from Knowledge Base')
     console.log('[v0] Retrieved', warningLetterContext.length, 'warning letter violations as negative examples')
