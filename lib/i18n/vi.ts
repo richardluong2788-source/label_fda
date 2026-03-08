@@ -121,7 +121,7 @@ export const vi = {
     productTypeDrugOTC: 'Dược phẩm OTC',
     productTypeInfant: 'Sữa công thức trẻ em',
     productTypeMedical: 'Thực phẩm y học',
-    selectProductType: 'Chọn lo��i sản phẩm...',
+    selectProductType: 'Chọn loại sản phẩm...',
     notApplicable: 'Không áp dụng',
     recommended: 'Khuyến nghị',
     // Guide banner
