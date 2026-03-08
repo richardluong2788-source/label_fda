@@ -577,12 +577,41 @@ export async function POST(request: Request) {
     // FIX: If recall is about "undeclared allergen" but label HAS proper declaration,
     // this is NOT a violation - it's a false positive from keyword similarity.
     const allTextLower = visionResult.textElements.allText.toLowerCase()
-    const hasAllergenDeclaration = allTextLower.includes('contains:') || 
-                                   allTextLower.includes('contains ') || 
-                                   allTextLower.includes('allergen') || 
-                                   allTextLower.includes('allergy')
     
-    // Track already-added recall patterns to deduplicate
+    // Comprehensive allergen declaration detection - multiple formats
+    const hasAllergenDeclaration = 
+      // Standard "Contains:" statement (FALCPA)
+      allTextLower.includes('contains:') || 
+      allTextLower.includes('contains ') ||
+      // Explicit allergen labeling
+      allTextLower.includes('allergen') || 
+      allTextLower.includes('allergy') ||
+      // "May contain" precautionary statements
+      allTextLower.includes('may contain') ||
+      // Parenthetical allergen disclosure in ingredients
+      /\(milk\)|\(egg\)|\(wheat\)|\(soy\)|\(peanut\)|\(tree nut\)|\(fish\)|\(shellfish\)/.test(allTextLower) ||
+      // Bold allergen keywords in ingredients (common format)
+      /milk,|egg,|wheat,|soy,|peanut,|contains milk|contains egg|contains wheat|contains soy/.test(allTextLower) ||
+      // Multi-language support
+      allTextLower.includes('contiene:') || // Spanish
+      allTextLower.includes('chứa:') // Vietnamese
+    
+    // ══════════════════════════════════════════════════════════════════
+    // RECALL CONTEXT - Market Intelligence (NOT violations)
+    // Recalls are informational context, NOT confirmed violations.
+    // They do NOT affect risk score. Displayed in separate "Tham khảo" section.
+    // ══════════════════════════════════════════════════════════════════
+    const recallIntelligence: Array<{
+      recall_number: string
+      classification: string
+      recalling_firm: string
+      issue_type: string
+      why_recalled: string
+      preventive_action: string
+      matched_keywords: string[]
+      similarity: number
+    }> = []
+    
     const addedRecallPatterns = new Set<string>()
     
     for (const recall of recallContext) {
@@ -591,8 +620,6 @@ export async function POST(request: Request) {
       const whyRecalled = (meta.why_recalled || '').toLowerCase()
       
       // Skip allergen-related recalls if product already has proper allergen declaration
-      // This prevents false positives like "Mac & Cheese with milk declared" matching 
-      // "recall for undeclared milk allergen"
       const isAllergenRecall = recallIssueType.includes('allergen') || 
                                recallIssueType.includes('undeclared') ||
                                whyRecalled.includes('undeclared') ||
@@ -613,21 +640,21 @@ export async function POST(request: Request) {
         }
         addedRecallPatterns.add(patternKey)
         
-        // FIX: Recall similarity should NOT trigger critical/warning severity
-        // Only actual CFR violations should be critical
-        // Recalls are "informational context" not confirmed violations
-        violations.push({
-          category: `Recall Pattern: ${meta.recall_issue_type || 'Risk Factor'}`,
-          severity: 'info' as const, // Always info - recalls are context, not confirmed violations
-          description: `Label contains elements similar to FDA-recalled products. Recall ${meta.recall_number || 'N/A'}: ${meta.why_recalled || 'See recall details.'}. Keywords: "${matchedKeywords.join('", "')}".`,
-          regulation_reference: meta.regulation_related || 'See FDA Recall Database',
-          suggested_fix: meta.preventive_action || 'Review and address flagged elements to reduce recall risk.',
-          citations: [{ regulation_id: meta.regulation_related || 'FDA Recall', section: meta.recall_issue_type || 'Recall Pattern', text: `FDA Recall ${meta.recall_number || ''} (Class ${meta.recall_classification || 'N/A'}): "${meta.why_recalled || recall.content.slice(0, 150)}"`, source: `FDA Recall ${meta.recall_number || ''} - ${meta.recalling_firm || ''}`, relevance_score: recall.similarity }],
-          confidence_score: Math.min(0.7, 0.3 + matchedKeywords.length * 0.1), // Lower confidence for similarity matches
-          source_type: 'recall',
+        // Store as market intelligence context, NOT as violation
+        recallIntelligence.push({
+          recall_number: meta.recall_number || 'N/A',
+          classification: meta.recall_classification || 'N/A',
+          recalling_firm: meta.recalling_firm || '',
+          issue_type: meta.recall_issue_type || 'Risk Factor',
+          why_recalled: meta.why_recalled || 'See recall details.',
+          preventive_action: meta.preventive_action || 'Review and address flagged elements.',
+          matched_keywords: matchedKeywords,
+          similarity: recall.similarity,
         })
       }
     }
+    
+    console.log('[v0] Recall intelligence (market context, not violations):', recallIntelligence.length)
 
     // Import alert signals
     for (const ia of importAlertContext) {
@@ -833,7 +860,7 @@ export async function POST(request: Request) {
       await supabase.rpc('increment_reports_used', { p_user_id: userId })
 
       // Sau khi increment, check quota để gửi email thông báo kịp thời
-      // (không phải đợi user submit lần tiếp theo mới biết hết lượt)
+      // (không phải đợi user submit lần tiếp theo mới bi��t hết lượt)
       try {
         const { data: quotaAfter } = await supabase.rpc('check_quota', { p_user_id: userId })
 

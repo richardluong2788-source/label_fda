@@ -152,6 +152,11 @@ export const vi = {
     findingsDesc: (count: number) => `Phát hiện ${count} vấn đề cần xử lý`,
     warningLetterTitle: 'Cảnh báo từ FDA Warning Letter',
     recallTitle: 'Liên quan đến sản phẩm bị thu hồi',
+    recallHistoryTitle: 'Lịch sử thu hồi trong cùng category',
+    referenceOnly: 'Tham khảo',
+    recallReferenceNote: 'Đây là dữ liệu lịch sử thị trường để tham khảo — không phải vi phạm, không ảnh hưởng điểm rủi ro.',
+    recallsReferenceSection: 'LỊCH SỬ THU HỒI (THAM KHẢO)',
+    marketIntelligence: 'Dữ liệu tham khảo',
     importAlertTitle: 'Cảnh báo nhập khẩu FDA',
     lowContrastTitle: 'Độ tương phản màu sắc thấp',
     fdaReadabilityReq: 'Yêu cầu FDA về độ rõ ràng của nhãn',
@@ -268,7 +273,7 @@ export const vi = {
     andWord: 'và',
     currentRisk: 'HIỆN TẠI',
     afterFix: 'SAU KHI SỬA',
-    projectedRiskDesc: (score: number) => `Sau khi sửa lỗi nghiêm trọng, điểm rủi ro dự kiến giảm còn ${score.toFixed(1)}/10`,
+    projectedRiskDesc: (score: number) => `Sau khi sửa lỗi nghiêm trọng, đi���m rủi ro dự kiến giảm còn ${score.toFixed(1)}/10`,
     // Expert insights / AI summary
     expertInsightsTitle: 'Phân Tích Chuyên Sâu',
     expertInsightsDesc: 'Tóm tắt thương mại và lời khuyên chuyên gia dựa trên dữ liệu FDA',
@@ -525,7 +530,7 @@ export const vi = {
     steps: [
       { step: '01', title: 'Phân tích từng ảnh riêng biệt', desc: 'Mỗi ảnh được AI GPT-4o Vision xử lý độc lập. Ảnh PDP trích xuất Brand/Product/Net Weight. Ảnh Nutrition Facts trích xuất tất cả giá trị dinh dưỡng. Ảnh Ingredients trích xuất danh sách thành phần và allergens.' },
       { step: '02', title: 'Ghép dữ liệu từ tất cả ảnh', desc: 'Hệ thống tổng hợp thông tin từ tất cả ảnh bạn upload. Ảnh nào thiếu sẽ dẫn đến thiếu dữ liệu phân tích — đặc biệt là PDP và Nutrition Facts là hai ảnh bắt buộc không thể thiếu.' },
-      { step: '03', title: 'Đối chiếu với Knowledge Base FDA', desc: 'Dữ liệu trích xuất được so sánh với cơ sở dữ liệu gồm 21 CFR, Warning Letters thực tế, Recalls và Import Alerts để phát hiện vi phạm và đề xuất cách sửa.' },
+      { step: '03', title: 'Đối chiếu với Knowledge Base FDA', desc: 'Dữ liệu trích xuất được so sánh với cơ sở dữ liệu gồm 21 CFR, Warning Letters thực tế, Recalls và Import Alerts để phát hiện vi phạm và đề xuất c��ch sửa.' },
     ],
     imageTypesTitle: '4 loại ảnh cần upload',
     imageTypesDesc: 'Hệ thống chia nhãn thành 4 khu vực. Mỗi khu vực phục vụ mục đích phân tích khác nhau.',
@@ -772,7 +777,7 @@ export const vi = {
     heroDesc4: '5.346 vi phạm thực tế',
     heroDesc5: '. Chúng tôi phát hiện những ',
     heroDesc6: 'lỗi mà mắt thường dễ dàng bỏ sót',
-    heroDesc7: ', giúp doanh nghiệp loại bỏ rủi ro lưu kho bãi và chi phí thu hồi hàng tỷ đồng.',
+    heroDesc7: ', giúp doanh nghiệp loại bỏ rủi ro lưu kho bãi và chi phí thu hồi hàng tỷ ��ồng.',
     heroDesc8: '.',
     ctaCheckLabel: 'Kiểm tra nhãn của bạn ngay',
     ctaViewCases: 'Xem các trường hợp vi phạm thực tế',
@@ -918,7 +923,7 @@ export const vi = {
     ],
     // What you get
     whatYouGetCols: [
-      { title: 'Báo cáo AI chuyên sâu', items: ['Quét toàn bộ nhãn bằng OCR + Vision AI', 'Phát hiện vi phạm kèm trích dẫn mã CFR cụ thể', 'Phân loại mức độ: Nghiêm trọng / Quan trọng / Nhẹ', 'Hướng dẫn khắc phục chi tiết từng điểm vi phạm'] },
+      { title: 'Báo cáo AI chuyên sâu', items: ['Quét toàn bộ nhãn bằng OCR + Vision AI', 'Phát hiện vi phạm kèm trích dẫn mã CFR cụ thể', 'Phân loại mức độ: Nghiêm trọng / Quan trọng / Nhẹ', 'Hướng dẫn khắc phục chi tiết từng đi��m vi phạm'] },
       { title: 'Tư vấn bởi chuyên gia', items: ['Rà soát bởi FDA Compliance Specialist', 'Tư vấn trực tiếp 1-1 qua call hoặc email', 'Đánh giá rủi ro bị từ chối tại cảng Mỹ', 'Hỗ trợ chỉnh sửa file thiết kế nhãn'] },
       { title: 'Đảm bảo & Chứng nhận', items: ['Cấp Certification Letter khi nhãn đạt chuẩn', 'Kiểm tra lại miễn phí khi có thay đổi nhỏ', 'Hỗ trợ khi FDA yêu cầu giải trình bổ sung', 'Cam kết bồi thường nếu sai sót thuộc về Vexim'] },
     ],

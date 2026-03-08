@@ -52,11 +52,16 @@ export interface RiskCalculationResult {
 
 /**
  * Calculate risk score for individual violation
+ * 
+ * NOTE: Recalls are NOT included in risk calculation anymore.
+ * Recalls are "market intelligence" context, not confirmed violations.
+ * They are displayed separately as "Thông tin tham khảo" and do NOT
+ * affect the overall risk score.
  */
 export function calculateViolationRisk(
   violation: Violation,
   warningLetterMatches: WarningLetterSearchResult[],
-  recallMatches: RecallSearchResult[] = []
+  _recallMatches: RecallSearchResult[] = [] // Kept for backward compat, but NOT used
 ): {
   riskScore: number
   enforcementFrequency: number
@@ -67,8 +72,6 @@ export function calculateViolationRisk(
   // Base risk by severity
   // For warnings, distinguish between confirmed violations (4.0) and
   // verification-needed / order-check advisories (3.0).
-  // Verification warnings are identifiable by AI confidence < 0.7 or
-  // description keywords that indicate uncertainty ("verify", "check", "order").
   const severityWeights = {
     critical: 8.0,
     warning: 4.0,
@@ -77,8 +80,6 @@ export function calculateViolationRisk(
   riskScore = severityWeights[violation.severity]
 
   // Soften warning score when the violation is a verification advisory
-  // (not a confirmed defect) — e.g., ingredient order checks where AI
-  // cannot confirm the actual formulation proportions.
   if (violation.severity === 'warning') {
     const desc = violation.description.toLowerCase()
     const isVerificationWarning =
@@ -100,7 +101,6 @@ export function calculateViolationRisk(
     const warningContent = wl.content.toLowerCase()
     const problematicClaim = wl.metadata?.problematic_claim?.toLowerCase() || ''
 
-    // Check if violation matches warning letter pattern
     const keywords = violation.description
       .toLowerCase()
       .split(/\s+/)
@@ -132,61 +132,16 @@ export function calculateViolationRisk(
     }
   }
 
-  // Boost risk if found in FDA Recalls (stronger enforcement signal)
-  const matchingRecalls: string[] = []
-  for (const recall of recallMatches) {
-    const violationText = violation.description.toLowerCase()
-    const recallContent = recall.content.toLowerCase()
-
-    const keywords = violation.description
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(w => w.length > 4)
-
-    let matchScore = 0
-    for (const keyword of keywords) {
-      if (recallContent.includes(keyword)) {
-        matchScore += 0.1
-      }
-    }
-
-    // Check problematic_keywords overlap
-    const probKeywords = recall.metadata?.problematic_keywords || []
-    for (const pk of probKeywords) {
-      if (violationText.includes(pk.toLowerCase())) {
-        matchScore += 0.35 // Recalls are stronger enforcement signal than warning letters
-        enforcementFrequency++
-        matchingRecalls.push(
-          `Recall ${recall.metadata?.recall_number || 'N/A'} - ${recall.metadata?.recalling_firm || 'Firm'} (Class ${recall.metadata?.recall_classification || 'N/A'})`
-        )
-        break
-      }
-    }
-
-    // Recalls carry higher risk weight: Class I = very high, Class II = high
-    if (matchScore >= 0.3) {
-      const classMultiplier = recall.metadata?.recall_classification === 'Class I' ? 1.5 : 
-                              recall.metadata?.recall_classification === 'Class II' ? 1.2 : 1.0
-      riskScore += Math.min(3.0, matchScore * 3 * classMultiplier)
-    }
-  }
+  // NOTE: Recalls are NOT included in risk calculation
+  // They are market intelligence context only, displayed separately
 
   // Cap at 10
   riskScore = Math.min(10, riskScore)
 
-  // Build enforcement context
+  // Build enforcement context (WARNING LETTERS only, not recalls)
   let enforcementContext = ''
-  if (enforcementFrequency > 0) {
-    const parts: string[] = []
-    
-    if (matchingWarnings.length > 0) {
-      parts.push(`cited in ${matchingWarnings.length} FDA Warning Letter${matchingWarnings.length > 1 ? 's' : ''} (${matchingWarnings.slice(0, 2).join(', ')})`)
-    }
-    if (matchingRecalls.length > 0) {
-      parts.push(`linked to ${matchingRecalls.length} FDA Recall${matchingRecalls.length > 1 ? 's' : ''} (${matchingRecalls.slice(0, 2).join(', ')})`)
-    }
-    
-    enforcementContext = `This issue has been ${parts.join(' and ')} in recent years. `
+  if (enforcementFrequency > 0 && matchingWarnings.length > 0) {
+    enforcementContext = `This issue has been cited in ${matchingWarnings.length} FDA Warning Letter${matchingWarnings.length > 1 ? 's' : ''} (${matchingWarnings.slice(0, 2).join(', ')}) in recent years. `
     enforcementContext += `Products with similar violations were required to relabel or were removed from market.`
   } else {
     enforcementContext = 'No recent FDA enforcement actions found for this specific issue. However, compliance is still required by regulation.'
@@ -432,48 +387,37 @@ export function calculateOverallRisk(input: RiskCalculationInput): RiskCalculati
     )
   }
 
-  // Recall-specific insights
-  if (recallMatches.length > 0) {
-    const classIRecalls = recallMatches.filter(r => r.metadata?.recall_classification === 'Class I')
-    if (classIRecalls.length > 0) {
-      enforcementInsights.push(
-        `${classIRecalls.length} Class I recall pattern${classIRecalls.length > 1 ? 's' : ''} detected. Class I recalls involve products that could cause serious health consequences or death.`
-      )
-    }
-
-    const recallLinkedViolations = violationsWithRisk.filter(v =>
-      v.enforcement_context?.includes('Recall')
-    )
-    if (recallLinkedViolations.length > 0) {
-      enforcementInsights.push(
-        `${recallLinkedViolations.length} violation${recallLinkedViolations.length > 1 ? 's match' : ' matches'} patterns from FDA product recalls, indicating elevated enforcement risk.`
-      )
-    }
-  }
+  // NOTE: Recall insights removed from enforcement section.
+  // Recalls are "market intelligence" (context), not enforcement signals.
+  // They are displayed in a separate "Thông tin tham khảo" section in the UI.
 
   // ── Enforcement Risk Decomposition ────────────────────────────────────────
-  // Compute three independent enforcement signals and blend into one score.
+  // Compute enforcement signals that AFFECT overallRiskScore:
+  //   - Warning Letter Weight (enforcement precedent)
+  //   - Import Alert Heat Index (border detention risk)
   //
-  // Weights (must sum to 1.0):
-  //   Warning Letter Weight  → 0.35  (high frequency of WL citations = strong signal)
-  //   Recall Heat Index      → 0.35  (recall class severity = very strong signal)
-  //   Import Alert Heat Index→ 0.30  (DWPE / border detention = operational risk)
+  // NOTE: Recall Heat Index is computed for REFERENCE ONLY.
+  // Recalls are "market intelligence" context - they do NOT affect risk score.
+  // They are displayed in a separate "Thông tin tham khảo" section.
   //
-  // The blended enforcementRiskScore is also applied as a soft modifier (+20%)
-  // on the violation-based overallRiskScore when enforcement signal is high.
+  // Weights for enforcementRiskScore (Warning Letter + Import Alert only):
+  //   Warning Letter Weight   → 0.55  (scaled up from 0.35)
+  //   Import Alert Heat Index → 0.45  (scaled up from 0.30)
+  //
   const warningLetterWeight  = calcWarningLetterWeight(warningLetterMatches, violations)
-  const recallHeatIndex      = calcRecallHeatIndex(recallMatches)
+  const recallHeatIndex      = calcRecallHeatIndex(recallMatches) // For reference only, NOT blended
   const importAlertHeatIndex = calcImportAlertHeatIndex(importAlertMatches)
 
+  // enforcementRiskScore excludes recalls (they're context, not violations)
   const enforcementRiskScore = Number(
     Math.min(10,
-      warningLetterWeight  * 0.35 +
-      recallHeatIndex      * 0.35 +
-      importAlertHeatIndex * 0.30
+      warningLetterWeight  * 0.55 +
+      importAlertHeatIndex * 0.45
     ).toFixed(2)
   )
 
   // Soft boost: if enforcement risk is high, bleed it into overall risk (max +1.5)
+  // NOTE: This boost does NOT include recall - only WL + Import Alert
   if (enforcementRiskScore >= 5.0) {
     overallRiskScore = Math.min(10, overallRiskScore + Math.min(1.5, (enforcementRiskScore - 5.0) * 0.3))
   }

@@ -153,6 +153,11 @@ export const en: TranslationKeys = {
     findingsDesc: (count: number) => `Found ${count} issue(s) requiring action`,
     warningLetterTitle: 'FDA Warning Letter Alert',
     recallTitle: 'Related to Recalled Product',
+    recallHistoryTitle: 'Recall History in Same Category',
+    referenceOnly: 'Reference',
+    recallReferenceNote: 'This is market intelligence data for reference only — not a violation, does not affect risk score.',
+    recallsReferenceSection: 'RECALL HISTORY (REFERENCE)',
+    marketIntelligence: 'Reference Data',
     importAlertTitle: 'FDA Import Alert',
     lowContrastTitle: 'Low Color Contrast',
     fdaReadabilityReq: 'FDA label readability requirements',
@@ -926,7 +931,7 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     footerSupportLabel: 'Customer Support',
   },
 
-  // ─── PDF Report ─────────────────────────────────────��
+  // ─���─ PDF Report ─────────────────────────────────────��
   pdf: {
     title: 'LABEL AUDIT REPORT',
     subtitle: 'FDA Label Compliance Audit Report',

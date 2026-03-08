@@ -375,7 +375,11 @@ export function WarningLetterSection({ violations }: WarningLetterSectionProps) 
 }
 
 // ────────────────────────────────────────────────────────────
-// SECTION: Recall Patterns
+// SECTION: Recall Context (Market Intelligence - NOT Violations)
+// 
+// IMPORTANT: Recalls are informational context only.
+// They do NOT affect risk score and are displayed with 
+// "THAM KHẢO" (Reference) badge instead of "CẢNH BÁO" (Warning).
 // ────────────────────────────────────────────────────────────
 
 interface RecallSectionProps {
@@ -383,6 +387,77 @@ interface RecallSectionProps {
 }
 
 export function RecallSection({ violations }: RecallSectionProps) {
+  const recallItems = violations.filter((v) => v.source_type === 'recall')
+  if (recallItems.length === 0) return null
+
+  return (
+    <Card className="p-6 border-slate-200 bg-slate-50/30">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <RotateCcw className="h-5 w-5 text-slate-500" />
+          <h2 className="text-xl font-bold text-slate-700">Liên quan đến sản phẩm bị thu hồi</h2>
+          <Badge className="bg-slate-100 text-slate-600 hover:bg-slate-100">
+            {recallItems.length}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="rounded-lg border-l-4 border-slate-300 bg-slate-100/50 p-4 mb-6">
+        <p className="text-sm font-semibold mb-1 text-slate-700">
+          Thông tin tham khảo từ lịch sử FDA Recall
+        </p>
+        <p className="text-sm leading-relaxed text-slate-600">
+          Đây là thông tin tham khảo từ cơ sở dữ liệu openFDA Recall — <strong>không phải vi phạm CFR</strong>.
+          Nhãn của bạn có một số từ khóa tương đồng với sản phẩm đã bị thu hồi trong quá khứ.
+          Thông tin này <strong>không ảnh hưởng đến mức độ rủi ro</strong> của báo cáo và chỉ mang tính chất tham khảo.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {recallItems.map((item, index) => (
+          <Card
+            key={index}
+            className="p-5 border-slate-200 bg-white"
+          >
+            <div className="flex items-start gap-4">
+              <div className="shrink-0">
+                <div className="rounded-full bg-slate-100 p-2">
+                  <RotateCcw className="h-5 w-5 text-slate-500" />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <h3 className="font-semibold text-base text-slate-700">{item.category}</h3>
+                  <Badge className="text-xs bg-slate-500 hover:bg-slate-500 text-white">
+                    THAM KHẢO
+                  </Badge>
+                </div>
+
+                <p className="text-sm mb-3 leading-relaxed text-slate-600">{item.description}</p>
+
+                {item.suggested_fix && (
+                  <div className="bg-slate-50 rounded-lg p-3 mb-3 border border-slate-200">
+                    <p className="text-xs font-medium text-slate-500 mb-1">
+                      KHUYẾN NGHỊ TỪ VEXIM
+                    </p>
+                    <p className="text-xs text-slate-600">{item.suggested_fix}</p>
+                  </div>
+                )}
+
+                <p className="text-xs text-slate-400 mt-3 italic border-t border-slate-100 pt-2">
+                  Đây là thông tin tham khảo từ lịch sử FDA Recall — không phải vi phạm và không ảnh hưởng điểm rủi ro.
+                </p>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
+// Keep old export for backward compatibility but it's now unused
+export function RecallSectionLegacy({ violations }: RecallSectionProps) {
   const recallViolations = violations.filter((v) => v.source_type === 'recall')
   if (recallViolations.length === 0) return null
 

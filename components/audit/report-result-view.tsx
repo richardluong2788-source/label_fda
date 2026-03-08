@@ -629,40 +629,55 @@ function WarningLetterCard({ violation, t }: { violation: Violation; t: ReturnTy
 }
 
 // ────────────────────────────────────────────────────────────
-// Recall Card
+// Recall Card (Reference Only - NOT a violation)
+// Recalls are market intelligence context, they do NOT affect risk score.
+// Per logic-ng spec: No severity badge, different title, reference note.
 // ────────────────────────────────────────────────────────────
 
 function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
-    <div className="rounded-xl border border-purple-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-slate-200 bg-amber-50/30 overflow-hidden">
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="flex items-start gap-3">
-          <ViolationIcon severity={violation.severity} type="recall" />
+          <div className="rounded-full bg-slate-100 p-2.5 shrink-0">
+            <RotateCcw className="h-5 w-5 text-slate-500" />
+          </div>
           <div>
             <h3 className="font-semibold text-base text-slate-900 leading-tight">
-              {t.report.recallTitle}
+              {t.report.recallHistoryTitle}
             </h3>
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-purple-100 text-purple-700 border border-purple-200">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200">
                 FDA Recall
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700 border border-amber-200">
+                {t.report.referenceOnly}
               </span>
             </div>
           </div>
         </div>
-        <SeverityBadge severity={violation.severity} t={t} />
+        {/* NO severity badge - recalls are reference data, not violations */}
+      </div>
+
+      {/* Reference notice */}
+      <div className="mx-5 mb-3 p-2.5 rounded-lg bg-amber-50 border border-amber-100">
+        <p className="text-[11px] text-amber-700 flex items-center gap-1.5">
+          <Info className="h-3 w-3 shrink-0" />
+          {t.report.recallReferenceNote}
+        </p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-0">
-        <div className="p-5 bg-purple-50/60 border-t border-r border-slate-200">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-purple-700 mb-3">
+        <div className="p-5 bg-slate-50/60 border-t border-r border-slate-200">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-3">
             {t.report.recallInfo}
           </p>
           <p className="text-sm text-slate-700 leading-relaxed italic">
             &ldquo;{violation.description}&rdquo;
           </p>
         </div>
-        <div className="p-5 bg-emerald-50/60 border-t border-slate-200">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-3">
+        <div className="p-5 bg-slate-50/60 border-t border-slate-200">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-3">
             {t.report.veximRecommendation}
           </p>
           <MarkdownContent content={violation.suggested_fix || t.report.recallDefaultFix} />
@@ -1822,14 +1837,21 @@ export function ReportResultView({
               </div>
             )}
 
-            {/* ── RECALLS SECTION ───────────────────────── */}
+            {/* ── RECALLS SECTION (Reference Only) ───────────────────────── */}
+            {/* Per logic-ng spec: Recalls are market intelligence, NOT violations. */}
+            {/* They do NOT affect risk score. Displayed separately as reference data. */}
             {recallViolations.length > 0 && (
               <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <RotateCcw className="h-4 w-4 text-purple-500" />
-                  <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                    {t.report.recallsSection} ({recallViolations.length})
-                  </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <RotateCcw className="h-4 w-4 text-slate-500" />
+                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                      {t.report.recallsReferenceSection} ({recallViolations.length})
+                    </h2>
+                  </div>
+                  <span className="text-[10px] px-2 py-1 rounded bg-amber-100 text-amber-700 border border-amber-200 font-medium">
+                    {t.report.marketIntelligence}
+                  </span>
                 </div>
                 <div className="space-y-5">
                   {recallViolations.map((violation, index) => (

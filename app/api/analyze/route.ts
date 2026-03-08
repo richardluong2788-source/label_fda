@@ -325,7 +325,7 @@ export async function POST(request: Request) {
           detectedProductType: visionResult.detectedProductType,
         })
 
-        // ─�� AUTO-DETECT PRODUCT DOMAIN FROM VISION ───────────────────────────
+        // ─���� AUTO-DETECT PRODUCT DOMAIN FROM VISION ───────────────────────────
         // When user hasn't selected a product type, upgrade productDomain from
         // Vision AI's label analysis instead of defaulting blindly to 'food'.
         const userChoseProductType = !!(report.product_type || report.product_category)
@@ -1110,19 +1110,25 @@ export async function POST(request: Request) {
 
     }
 
-    // FDA RECALL CHECKS: Flag issues matching real FDA Recall patterns
-    // FIX: Skip allergen-related recalls if product has proper allergen declaration
-    // FIX: Deduplicate recalls with same pattern, severity always 'info' (context, not violation)
+    // ══════════════════════════════════════════════════════════════════
+    // RECALL CONTEXT - Market Intelligence (NOT violations)
+    // Recalls are informational context, NOT confirmed violations.
+    // They do NOT affect risk score. Displayed in separate "Thông tin tham khảo" section.
+    // source_type: 'recall' is used to identify these in UI for special rendering.
+    // ══════════════════════════════════════════════════════════════════
     if (recallContext.length > 0) {
-      console.log('[v0] Checking label against', recallContext.length, 'recall enforcement patterns...')
-
-      const labelTextLower = labelText.toLowerCase()
-      const hasAllergenDeclaration = labelTextLower.includes('contains:') || 
-                                     labelTextLower.includes('contains ') || 
-                                     labelTextLower.includes('allergen') || 
-                                     labelTextLower.includes('allergy')
+      console.log('[v0] Processing recall context (market intelligence):', recallContext.length)
       
-      // Track already-added recall patterns to deduplicate
+      const labelTextLower = labelText.toLowerCase()
+      const hasAllergenDeclaration = 
+        labelTextLower.includes('contains:') || 
+        labelTextLower.includes('contains ') ||
+        labelTextLower.includes('allergen') || 
+        labelTextLower.includes('allergy') ||
+        labelTextLower.includes('may contain') ||
+        /\(milk\)|\(egg\)|\(wheat\)|\(soy\)|\(peanut\)|\(tree nut\)|\(fish\)|\(shellfish\)/.test(labelTextLower) ||
+        /milk,|egg,|wheat,|soy,|peanut,|contains milk|contains egg|contains wheat|contains soy/.test(labelTextLower)
+      
       const addedRecallPatterns = new Set<string>()
       
       for (const recall of recallContext) {
@@ -1131,7 +1137,7 @@ export async function POST(request: Request) {
         const recallIssueType = (meta.recall_issue_type || '').toLowerCase()
         const whyRecalled = (meta.why_recalled || '').toLowerCase()
 
-        // Skip allergen-related recalls if product already has proper allergen declaration
+        // Skip allergen recalls if product has proper declaration
         const isAllergenRecall = recallIssueType.includes('allergen') || 
                                  recallIssueType.includes('undeclared') ||
                                  whyRecalled.includes('undeclared') ||
@@ -1141,6 +1147,38 @@ export async function POST(request: Request) {
           console.log('[v0] Skipping allergen recall - product has proper declaration:', meta.recall_number)
           continue
         }
+
+        const matchedKeywords = redFlags.filter((kw: string) =>
+          labelTextLower.includes(kw.toLowerCase())
+        )
+
+        if (matchedKeywords.length > 0) {
+          // Deduplicate
+          const patternKey = `${recallIssueType}:${matchedKeywords.sort().join(',')}`
+          if (addedRecallPatterns.has(patternKey)) continue
+          addedRecallPatterns.add(patternKey)
+          
+          // Store as 'info' severity - this is CONTEXT, not a violation
+          // UI will render this in "Thông tin tham khảo" section with special styling
+          violations.push({
+            category: `Liên quan đến sản phẩm bị thu hồi`,
+            severity: 'info' as const, // Always info - market intelligence only
+            description: `Nhãn chứa các yếu tố tương tự như sản phẩm bị thu hồi của FDA. Thu hồi ${meta.recall_number || 'N/A'}: ${meta.why_recalled || 'Xem chi tiết sự kiện thu hồi.'}. Từ khóa: "${matchedKeywords.join('", "')}".`,
+            regulation_reference: meta.regulation_related || 'Xem Cơ sở dữ liệu FDA Recall',
+            suggested_fix: meta.preventive_action || 'Thực hiện một chương trình quản lý chất gây dị ứng mạnh mẽ bao gồm việc xem xét thành phần và kiểm tra nhãn kỹ lưỡng trước khi phát hành sản phẩm.',
+            citations: [{
+              regulation_id: meta.regulation_related || 'FDA Recall',
+              section: meta.recall_issue_type || 'Recall Pattern',
+              text: `FDA Recall ${meta.recall_number || ''} (Class ${meta.recall_classification || 'N/A'}): "${meta.why_recalled || ''}"`,
+              source: `FDA Recall ${meta.recall_number || ''} - ${meta.recalling_firm || ''}`,
+              relevance_score: recall.similarity,
+            }],
+            confidence_score: Math.min(0.6, 0.2 + matchedKeywords.length * 0.1), // Low confidence - just similarity
+            source_type: 'recall', // Used by UI to render in separate "Tham khảo" section
+          })
+        }
+      }
+    }
 
         // Check if any red-flag keywords appear in the label
         const matchedKeywords = redFlags.filter((kw: string) =>
@@ -1215,7 +1253,7 @@ export async function POST(request: Request) {
           regulation_reference: `FDA Import Alert ${ia.alert_number}`,
           suggested_fix: isEntityMatch
             ? `Để được xóa khỏi Danh sách Đỏ: (1) Nộp tài liệu hành động khắc phục cho FDA, (2) Yêu cầu kiểm tra tái xác nhận, (3) Cung cấp kết quả kiểm nghiệm phòng thí nghiệm chứng minh tuân thủ. Liên hệ FDA DIOD để biết yêu cầu cụ thể.`
-            : `Đảm bảo tuân thủ đầy đủ các yêu cầu nêu trong Import Alert ${ia.alert_number} để tránh nguy cơ bị giữ hàng. Xem lại tài liệu CGMP và cân nhắc thực hiện kiểm nghiệm chủ động.`,
+            : `Đảm bảo tuân thủ đầy đủ các yêu cầu nêu trong Import Alert ${ia.alert_number} để tránh nguy cơ bị giữ hàng. Xem lại tài liệu CGMP và cân nhắc thực hiện kiểm nghiệm chủ đ��ng.`,
           citations: [], // Import Alerts không được đưa vào citations theo spec
           confidence_score: isEntityMatch ? 0.90 : 0.60,
           source_type: 'import_alert',
