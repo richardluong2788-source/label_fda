@@ -495,25 +495,26 @@ export async function getRelevantContext(
     let recallRecords: any[] = []
 
     // Attempt to use match_compliance_knowledge_by_type (from migration 038)
+    // Note: Supabase RPC returns { data, error } object, not a Promise that can be .catch()'d
+    const safeRpc = async (docType: string | null, threshold: number, count: number) => {
+      const result = await supabase.rpc('match_compliance_knowledge_by_type', {
+        query_embedding: sharedEmbedding,
+        doc_type: docType,
+        match_threshold: threshold,
+        match_count: count,
+      })
+      // Handle Supabase error response
+      if (result.error) {
+        console.log('[v0] RPC error for doc_type:', docType, result.error.message)
+        return { data: null, error: { message: result.error.message || 'function not found' } }
+      }
+      return result
+    }
+
     const [regResult, wlResult, recallResult] = await Promise.all([
-      supabase.rpc('match_compliance_knowledge_by_type', {
-        query_embedding: sharedEmbedding,
-        doc_type: null, // All regulations (non-WL/Recall filtered in code)
-        match_threshold: 0.35,
-        match_count: 30,
-      }).catch(() => ({ data: null, error: { message: 'function not found' } })),
-      supabase.rpc('match_compliance_knowledge_by_type', {
-        query_embedding: sharedEmbedding,
-        doc_type: 'FDA Warning Letter',
-        match_threshold: 0.0,
-        match_count: 10,
-      }).catch(() => ({ data: null, error: { message: 'function not found' } })),
-      supabase.rpc('match_compliance_knowledge_by_type', {
-        query_embedding: sharedEmbedding,
-        doc_type: 'FDA Recall',
-        match_threshold: 0.0,
-        match_count: 10,
-      }).catch(() => ({ data: null, error: { message: 'function not found' } })),
+      safeRpc(null, 0.35, 30),  // All regulations (non-WL/Recall filtered in code)
+      safeRpc('FDA Warning Letter', 0.0, 10),
+      safeRpc('FDA Recall', 0.0, 10),
     ])
 
     // Check if typed function is available
