@@ -573,19 +573,57 @@ export async function POST(request: Request) {
       }
     }
 
-    // Recall matches
+    // Recall matches - with allergen declaration check to avoid false positives
+    // FIX: If recall is about "undeclared allergen" but label HAS proper declaration,
+    // this is NOT a violation - it's a false positive from keyword similarity.
+    const allTextLower = visionResult.textElements.allText.toLowerCase()
+    const hasAllergenDeclaration = allTextLower.includes('contains:') || 
+                                   allTextLower.includes('contains ') || 
+                                   allTextLower.includes('allergen') || 
+                                   allTextLower.includes('allergy')
+    
+    // Track already-added recall patterns to deduplicate
+    const addedRecallPatterns = new Set<string>()
+    
     for (const recall of recallContext) {
       const meta = recall.metadata || {}
+      const recallIssueType = (meta.recall_issue_type || '').toLowerCase()
+      const whyRecalled = (meta.why_recalled || '').toLowerCase()
+      
+      // Skip allergen-related recalls if product already has proper allergen declaration
+      // This prevents false positives like "Mac & Cheese with milk declared" matching 
+      // "recall for undeclared milk allergen"
+      const isAllergenRecall = recallIssueType.includes('allergen') || 
+                               recallIssueType.includes('undeclared') ||
+                               whyRecalled.includes('undeclared') ||
+                               whyRecalled.includes('allergen')
+      
+      if (isAllergenRecall && hasAllergenDeclaration) {
+        console.log('[v0] Skipping allergen recall - product has proper declaration:', meta.recall_number)
+        continue
+      }
+      
       const matchedKeywords = ((meta.problematic_keywords || []) as string[]).filter((kw: string) => labelTextLower.includes(kw.toLowerCase()))
       if (matchedKeywords.length > 0) {
+        // Deduplicate recalls with same issue type
+        const patternKey = `${recallIssueType}:${matchedKeywords.sort().join(',')}`
+        if (addedRecallPatterns.has(patternKey)) {
+          console.log('[v0] Skipping duplicate recall pattern:', patternKey)
+          continue
+        }
+        addedRecallPatterns.add(patternKey)
+        
+        // FIX: Recall similarity should NOT trigger critical/warning severity
+        // Only actual CFR violations should be critical
+        // Recalls are "informational context" not confirmed violations
         violations.push({
           category: `Recall Pattern: ${meta.recall_issue_type || 'Risk Factor'}`,
-          severity: meta.recall_classification === 'Class I' ? 'critical' : meta.recall_classification === 'Class II' ? 'warning' : 'info',
+          severity: 'info' as const, // Always info - recalls are context, not confirmed violations
           description: `Label contains elements similar to FDA-recalled products. Recall ${meta.recall_number || 'N/A'}: ${meta.why_recalled || 'See recall details.'}. Keywords: "${matchedKeywords.join('", "')}".`,
           regulation_reference: meta.regulation_related || 'See FDA Recall Database',
           suggested_fix: meta.preventive_action || 'Review and address flagged elements to reduce recall risk.',
           citations: [{ regulation_id: meta.regulation_related || 'FDA Recall', section: meta.recall_issue_type || 'Recall Pattern', text: `FDA Recall ${meta.recall_number || ''} (Class ${meta.recall_classification || 'N/A'}): "${meta.why_recalled || recall.content.slice(0, 150)}"`, source: `FDA Recall ${meta.recall_number || ''} - ${meta.recalling_firm || ''}`, relevance_score: recall.similarity }],
-          confidence_score: Math.min(0.95, 0.5 + matchedKeywords.length * 0.15),
+          confidence_score: Math.min(0.7, 0.3 + matchedKeywords.length * 0.1), // Lower confidence for similarity matches
           source_type: 'recall',
         })
       }
@@ -611,11 +649,10 @@ export async function POST(request: Request) {
     }
 
     // Allergen check - use deduplicatedAllergens for clean output
+    // Note: allTextLower and hasAllergenDeclaration already defined above in recall section
     if (deduplicatedAllergens.length > 0) {
       const allergenCitation = realCitations.find(c => (c.regulation_id && c.regulation_id.includes('FALCPA')) || (c.section && c.section.toLowerCase().includes('allergen')))
-      const allTextLower = visionResult.textElements.allText.toLowerCase()
-      const hasProperDeclaration = allTextLower.includes('contains:') || allTextLower.includes('contains ') || allTextLower.includes('allergen') || allTextLower.includes('allergy')
-      if (!hasProperDeclaration) {
+      if (!hasAllergenDeclaration) {
         violations.push({ 
           category: 'Allergen Declaration', 
           severity: 'critical' as const, 

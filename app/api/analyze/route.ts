@@ -325,7 +325,7 @@ export async function POST(request: Request) {
           detectedProductType: visionResult.detectedProductType,
         })
 
-        // ── AUTO-DETECT PRODUCT DOMAIN FROM VISION ───────────────────────────
+        // ─�� AUTO-DETECT PRODUCT DOMAIN FROM VISION ───────────────────────────
         // When user hasn't selected a product type, upgrade productDomain from
         // Vision AI's label analysis instead of defaulting blindly to 'food'.
         const userChoseProductType = !!(report.product_type || report.product_category)
@@ -1111,13 +1111,36 @@ export async function POST(request: Request) {
     }
 
     // FDA RECALL CHECKS: Flag issues matching real FDA Recall patterns
+    // FIX: Skip allergen-related recalls if product has proper allergen declaration
+    // FIX: Deduplicate recalls with same pattern, severity always 'info' (context, not violation)
     if (recallContext.length > 0) {
       console.log('[v0] Checking label against', recallContext.length, 'recall enforcement patterns...')
 
       const labelTextLower = labelText.toLowerCase()
+      const hasAllergenDeclaration = labelTextLower.includes('contains:') || 
+                                     labelTextLower.includes('contains ') || 
+                                     labelTextLower.includes('allergen') || 
+                                     labelTextLower.includes('allergy')
+      
+      // Track already-added recall patterns to deduplicate
+      const addedRecallPatterns = new Set<string>()
+      
       for (const recall of recallContext) {
         const meta = recall.metadata || {}
         const redFlags = (meta.problematic_keywords || []) as string[]
+        const recallIssueType = (meta.recall_issue_type || '').toLowerCase()
+        const whyRecalled = (meta.why_recalled || '').toLowerCase()
+
+        // Skip allergen-related recalls if product already has proper allergen declaration
+        const isAllergenRecall = recallIssueType.includes('allergen') || 
+                                 recallIssueType.includes('undeclared') ||
+                                 whyRecalled.includes('undeclared') ||
+                                 whyRecalled.includes('allergen')
+        
+        if (isAllergenRecall && hasAllergenDeclaration) {
+          console.log('[v0] Skipping allergen recall - product has proper declaration:', meta.recall_number)
+          continue
+        }
 
         // Check if any red-flag keywords appear in the label
         const matchedKeywords = redFlags.filter((kw: string) =>
@@ -1125,6 +1148,14 @@ export async function POST(request: Request) {
         )
 
         if (matchedKeywords.length > 0) {
+          // Deduplicate recalls with same issue type
+          const patternKey = `${recallIssueType}:${matchedKeywords.sort().join(',')}`
+          if (addedRecallPatterns.has(patternKey)) {
+            console.log('[v0] Skipping duplicate recall pattern:', patternKey)
+            continue
+          }
+          addedRecallPatterns.add(patternKey)
+          
           const recallCitation: Citation = {
             regulation_id: meta.regulation_related || 'FDA Recall Enforcement',
             section: meta.recall_issue_type || 'Recall Pattern',
@@ -1132,6 +1163,21 @@ export async function POST(request: Request) {
             source: `FDA Recall ${meta.recall_number || ''} - ${meta.recalling_firm || ''}`,
             relevance_score: recall.similarity,
           }
+
+          // FIX: Recall similarity = info severity only (context, not confirmed violation)
+          violations.push({
+            category: `Mẫu Thu hồi: ${meta.recall_issue_type || 'Yếu tố tiềm ẩn rủi ro'}`,
+            severity: 'info' as const, // Always info - recalls are context, not confirmed violations
+            description: `Nhãn này chứa các yếu tố tương đồng với sản phẩm đã bị FDA thu hồi. Recall ${meta.recall_number || 'N/A'} (${meta.recalling_firm || 'một doanh nghiệp'}): ${meta.why_recalled || 'Xem chi tiết sự kiện thu hồi.'}. Từ khóa nhận diện: "${matchedKeywords.join('", "')}".`,
+            regulation_reference: meta.regulation_related || 'Xem Cơ sở dữ liệu FDA Recall',
+            suggested_fix: meta.preventive_action || 'Xem xét và khắc phục các yếu tố bị gắn cờ để tránh nguy cơ thu hồi tiềm ẩn.',
+            citations: [recallCitation],
+            confidence_score: Math.min(0.7, 0.3 + (matchedKeywords.length * 0.1)), // Lower confidence for similarity
+            source_type: 'recall',
+          })
+        }
+      }
+    }
 
           violations.push({
             category: `Mẫu Thu hồi: ${meta.recall_issue_type || 'Yếu tố tiềm ẩn rủi ro'}`,
