@@ -242,7 +242,22 @@ export async function POST(request: Request) {
 
     const productCategory = report.product_category || report.product_type || productDomain || 'food'
     const labelText = visionResult.textElements.allText
-    const manufacturerInfo = report.manufacturer_info || {}
+    
+    // Merge manufacturerInfo from Vision extraction AND user-provided report data
+    // Vision extraction takes priority for fields it can extract from the label
+    const reportManufacturerInfo = report.manufacturer_info || {}
+    const visionManufacturerInfo = visionResult.manufacturerInfo || {}
+    const manufacturerInfo = {
+      company_name: visionManufacturerInfo.companyName || reportManufacturerInfo.company_name || '',
+      country_of_origin: visionManufacturerInfo.countryOfOrigin || reportManufacturerInfo.country_of_origin || '',
+      address: visionManufacturerInfo.address || reportManufacturerInfo.address || ''
+    }
+    
+    console.log('[v0] ManufacturerInfo for Import Alert matching:', {
+      fromVision: visionManufacturerInfo,
+      fromReport: reportManufacturerInfo,
+      merged: manufacturerInfo
+    })
 
     // OPTIMIZED: getRelevantContext already returns regulations + warnings + recalls
     // with a SINGLE shared embedding call. No need to call separate getWarningLetterContext
@@ -437,23 +452,31 @@ export async function POST(request: Request) {
         
         // Only create violation if truly problematic
         if (!contrastResult.isReadable || (isBrandElement && ratioIsCriticallyLow)) {
-          // For brand elements with critically low contrast, still flag but as info
-          const actualSeverity = role === 'regulatory' 
-            ? 'warning' as const 
-            : (ratioIsCriticallyLow ? 'info' as const : 'info' as const)
+          // IMPORTANT: Contrast checks are DESIGN RECOMMENDATIONS, not FDA violations
+          // FDA 21 CFR does NOT specify exact contrast ratios - only "conspicuous and legible"
+          // WCAG 3:1 is a WEB ACCESSIBILITY standard, not an FDA standard
+          // Therefore: always severity 'info', and mark as design recommendation (not CFR violation)
+          const actualSeverity = 'info' as const // Never 'warning' - this is not a CFR violation
           
           contrastViolations.push({
             type: 'contrast',
             severity: actualSeverity,
+            // Mark this as a design recommendation, NOT a CFR violation
+            // This will be excluded from risk score calculation
+            is_design_recommendation: true,
+            exclude_from_risk_score: true,
             description: isBrandElement 
-              ? `${name}: Brand text contrast ${contrastResult.ratio.toFixed(2)}:1 is below recommended minimum. This may be intentional design, but FDA requires text be "conspicuous".`
-              : `${name}: ${contrastResult.warning || 'Poor color contrast detected'}`,
+              ? `${name}: Tỷ lệ tương phản ${contrastResult.ratio.toFixed(2)}:1 thấp hơn khuyến nghị. Đây có thể là thiết kế có chủ đích của thương hiệu.`
+              : `${name}: Tỷ lệ tương phản ${contrastResult.ratio.toFixed(2)}:1 thấp hơn khuyến nghị về độ dễ đọc.`,
             ratio: contrastResult.ratio,
             requiredMinRatio: textSize === 'large' ? 3 : 4.5,
             textSize,
             elementRole: role,
-            recommendation: contrastResult.recommendation,
+            // Vietnamese recommendation
+            recommendation: `Tỷ lệ hiện tại ${contrastResult.ratio.toFixed(2)}:1 — khuyến nghị tăng lên ít nhất 3:1 để dễ đọc hơn`,
             colors: { foreground: element.colors.foreground, background: element.colors.background },
+            // Clarify this is NOT an FDA requirement
+            regulation_note: 'Khuyến nghị thiết kế — FDA không quy định tỷ lệ tương phản cụ thể',
           })
         }
       } catch {}
@@ -680,22 +703,70 @@ export async function POST(request: Request) {
     
     console.log('[v0] Recall intelligence (market context, not violations):', recallIntelligence.length)
 
-    // Import alert signals
+    // Import Alert signals - REAL violations when matching country + category
+    // These are NOT just "reference" - they indicate real detention risk at US border
     for (const ia of importAlertContext) {
       const isEntityMatch = ia.match_method === 'entity'
       const activeEntities = (ia.red_list_entities || []).filter((e: any) => e.is_active)
+      
+      // Check if country matches the alert's scope
+      const productCountry = manufacturerInfo.country_of_origin?.toLowerCase().trim() || ''
+      const alertCountryScope: string[] = ia.country_scope || []
+      const isCountryMatch = alertCountryScope.length === 0 || // Global alert = matches all countries
+        (productCountry && alertCountryScope.some(c => 
+          c.toLowerCase().trim() === productCountry || 
+          productCountry.includes(c.toLowerCase().trim())
+        ))
+      
+      // Severity logic:
+      // - Entity match (company on Red List) = CRITICAL
+      // - Country + Category match = CRITICAL (real detention risk)
+      // - Category match only (no country info) = WARNING (potential risk)
+      const isCritical = isEntityMatch || (isCountryMatch && productCountry)
+      
+      let description: string
+      let suggestedFix: string
+      
+      if (isEntityMatch) {
+        description = `DETENTION RISK: Company appears on FDA Import Alert ${ia.alert_number} Red List (${ia.action_type}). Reason: ${ia.reason_for_alert.slice(0, 250)}. ${activeEntities.length > 0 ? `${activeEntities.length} entities currently flagged for automatic detention.` : ''}`
+        suggestedFix = 'Contact FDA DIOD (Division of Import Operations and Policy) to submit corrective action documents and request removal from the Red List before shipping.'
+      } else if (isCountryMatch && productCountry) {
+        description = `BORDER ALERT: Products from ${manufacturerInfo.country_of_origin} in category "${ia.industry_type}" are subject to FDA Import Alert ${ia.alert_number}. Reason: ${ia.reason_for_alert.slice(0, 250)}. This product may face automatic detention without physical examination (DWPE).`
+        suggestedFix = `Prepare documentation proving compliance with Import Alert ${ia.alert_number} requirements before shipping. Consider obtaining third-party certification or FDA pre-clearance.`
+      } else {
+        description = `POTENTIAL RISK: FDA Import Alert ${ia.alert_number} targets ${ia.industry_type} products. Reason: ${ia.reason_for_alert.slice(0, 250)}. Verify your product's country of origin is not affected.`
+        suggestedFix = `Review Import Alert ${ia.alert_number} requirements and confirm your product's country of origin is not on the alert's scope list.`
+      }
+      
+      console.log('[v0] Import Alert violation created:', {
+        alertNumber: ia.alert_number,
+        matchMethod: ia.match_method,
+        isEntityMatch,
+        isCountryMatch,
+        productCountry,
+        alertCountryScope,
+        severity: isCritical ? 'critical' : 'warning'
+      })
+      
       violations.push({
         category: `Import Alert: ${ia.action_type} Risk (${ia.alert_number})`,
-        severity: isEntityMatch ? 'critical' as const : 'warning' as const,
-        description: isEntityMatch
-          ? `BORDER WARNING: Product may be subject to FDA Import Alert ${ia.alert_number} (${ia.action_type}). Reason: ${ia.reason_for_alert.slice(0, 300)}. ${activeEntities.length > 0 ? `${activeEntities.length} entities currently on Red List.` : ''}`
-          : `FDA Import Alert ${ia.alert_number} targets ${ia.industry_type} products. Reason: ${ia.reason_for_alert.slice(0, 300)}.`,
+        severity: isCritical ? 'critical' as const : 'warning' as const,
+        description,
         regulation_reference: `FDA Import Alert ${ia.alert_number}`,
-        suggested_fix: isEntityMatch ? 'Submit corrective action documents to FDA DIOD to be removed from the Red List.' : `Ensure full compliance with Import Alert ${ia.alert_number} requirements.`,
+        suggested_fix: suggestedFix,
         citations: [],
-        confidence_score: isEntityMatch ? 0.90 : 0.60,
+        confidence_score: isEntityMatch ? 0.95 : (isCountryMatch && productCountry ? 0.85 : 0.60),
         source_type: 'import_alert',
         import_alert_number: ia.alert_number,
+        // Additional metadata for UI display
+        import_alert_metadata: {
+          is_entity_match: isEntityMatch,
+          is_country_match: isCountryMatch,
+          product_country: productCountry || null,
+          alert_country_scope: alertCountryScope,
+          action_type: ia.action_type,
+          active_entities_count: activeEntities.length
+        }
       })
     }
 

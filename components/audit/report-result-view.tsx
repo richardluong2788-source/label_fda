@@ -788,17 +788,18 @@ function ContrastViolationCard({
     elementRole?: 'regulatory' | 'brand'
     recommendation?: string
     colors?: { foreground: string; background: string }
+    is_design_recommendation?: boolean
+    regulation_note?: string
   }
   t: ReturnType<typeof useTranslation>['t']
   }) {
   const ratioText = violation.ratio
     ? t.report.contrastRatio(violation.ratio, violation.requiredMinRatio)
     : violation.description
-  const isBrandText = violation.elementRole === 'brand'
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-      {/* Header */}
+      {/* Header - Blue theme for design recommendation */}
       <div className="flex items-start justify-between p-5 pb-3">
         <div className="flex items-start gap-3">
           <div className="rounded-full bg-blue-100 p-2.5 shrink-0">
@@ -809,13 +810,20 @@ function ContrastViolationCard({
               {t.report.lowContrastTitle}
             </h3>
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200">
-                {t.report.fdaReadabilityReq}
+              {/* Clarify this is a design recommendation, NOT FDA requirement */}
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                {t.report.designRecommendation || 'Khuyến nghị thiết kế'}
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-500 border border-slate-200">
+                {t.report.notFdaRequired || 'Không bắt buộc theo CFR'}
               </span>
             </div>
           </div>
         </div>
-        <SeverityBadge severity={violation.severity} t={t} />
+        {/* Custom badge for design recommendation - always blue/info style */}
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+          {t.report.designNote || 'GỢI Ý'}
+        </span>
       </div>
 
       {/* A/B Comparison Grid */}
@@ -985,16 +993,15 @@ export function ReportResultView({
           ? t.report.riskMedium
           : t.report.riskLow
 
-  const criticalCount =
-    allViolations.filter((v) => v.severity === 'critical').length +
-    contrastViolations.filter((v) => v.severity === 'critical').length
-  const warningCount =
-    allViolations.filter((v) => v.severity === 'warning').length +
-    contrastViolations.filter((v) => v.severity === 'warning').length
-
-  const infoCount =
-    allViolations.filter((v) => v.severity === 'info').length +
-    contrastViolations.filter((v) => v.severity === 'info').length
+  // NOTE: Contrast violations are DESIGN RECOMMENDATIONS, not FDA violations
+  // They should NOT be counted in criticalCount/warningCount as they don't affect compliance
+  // FDA 21 CFR does NOT specify contrast ratios - only "conspicuous and legible"
+  const criticalCount = allViolations.filter((v) => v.severity === 'critical').length
+  const warningCount = allViolations.filter((v) => v.severity === 'warning').length
+  const infoCount = allViolations.filter((v) => v.severity === 'info').length
+  
+  // Track design recommendations separately (contrast violations are always 'info')
+  const designRecommendationCount = contrastViolations.length
 
   const descParts: string[] = []
   if (criticalCount > 0) descParts.push(`${criticalCount} ${t.report.criticalViolations}`)
@@ -1558,13 +1565,25 @@ export function ReportResultView({
                     </span>
                   </h2>
                   <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                {descParts.length > 0 && infoCount > 0
-                  ? t.report.riskDescWithAdvisory(descParts.join(` ${t.report.andWord} `), `${infoCount} ${t.report.advisoryNotes}`)
-                  : descParts.length > 0
-                    ? t.report.riskDescWithIssues(descParts.join(` ${t.report.andWord} `))
-                    : infoCount > 0
-                      ? t.report.riskDescAdvisoryOnly(`${infoCount} ${t.report.advisoryNotes}`)
-                      : t.report.riskDescCompliant}
+{/* Risk description logic:
+                   - Critical/warnings count toward actual compliance issues
+                   - Info count = advisory notes (CFR-related info)
+                   - Design recommendations (contrast) are shown separately and don't affect compliance
+                */}
+                {descParts.length > 0 && (infoCount > 0 || designRecommendationCount > 0)
+                ? t.report.riskDescWithAdvisory(
+                    descParts.join(` ${t.report.andWord} `), 
+                    designRecommendationCount > 0 
+                      ? `${designRecommendationCount} ${t.report.designRecommendations || 'khuyến nghị thiết kế'}`
+                      : `${infoCount} ${t.report.advisoryNotes}`
+                  )
+                : descParts.length > 0
+                ? t.report.riskDescWithIssues(descParts.join(` ${t.report.andWord} `))
+                : designRecommendationCount > 0
+                ? t.report.riskDescAdvisoryOnly(`${designRecommendationCount} ${t.report.designRecommendations || 'khuyến nghị thiết kế'} (không ảnh hưởng tuân thủ FDA)`)
+                : infoCount > 0
+                ? t.report.riskDescAdvisoryOnly(`${infoCount} ${t.report.advisoryNotes}`)
+                : t.report.riskDescCompliant}
                   </p>
                   {projectedRiskScore !== undefined && projectedRiskScore !== null && projectedRiskScore < riskScore && (
                     <p className="text-xs text-green-600 mt-1.5 flex items-center gap-1">

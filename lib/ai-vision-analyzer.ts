@@ -22,6 +22,13 @@ export interface NutritionFactsColumn {
   nutritionFacts: NutritionFact[]
 }
 
+/** Manufacturer information extracted from label */
+export interface ManufacturerInfo {
+  companyName?: string
+  address?: string
+  countryOfOrigin?: string
+}
+
 export interface VisionAnalysisResult {
   nutritionFacts: NutritionFact[]
   /** True if panel has 2+ columns (variety packs, dual-column format) */
@@ -34,6 +41,8 @@ export interface VisionAnalysisResult {
     netQuantity?: TextElementWithColor
     allText: string
   }
+  /** Manufacturer/company info extracted from label (for Import Alert matching) */
+  manufacturerInfo?: ManufacturerInfo
   detectedClaims: string[]
   ingredients: string[]
   allergens: string[]
@@ -127,6 +136,11 @@ Return a JSON object with this structure:
       "boundingBox": { "x": 100, "y": 160, "width": 150, "height": 20, "confidence": 0.95 }
     },
     "allText": "complete text from label"
+  },
+  "manufacturerInfo": {
+    "companyName": "EXACT company/manufacturer name from label - look for 'Manufactured by', 'Distributed by', 'Produced by', 'Made by', company logo text",
+    "address": "full address if visible - street, city, state, zip, country",
+    "countryOfOrigin": "EXACT country from 'Made in [COUNTRY]', 'Product of [COUNTRY]', 'Country of Origin: [COUNTRY]', or address country"
   },
   "detectedClaims": ["exact claims found or empty array"],
   "ingredients": ["exact ingredients list or empty array"],
@@ -634,11 +648,17 @@ FONT SIZE CHART (use these values):
       ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : [],
       allergens: Array.isArray(parsed.allergens) ? parsed.allergens : [],
       warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
-      detectedLanguages: Array.isArray(parsed.detectedLanguages) ? parsed.detectedLanguages : ['English'],
-      overallConfidence: typeof parsed.overallConfidence === 'number' ? parsed.overallConfidence : 0.8,
-      detectedProductType: parsed.productType || 'unknown',  // expose for auto-domain detection
-      tokensUsed
-    }
+detectedLanguages: Array.isArray(parsed.detectedLanguages) ? parsed.detectedLanguages : ['English'],
+  overallConfidence: typeof parsed.overallConfidence === 'number' ? parsed.overallConfidence : 0.8,
+  detectedProductType: parsed.productType || 'unknown',  // expose for auto-domain detection
+  // Manufacturer info for Import Alert matching
+  manufacturerInfo: parsed.manufacturerInfo ? {
+    companyName: parsed.manufacturerInfo.companyName || undefined,
+    address: parsed.manufacturerInfo.address || undefined,
+    countryOfOrigin: parsed.manufacturerInfo.countryOfOrigin || undefined
+  } : undefined,
+  tokensUsed
+  }
 
     // Add area calculation and ensure colors are valid hex
     Object.keys(normalized.textElements).forEach(key => {
