@@ -105,34 +105,38 @@ export default function AuditPage() {
   }, [analyzing, scanDirection])
 
   // ── Smooth fake progress while queued/processing ──────────
-  // Progress percentages now reflect ACTUAL time spent:
-  // - Vision API (Step 1): ~70% of progress bar (takes 30-90s = ~80% of real time)
-  // - Steps 2-6: ~30% of progress bar (fast internal processing)
-  // This ensures progress moves consistently and feels authentic to users.
+  // Fake progress runs continuously to give user feedback.
+  // Vision API typically takes 30-90s (1-3 images), so we spread progress over ~120s.
+  // Progress slows down as it approaches 92% (asymptotic), never reaching 100%.
+  // Server will push to 100% when analysis completes.
   useEffect(() => {
     if (!analyzing) return
     const ticker = setInterval(() => {
       setProgress(prev => {
         const next = (() => {
-          // Phase 1: Quick initial feedback (0-10% in ~6s)
-          if (prev < 10) return prev + 0.5
+          // Phase 1: Quick start (0-15% in ~9s) - immediate feedback
+          if (prev < 15) return prev + 0.5
           
-          // Phase 2: Vision API processing (10-65% over ~60s)
-          // This is the slow part - move steadily so user sees continuous progress
-          if (prev < 30) return prev + 0.35     // 10→30% in ~18s
-          if (prev < 50) return prev + 0.25     // 30→50% in ~24s  
-          if (prev < 65) return prev + 0.18     // 50→65% in ~25s
+          // Phase 2: Steady progress (15-50% in ~42s) - Vision processing
+          if (prev < 35) return prev + 0.15
+          if (prev < 50) return prev + 0.12
           
-          // Phase 3: Slow down as we approach Vision completion
-          // Server will push to 70%+ when Vision actually completes
-          if (prev < 68) return prev + 0.08     // 65→68% in ~12s (buffer zone)
+          // Phase 3: Slower progress (50-75% in ~50s) - still Vision or RAG
+          if (prev < 60) return prev + 0.08
+          if (prev < 75) return prev + 0.06
           
-          // Don't go past 68% with fake progress - wait for server
+          // Phase 4: Very slow crawl (75-92% in ~85s) - asymptotic approach
+          // This creates the illusion of continuous work without hitting 100%
+          if (prev < 85) return prev + 0.04
+          if (prev < 90) return prev + 0.02
+          if (prev < 92) return prev + 0.01
+          
+          // Never exceed 92% with fake progress - wait for server completion
           return prev
         })()
 
         // Sync stepIndex with fake progress
-        // Find the LAST step whose progress threshold <= current progress
+        // Steps start at: 0%, 70%, 80%, 85%, 90%, 95%
         let bestIdx = 0
         for (let i = 0; i < ANALYSIS_STEPS.length; i++) {
           if (ANALYSIS_STEPS[i].progress <= next) bestIdx = i
