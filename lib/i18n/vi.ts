@@ -157,6 +157,12 @@ export const vi = {
     recallReferenceNote: 'Đây là dữ liệu lịch sử thị trường để tham khảo — không phải vi phạm, không ảnh hưởng điểm rủi ro.',
     recallsReferenceSection: 'LỊCH SỬ THU HỒI (THAM KHẢO)',
     marketIntelligence: 'Dữ liệu tham khảo',
+    // Fallback commercial summary (when AI doesn't generate one)
+    unknownProduct: 'Sản phẩm',
+    fallbackCompliantSummary: 'đã được kiểm tra và tuân thủ tốt các quy định FDA. Không phát hiện vi phạm nghiêm trọng trong quá trình phân tích.',
+    fallbackViolationSummary: 'cần xem xét một số vấn đề tuân thủ:',
+    fallbackRiskNote: 'Vui lòng xem chi tiết các vấn đề bên dưới.',
+    infoIssues: 'lưu ý',
     importAlertTitle: 'Cảnh báo nhập khẩu FDA',
     lowContrastTitle: 'Độ tương phản màu sắc thấp',
     fdaReadabilityReq: 'Yêu cầu FDA về độ rõ ràng của nhãn',
@@ -265,7 +271,7 @@ export const vi = {
     freePreview: 'Bản xem trước miễn phí',
     fullReport: 'Báo cáo đầy đủ',
     expertReview: 'Chuyên gia rà soát',
-    labelImages: 'Ảnh nhãn sản phẩm',
+    labelImages: '��nh nhãn sản phẩm',
     noViolations: 'Không phát hiện vi phạm nào. Nhãn của bạn tuân thủ tốt!',
     viewDetails: 'Xem chi tiết',
     collapse: 'Thu gọn',
@@ -529,7 +535,7 @@ export const vi = {
     howItWorksDesc: 'Hiểu cách AI đọc nhãn giúp bạn chuẩn bị ảnh tốt hơn.',
     steps: [
       { step: '01', title: 'Phân tích từng ảnh riêng biệt', desc: 'Mỗi ảnh được AI GPT-4o Vision xử lý độc lập. Ảnh PDP trích xuất Brand/Product/Net Weight. Ảnh Nutrition Facts trích xuất tất cả giá trị dinh dưỡng. Ảnh Ingredients trích xuất danh sách thành phần và allergens.' },
-      { step: '02', title: 'Ghép dữ liệu từ tất cả ảnh', desc: 'Hệ thống tổng hợp thông tin từ tất cả ảnh bạn upload. Ảnh nào thiếu sẽ dẫn đến thiếu dữ liệu phân tích — đặc biệt là PDP và Nutrition Facts là hai ảnh bắt buộc không thể thiếu.' },
+      { step: '02', title: 'Ghép dữ liệu từ tất cả ảnh', desc: 'Hệ thống tổng hợp thông tin từ tất cả ảnh bạn upload. Ảnh nào thiếu sẽ d��n đến thiếu dữ liệu phân tích — đặc biệt là PDP và Nutrition Facts là hai ảnh bắt buộc không thể thiếu.' },
       { step: '03', title: 'Đối chiếu với Knowledge Base FDA', desc: 'Dữ liệu trích xuất được so sánh với cơ sở dữ liệu gồm 21 CFR, Warning Letters thực tế, Recalls và Import Alerts để phát hiện vi phạm và đề xuất c��ch sửa.' },
     ],
     imageTypesTitle: '4 loại ảnh cần upload',
@@ -596,7 +602,7 @@ export const vi = {
     checklistTitle: 'Checklist trước khi nhấn Phân tích',
     checklistItems: [
       'Ảnh PDP (mặt trước) đã upload — thấy rõ Brand Name, Product Name, Net Weight',
-      'Ảnh Nutrition Facts đã upload — toàn bộ bảng nằm trong 1 ảnh, không bị cắt',
+      'Ảnh Nutrition Facts đã upload — toàn bộ bảng nằm trong 1 ảnh, kh��ng bị cắt',
       'Nếu Ingredients ở mặt riêng: đã upload ảnh "Thành phần & Allergens"',
       'Nếu có Health Claims trên nhãn: đã upload ảnh "Mặt khác" chứa claims đó',
       'Đã chọn đúng Product Category trong Tùy chọn nâng cao',
@@ -923,11 +929,11 @@ export const vi = {
     ],
     // What you get
     whatYouGetCols: [
-      { title: 'Báo cáo AI chuyên sâu', items: ['Quét toàn bộ nhãn bằng OCR + Vision AI', 'Phát hiện vi phạm kèm trích dẫn mã CFR cụ thể', 'Phân loại mức độ: Nghiêm trọng / Quan trọng / Nhẹ', 'Hướng dẫn khắc phục chi tiết từng đi��m vi phạm'] },
+      { title: 'Báo cáo AI chuyên sâu', items: ['Quét toàn bộ nhãn bằng OCR + Vision AI', 'Phát hiện vi phạm kèm trích dẫn mã CFR cụ thể', 'Phân loại mức độ: Nghiêm trọng / Quan trọng / Nhẹ', 'Hướng dẫn khắc phục chi tiết từng đi��m vi ph��m'] },
       { title: 'Tư vấn bởi chuyên gia', items: ['Rà soát bởi FDA Compliance Specialist', 'Tư vấn trực tiếp 1-1 qua call hoặc email', 'Đánh giá rủi ro bị từ chối tại cảng Mỹ', 'Hỗ trợ chỉnh sửa file thiết kế nhãn'] },
       { title: 'Đảm bảo & Chứng nhận', items: ['Cấp Certification Letter khi nhãn đạt chuẩn', 'Kiểm tra lại miễn phí khi có thay đổi nhỏ', 'Hỗ trợ khi FDA yêu cầu giải trình bổ sung', 'Cam kết bồi thường nếu sai sót thuộc về Vexim'] },
     ],
-    commitmentQuote: '"Vexim Global kết hợp công nghệ AI với đội ngũ chuyên gia tuân thủ FDA, phân tích dữ liệu cưỡng chế thực tế (Regulation — Warning Letter — Recall) nhằm đánh giá rủi ro nhãn dán và hồ sơ xuất khẩu. Chúng tôi đã đồng hành cùng hàng trăm doanh nghiệp Việt Nam chuẩn hóa nhãn sản phẩm trước khi xuất khẩu sang Mỹ, tập trung giảm thiểu nguy cơ bị giữ hàng, ghi nhãn sai quy cách và thu hồi sản phẩm."',
+    commitmentQuote: '"Vexim Global kết hợp công nghệ AI với đội ngũ chuyên gia tuân thủ FDA, phân tích dữ liệu cưỡng chế thực tế (Regulation — Warning Letter — Recall) nhằm đánh giá rủi ro nhãn dán và hồ sơ xuất khẩu. Chúng tôi đã đồng hành cùng hàng trăm doanh nghiệp Việt Nam chuẩn hóa nhãn sản phẩm trước khi xuất khẩu sang Mỹ, t���p trung giảm thiểu nguy cơ bị giữ hàng, ghi nhãn sai quy cách và thu hồi sản phẩm."',
     finalCtaDesc: 'Hơn 200 doanh nghiệp Việt Nam đã sử dụng Vexim để bảo vệ lô hàng, giữ vững uy tín thương hiệu và đảm bảo hợp đồng xuất khẩu không bị gián đoạn.',
     finalCtaButton: 'Kiểm tra nhãn miễn phí — Bắt đầu trong 2 phút',
     finalCtaPricing: 'Xem bảng giá chi tiết',

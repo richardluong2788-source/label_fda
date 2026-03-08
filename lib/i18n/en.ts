@@ -158,6 +158,12 @@ export const en: TranslationKeys = {
     recallReferenceNote: 'This is market intelligence data for reference only — not a violation, does not affect risk score.',
     recallsReferenceSection: 'RECALL HISTORY (REFERENCE)',
     marketIntelligence: 'Reference Data',
+    // Fallback commercial summary (when AI doesn't generate one)
+    unknownProduct: 'Product',
+    fallbackCompliantSummary: 'has been reviewed and complies with FDA regulations. No serious violations detected during analysis.',
+    fallbackViolationSummary: 'requires attention on some compliance issues:',
+    fallbackRiskNote: 'Please review the detailed issues below.',
+    infoIssues: 'info note(s)',
     importAlertTitle: 'FDA Import Alert',
     lowContrastTitle: 'Low Color Contrast',
     fdaReadabilityReq: 'FDA label readability requirements',

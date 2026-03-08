@@ -101,6 +101,39 @@ function parseNutritionValue(fact: any): { displayValue: string; displayDV: stri
 }
 
 // ────────────────────────────────────────────────────────────
+// Fallback Commercial Summary Generator
+// When AI doesn't generate a summary, create one from report data
+// ────────────────────────────────────────────────────────────
+
+function generateFallbackCommercialSummary(report: AuditReport, t: ReturnType<typeof useTranslation>['t']): string {
+  const violations = report.violations || []
+  const criticalCount = violations.filter(v => v.severity === 'critical').length
+  const warningCount = violations.filter(v => v.severity === 'warning').length
+  const infoCount = violations.filter(v => v.severity === 'info').length
+  
+  const productName = report.product_name || t.report.unknownProduct || 'Sản phẩm'
+  const brand = report.brand_name || ''
+  const riskScore = report.overall_risk_score ?? 0
+  
+  let summary = ''
+  
+  if (criticalCount === 0 && warningCount === 0) {
+    // Compliant product
+    summary = `**${productName}${brand ? ` (${brand})` : ''}** ${t.report.fallbackCompliantSummary || 'đã được kiểm tra và tuân thủ tốt các quy định FDA. Không phát hiện vi phạm nghiêm trọng trong quá trình phân tích.'}`
+  } else {
+    // Has violations
+    const parts: string[] = []
+    if (criticalCount > 0) parts.push(`${criticalCount} ${t.report.criticalViolations || 'vi phạm nghiêm trọng'}`)
+    if (warningCount > 0) parts.push(`${warningCount} ${t.report.warnings || 'cảnh báo'}`)
+    if (infoCount > 0) parts.push(`${infoCount} ${t.report.infoIssues || 'lưu ý'}`)
+    
+    summary = `**${productName}${brand ? ` (${brand})` : ''}** ${t.report.fallbackViolationSummary || 'cần xem xét một số vấn đề tuân thủ:'} ${parts.join(', ')}. ${t.report.fallbackRiskNote || `Điểm rủi ro hiện tại: ${riskScore.toFixed(1)}/10.`}`
+  }
+  
+  return summary
+}
+
+// ────────────────────────────────────────────────────────────
 // Simple Markdown Renderer for AI-generated content
 // ────────────────────────────────────────────────────────────
 
@@ -962,7 +995,8 @@ export function ReportResultView({
   if (warningCount > 0) descParts.push(`${warningCount} ${t.report.warnings}`)
 
   const expertTips = report.expert_tips || []
-  const commercialSummary = report.commercial_summary
+  // Commercial Summary with fallback when empty
+  const commercialSummary = report.commercial_summary || generateFallbackCommercialSummary(report, t)
   const enforcementInsights = report.enforcement_insights || []
   const nutritionFacts = report.nutrition_facts || []
   const allergenDeclaration = report.allergen_declaration
@@ -1135,6 +1169,14 @@ export function ReportResultView({
 
                   {/* Health Claims (NEW) - Split into Structure/Function vs Factual */}
                   {healthClaims && healthClaims.length > 0 && (() => {
+                    // Lifestyle taglines/brand messaging - NOT health claims, should be ignored
+                    // These are general marketing slogans, not FDA-regulated claims
+                    const lifestyleTaglines = [
+                      'eat well', 'be active', 'keep track', 'live well', 'feel good',
+                      'stay healthy', 'enjoy life', 'be well', 'live better', 'stay fit',
+                      'be healthy', 'think well', 'move more', 'eat smart', 'live smart'
+                    ]
+                    
                     // Structure/Function indicators that require DSHEA disclaimer
                     // REMOVED 'antioxidant' - FDA allows "good source of antioxidants" as nutrient content claim without DSHEA
                     // ADDED more DSHEA-triggering keywords: 'boosts', 'enhances', 'strengthens', 'fights', 'protects', 'reduces risk'
@@ -1143,16 +1185,21 @@ export function ReportResultView({
                     // Factual/Negative claims that are compliant
                     const factualClaimPatterns = ['no artificial', 'no added', 'no preservatives', 'free', 'organic', 'natural', 'non-gmo', 'gluten-free', 'allergen-free', 'sulfate-free', 'antioxidant', 'source of', 'contains']
                     
-                    const structureFunctionClaims = healthClaims.filter(claim => 
+                    // Filter out lifestyle taglines first - they're not claims at all
+                    const actualClaims = healthClaims.filter(claim => 
+                      !lifestyleTaglines.some(tagline => claim.toLowerCase().trim() === tagline)
+                    )
+                    
+                    const structureFunctionClaims = actualClaims.filter(claim => 
                       structureFunctionKeywords.some(keyword => claim.toLowerCase().includes(keyword))
                     )
                     
-                    const factualClaims = healthClaims.filter(claim => 
+                    const factualClaims = actualClaims.filter(claim => 
                       factualClaimPatterns.some(pattern => claim.toLowerCase().includes(pattern)) &&
                       !structureFunctionKeywords.some(keyword => claim.toLowerCase().includes(keyword))
                     )
                     
-                    const otherClaims = healthClaims.filter(claim => 
+                    const otherClaims = actualClaims.filter(claim => 
                       !structureFunctionClaims.includes(claim) && !factualClaims.includes(claim)
                     )
                     
