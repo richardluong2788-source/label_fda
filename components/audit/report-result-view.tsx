@@ -468,7 +468,13 @@ function ViolationCard({ violation, index, t, showExpertCta }: { violation: Viol
   }
 
   // Filter out invalid citations (missing section, section="0", or missing text)
+  // Also clean up citation text that starts with "0 " or similar artifacts
   const validCitations = (violation.citations || []).filter(cit => cit.section && cit.section !== '0' && cit.text)
+    .map(cit => ({
+      ...cit,
+      // Clean up text that starts with stray "0 " or numbers followed by emoji
+      text: cit.text.replace(/^0\s+(?=📋|Per|21)/i, '').trim()
+    }))
   const hasCitations = validCitations.length > 0
 
   return (
@@ -994,9 +1000,18 @@ export function ReportResultView({
   if (criticalCount > 0) descParts.push(`${criticalCount} ${t.report.criticalViolations}`)
   if (warningCount > 0) descParts.push(`${warningCount} ${t.report.warnings}`)
 
-  const expertTips = report.expert_tips || []
   // Commercial Summary with fallback when empty
   const commercialSummary = report.commercial_summary || generateFallbackCommercialSummary(report, t)
+  
+  // Expert tips with deduplication - remove tips that are already in commercial summary
+  // This prevents duplicate content between commercial_summary.expert_recommendations and expert_tips array
+  const rawExpertTips = report.expert_tips || []
+  const commercialTextLower = (commercialSummary || '').toLowerCase()
+  const expertTips = rawExpertTips.filter((tip: string) => {
+    // Extract first 50 chars of tip to check for duplication
+    const tipKey = tip.toLowerCase().slice(0, 50)
+    return !commercialTextLower.includes(tipKey)
+  })
   const enforcementInsights = report.enforcement_insights || []
   const nutritionFacts = report.nutrition_facts || []
   const allergenDeclaration = report.allergen_declaration
@@ -1177,6 +1192,13 @@ export function ReportResultView({
                       'be healthy', 'think well', 'move more', 'eat smart', 'live smart'
                     ]
                     
+                    // Packaging descriptors - NOT claims, just size/quantity descriptions
+                    const packagingDescriptors = [
+                      'value pack', 'family size', 'party size', 'bulk pack', 'economy size',
+                      'mega pack', 'jumbo size', 'king size', 'snack size', 'travel size',
+                      'bonus pack', 'twin pack', 'multi-pack', 'variety pack', 'combo pack'
+                    ]
+                    
                     // Structure/Function indicators that require DSHEA disclaimer
                     // REMOVED 'antioxidant' - FDA allows "good source of antioxidants" as nutrient content claim without DSHEA
                     // ADDED more DSHEA-triggering keywords: 'boosts', 'enhances', 'strengthens', 'fights', 'protects', 'reduces risk'
@@ -1185,10 +1207,15 @@ export function ReportResultView({
                     // Factual/Negative claims that are compliant
                     const factualClaimPatterns = ['no artificial', 'no added', 'no preservatives', 'free', 'organic', 'natural', 'non-gmo', 'gluten-free', 'allergen-free', 'sulfate-free', 'antioxidant', 'source of', 'contains']
                     
-                    // Filter out lifestyle taglines first - they're not claims at all
-                    const actualClaims = healthClaims.filter(claim => 
-                      !lifestyleTaglines.some(tagline => claim.toLowerCase().trim() === tagline)
-                    )
+                    // Filter out lifestyle taglines and packaging descriptors - they're not claims at all
+                    const actualClaims = healthClaims.filter(claim => {
+                      const claimLower = claim.toLowerCase().trim()
+                      // Exclude exact match lifestyle taglines
+                      if (lifestyleTaglines.some(tagline => claimLower === tagline)) return false
+                      // Exclude packaging descriptors (exact or partial match)
+                      if (packagingDescriptors.some(pd => claimLower === pd || claimLower.includes(pd))) return false
+                      return true
+                    })
                     
                     const structureFunctionClaims = actualClaims.filter(claim => 
                       structureFunctionKeywords.some(keyword => claim.toLowerCase().includes(keyword))
