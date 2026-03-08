@@ -61,12 +61,20 @@ export async function POST(request: Request) {
   const findings = report?.findings ?? []
   const healthClaims = report?.health_claims ?? []
 
-  // Build prompt context
+  // Build prompt context - include EXACT CFR references from findings to prevent hallucination
   const violationsSummary = findings
-    .map((v: any, i: number) =>
-      `[${i + 1}] ${v.violation_type ?? v.type ?? 'Unknown'} — ${v.description ?? ''} | Severity: ${v.severity ?? 'unknown'} | CFR: ${v.citations?.join(', ') ?? 'N/A'} | AI suggested fix: ${v.suggested_fix ?? 'N/A'}`
-    )
-    .join('\n')
+    .map((v: any, i: number) => {
+      // Get CFR from multiple possible sources in the finding
+      const cfrRef = v.regulation_reference || v.cfr_reference || 
+        (v.citations && v.citations.length > 0 ? v.citations.join(', ') : null)
+      
+      return `[${i + 1}] Type: ${v.category ?? v.violation_type ?? v.type ?? 'Unknown'}
+   Description: ${v.description ?? ''}
+   Severity: ${v.severity ?? 'unknown'}
+   EXACT CFR Reference (use this, do NOT invent): ${cfrRef ?? 'Not specified'}
+   AI Suggested Fix: ${v.suggested_fix ?? 'N/A'}`
+    })
+    .join('\n\n')
 
   const healthClaimsList = Array.isArray(healthClaims)
     ? healthClaims.map((c: any) => typeof c === 'string' ? c : c.claim || c.text || '').filter(Boolean).join('; ')
@@ -79,14 +87,27 @@ Your task: Review an AI-generated FDA compliance report and produce a structured
 2. Per-violation analysis: confirm/dismiss each finding and suggest exact corrected wording
 3. Prioritized recommended actions
 
-IMPORTANT:
+CRITICAL RULES:
 - Write the expert_summary in Vietnamese (professional tone)
 - wording_fix should be the EXACT replacement text in English (as it should appear on the label)
 - legal_note MUST be written in Vietnamese with the following structure:
   1. Start with "Qua rà soát nhãn, hệ thống phát hiện..." describing what was found (e.g., health benefit phrases, missing disclaimers)
   2. Explain why it matters legally (e.g., "Theo quy định, các tuyên bố này bắt buộc phải đi kèm câu miễn trừ DSHEA để tránh bị FDA phân loại nhầm thành dược phẩm")
   3. Provide a concrete example from the label: "Ví dụ: nhãn hiện có cụm từ '[quote from label]' cần được bổ sung disclaimer."
-  4. Reference the specific CFR section at the end
+  4. Reference the EXACT CFR section provided in the violation data at the end (21 CFR xxx.xx format)
+  
+CFR REFERENCE RULES (EXTREMELY IMPORTANT - LEGAL LIABILITY):
+- You MUST use the EXACT CFR Reference provided for each violation
+- NEVER invent or hallucinate CFR numbers
+- If "EXACT CFR Reference" says "21 CFR 101.4(a)(1)" - use EXACTLY that
+- If "EXACT CFR Reference" says "Not specified" - do NOT include any CFR reference
+- Common correct mappings:
+  - Ingredient order → 21 CFR 101.4(a)(1)
+  - Allergen declaration → FALCPA / 21 CFR 101.22
+  - Health claims → 21 CFR 101.14
+  - Nutrition labeling → 21 CFR 101.9
+- NEVER use non-existent CFR sections like 102.41, 1160.30, etc.
+  
 - Be precise about which violations are genuinely critical vs. minor`
 
   const userPrompt = `Product: ${report?.product_name ?? report?.file_name ?? 'Unknown'}

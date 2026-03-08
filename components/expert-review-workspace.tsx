@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import ReactMarkdown from 'react-markdown'
 import { AppHeader } from '@/components/app-header'
 import { LabelImageGallery } from '@/components/label-image-gallery'
 import type { LabelImageEntry } from '@/lib/types'
@@ -369,7 +370,15 @@ export function ExpertReviewWorkspace({
 
                         {f.suggested_fix && (
                           <div className="bg-blue-50 rounded p-2 text-xs text-blue-800">
-                            <span className="font-medium">AI gợi ý: </span>{f.suggested_fix}
+                            <span className="font-medium">AI gợi ý: </span>
+                            <ReactMarkdown 
+                              className="inline prose prose-xs prose-blue max-w-none [&>p]:inline [&>p]:m-0 [&>strong]:font-semibold [&>em]:italic"
+                              components={{
+                                p: ({ children }) => <span>{children}</span>,
+                              }}
+                            >
+                              {f.suggested_fix}
+                            </ReactMarkdown>
                           </div>
                         )}
 
@@ -391,7 +400,15 @@ export function ExpertReviewWorkspace({
                         {/* Expert input */}
                         <div className="border-t pt-3 space-y-2">
                           <div className="flex items-center gap-3">
-                            <Label className="text-xs shrink-0">Xác nhận vi phạm?</Label>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Label className="text-xs">Xác nhận vi phạm?</Label>
+                              <span 
+                                className="text-[10px] text-muted-foreground cursor-help" 
+                                title="Có: Vi phạm sẽ được ghi nhận trong báo cáo chính thức và ảnh hưởng đến đánh giá tuân thủ.&#10;Không: Vi phạm sẽ bị bỏ qua (false positive từ AI) và không xuất hiện trong báo cáo cuối."
+                              >
+                                (?)
+                              </span>
+                            </div>
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
@@ -399,6 +416,7 @@ export function ExpertReviewWorkspace({
                                 className="h-7 text-xs"
                                 disabled={isReadOnly}
                                 onClick={() => updateVR(i, 'confirmed', true)}
+                                title="Xác nhận vi phạm này là đúng - sẽ xuất hiện trong báo cáo cuối"
                               >
                                 <CheckCircle className="mr-1 h-3 w-3" />
                                 Có
@@ -409,6 +427,7 @@ export function ExpertReviewWorkspace({
                                 className="h-7 text-xs"
                                 disabled={isReadOnly}
                                 onClick={() => updateVR(i, 'confirmed', false)}
+                                title="Bác bỏ vi phạm này (AI nhận diện sai) - sẽ bị loại khỏi báo cáo"
                               >
                                 <XCircle className="mr-1 h-3 w-3" />
                                 Không
@@ -428,7 +447,18 @@ export function ExpertReviewWorkspace({
                                 <Textarea
                                   value={vr.wording_fix}
                                   onChange={(e) => updateVR(i, 'wording_fix', e.target.value)}
-                                  placeholder='Ví dụ: Thay "Boosts immunity" bằng "Contains Vitamin C which contributes to normal immune function"'
+                                  placeholder={
+                                    // Dynamic placeholder based on violation type
+                                    f.category?.toLowerCase().includes('ingredient') 
+                                      ? 'Ví dụ: Sắp xếp lại thứ tự thành phần theo trọng lượng giảm dần trong công thức sản xuất'
+                                      : f.category?.toLowerCase().includes('allergen')
+                                      ? 'Ví dụ: Thêm "Contains: Milk, Wheat, Soy" hoặc in đậm allergens trong danh sách thành phần'
+                                      : f.category?.toLowerCase().includes('health') || f.category?.toLowerCase().includes('claim')
+                                      ? 'Ví dụ: Thay "Boosts immunity" bằng "Contains Vitamin C which contributes to normal immune function"'
+                                      : f.category?.toLowerCase().includes('net') || f.category?.toLowerCase().includes('weight')
+                                      ? 'Ví dụ: "Net Wt 12 oz (340g)" - thêm đơn vị metric/imperial song song'
+                                      : 'Ví dụ: Đề xuất văn bản chính xác cần sửa trên nhãn'
+                                  }
                                   rows={2}
                                   className={`text-xs ${aiDrafted && vr.wording_fix ? 'border-green-300 bg-green-50/50' : ''}`}
                                   disabled={isReadOnly}
