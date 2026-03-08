@@ -27,15 +27,15 @@ import { LabelImageGallery } from '@/components/label-image-gallery'
 import { getLabelConfig } from '@/lib/label-field-config'
 
 // Progress thresholds define the START point of each step.
-// When progress >= threshold, we're AT or PAST that step.
-// Vision (0-70%) takes most time; Steps 2-6 (70-100%) are fast.
+// Steps are distributed EVENLY so fake progress cycles through ALL steps
+// while waiting for server. This gives users visual feedback that work is progressing.
 const ANALYSIS_STEPS = [
   {
     id: 'vision',
     title: 'Phân tích hình ảnh bằng GPT-4 Vision',
     description: 'Đang quét và trích xuất văn bản, màu sắc, kích thước chữ, và layout từ nhãn...',
     icon: ScanLine,
-    progress: 0, // Step 1 starts at 0%
+    progress: 0, // Step 1: 0-19%
     details: [
       'Optical Character Recognition (OCR)',
       'Phát hiện Nutrition Facts panel',
@@ -48,7 +48,7 @@ const ANALYSIS_STEPS = [
     title: 'Tra cứu FDA Regulations (Knowledge Base)',
     description: 'Đang tìm kiếm quy định FDA trong Knowledge Base với RAG AI (Độ tương đồng 99%)...',
     icon: Database,
-    progress: 70, // Step 2 starts at 70%
+    progress: 20, // Step 2: 20-39%
     details: [
       '21 CFR Phần 101 - Nhãn dinh dưỡng',
       'FALCPA - Luật chất gây dị ứng',
@@ -61,7 +61,7 @@ const ANALYSIS_STEPS = [
     title: 'Kiểm tra hình học và kích thước',
     description: 'Đang xác minh kích thước panel, font size, và spacing theo quy định FDA...',
     icon: FileSearch,
-    progress: 80, // Step 3 starts at 80%
+    progress: 40, // Step 3: 40-54%
     details: [
       'Tính diện tích Principal Display Panel',
       'Kiểm tra minimum font size',
@@ -74,7 +74,7 @@ const ANALYSIS_STEPS = [
     title: 'Phân tích chất gây dị ứng (Allergens)',
     description: 'Đang kiểm tra khai báo allergen theo FALCPA Section 203...',
     icon: Shield,
-    progress: 85, // Step 4 starts at 85%
+    progress: 55, // Step 4: 55-69%
     details: [
       'Milk, Eggs, Fish, Shellfish',
       'Tree nuts, Peanuts, Wheat, Soybeans',
@@ -87,7 +87,7 @@ const ANALYSIS_STEPS = [
     title: 'Xác thực Nutrition Facts',
     description: 'Đang kiểm tra format, rounding, và thứ tự nutrients...',
     icon: FileText,
-    progress: 90, // Step 5 starts at 90%
+    progress: 70, // Step 5: 70-84%
     details: [
       'Tuân thủ khẩu phần (Serving size)',
       'Khai báo Calorie',
@@ -100,7 +100,7 @@ const ANALYSIS_STEPS = [
     title: 'Ánh xạ vi phạm với trích dẫn CFR',
     description: 'Đang tạo báo cáo thương mại với trích dẫn chính xác từ FDA...',
     icon: Sparkles,
-    progress: 95, // Step 6 starts at 95%
+    progress: 85, // Step 6: 85-100%
     details: [
       'Định dạng trích dẫn thông minh',
       'Ánh xạ vi phạm → CFR',

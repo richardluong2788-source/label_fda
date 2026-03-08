@@ -105,38 +105,30 @@ export default function AuditPage() {
   }, [analyzing, scanDirection])
 
   // ── Smooth fake progress while queued/processing ──────────
-  // Fake progress runs continuously to give user feedback.
-  // Vision API typically takes 30-90s (1-3 images), so we spread progress over ~120s.
-  // Progress slows down as it approaches 92% (asymptotic), never reaching 100%.
-  // Server will push to 100% when analysis completes.
+  // Fake progress runs through ALL 6 steps evenly distributed over ~90s.
+  // This gives users visual feedback that work is progressing through each phase.
+  // Step thresholds: 0%, 20%, 40%, 55%, 70%, 85%
+  // Server will push to 100% when analysis actually completes.
   useEffect(() => {
     if (!analyzing) return
     const ticker = setInterval(() => {
       setProgress(prev => {
         const next = (() => {
-          // Phase 1: Quick start (0-15% in ~9s) - immediate feedback
-          if (prev < 15) return prev + 0.5
+          // Steady progress through all steps, slowing down slightly as we go
+          // Total time to reach 95%: ~90 seconds (300ms interval)
+          if (prev < 20) return prev + 0.22   // 0-20% in ~27s (Step 1)
+          if (prev < 40) return prev + 0.20   // 20-40% in ~30s (Step 2)
+          if (prev < 55) return prev + 0.18   // 40-55% in ~25s (Step 3)
+          if (prev < 70) return prev + 0.15   // 55-70% in ~30s (Step 4)
+          if (prev < 85) return prev + 0.12   // 70-85% in ~38s (Step 5)
+          if (prev < 95) return prev + 0.08   // 85-95% in ~38s (Step 6)
           
-          // Phase 2: Steady progress (15-50% in ~42s) - Vision processing
-          if (prev < 35) return prev + 0.15
-          if (prev < 50) return prev + 0.12
-          
-          // Phase 3: Slower progress (50-75% in ~50s) - still Vision or RAG
-          if (prev < 60) return prev + 0.08
-          if (prev < 75) return prev + 0.06
-          
-          // Phase 4: Very slow crawl (75-92% in ~85s) - asymptotic approach
-          // This creates the illusion of continuous work without hitting 100%
-          if (prev < 85) return prev + 0.04
-          if (prev < 90) return prev + 0.02
-          if (prev < 92) return prev + 0.01
-          
-          // Never exceed 92% with fake progress - wait for server completion
+          // Never exceed 95% with fake progress - wait for server completion
           return prev
         })()
 
         // Sync stepIndex with fake progress
-        // Steps start at: 0%, 70%, 80%, 85%, 90%, 95%
+        // Steps start at: 0%, 20%, 40%, 55%, 70%, 85%
         let bestIdx = 0
         for (let i = 0; i < ANALYSIS_STEPS.length; i++) {
           if (ANALYSIS_STEPS[i].progress <= next) bestIdx = i
