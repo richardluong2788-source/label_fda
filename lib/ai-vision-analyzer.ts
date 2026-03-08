@@ -418,7 +418,7 @@ FONT SIZE CHART (use these values):
             ],
           },
         ],
-        max_tokens: 2000, // Reduced from 4000 to speed up response (~30s vs ~56s)
+        max_tokens: 4000, // Increased back to 4000 for complex multi-column nutrition labels (variety packs)
         temperature: 0, // Zero temperature for maximum consistency
         seed: 12345, // Fixed seed for reproducible outputs
         response_format: { type: 'json_object' },
@@ -438,16 +438,22 @@ FONT SIZE CHART (use these values):
       parsed = JSON.parse(content)
     } catch (jsonErr: any) {
       console.warn('[v0] JSON.parse failed, attempting truncation repair:', jsonErr.message)
-      // Strategy: find the last valid closing brace position and attempt parse up to there.
-      // If that also fails, extract whatever partial fields we can via regex and continue
-      // with a degraded (but non-crashing) result rather than throwing an unrecoverable error.
+      console.log('[v0] Content length:', content.length, 'Last 100 chars:', content.slice(-100))
+      
+      // Strategy: Multiple repair methods to handle different truncation scenarios
       let repaired = content.trimEnd()
+      
+      // Method 0: Try to find and fix the specific truncation point
+      // Common patterns: truncated in middle of string, array, or object
       
       // IMPROVED: Handle unterminated strings more robustly
       // Find if we're in the middle of a string by checking quote parity
       let inString = false
       let escape = false
       let lastValidPos = 0
+      let lastCompleteObjectPos = 0
+      let braceDepth = 0
+      
       for (let i = 0; i < repaired.length; i++) {
         const ch = repaired[i]
         if (escape) { escape = false; continue }
@@ -457,10 +463,27 @@ FONT SIZE CHART (use these values):
           if (!inString) lastValidPos = i // Track last closed string position
           continue 
         }
-        if (!inString && (ch === '}' || ch === ']')) {
-          lastValidPos = i
+        if (!inString) {
+          if (ch === '{') braceDepth++
+          else if (ch === '}') {
+            braceDepth--
+            lastValidPos = i
+            if (braceDepth === 1) {
+              // We just closed a top-level array item or nested object
+              lastCompleteObjectPos = i
+            }
+          }
+          else if (ch === ']') lastValidPos = i
         }
       }
+      
+      console.log('[v0] JSON repair analysis:', {
+        inString,
+        lastValidPos,
+        lastCompleteObjectPos,
+        braceDepth,
+        contentLength: repaired.length
+      })
       
       // If we ended inside a string, try to close it properly
       if (inString) {
@@ -484,6 +507,9 @@ FONT SIZE CHART (use these values):
         else if (ch === '[') openBrackets++
         else if (ch === ']') openBrackets--
       }
+      
+      console.log('[v0] JSON repair: need to close', openBrackets, 'brackets and', openBraces, 'braces')
+      
       while (openBrackets > 0) { repaired += ']'; openBrackets-- }
       while (openBraces > 0) { repaired += '}'; openBraces-- }
       
@@ -491,10 +517,12 @@ FONT SIZE CHART (use these values):
         parsed = JSON.parse(repaired)
         console.log('[v0] JSON repair succeeded (method 1: close string + brackets)')
       } catch (repairErr: any) {
-        // Method 2: Try truncating to last valid position
-        console.log('[v0] Method 1 failed, trying truncation to last valid position:', lastValidPos)
-        if (lastValidPos > 100) {
-          let truncated = content.slice(0, lastValidPos + 1)
+        console.log('[v0] Method 1 failed:', repairErr.message)
+        
+        // Method 2: Try truncating to last complete object position (better for arrays)
+        if (lastCompleteObjectPos > 100) {
+          console.log('[v0] Trying method 2: truncate to last complete object at position', lastCompleteObjectPos)
+          let truncated = content.slice(0, lastCompleteObjectPos + 1)
           // Close any remaining brackets
           let ob = 0, obrk = 0, ins = false, esc = false
           for (const ch of truncated) {
@@ -509,10 +537,80 @@ FONT SIZE CHART (use these values):
           while (ob > 0) { truncated += '}'; ob-- }
           try {
             parsed = JSON.parse(truncated)
-            console.log('[v0] JSON repair succeeded (method 2: truncation)')
-          } catch {
-            console.error('[v0] JSON repair failed completely, falling back to empty result')
-            parsed = {}
+            console.log('[v0] JSON repair succeeded (method 2: truncation to complete object)')
+          } catch (err2: any) {
+            console.log('[v0] Method 2 failed:', err2.message)
+            
+            // Method 3: Try truncating to last valid position
+            if (lastValidPos > 100 && lastValidPos !== lastCompleteObjectPos) {
+              console.log('[v0] Trying method 3: truncate to last valid position', lastValidPos)
+              let truncated2 = content.slice(0, lastValidPos + 1)
+              ob = 0; obrk = 0; ins = false; esc = false
+              for (const ch of truncated2) {
+                if (esc) { esc = false; continue }
+                if (ch === '\\' && ins) { esc = true; continue }
+                if (ch === '"') { ins = !ins; continue }
+                if (ins) continue
+                if (ch === '{') ob++; else if (ch === '}') ob--
+                if (ch === '[') obrk++; else if (ch === ']') obrk--
+              }
+              while (obrk > 0) { truncated2 += ']'; obrk-- }
+              while (ob > 0) { truncated2 += '}'; ob-- }
+              try {
+                parsed = JSON.parse(truncated2)
+                console.log('[v0] JSON repair succeeded (method 3: truncation to last valid pos)')
+              } catch (err3: any) {
+                console.log('[v0] Method 3 failed:', err3.message)
+                
+                // Method 4: Regex extraction fallback - extract key fields directly
+                console.log('[v0] Trying method 4: regex extraction fallback')
+                try {
+                  const nutritionFactsMatch = content.match(/"nutritionFacts"\s*:\s*\[([^\]]*)\]/s)
+                  const allTextMatch = content.match(/"allText"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/s)
+                  const brandNameMatch = content.match(/"brandName"\s*:\s*\{[^}]*"text"\s*:\s*"([^"]*)"/s)
+                  const productNameMatch = content.match(/"productName"\s*:\s*\{[^}]*"text"\s*:\s*"([^"]*)"/s)
+                  
+                  parsed = {
+                    nutritionFacts: [],
+                    textElements: {
+                      allText: allTextMatch?.[1] || '',
+                      brandName: { text: brandNameMatch?.[1] || '' },
+                      productName: { text: productNameMatch?.[1] || '' },
+                      netQuantity: { text: '' }
+                    }
+                  }
+                  
+                  // Try to parse nutrition facts array
+                  if (nutritionFactsMatch?.[1]) {
+                    try {
+                      // Try parsing individual objects from the array
+                      const factStrings = nutritionFactsMatch[1].match(/\{[^}]+\}/g) || []
+                      for (const fs of factStrings) {
+                        try {
+                          parsed.nutritionFacts.push(JSON.parse(fs))
+                        } catch { /* skip malformed item */ }
+                      }
+                    } catch { /* ignore parsing errors */ }
+                  }
+                  
+                  if (parsed.nutritionFacts.length > 0 || parsed.textElements.allText.length > 10) {
+                    console.log('[v0] JSON repair succeeded (method 4: regex extraction). Extracted:', {
+                      nutritionFactsCount: parsed.nutritionFacts.length,
+                      allTextLength: parsed.textElements.allText.length
+                    })
+                  } else {
+                    console.error('[v0] JSON repair failed completely, falling back to empty result')
+                    parsed = {}
+                  }
+                } catch {
+                  console.error('[v0] JSON repair failed completely, falling back to empty result')
+                  parsed = {}
+                }
+              }
+            } else {
+              console.error('[v0] JSON repair failed, falling back to empty result:', repairErr.message)
+              parsed = {}
+            }
           }
         } else {
           console.error('[v0] JSON repair failed, falling back to empty result:', repairErr.message)
