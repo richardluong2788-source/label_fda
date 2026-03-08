@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from '@/lib/i18n/context'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -59,6 +60,7 @@ export function ExpertReviewWorkspace({
   userEmail,
 }: ExpertReviewWorkspaceProps) {
   const router = useRouter()
+  const { t, locale } = useTranslation()
   const findings = report?.findings ?? []
 
   const [expertSummary, setExpertSummary] = useState(request.expert_summary ?? '')
@@ -96,12 +98,12 @@ export function ExpertReviewWorkspace({
       const res = await fetch('/api/admin/expert-draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId: request.id }),
+        body: JSON.stringify({ requestId: request.id, language: locale }),
       })
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'AI draft failed')
+        throw new Error(data.error || t.expertReview.generatingDraft)
       }
 
       const { draft } = await res.json()
@@ -168,11 +170,11 @@ export function ExpertReviewWorkspace({
   const handleSubmit = async () => {
     setError(null)
     if (!expertSummary.trim()) {
-      setError('Vui lòng nhập nhận xét tổng quan')
+      setError(t.expertReview.overallCommentPlaceholder)
       return
     }
     if (!signOffName.trim()) {
-      setError('Vui lòng nhập tên ký xác nhận')
+      setError(t.common.required)
       return
     }
 
@@ -238,19 +240,44 @@ export function ExpertReviewWorkspace({
             <Button variant="ghost" size="sm" asChild>
               <Link href="/admin">
                 <ChevronLeft className="h-4 w-4 mr-1" />
-                Expert Queue
+                {t.expertReview.title}
               </Link>
             </Button>
             <div className="h-6 w-px bg-border" />
             <div>
               <h2 className="text-base font-bold">
-                {report?.product_name || report?.file_name || 'Expert Review'}
+                {report?.product_name || report?.file_name || t.expertReview.title}
               </h2>
               <p className="text-xs text-muted-foreground">
-                Request #{request.id.slice(0, 8)} — Gửi lúc{' '}
-                {new Date(request.created_at).toLocaleString('vi-VN')}
+                Request #{request.id.slice(0, 8)} — {t.expertReview.on}{' '}
+                {new Date(request.created_at).toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US')}
               </p>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {request.status === 'pending' && (
+              <Button size="sm" variant="outline" onClick={handleAssign} disabled={submitting}>
+                {t.common.next}
+              </Button>
+            )}
+            <Badge
+              className={`text-xs border ${
+                request.status === 'completed'
+                  ? 'bg-green-100 text-green-700 border-green-200'
+                  : request.status === 'in_review'
+                  ? 'bg-blue-100 text-blue-700 border-blue-200'
+                  : 'bg-amber-100 text-amber-700 border-amber-200'
+              }`}
+            >
+              {request.status === 'completed'
+                ? t.expertReview.confirmViolation
+                : request.status === 'in_review'
+                ? t.expertReview.confirmViolation
+                : t.common.loading}
+            </Badge>
+          </div>
+        </div>
+      </div>
           </div>
           <div className="flex items-center gap-2">
             {request.status === 'pending' && (
@@ -285,30 +312,30 @@ export function ExpertReviewWorkspace({
             <Card className="p-5">
               <h2 className="font-semibold mb-3 flex items-center gap-2">
                 <User className="h-4 w-4 text-primary" />
-                Thông tin từ khách hàng
+                {t.expertReview.productReviewSection}
               </h2>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Thị trường:</span>
+                  <span className="text-muted-foreground">{t.analyze.productTypeDesc}:</span>
                   <span className="font-medium">{request.target_market ?? 'US'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Ngành:</span>
+                  <span className="text-muted-foreground">{t.report.category}:</span>
                   <span className="font-medium">{report?.product_category ?? request.product_category ?? '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Risk Score:</span>
+                  <span className="text-muted-foreground">{t.report.riskScore}:</span>
                   <span className="font-medium">{report?.overall_risk_score ?? '—'}/10</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Kết quả AI:</span>
+                  <span className="text-muted-foreground">{t.analyze.analyzing}:</span>
                   <Badge variant={report?.overall_result === 'fail' ? 'destructive' : 'secondary'} className="text-xs">
                     {report?.overall_result?.toUpperCase() ?? '—'}
                   </Badge>
                 </div>
                 {request.user_context && (
                   <div className="pt-2 border-t">
-                    <p className="text-xs text-muted-foreground mb-1">Ghi chú từ khách hàng:</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t.common.search}:</p>
                     <p className="italic text-sm">"{request.user_context}"</p>
                   </div>
                 )}
@@ -319,9 +346,9 @@ export function ExpertReviewWorkspace({
             <Card className="p-5">
               <h2 className="font-semibold mb-3 flex items-center gap-2">
                 <ImageOff className="h-4 w-4 text-primary" />
-                Nhãn sản phẩm {(report?.label_images as LabelImageEntry[])?.length > 1 && (
+                {t.expertReview.productReviewSection} {(report?.label_images as LabelImageEntry[])?.length > 1 && (
                   <Badge variant="secondary" className="text-xs ml-1">
-                    {(report?.label_images as LabelImageEntry[]).length} ảnh
+                    {(report?.label_images as LabelImageEntry[]).length} {t.gallery.labelImageCount(1, 1).split('/')[0]}
                   </Badge>
                 )}
               </h2>
@@ -335,11 +362,11 @@ export function ExpertReviewWorkspace({
             <Card className="p-5">
               <h2 className="font-semibold mb-4 flex items-center gap-2">
                 <FileText className="h-4 w-4 text-primary" />
-                Vi phạm AI phát hiện ({findings.length})
+                {t.expertReview.violationReviewSection} ({findings.length})
               </h2>
 
               {findings.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Không có vi phạm nào được ghi nhận.</p>
+                <p className="text-sm text-muted-foreground">{t.expertReview.noViolationsToReview}</p>
               ) : (
                 <div className="space-y-4">
                   {findings.map((f: any, i: number) => {
@@ -362,7 +389,7 @@ export function ExpertReviewWorkspace({
                             <span className="font-medium text-sm">{f.category}</span>
                           </div>
                           <Badge variant={f.severity === 'critical' ? 'destructive' : 'default'} className="text-xs shrink-0">
-                            {f.severity === 'critical' ? 'Critical' : 'Warning'}
+                            {f.severity === 'critical' ? t.report.critical : t.report.warning}
                           </Badge>
                         </div>
 

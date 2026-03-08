@@ -332,6 +332,71 @@ export const en: TranslationKeys = {
     geometrySection: 'GEOMETRY & FONT SIZE CHECK (21 CFR)',
   },
 
+  // ─── Expert Review ──────────────────────────────────────
+  expertReview: {
+    title: 'Expert Review',
+    pendingReviewTitle: 'Pending Expert Review',
+    completedReviewTitle: 'Expert Review Completed',
+    noDrafts: 'No expert drafts available',
+    generateDraft: 'Generate AI Draft',
+    generatingDraft: 'Generating draft...',
+    noExpertReview: 'No expert review found',
+    reviewStatus: 'Review Status',
+    reviewDate: 'Review Date',
+    // Expertise levels
+    expertLevel: 'Expertise',
+    expertLevelFDA: 'FDA Compliance Expert',
+    expertLevelLegal: 'Legal Expert',
+    expertLevelIndustry: 'Industry Expert',
+    // Section titles
+    productReviewSection: 'Product Overview',
+    violationReviewSection: 'Violation Review',
+    recommendationsSection: 'Recommendations',
+    // Violation review UI
+    confirmViolation: 'Confirm violation?',
+    confirmViolationHint: 'Confirm: This violation will be recorded in the official report and affect compliance assessment. | Reject: This violation will be ignored (AI false positive) and will not appear in the final report.',
+    yes: 'Yes',
+    no: 'No',
+    confirmed: 'Confirmed',
+    rejected: 'Rejected',
+    // Fields
+    violation: 'Violation',
+    suggestedFix: 'Suggested Fix',
+    wordingFix: 'Suggested Wording',
+    legalNote: 'Legal Note',
+    overallComment: 'Overall Comment',
+    expertSummary: 'Expert Summary',
+    // Buttons & Actions
+    saveDraft: 'Save Draft',
+    submitReview: 'Submit Review',
+    editReview: 'Edit Review',
+    downloadReview: 'Download Review',
+    generateAiDraft: 'Generate AI Draft',
+    aiDraftGenerated: '(AI generated)',
+    // Status messages
+    savingDraft: 'Saving draft...',
+    draftSaved: 'Draft saved',
+    submitting: 'Submitting...',
+    reviewSubmitted: 'Review submitted',
+    loading: 'Loading review...',
+    // Empty states
+    noViolationsToReview: 'No violations to review',
+    selectViolation: 'Select a violation to review',
+    // Placeholder/hints
+    overallCommentPlaceholder: 'Provide overall assessment and key recommendations...',
+    legalNotePlaceholder: 'Explain the legal basis and FDA requirements for this violation...',
+    // Dynamic placeholders for wording_fix (set by component)
+    wordingFixPlaceholderIngredient: 'Example: Reorder ingredients by descending weight in the manufacturing formula',
+    wordingFixPlaceholderAllergen: 'Example: Add "Contains: Milk, Wheat, Soy" or bold allergens in ingredient list',
+    wordingFixPlaceholderHealth: 'Example: Replace "Boosts immunity" with "Contains Vitamin C which contributes to normal immune function"',
+    wordingFixPlaceholderNet: 'Example: "Net Wt 12 oz (340g)" - add metric/imperial units in parallel',
+    // Timestamps
+    lastModified: 'Last modified',
+    createdBy: 'Created by',
+    by: 'by',
+    on: 'on',
+  },
+
   // ─── Audit Page ─────────�����─��──────────────────────────
   audit: {
     loading: 'Analyzing product label...',

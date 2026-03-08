@@ -34,10 +34,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { requestId } = await request.json()
+  const { requestId, language } = await request.json()
   if (!requestId) {
     return NextResponse.json({ error: 'requestId is required' }, { status: 400 })
   }
+
+  // Default to Vietnamese, accept 'en' for English
+  const targetLanguage = language === 'en' ? 'en' : 'vi'
 
   // Lấy toàn bộ thông tin request + báo cáo AI
   const { data: reviewRequest, error: reqError } = await supabase
@@ -83,18 +86,25 @@ export async function POST(request: Request) {
   const systemPrompt = `You are an expert FDA compliance consultant with 15+ years experience reviewing food, dietary supplement, and cosmetic labels for the US market. You provide precise, actionable, and legally sound guidance based on 21 CFR regulations.
 
 Your task: Review an AI-generated FDA compliance report and produce a structured expert review with:
-1. A professional summary in Vietnamese explaining the overall compliance status and key risks
+1. A professional summary explaining the overall compliance status and key risks
 2. Per-violation analysis: confirm/dismiss each finding and suggest exact corrected wording
 3. Prioritized recommended actions
 
+Target Language: ${targetLanguage === 'en' ? 'ENGLISH' : 'VIETNAMESE'}
+
 CRITICAL RULES:
-- Write the expert_summary in Vietnamese (professional tone)
+- Write the expert_summary in ${targetLanguage === 'en' ? 'ENGLISH' : 'VIETNAMESE'} (professional tone)
 - wording_fix should be the EXACT replacement text in English (as it should appear on the label)
-- legal_note MUST be written in Vietnamese with the following structure:
-  1. Start with "Qua rà soát nhãn, hệ thống phát hiện..." describing what was found (e.g., health benefit phrases, missing disclaimers)
+- legal_note MUST be written in ${targetLanguage === 'en' ? 'ENGLISH' : 'VIETNAMESE'} with the following structure:
+  ${targetLanguage === 'en' 
+    ? `1. Start with "Upon label review, the system detected..." describing what was found (e.g., health benefit phrases, missing disclaimers)
+  2. Explain why it matters legally (e.g., "According to FDA regulations, these claims must be accompanied by appropriate disclaimers to avoid misclassification as a drug")
+  3. Provide a concrete example from the label: "Example: the label currently contains the phrase '[quote from label]' which needs a disclaimer."
+  4. Reference the EXACT CFR section provided in the violation data at the end (21 CFR xxx.xx format)`
+    : `1. Start with "Qua rà soát nhãn, hệ thống phát hiện..." describing what was found (e.g., health benefit phrases, missing disclaimers)
   2. Explain why it matters legally (e.g., "Theo quy định, các tuyên bố này bắt buộc phải đi kèm câu miễn trừ DSHEA để tránh bị FDA phân loại nhầm thành dược phẩm")
   3. Provide a concrete example from the label: "Ví dụ: nhãn hiện có cụm từ '[quote from label]' cần được bổ sung disclaimer."
-  4. Reference the EXACT CFR section provided in the violation data at the end (21 CFR xxx.xx format)
+  4. Reference the EXACT CFR section provided in the violation data at the end (21 CFR xxx.xx format)`}
   
 CFR REFERENCE RULES (EXTREMELY IMPORTANT - LEGAL LIABILITY):
 - You MUST use the EXACT CFR Reference provided for each violation
