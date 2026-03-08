@@ -133,11 +133,23 @@ export class SmartCitationFormatter {
 
   /**
    * Create a complete commercial report summary
+   * Returns empty string if no findings, so client-side fallback can trigger
    */
   static createReportSummary(findings: MappedFinding[], lang: FormatterLang = 'en'): string {
     const categorized = this.formatCommercialReport(findings)
     const tips = this.generateExpertTips(findings, lang)
     const L = lang === 'vi' ? VI_REPORT : EN_REPORT
+    const compliantMsg = lang === 'vi' ? VI_COMPLIANT : EN_COMPLIANT
+
+    // If no findings at all, return a compliant message
+    const totalFindings = categorized.critical.length + categorized.warning.length + categorized.info.length
+    if (totalFindings === 0) {
+      let summary = `## ${L.title}\n\n`
+      summary += `### ${compliantMsg.icon} ${compliantMsg.title}\n\n`
+      summary += `${compliantMsg.description}\n\n`
+      summary += `${compliantMsg.recommendation}\n`
+      return summary
+    }
 
     let summary = `## ${L.title}\n\n`
     
@@ -443,4 +455,20 @@ const VI_REPORT = {
   infoIcon: '🔵', infoLabel: 'TH\u00d4NG TIN', infoNote: 'C\u00e1c ghi ch\u00fa b\u1ed5 sung \u0111\u1ec3 c\u1ea3i thi\u1ec7n nh\u00e3n:',
   tipsLabel: '💡 L\u1edcI KHUY\u00caN T\u1eea CHUY\u00caN GIA',
   legalBasisLabel: 'C\u0103n c\u1ee9 ph\u00e1p l\u00fd',
+}
+
+// ─── COMPLIANT MESSAGES (when no violations) ──────────────────────────────────
+
+const EN_COMPLIANT = {
+  icon: '✅',
+  title: 'NO CFR VIOLATIONS DETECTED',
+  description: 'Your label complies with all FDA regulations checked. Vexim AI did not find any critical violations during the inspection process.',
+  recommendation: 'The product can be distributed in the US market with low legal risk. We recommend periodic re-inspection when updating label content.',
+}
+
+const VI_COMPLIANT = {
+  icon: '✅',
+  title: 'KHÔNG CÓ VI PHẠM CFR',
+  description: 'Nhãn của bạn tuân thủ tất cả các quy định FDA được kiểm tra. Vexim AI không phát hiện vi phạm nghiêm trọng nào trong quá trình kiểm tra.',
+  recommendation: 'Sản phẩm có thể được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp. Khuyến nghị kiểm tra lại định kỳ khi cập nhật nội dung nhãn.',
 }

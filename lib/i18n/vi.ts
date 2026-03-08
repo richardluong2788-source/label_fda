@@ -121,7 +121,7 @@ export const vi = {
     productTypeDrugOTC: 'Dược phẩm OTC',
     productTypeInfant: 'Sữa công thức trẻ em',
     productTypeMedical: 'Thực phẩm y học',
-    selectProductType: 'Chọn lo��i sản phẩm...',
+    selectProductType: 'Chọn loại sản phẩm...',
     notApplicable: 'Không áp dụng',
     recommended: 'Khuyến nghị',
     // Guide banner
@@ -311,9 +311,13 @@ export const vi = {
     detectedLanguagesTitle: 'NGÔN NGỮ PHÁT HIỆN',
     nutritionFactsTitle: 'THÀNH PHẦN DINH DƯỠNG',
     multiColumnLabel: 'ĐA CỘT',
-    multiColumnWarnings: 'Phát hiện không nhất quán giữa các cột:',
-    multiColumnDetectedNoData: 'Phát hiện Nutrition Facts đa cột',
-    multiColumnDetectedNoDataDesc: 'Nhãn này có vẻ có nhiều bảng Nutrition Facts (định dạng gói đa sản phẩm), nhưng chỉ dữ liệu bảng đầu tiên được trích xuất. Để phân tích đầy đủ, vui lòng đảm bảo hình ảnh hiển thị rõ tất cả các bảng.',
+  multiColumnWarnings: 'Phát hiện không nhất quán giữa các cột:',
+  multiColumnDetectedNoData: 'Phát hiện Nutrition Facts đa cột',
+  multiColumnDetectedNoDataDesc: 'Nhãn này có vẻ có nhiều bảng Nutrition Facts (định dạng gói đa sản phẩm), nhưng chỉ dữ liệu bảng đầu tiên được trích xuất. Để phân tích đầy đủ, vui lòng đảm bảo hình ảnh hiển thị rõ tất cả các bảng.',
+  // Dual column specific (as packaged / as prepared) - NOT variety pack
+  dualColumnDetected: 'Phát hiện bảng đa cột (As Packaged/As Prepared)',
+  dualColumnDesc: 'Bảng Nutrition Facts có 2 cột hiển thị giá trị "as packaged" và "as prepared" (hoặc tương tự). Đây là định dạng chuẩn cho sản phẩm cần pha chế như bột, ngũ cốc, sữa công thức.',
+  nutrientContentClaimsTitle: 'CÔNG BỐ HÀM LƯỢNG DINH DƯỠNG (TUÂN THỦ)',
     // Confidence metrics
     confidenceMetrics: 'ĐỘ TIN CẬY PHÂN TÍCH',
     ocrLabel: 'OCR (Đọc văn bản)',
@@ -330,71 +334,6 @@ export const vi = {
     actualValue: 'GIÁ TRỊ THỰC TẾ',
     expectedValue: 'GIÁ TRỊ CHUẨN',
     geometrySection: 'KIỂM TRA HÌNH HỌC & KÍCH THƯỚC CHỮ (21 CFR)',
-  },
-
-  // ─── Expert Review ──────────────────────────────────────
-  expertReview: {
-    title: 'Rà Soát Chuyên Gia',
-    pendingReviewTitle: 'Chờ Rà Soát Chuyên Gia',
-    completedReviewTitle: 'Rà Soát Chuyên Gia Hoàn Thành',
-    noDrafts: 'Không có bản nháp của AI',
-    generateDraft: 'Soạn Thảo Tự Động',
-    generatingDraft: 'Đang soạn thảo...',
-    noExpertReview: 'Không tìm thấy rà soát chuyên gia',
-    reviewStatus: 'Trạng Thái Rà Soát',
-    reviewDate: 'Ngày Rà Soát',
-    // Expertise levels
-    expertLevel: 'Chuyên Môn',
-    expertLevelFDA: 'Chuyên Gia Tuân Thủ FDA',
-    expertLevelLegal: 'Chuyên Gia Pháp Lý',
-    expertLevelIndustry: 'Chuyên Gia Ngành',
-    // Section titles
-    productReviewSection: 'Tổng Quan Sản Phẩm',
-    violationReviewSection: 'Rà Soát Vi Phạm',
-    recommendationsSection: 'Khuyến Nghị',
-    // Violation review UI
-    confirmViolation: 'Xác nhận vi phạm?',
-    confirmViolationHint: 'Có: Vi phạm sẽ được ghi nhận trong báo cáo chính thức và ảnh hưởng đến đánh giá tuân thủ. | Không: Vi phạm sẽ bị bỏ qua (AI nhận diện sai) và không xuất hiện trong báo cáo cuối.',
-    yes: 'Có',
-    no: 'Không',
-    confirmed: 'Đã xác nhận',
-    rejected: 'Đã bác bỏ',
-    // Fields
-    violation: 'Vi Phạm',
-    suggestedFix: 'Đề Xuất Sửa Chữa',
-    wordingFix: 'Wording Đề Xuất Sửa',
-    legalNote: 'Ghi Chú Pháp Lý',
-    overallComment: 'Nhận Xét Tổng Quan',
-    expertSummary: 'Tóm Tắt Chuyên Gia',
-    // Buttons & Actions
-    saveDraft: 'Lưu Bản Nháp',
-    submitReview: 'Gửi Rà Soát',
-    editReview: 'Chỉnh Sửa Rà Soát',
-    downloadReview: 'Tải Rà Soát',
-    generateAiDraft: 'Soạn Thảo Tự Động',
-    aiDraftGenerated: '(AI soạn)',
-    // Status messages
-    savingDraft: 'Đang lưu bản nháp...',
-    draftSaved: 'Bản nháp đã lưu',
-    submitting: 'Đang gửi...',
-    reviewSubmitted: 'Rà soát đã gửi',
-    loading: 'Đang tải rà soát...',
-    // Empty states
-    noViolationsToReview: 'Không có vi phạm để rà soát',
-    selectViolation: 'Chọn vi phạm để rà soát',
-    // Placeholder/hints
-    overallCommentPlaceholder: 'Cung cấp đánh giá tổng quan và những khuyến nghị chính...',
-    legalNotePlaceholder: 'Giải thích cơ sở pháp lý và yêu cầu FDA cho vi phạm này...',
-    // Dynamic placeholders for wording_fix (set by component)
-    wordingFixPlaceholderIngredient: 'Ví dụ: Sắp xếp lại thứ tự thành phần theo trọng lượng giảm dần trong công thức sản xuất',
-    wordingFixPlaceholderAllergen: 'Ví dụ: Thêm "Contains: Milk, Wheat, Soy" hoặc in đậm allergens trong danh sách thành phần',
-    wordingFixPlaceholderHealth: 'Ví dụ: Thay "Boosts immunity" bằng "Contains Vitamin C which contributes to normal immune function"',
-    wordingFixPlaceholderNet: 'Ví dụ: "Net Wt 12 oz (340g)" - thêm đơn vị metric/imperial song song',
-    // Timestamps
-    lastModified: 'Sửa lần cuối',
-    createdBy: 'Được tạo bởi',
-    by: 'bởi',
-    on: 'vào',
   },
 
   // ─── Audit Page ──────────────────────────────────────
@@ -999,7 +938,7 @@ export const vi = {
     ] as [string, string, string][],
     // Testimonials
     testimonials: [
-      { name: 'Nguyễn Thành Trung', title: 'Giám đốc Xuất khẩu — Công ty TNHH Thực phẩm Hòa Bình', quote: 'Hai container bánh kẹo bị FDA giữ tại cảng Los Angeles vì khai báo chất gây dị ứng sai. Sau khi sử dụng Vexim, chúng tôi phát hi���n lỗi tương tự trên 3 sản phẩm khác TRƯỚC khi xuất hàng. Ước tính tiết kiệm ít nhất 60.000 USD.', result: 'Tiết kiệm 60K USD' },
+      { name: 'Nguyễn Thành Trung', title: 'Giám đốc Xuất khẩu — Công ty TNHH Thực phẩm Hòa Bình', quote: 'Hai container bánh kẹo bị FDA giữ tại cảng Los Angeles vì khai báo chất gây dị ứng sai. Sau khi sử dụng Vexim, chúng tôi phát hiện lỗi tương tự trên 3 sản phẩm khác TRƯỚC khi xuất hàng. Ước tính tiết kiệm ít nhất 60.000 USD.', result: 'Tiết kiệm 60K USD' },
       { name: 'Trần Thị Minh Hằng', title: 'Trưởng phòng QA — Viet Herb & Supplement Co.', quote: 'Thực phẩm chức năng có quy định cực kỳ phức tạp. Vexim phát hiện lỗi Structure/Function claim mà cả đội QA nội bộ 5 người đều bỏ sót. Báo cáo chi tiết đến từng mã CFR — rất chuyên nghiệp.', result: 'Phát hiện lỗi QA bỏ sót' },
       { name: 'Lê Quang Khải', title: 'Tổng Giám đốc — Saigon Organic Foods', quote: 'Trước đây mỗi lần xuất hàng là một lần lo lắng. Từ khi dùng Vexim, quy trình đã được chuẩn hóa hoàn toàn. 12 tháng liên tiếp zero FDA detention. Đây là khoản đầu tư có tỷ suất sinh lời cao nhất trong công ty.', result: '12 tháng 0 detention' },
     ],

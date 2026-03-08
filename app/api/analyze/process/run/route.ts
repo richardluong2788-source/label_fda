@@ -13,6 +13,7 @@ import { analyzeLabel } from '@/lib/ai-vision-analyzer'
 import { ViolationToCFRMapper } from '@/lib/violation-to-cfr-mapper'
 import { SmartCitationFormatter } from '@/lib/smart-citation-formatter'
 import { getPackagingFormat, getResolvedRules, getExemptFields, buildPackagingFormatPrompt, canUseSimplifiedLabeling, getMinFontSize, mapProductTypeToDomain, type PackagingFormatId, type ProductDomain } from '@/lib/packaging-format-config'
+import { detectPanelFormatType } from '@/lib/column-type-classifier'
 import type { Citation } from '@/lib/types'
 
 /**
@@ -923,6 +924,9 @@ export async function POST(request: Request) {
         nutrition_facts:         visionResult.nutritionFacts || [],
         is_multi_column_nutrition: isMultiColumn,
         nutrition_facts_columns: isMultiColumn ? visionResult.nutritionFactsColumns : null,
+        nutrition_column_format_type: isMultiColumn && visionResult.nutritionFactsColumns 
+          ? detectPanelFormatType(visionResult.nutritionFactsColumns).formatType 
+          : null,
         multi_column_validation: multiColumnValidation ? {
           isValid: multiColumnValidation.isValid,
           errors: multiColumnValidation.errors,

@@ -48,8 +48,21 @@ export class VisualGeometryAnalyzer {
   }
 
   /**
-   * FDA Regulation: Product name must be at least 50% of brand name size
-   * 21 CFR 101.3(d)
+   * Product name prominence check
+   * 
+   * IMPORTANT: 21 CFR 101.3(d) requires the "statement of identity" (common name)
+   * to be in "bold type" and "reasonably related to prominence" — but does NOT
+   * specify a minimum percentage ratio relative to brand name.
+   * 
+   * Industry standard: Brand names are almost always larger than product descriptors.
+   * Examples: Coca-Cola >> "Sparkling Water", Oreo >> "Chocolate Sandwich Cookies"
+   * 
+   * This check is now INFO-level only for extreme cases (< 15% ratio or < 6pt font)
+   * where the product name becomes genuinely unreadable. Normal brand/product
+   * size relationships (20%-50%) are NOT violations.
+   * 
+   * Reference: FDA does NOT enforce or cite 101.3(d) for font ratio violations
+   * in Warning Letters — only for missing/inadequate statement of identity.
    */
   static validateProductNameSize(
     brandName: TextElement,
@@ -57,17 +70,21 @@ export class VisualGeometryAnalyzer {
   ): GeometryViolation | null {
     const ratio = this.calculateFontRatio(productName, brandName)
 
-    if (ratio < 0.5) {
+    // Only flag if product name is genuinely unreadable (< 15% or < 6pt equivalent)
+    // This catches extreme cases where text is practically invisible
+    if (ratio < 0.15) {
       return {
         type: 'font_ratio',
-        severity: 'critical',
-        description: 'Product name font size is too small relative to brand name',
-        expected: 'Product name must be at least 50% of brand name font size',
-        actual: `Current ratio: ${(ratio * 100).toFixed(1)}%`,
-        regulation: '21 CFR 101.3(d)',
+        severity: 'info', // Changed from 'critical' - this is advisory only
+        description: 'Product name may be difficult to read due to very small font size',
+        expected: 'Product name should be clearly legible to consumers',
+        actual: `Current ratio: ${(ratio * 100).toFixed(1)}% of brand name size`,
+        regulation: '21 CFR 101.3(d) - Statement of Identity',
       }
     }
 
+    // Normal brand/product ratios (15%-100%) are NOT violations
+    // Brand names being larger than product descriptors is standard industry practice
     return null
   }
 

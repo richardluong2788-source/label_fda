@@ -1189,7 +1189,7 @@ export function ReportResultView({
                     </div>
                   )}
 
-                  {/* Health Claims (NEW) - Split into Structure/Function vs Factual */}
+                  {/* Health Claims (NEW) - Split into Structure/Function vs Factual vs Nutrient Content */}
                   {healthClaims && healthClaims.length > 0 && (() => {
                     // Lifestyle taglines/brand messaging - NOT health claims, should be ignored
                     // These are general marketing slogans, not FDA-regulated claims
@@ -1206,10 +1206,31 @@ export function ReportResultView({
                       'bonus pack', 'twin pack', 'multi-pack', 'variety pack', 'combo pack'
                     ]
                     
+                    // Nutrient content claims/statements - COMPLIANT per 21 CFR 101.13
+                    // These are factual statements about nutrient quantities, NOT health claims
+                    // Examples: "20g Protein", "3g Fiber", "27 Vitamins & Minerals", "250 Calories"
+                    const nutrientContentPatterns = [
+                      /^\d+\.?\d*\s*(g|mg|mcg|kcal|cal|oz|ml|%)\s/i,  // "20g Protein", "3g Fiber"
+                      /^\d+\.?\d*\s*(grams?|milligrams?|micrograms?|calories?)\s/i,  // "20 grams Protein"
+                      /^\d+\s*(vitamins?|minerals?)/i,  // "27 Vitamins & Minerals"
+                      /\d+\s*(nutrient|calorie)/i,  // "250 Nutrient Rich Calories"
+                      /^(high|good|excellent)\s+source\s+of\s/i,  // "Good Source of Fiber"
+                      /^(low|reduced|less|free)\s+(fat|sodium|sugar|calories?)/i,  // "Low Fat", "Reduced Sodium"
+                      /for daily nutrition/i,  // "27 Vitamins & Minerals for Daily Nutrition"
+                    ]
+                    
                     // Structure/Function indicators that require DSHEA disclaimer
-                    // REMOVED 'antioxidant' - FDA allows "good source of antioxidants" as nutrient content claim without DSHEA
-                    // ADDED more DSHEA-triggering keywords: 'boosts', 'enhances', 'strengthens', 'fights', 'protects', 'reduces risk'
-                    const structureFunctionKeywords = ['supports', 'maintains', 'promotes', 'helps', 'contributes to', 'assists', 'aids', 'healthy blood', 'nitric oxide', 'boosts', 'enhances', 'strengthens', 'fights', 'protects', 'reduces risk', 'immune', 'energy', 'metabolism']
+                    // These are phrases that imply a bodily function benefit
+                    // "for Muscle Health" is S/F, but "for Daily Nutrition" is just nutrient content claim
+                    const structureFunctionKeywords = [
+                      'supports', 'maintains', 'promotes', 'helps', 'contributes to', 'assists', 'aids',
+                      'healthy blood', 'nitric oxide', 'boosts', 'enhances', 'strengthens', 'fights',
+                      'protects', 'reduces risk', 'immune', 'metabolism',
+                      'muscle health', 'bone health', 'heart health', 'brain health', 'gut health',
+                      'joint health', 'eye health', 'skin health', 'liver health', 'kidney health',
+                      'digestive health', 'cognitive', 'mental clarity', 'focus', 'alertness',
+                      'stamina', 'endurance', 'recovery', 'performance'
+                    ]
                     
                     // Factual/Negative claims that are compliant
                     const factualClaimPatterns = ['no artificial', 'no added', 'no preservatives', 'free', 'organic', 'natural', 'non-gmo', 'gluten-free', 'allergen-free', 'sulfate-free', 'antioxidant', 'source of', 'contains']
@@ -1224,17 +1245,32 @@ export function ReportResultView({
                       return true
                     })
                     
-                    const structureFunctionClaims = actualClaims.filter(claim => 
+                    // Check if claim contains structure/function keywords
+                    const hasStructureFunctionKeyword = (claim: string) => 
                       structureFunctionKeywords.some(keyword => claim.toLowerCase().includes(keyword))
-                    )
                     
+                    // Check if claim is a nutrient content statement
+                    const isNutrientContentClaim = (claim: string) => 
+                      nutrientContentPatterns.some(pattern => pattern.test(claim)) && !hasStructureFunctionKeyword(claim)
+                    
+                    // Structure/Function claims - ONLY if they have S/F keywords
+                    const structureFunctionClaims = actualClaims.filter(claim => hasStructureFunctionKeyword(claim))
+                    
+                    // Nutrient Content claims - compliant per 21 CFR 101.13
+                    const nutrientContentClaims = actualClaims.filter(claim => isNutrientContentClaim(claim))
+                    
+                    // Factual/Negative claims (no artificial, etc.)
                     const factualClaims = actualClaims.filter(claim => 
                       factualClaimPatterns.some(pattern => claim.toLowerCase().includes(pattern)) &&
-                      !structureFunctionKeywords.some(keyword => claim.toLowerCase().includes(keyword))
+                      !hasStructureFunctionKeyword(claim) &&
+                      !isNutrientContentClaim(claim)
                     )
                     
+                    // Other claims - only what doesn't fit above categories
                     const otherClaims = actualClaims.filter(claim => 
-                      !structureFunctionClaims.includes(claim) && !factualClaims.includes(claim)
+                      !structureFunctionClaims.includes(claim) && 
+                      !factualClaims.includes(claim) &&
+                      !nutrientContentClaims.includes(claim)
                     )
                     
                     return (
@@ -1266,6 +1302,23 @@ export function ReportResultView({
                               {otherClaims.map((claim, idx) => (
                                 <p key={idx} className="text-xs text-amber-800 flex items-start gap-1.5">
                                   <Info className="h-3 w-3 shrink-0 mt-0.5" />
+                                  {claim}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Nutrient Content Claims - Compliant (21 CFR 101.13) */}
+                        {nutrientContentClaims.length > 0 && (
+                          <div className="p-2.5 rounded-lg bg-green-50 border border-green-200">
+                            <p className="text-[11px] text-green-700 uppercase tracking-wider font-bold mb-1.5">
+                              {t.report.nutrientContentClaimsTitle || 'NUTRIENT CONTENT (COMPLIANT)'}
+                            </p>
+                            <div className="space-y-1">
+                              {nutrientContentClaims.map((claim, idx) => (
+                                <p key={idx} className="text-xs text-green-800 flex items-start gap-1.5">
+                                  <CheckCircle className="h-3 w-3 shrink-0 mt-0.5 text-green-600" />
                                   {claim}
                                 </p>
                               ))}
@@ -1387,22 +1440,49 @@ export function ReportResultView({
                       )}
                     </div>
                     
-                    {/* Multi-column detection warning when columns data is missing */}
-                    {(report as any).is_multi_column_nutrition && !((report as any).nutrition_facts_columns?.length > 0) && (
-                      <div className="p-3 bg-amber-50 border-b border-amber-200">
-                        <div className="flex items-start gap-2">
-                          <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-xs font-medium text-amber-800">
-                              {t.report.multiColumnDetectedNoData || 'Multi-column Nutrition Facts Detected'}
-                            </p>
-                            <p className="text-[10px] text-amber-700 mt-0.5">
-                              {t.report.multiColumnDetectedNoDataDesc || 'This label appears to have multiple Nutrition Facts panels (variety pack format), but only the first panel data was extracted. For complete analysis, please ensure the image clearly shows all panels.'}
-                            </p>
+                    {/* Multi-column detection info - differentiate between variety pack and dual column */}
+                    {(report as any).is_multi_column_nutrition && !((report as any).nutrition_facts_columns?.length > 0) && (() => {
+                      // Detect if this is dual column (as packaged/as prepared) vs variety pack
+                      // Check column type from report metadata
+                      const columnFormat = (report as any).nutrition_column_format_type
+                      const isDualColumn = columnFormat === 'AS_PACKAGED_PREPARED' || columnFormat === 'DUAL_SERVING_CONTAINER'
+                      
+                      if (isDualColumn) {
+                        // This is expected dual-column format, show info (not warning)
+                        return (
+                          <div className="p-3 bg-blue-50 border-b border-blue-200">
+                            <div className="flex items-start gap-2">
+                              <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-xs font-medium text-blue-800">
+                                  {t.report.dualColumnDetected || 'Dual-Column Format Detected'}
+                                </p>
+                                <p className="text-[10px] text-blue-700 mt-0.5">
+                                  {t.report.dualColumnDesc || 'The Nutrition Facts panel shows two columns with "as packaged" and "as prepared" values. This is a standard format for products requiring preparation.'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      }
+                      
+                      // Variety pack - show warning that only first panel was extracted
+                      return (
+                        <div className="p-3 bg-amber-50 border-b border-amber-200">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-xs font-medium text-amber-800">
+                                {t.report.multiColumnDetectedNoData || 'Multi-column Nutrition Facts Detected'}
+                              </p>
+                              <p className="text-[10px] text-amber-700 mt-0.5">
+                                {t.report.multiColumnDetectedNoDataDesc || 'This label appears to have multiple Nutrition Facts panels (variety pack format), but only the first panel data was extracted. For complete analysis, please ensure the image clearly shows all panels.'}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )
+                    })()}
                     
                     {/* Multi-column display for variety packs */}
                     {(report as any).is_multi_column_nutrition && (report as any).nutrition_facts_columns?.length > 0 ? (
