@@ -382,11 +382,17 @@ export const en: TranslationKeys = {
     pdfDownloadError: 'Unable to download report. Please try again.',
   },
 
-  // ─── Label Image Gallery ─���───���───────────────────────
+  // ─── Label Image Gallery ─────────────────────────────
   gallery: {
     noImages: 'No images',
     scanning: 'Scanning...',
     labelImageCount: (current: number, total: number) => `${current} / ${total} label images`,
+    clickToZoom: 'Click to zoom',
+    // Label type names
+    labelTypePdp: 'PDP',
+    labelTypeNutrition: 'Nutrition Facts',
+    labelTypeIngredients: 'Ingredients',
+    labelTypeOther: 'Other',
   },
 
   // ─── Expert Request Panel ────────────────────────────

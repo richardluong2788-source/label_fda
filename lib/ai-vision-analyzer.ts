@@ -743,8 +743,15 @@ FONT SIZE CHART (use these values):
     if (!normalized.isMultiColumnNutrition && normalized.textElements.allText) {
       const allTextLower = normalized.textElements.allText.toLowerCase()
       
-      // Count occurrences of "calories" followed by a number
-      const caloriesMatches = allTextLower.match(/calories\s*\d+/g) || []
+      // Improved regex patterns for calories detection:
+      // Pattern 1: "calories 240" or "calories  240" (number AFTER calories, with 0+ spaces/special chars)
+      // Pattern 2: "240 calories" (number BEFORE calories)
+      // Pattern 3: "calories: 240" or "calories - 240" (with punctuation)
+      // We capture the FULL number by using \d+ and allowing for optional separators
+      const caloriesAfterMatches = allTextLower.match(/calories[\s:.\-]*(\d{2,4})/g) || []
+      const caloriesBeforeMatches = allTextLower.match(/(\d{2,4})[\s]*calories/g) || []
+      const caloriesMatches = [...caloriesAfterMatches, ...caloriesBeforeMatches]
+      
       const servingSizeMatches = allTextLower.match(/serving\s*size/gi) || []
       const nutritionFactsMatches = allTextLower.match(/nutrition\s*facts/gi) || []
       
@@ -753,6 +760,7 @@ FONT SIZE CHART (use these values):
         servingSizeOccurrences: servingSizeMatches.length,
         nutritionFactsOccurrences: nutritionFactsMatches.length,
         caloriesMatches: caloriesMatches.slice(0, 5),
+        rawTextSample: allTextLower.slice(0, 200), // Debug: show raw text sample
       })
       
       // If we see 2+ different Calories values or 2+ "Nutrition Facts" headers, it's likely multi-column

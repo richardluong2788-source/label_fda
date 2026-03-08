@@ -8,11 +8,23 @@ import { useTranslation } from '@/lib/i18n'
 import { ZoomIn, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { LabelImageEntry } from '@/lib/types'
 
-const LABEL_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
-  pdp: { label: 'PDP', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  nutrition: { label: 'Nutrition Facts', color: 'bg-green-100 text-green-700 border-green-200' },
-  ingredients: { label: 'Ingredients', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-  other: { label: 'Other', color: 'bg-slate-100 text-slate-700 border-slate-200' },
+// Label type colors only - labels come from i18n
+const LABEL_TYPE_COLORS: Record<string, string> = {
+  pdp: 'bg-blue-100 text-blue-700 border-blue-200',
+  nutrition: 'bg-green-100 text-green-700 border-green-200',
+  ingredients: 'bg-amber-100 text-amber-700 border-amber-200',
+  other: 'bg-slate-100 text-slate-700 border-slate-200',
+}
+
+// Helper to get localized label type name
+function getLabelTypeName(type: string, t: ReturnType<typeof useTranslation>['t']): string {
+  const labels: Record<string, string> = {
+    pdp: t.gallery.labelTypePdp || 'PDP',
+    nutrition: t.gallery.labelTypeNutrition || 'Nutrition Facts',
+    ingredients: t.gallery.labelTypeIngredients || 'Ingredients',
+    other: t.gallery.labelTypeOther || 'Other',
+  }
+  return labels[type] || labels.other
 }
 
 interface LabelImageGalleryProps {
@@ -66,7 +78,8 @@ export function LabelImageGallery({
   }
 
   const activeImage = imageList[activeIndex]
-  const typeConfig = LABEL_TYPE_CONFIG[activeImage.type] || LABEL_TYPE_CONFIG.other
+  const typeColor = LABEL_TYPE_COLORS[activeImage.type] || LABEL_TYPE_COLORS.other
+  const typeLabel = getLabelTypeName(activeImage.type, t)
 
   return (
     <div className="space-y-3">
@@ -79,7 +92,7 @@ export function LabelImageGallery({
         <div className="relative w-full" style={{ paddingBottom: '75%' }}>
           <img
             src={activeImage.url || '/placeholder.svg'}
-            alt={`Label - ${typeConfig.label}`}
+            alt={`Label - ${typeLabel}`}
             className="absolute inset-0 w-full h-full object-contain"
           />
           
@@ -92,8 +105,8 @@ export function LabelImageGallery({
 
           {/* Type Badge on active image */}
           <div className="absolute top-3 left-3 z-10">
-            <Badge variant="outline" className={cn('text-xs font-medium border backdrop-blur-sm', typeConfig.color)}>
-              {typeConfig.label}
+            <Badge variant="outline" className={cn('text-xs font-medium border backdrop-blur-sm', typeColor)}>
+              {typeLabel}
             </Badge>
           </div>
 
@@ -131,7 +144,8 @@ export function LabelImageGallery({
       {imageList.length > 1 && (
         <div className="flex gap-2">
           {imageList.map((img, idx) => {
-            const config = LABEL_TYPE_CONFIG[img.type] || LABEL_TYPE_CONFIG.other
+            const imgColor = LABEL_TYPE_COLORS[img.type] || LABEL_TYPE_COLORS.other
+            const imgLabel = getLabelTypeName(img.type, t)
             const isActive = idx === activeIndex
             return (
               <button
@@ -146,12 +160,12 @@ export function LabelImageGallery({
               >
                 <img
                   src={img.url || '/placeholder.svg'}
-                  alt={config.label}
+                  alt={imgLabel}
                   className="w-full h-14 object-cover"
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-1 py-0.5">
                   <span className="text-[9px] font-medium text-white leading-none">
-                    {config.label}
+                    {imgLabel}
                   </span>
                 </div>
                 {scanning && isActive && (
@@ -172,7 +186,7 @@ export function LabelImageGallery({
 
       {/* Click to zoom hint */}
       <p className="text-xs text-muted-foreground text-center">
-        Bấm vào ảnh để phóng to
+        {t.gallery.clickToZoom}
       </p>
 
       {/* Lightbox Modal */}
@@ -226,14 +240,14 @@ export function LabelImageGallery({
           >
             <img
               src={activeImage.url || '/placeholder.svg'}
-              alt={`Label - ${typeConfig.label}`}
+              alt={`Label - ${typeLabel}`}
               className="max-w-full max-h-[85vh] object-contain rounded-lg"
             />
             
             {/* Image info */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 backdrop-blur-sm rounded-full px-4 py-2">
-              <Badge variant="outline" className={cn('text-xs border', typeConfig.color)}>
-                {typeConfig.label}
+              <Badge variant="outline" className={cn('text-xs border', typeColor)}>
+                {typeLabel}
               </Badge>
               {imageList.length > 1 && (
                 <span className="text-white text-sm">
@@ -247,7 +261,7 @@ export function LabelImageGallery({
           {imageList.length > 1 && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/40 backdrop-blur-sm rounded-lg p-2 mt-16" style={{ marginBottom: '60px' }}>
               {imageList.map((img, idx) => {
-                const config = LABEL_TYPE_CONFIG[img.type] || LABEL_TYPE_CONFIG.other
+                const lbLabel = getLabelTypeName(img.type, t)
                 return (
                   <button
                     key={idx}
@@ -262,7 +276,7 @@ export function LabelImageGallery({
                   >
                     <img
                       src={img.url || '/placeholder.svg'}
-                      alt={config.label}
+                      alt={lbLabel}
                       className="w-full h-full object-cover"
                     />
                   </button>
