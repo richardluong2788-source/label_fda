@@ -125,8 +125,8 @@ export async function POST(request: Request) {
         const totalImages = labelImages.length
 
         // PARALLEL Vision calls - process all images simultaneously for ~2-3x speedup
-        // Instead of sequential processing which took ~46s per image, we now process
-        // all images in parallel. For 2 images, this reduces total time from ~90s to ~50s.
+        // Using Promise.allSettled to handle partial failures gracefully - if one image
+        // fails, we continue with the others instead of failing the entire analysis.
         await updateJobProgress(jobId, `Analyzing ${totalImages} images in parallel...`, 15)
         
         const visionStartTime = Date.now()
@@ -137,11 +137,29 @@ export async function POST(request: Request) {
           return { type: img.type, result }
         })
         
-        const visionResults = await Promise.all(visionPromises)
+        // Use allSettled so one failed image doesn't crash the entire analysis
+        const visionSettled = await Promise.allSettled(visionPromises)
         const visionDuration = ((Date.now() - visionStartTime) / 1000).toFixed(1)
-        console.log(`[v0] All ${totalImages} Vision analyses completed in ${visionDuration}s (parallel)`)
         
-        await updateJobProgress(jobId, `Vision analysis complete (${visionDuration}s)`, 27)
+        // Extract successful results, log failures
+        const visionResults: { type: string; result: any }[] = []
+        const failedImages: string[] = []
+        for (const settled of visionSettled) {
+          if (settled.status === 'fulfilled') {
+            visionResults.push(settled.value)
+          } else {
+            // Log the failure but continue with other images
+            console.error('[v0] Vision analysis failed for one image:', settled.reason?.message || settled.reason)
+            failedImages.push(settled.reason?.message || 'Unknown error')
+          }
+        }
+        
+        console.log(`[v0] Vision analyses: ${visionResults.length}/${totalImages} succeeded in ${visionDuration}s (parallel)`)
+        if (failedImages.length > 0) {
+          console.warn(`[v0] ${failedImages.length} image(s) failed:`, failedImages)
+        }
+        
+        await updateJobProgress(jobId, `Vision analysis complete (${visionResults.length}/${totalImages} images)`, 27)
 
         const imageAnalyses: any = {}
         for (const { type, result } of visionResults) {

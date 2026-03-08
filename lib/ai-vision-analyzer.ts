@@ -442,16 +442,38 @@ FONT SIZE CHART (use these values):
       // If that also fails, extract whatever partial fields we can via regex and continue
       // with a degraded (but non-crashing) result rather than throwing an unrecoverable error.
       let repaired = content.trimEnd()
-      // Close any open string that caused the "Unterminated string" error
-      if (!/[}\]"0-9]$/.test(repaired)) {
-        // Truncated mid-string — close it
-        repaired += '"'
-      }
-      // Count unclosed braces/brackets and close them
-      let openBraces = 0
-      let openBrackets = 0
+      
+      // IMPROVED: Handle unterminated strings more robustly
+      // Find if we're in the middle of a string by checking quote parity
       let inString = false
       let escape = false
+      let lastValidPos = 0
+      for (let i = 0; i < repaired.length; i++) {
+        const ch = repaired[i]
+        if (escape) { escape = false; continue }
+        if (ch === '\\' && inString) { escape = true; continue }
+        if (ch === '"') { 
+          inString = !inString
+          if (!inString) lastValidPos = i // Track last closed string position
+          continue 
+        }
+        if (!inString && (ch === '}' || ch === ']')) {
+          lastValidPos = i
+        }
+      }
+      
+      // If we ended inside a string, try to close it properly
+      if (inString) {
+        // Option 1: Close the string and add proper closing
+        repaired += '"'
+        console.log('[v0] JSON repair: closed unterminated string')
+      }
+      
+      // Count unclosed braces/brackets AFTER string repair
+      let openBraces = 0
+      let openBrackets = 0
+      inString = false
+      escape = false
       for (const ch of repaired) {
         if (escape) { escape = false; continue }
         if (ch === '\\' && inString) { escape = true; continue }
@@ -464,14 +486,38 @@ FONT SIZE CHART (use these values):
       }
       while (openBrackets > 0) { repaired += ']'; openBrackets-- }
       while (openBraces > 0) { repaired += '}'; openBraces-- }
+      
       try {
         parsed = JSON.parse(repaired)
-        console.log('[v0] JSON repair succeeded')
+        console.log('[v0] JSON repair succeeded (method 1: close string + brackets)')
       } catch (repairErr: any) {
-        // Repair also failed — log and continue with empty object so analysis
-        // degrades gracefully instead of crashing with a 500 error.
-        console.error('[v0] JSON repair failed, falling back to empty result:', repairErr.message)
-        parsed = {}
+        // Method 2: Try truncating to last valid position
+        console.log('[v0] Method 1 failed, trying truncation to last valid position:', lastValidPos)
+        if (lastValidPos > 100) {
+          let truncated = content.slice(0, lastValidPos + 1)
+          // Close any remaining brackets
+          let ob = 0, obrk = 0, ins = false, esc = false
+          for (const ch of truncated) {
+            if (esc) { esc = false; continue }
+            if (ch === '\\' && ins) { esc = true; continue }
+            if (ch === '"') { ins = !ins; continue }
+            if (ins) continue
+            if (ch === '{') ob++; else if (ch === '}') ob--
+            if (ch === '[') obrk++; else if (ch === ']') obrk--
+          }
+          while (obrk > 0) { truncated += ']'; obrk-- }
+          while (ob > 0) { truncated += '}'; ob-- }
+          try {
+            parsed = JSON.parse(truncated)
+            console.log('[v0] JSON repair succeeded (method 2: truncation)')
+          } catch {
+            console.error('[v0] JSON repair failed completely, falling back to empty result')
+            parsed = {}
+          }
+        } else {
+          console.error('[v0] JSON repair failed, falling back to empty result:', repairErr.message)
+          parsed = {}
+        }
       }
     }
 

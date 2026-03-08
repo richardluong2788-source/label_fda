@@ -384,15 +384,15 @@ export const vi = {
 
   // ─── Label Image Gallery ─────────────────────────────
   gallery: {
-  noImages: 'Không có hình ảnh',
-  scanning: 'Đang quét...',
-  labelImageCount: (current: number, total: number) => `${current} / ${total} hình ảnh nhãn`,
-  clickToZoom: 'Bấm vào ảnh để phóng to',
-  // Label type names
-  labelTypePdp: 'PDP',
-  labelTypeNutrition: 'Bảng TPDD',
-  labelTypeIngredients: 'Thành phần',
-  labelTypeOther: 'Khác',
+    noImages: 'Không có hình ảnh',
+    scanning: 'Đang quét...',
+    labelImageCount: (current: number, total: number) => `${current} / ${total} hình ảnh nhãn`,
+    clickToZoom: 'Bấm vào ảnh để phóng to',
+    // Label type names
+    labelTypePdp: 'PDP',
+    labelTypeNutrition: 'Bảng TPDD',
+    labelTypeIngredients: 'Thành phần',
+    labelTypeOther: 'Khác',
   },
 
   // ─── Expert Request Panel ────────────────────────────
@@ -541,7 +541,7 @@ export const vi = {
     howItWorksDesc: 'Hiểu cách AI đọc nhãn giúp bạn chuẩn bị ảnh tốt hơn.',
     steps: [
       { step: '01', title: 'Phân tích từng ảnh riêng biệt', desc: 'Mỗi ảnh được AI GPT-4o Vision xử lý độc lập. Ảnh PDP trích xuất Brand/Product/Net Weight. Ảnh Nutrition Facts trích xuất tất cả giá trị dinh dưỡng. Ảnh Ingredients trích xuất danh sách thành phần và allergens.' },
-      { step: '02', title: 'Ghép dữ liệu từ tất cả ảnh', desc: 'Hệ thống tổng hợp thông tin t��� tất cả ảnh bạn upload. Ảnh nào thiếu sẽ dẫn đến thiếu dữ liệu phân tích — đặc biệt là PDP và Nutrition Facts là hai ảnh bắt buộc không thể thiếu.' },
+      { step: '02', title: 'Ghép dữ liệu từ tất cả ảnh', desc: 'Hệ thống tổng hợp thông tin từ tất cả ảnh bạn upload. Ảnh nào thiếu sẽ dẫn đến thiếu dữ liệu phân tích — đặc biệt là PDP và Nutrition Facts là hai ảnh bắt buộc không thể thiếu.' },
       { step: '03', title: 'Đối chiếu với Knowledge Base FDA', desc: 'Dữ liệu trích xuất được so sánh với cơ sở dữ liệu gồm 21 CFR, Warning Letters thực tế, Recalls và Import Alerts để phát hiện vi phạm và đề xuất cách sửa.' },
     ],
     imageTypesTitle: '4 loại ảnh cần upload',
@@ -866,7 +866,7 @@ export const vi = {
     personas: [
       { situation: '"Tôi đang chuẩn bị xuất lô hàng đầu tiên sang Mỹ"', pain: 'Không biết nhãn sản phẩm đã đạt chuẩn FDA chưa. Sợ hàng đến cảng bị giữ lại mà không rõ lý do.', solution: 'AI của Vexim sẽ quét nhãn trong 2 phút, chỉ ra chính xác điểm nào cần sửa trước khi xuất hàng.' },
       { situation: '"Lô hàng của tôi vừa bị FDA detention"', pain: 'Đang bị giữ hàng tại cảng, chi phí lưu container tăng mỗi ngày. Cần biết ngay lỗi gì để sửa.', solution: 'Chuyên gia của Vexim phân tích nguyên nhân vi phạm, cung cấp hướng dẫn khắc phục và hồ sơ để nộp cho FDA.' },
-      { situation: '"Buyer Mỹ yêu cầu Compliance Certificate"', pain: 'Đ��i tác nhập khẩu yêu cầu chứng nhận tuân thủ FDA trước khi ký hợp đồng. Không biết lấy ở đâu.', solution: 'Vexim cấp Certification Letter khi nhãn đạt chuẩn - có giá trị để trình cho buyer và importer.' },
+      { situation: '"Buyer Mỹ yêu cầu Compliance Certificate"', pain: 'Đối tác nhập khẩu yêu cầu chứng nhận tuân thủ FDA trước khi ký hợp đồng. Không biết lấy ở đâu.', solution: 'Vexim cấp Certification Letter khi nhãn đạt chuẩn - có giá trị để trình cho buyer và importer.' },
       { situation: '"Tôi cần kiểm tra lại nhãn trước khi in ấn số lượng lớn"', pain: 'Đã thiết kế xong nhãn nhưng không chắc chắn đã tuân thủ đầy đủ quy định. In sai thì phải hủy toàn bộ.', solution: 'Tải nhãn lên kiểm tra trước khi đặt in. Sửa sớm - tiết kiệm chi phí in lại hàng chục nghìn USD.' },
     ],
     // Recall examples
@@ -930,7 +930,7 @@ export const vi = {
     // Testimonials
     testimonials: [
       { name: 'Nguyễn Thành Trung', title: 'Giám đốc Xuất khẩu — Công ty TNHH Thực phẩm Hòa Bình', quote: 'Hai container bánh kẹo bị FDA giữ tại cảng Los Angeles vì khai báo chất gây dị ứng sai. Sau khi sử dụng Vexim, chúng tôi phát hiện lỗi tương tự trên 3 sản phẩm khác TRƯỚC khi xuất hàng. Ước tính tiết kiệm ít nhất 60.000 USD.', result: 'Tiết kiệm 60K USD' },
-      { name: 'Trần Thị Minh Hằng', title: 'Trưởng phòng QA — Viet Herb & Supplement Co.', quote: 'Thực phẩm chức năng có quy định cực kỳ phức tạp. Vexim phát hiện lỗi Structure/Function claim mà cả đội QA nội bộ 5 người đ���u bỏ sót. Báo cáo chi tiết đến từng mã CFR — rất chuyên nghiệp.', result: 'Phát hiện lỗi QA bỏ sót' },
+      { name: 'Trần Thị Minh Hằng', title: 'Trưởng phòng QA — Viet Herb & Supplement Co.', quote: 'Thực phẩm chức năng có quy định cực kỳ phức tạp. Vexim phát hiện lỗi Structure/Function claim mà cả đội QA nội bộ 5 người đều bỏ sót. Báo cáo chi tiết đến từng mã CFR — rất chuyên nghiệp.', result: 'Phát hiện lỗi QA bỏ sót' },
       { name: 'Lê Quang Khải', title: 'Tổng Giám đốc — Saigon Organic Foods', quote: 'Trước đây mỗi lần xuất hàng là một lần lo lắng. Từ khi dùng Vexim, quy trình đã được chuẩn hóa hoàn toàn. 12 tháng liên tiếp zero FDA detention. Đây là khoản đầu tư có tỷ suất sinh lời cao nhất trong công ty.', result: '12 tháng 0 detention' },
     ],
     // What you get
