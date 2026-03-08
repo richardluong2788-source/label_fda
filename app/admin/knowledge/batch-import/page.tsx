@@ -26,7 +26,7 @@ export default function BatchImportPage() {
   const [processing, setProcessing] = useState(false)
   const [paused, setPaused] = useState(false)
   const [currentBatch, setCurrentBatch] = useState(0)
-  const [batchSize, setBatchSize] = useState(50)
+  const [batchSize, setBatchSize] = useState(400)
   const [error, setError] = useState<string | null>(null)
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -271,13 +271,13 @@ export default function BatchImportPage() {
                 type="number"
                 value={batchSize}
                 onChange={(e) => setBatchSize(Number(e.target.value))}
-                min={10}
-                max={100}
-                step={10}
+                min={100}
+                max={1000}
+                step={50}
                 className="w-32 px-3 py-2 border rounded-lg"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Khuyến nghị: 50 sections/batch (an toan, tranh timeout). Toi da 100.
+                Khuyến nghị: 400-500 sections/batch cho Vercel timeout 60s
               </p>
               <Button onClick={analyzeBatches} className="mt-4">
                 Phân tích file
