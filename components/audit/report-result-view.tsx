@@ -1502,6 +1502,36 @@ export function ReportResultView({
                                           regulation: 'USDA Bioengineered (BE) Disclosure',
                                           note: 'Phải tuân thủ National Bioengineered Food Disclosure Standard.',
                                           needsLabTest: false
+                                        },
+                                        'superfood': {
+                                          regulation: 'Không có quy định FDA',
+                                          note: 'Claim marketing không được FDA định nghĩa. Có thể bị coi là misleading nếu không có evidence.',
+                                          needsLabTest: false
+                                        },
+                                        'vegan': {
+                                          regulation: 'Không có quy định FDA',
+                                          note: 'Claim tự nguyện. Khuyến nghị có chứng nhận từ bên thứ ba.',
+                                          needsLabTest: false
+                                        },
+                                        'vegetarian': {
+                                          regulation: 'Không có quy định FDA',
+                                          note: 'Claim tự nguyện. Khuyến nghị có chứng nhận từ bên thứ ba.',
+                                          needsLabTest: false
+                                        },
+                                        'plant-based': {
+                                          regulation: 'Không có quy định FDA',
+                                          note: 'Claim không được FDA định nghĩa chính thức.',
+                                          needsLabTest: false
+                                        },
+                                        'all natural': {
+                                          regulation: 'FDA Policy (không có CFR)',
+                                          note: 'FDA chưa có định nghĩa chính thức. Nên tránh sử dụng hoặc cần evidence.',
+                                          needsLabTest: false
+                                        },
+                                        'natural': {
+                                          regulation: 'FDA Policy (không có CFR)',
+                                          note: 'FDA chưa có định nghĩa chính thức. Nên tránh sử dụng hoặc cần evidence.',
+                                          needsLabTest: false
                                         }
                                       }
                                       
@@ -1565,22 +1595,138 @@ export function ReportResultView({
                           </div>
                         )}
                         
-                        {/* Factual/Negative Claims - Compliant */}
-                        {factualClaims.length > 0 && (
-                          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                            <p className="text-[11px] text-slate-600 uppercase tracking-wider font-bold mb-1.5">
-                              {t.report.factualClaimsTitle || 'FACTUAL/NEGATIVE CLAIMS (COMPLIANT)'}
-                            </p>
-                            <div className="space-y-1">
-                              {factualClaims.map((claim, idx) => (
-                                <p key={idx} className="text-xs text-slate-700 flex items-start gap-1.5">
-                                  <CheckCircle className="h-3 w-3 shrink-0 mt-0.5 text-green-600" />
-                                  {claim}
-                                </p>
-                              ))}
+                        {/* Factual/Negative Claims - Compliant with tooltips */}
+                        {factualClaims.length > 0 && (() => {
+                          const factualClaimTooltips: Record<string, { regulation: string; note: string; needsLabTest?: boolean }> = {
+                            'usda organic': {
+                              regulation: 'USDA NOP (7 CFR Part 205)',
+                              note: 'Phải có chứng nhận USDA Organic từ certifying agent.',
+                              needsLabTest: false
+                            },
+                            'organic': {
+                              regulation: 'USDA NOP (7 CFR Part 205)',
+                              note: 'Phải có chứng nhận từ USDA-accredited certifying agent.',
+                              needsLabTest: false
+                            },
+                            'gluten free': {
+                              regulation: '21 CFR §101.91',
+                              note: '< 20ppm gluten để được gọi là "Gluten-Free".',
+                              needsLabTest: true
+                            },
+                            'gluten-free': {
+                              regulation: '21 CFR §101.91',
+                              note: '< 20ppm gluten để được gọi là "Gluten-Free".',
+                              needsLabTest: true
+                            },
+                            'non-gmo': {
+                              regulation: 'USDA BE Disclosure',
+                              note: 'Tuân thủ National Bioengineered Food Disclosure Standard.',
+                              needsLabTest: false
+                            },
+                            'no artificial flavors': {
+                              regulation: '21 CFR §101.22',
+                              note: 'Phải đảm bảo không có artificial flavors theo định nghĩa FDA.',
+                              needsLabTest: false
+                            },
+                            'no artificial sweeteners': {
+                              regulation: '21 CFR §101.22',
+                              note: 'Phải đảm bảo không có artificial sweeteners.',
+                              needsLabTest: false
+                            },
+                            'no preservatives': {
+                              regulation: '21 CFR §101.22',
+                              note: 'Phải đảm bảo không có preservatives theo định nghĩa FDA.',
+                              needsLabTest: false
+                            },
+                            'no added sugar': {
+                              regulation: '21 CFR §101.60(c)',
+                              note: 'Không được thêm đường trong quá trình sản xuất.',
+                              needsLabTest: false
+                            },
+                            'sugar free': {
+                              regulation: '21 CFR §101.60(c)',
+                              note: '< 0.5g sugar per serving.',
+                              needsLabTest: false
+                            },
+                            'fat free': {
+                              regulation: '21 CFR §101.62(b)',
+                              note: '< 0.5g fat per serving.',
+                              needsLabTest: false
+                            },
+                            'low fat': {
+                              regulation: '21 CFR §101.62(b)',
+                              note: '≤ 3g fat per serving.',
+                              needsLabTest: false
+                            },
+                            'low sodium': {
+                              regulation: '21 CFR §101.61',
+                              note: '≤ 140mg sodium per serving.',
+                              needsLabTest: false
+                            },
+                            'sodium free': {
+                              regulation: '21 CFR §101.61',
+                              note: '< 5mg sodium per serving.',
+                              needsLabTest: false
+                            },
+                            'kosher': {
+                              regulation: 'Chứng nhận Kosher',
+                              note: 'Phải có chứng nhận từ tổ chức Kosher được công nhận.',
+                              needsLabTest: false
+                            },
+                            'halal': {
+                              regulation: 'Chứng nhận Halal',
+                              note: 'Phải có chứng nhận từ tổ chức Halal được công nhận.',
+                              needsLabTest: false
+                            }
+                          }
+                          
+                          return (
+                            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                              <p className="text-[11px] text-slate-600 uppercase tracking-wider font-bold mb-1.5">
+                                {t.report.factualClaimsTitle || 'FACTUAL/NEGATIVE CLAIMS (COMPLIANT)'}
+                              </p>
+                              <div className="space-y-1">
+                                {factualClaims.map((claim, idx) => {
+                                  const claimLower = claim.toLowerCase().trim()
+                                  const tooltipInfo = factualClaimTooltips[claimLower]
+                                  
+                                  if (tooltipInfo) {
+                                    return (
+                                      <TooltipProvider key={idx}>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <p className="text-xs text-slate-700 flex items-start gap-1.5 cursor-help hover:text-slate-900 transition-colors">
+                                              <CheckCircle className="h-3 w-3 shrink-0 mt-0.5 text-green-600" />
+                                              <span className="underline decoration-dotted underline-offset-2">{claim}</span>
+                                            </p>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="max-w-xs p-3 bg-slate-900 text-white border-slate-700">
+                                            <div className="space-y-1.5">
+                                              <p className="text-[10px] font-mono text-green-300">{tooltipInfo.regulation}</p>
+                                              <p className="text-xs">{tooltipInfo.note}</p>
+                                              {tooltipInfo.needsLabTest && (
+                                                <p className="text-[10px] text-blue-300 pt-1 border-t border-slate-700">
+                                                  Cần lab test để xác nhận tuân thủ
+                                                </p>
+                                              )}
+                                            </div>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    )
+                                  }
+                                  
+                                  return (
+                                    <p key={idx} className="text-xs text-slate-700 flex items-start gap-1.5">
+                                      <CheckCircle className="h-3 w-3 shrink-0 mt-0.5 text-green-600" />
+                                      {claim}
+                                    </p>
+                                  )
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )
+                        })()}
                       </div>
                     )
                   })()}
