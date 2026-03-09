@@ -132,7 +132,10 @@ export async function POST(req: Request) {
       price_usd: body.price_usd != null && body.price_usd !== '' ? Number(body.price_usd) : null,
       annual_price_usd: body.annual_price_usd != null && body.annual_price_usd !== '' ? Number(body.annual_price_usd) : null,
       expert_review_price_usd: body.expert_review_price_usd != null && body.expert_review_price_usd !== '' ? Number(body.expert_review_price_usd) : null,
-      reports_limit: Number(body.reports_limit) || 1,
+      // Use provided value or default to 1 for new plans only
+      reports_limit: body.reports_limit !== undefined && body.reports_limit !== null && body.reports_limit !== '' 
+        ? Number(body.reports_limit) 
+        : 1,
       expert_reviews_limit: Number(body.expert_reviews_limit) || 0,
       storage_days: body.storage_days ? Number(body.storage_days) : null,
       features: featuresArray,
