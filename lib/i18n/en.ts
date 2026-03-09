@@ -562,7 +562,7 @@ export const en: TranslationKeys = {
     howItWorksTitle: 'How does the system work?',
     howItWorksDesc: 'Understanding how AI reads labels helps you prepare better images.',
     steps: [
-      { step: '01', title: 'Analyze each image independently', desc: 'Each image is processed independently by AI GPT-4o Vision. PDP image extracts Brand/Product/Net Weight. Nutrition Facts image extracts all nutritional values. Ingredients image extracts ingredient list and allergens.' },
+      { step: '01', title: 'Analyze each image independently', desc: 'Each image is processed independently by AI Vexim Vision. PDP image extracts Brand/Product/Net Weight. Nutrition Facts image extracts all nutritional values. Ingredients image extracts ingredient list and allergens.' },
       { step: '02', title: 'Combine data from all images', desc: 'The system aggregates information from all uploaded images. Missing images lead to missing analysis data — PDP and Nutrition Facts in particular are mandatory and cannot be skipped.' },
       { step: '03', title: 'Cross-reference with FDA Knowledge Base', desc: 'Extracted data is compared against a database of 21 CFR, real Warning Letters, Recalls and Import Alerts to detect violations and suggest fixes.' },
     ],
@@ -1080,7 +1080,7 @@ export const en: TranslationKeys = {
     completed: 'Completed',
     analysisConfig: 'Analysis Configuration',
     // Step 1: Vision
-    visionTitle: 'Image Analysis with GPT-4 Vision',
+    visionTitle: 'Image Analysis with Vexim Vision',
     visionDesc: 'Scanning and extracting text, colors, font sizes, and layout from label...',
     visionDetail1: 'Optical Character Recognition (OCR)',
     visionDetail2: 'Nutrition Facts panel detection',
@@ -1088,7 +1088,7 @@ export const en: TranslationKeys = {
     visionDetail4: 'Color and contrast analysis',
     // Step 2: FDA Search
     fdaSearchTitle: 'FDA Regulations Lookup (Knowledge Base)',
-    fdaSearchDesc: 'Searching FDA regulations in Knowledge Base with RAG AI (99% similarity)...',
+    fdaSearchDesc: 'Searching FDA regulations in Knowledge Base',
     fdaSearchDetail1: '21 CFR Part 101 - Nutrition Labeling',
     fdaSearchDetail2: 'FALCPA - Allergen Labeling Law',
     fdaSearchDetail3: 'Health Claims Regulations',

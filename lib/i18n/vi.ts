@@ -562,7 +562,7 @@ export const vi = {
     howItWorksTitle: 'Hệ thống hoạt động như thế nào?',
     howItWorksDesc: 'Hiểu cách AI đọc nhãn giúp bạn chuẩn bị ảnh tốt hơn.',
     steps: [
-      { step: '01', title: 'Phân tích từng ảnh riêng biệt', desc: 'Mỗi ảnh được AI GPT-4o Vision xử lý độc lập. Ảnh PDP trích xuất Brand/Product/Net Weight. Ảnh Nutrition Facts trích xuất tất cả giá trị dinh dưỡng. Ảnh Ingredients trích xuất danh sách thành phần và allergens.' },
+      { step: '01', title: 'Phân tích từng ảnh riêng biệt', desc: 'Mỗi ảnh được AI Vexim Vision xử lý độc lập. Ảnh PDP trích xuất Brand/Product/Net Weight. Ảnh Nutrition Facts trích xuất tất cả giá trị dinh dưỡng. Ảnh Ingredients trích xuất danh sách thành phần và allergens.' },
       { step: '02', title: 'Ghép dữ liệu từ tất cả ảnh', desc: 'Hệ thống tổng hợp thông tin từ tất cả ảnh bạn upload. Ảnh nào thiếu sẽ dẫn đến thiếu dữ liệu phân tích — đặc biệt là PDP và Nutrition Facts là hai ảnh bắt buộc không thể thiếu.' },
       { step: '03', title: 'Đối chiếu với Knowledge Base FDA', desc: 'Dữ liệu trích xuất được so sánh với cơ sở dữ liệu gồm 21 CFR, Warning Letters thực tế, Recalls và Import Alerts để phát hiện vi phạm và đề xuất cách sửa.' },
     ],
@@ -1091,7 +1091,7 @@ export const vi = {
     completed: 'Hoàn thành',
     analysisConfig: 'Cấu hình phân tích',
     // Step 1: Vision
-    visionTitle: 'Phân tích hình ảnh bằng GPT-4 Vision',
+    visionTitle: 'Phân tích hình ảnh',
     visionDesc: 'Đang quét và trích xuất văn bản, màu sắc, kích thước chữ, và layout từ nhãn...',
     visionDetail1: 'Optical Character Recognition (OCR)',
     visionDetail2: 'Phát hiện Nutrition Facts panel',
@@ -1099,7 +1099,7 @@ export const vi = {
     visionDetail4: 'Phân tích màu sắc và contrast',
     // Step 2: FDA Search
     fdaSearchTitle: 'Tra cứu FDA Regulations (Knowledge Base)',
-    fdaSearchDesc: 'Đang tìm kiếm quy định FDA trong Knowledge Base với RAG AI (Độ tương đồng 99%)...',
+    fdaSearchDesc: 'Đang tìm kiếm quy định FDA trong Knowledge Base',
     fdaSearchDetail1: '21 CFR Phần 101 - Nhãn dinh dưỡng',
     fdaSearchDetail2: 'FALCPA - Luật chất gây dị ứng',
     fdaSearchDetail3: 'Quy định về Health Claims',
@@ -1131,7 +1131,7 @@ export const vi = {
     mappingDetail1: 'Định dạng trích dẫn thông minh',
     mappingDetail2: 'Ánh xạ vi phạm → CFR',
     mappingDetail3: 'Tạo báo cáo thương mại',
-    mappingDetail4: 'Khuyến nghị chuyên gia',
+    mappingDetail4: 'Khuyến nghị từ chuyên gia',
   },
 } as const
 
