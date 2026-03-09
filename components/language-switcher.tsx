@@ -11,8 +11,8 @@ import {
 import { useTranslation, type Locale } from '@/lib/i18n'
 
 const LANGUAGES: { code: Locale; label: string; flag: string }[] = [
-  { code: 'vi', label: 'Tiếng Việt', flag: 'VI' },
   { code: 'en', label: 'English', flag: 'EN' },
+  { code: 'vi', label: 'Tiếng Việt', flag: 'VI' },
 ]
 
 export function LanguageSwitcher() {

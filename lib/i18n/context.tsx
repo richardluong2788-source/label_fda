@@ -19,7 +19,7 @@ const I18nContext = createContext<I18nContextType | null>(null)
 const STORAGE_KEY = 'vexim-locale'
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('en')
+  const [locale, setLocaleState] = useState<Locale>('vi')
 
   // Read persisted locale on mount
   useEffect(() => {
@@ -57,12 +57,12 @@ export function useTranslation() {
   const ctx = useContext(I18nContext)
   if (!ctx) {
     // Fallback for non-provider usage (e.g., server components)
-    return { locale: 'en' as Locale, setLocale: () => {}, t: en }
+    return { locale: 'vi' as Locale, setLocale: () => {}, t: vi }
   }
   return ctx
 }
 
 // Helper to get translations server-side (non-React)
-export function getTranslations(locale: Locale = 'en'): TranslationKeys {
+export function getTranslations(locale: Locale = 'vi'): TranslationKeys {
   return dictionaries[locale]
 }
