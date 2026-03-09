@@ -1,6 +1,6 @@
 'use client'
 
-import { User, Settings, Shield, LogOut, ChevronDown } from 'lucide-react'
+import { User, Settings, LogOut, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -71,14 +71,6 @@ export function UserProfileMenu({ email, isAdmin }: UserProfileMenuProps) {
               Cài đặt
             </Link>
           </DropdownMenuItem>
-          {isAdmin && (
-            <DropdownMenuItem asChild>
-              <Link href="/admin" className="cursor-pointer text-primary">
-                <Shield className="mr-2 h-4 w-4" />
-                Bảng điều khiển Admin
-              </Link>
-            </DropdownMenuItem>
-          )}
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
