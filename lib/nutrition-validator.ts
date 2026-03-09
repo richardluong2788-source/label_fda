@@ -151,7 +151,10 @@ export class NutritionValidator {
       } else if (name.includes('sodium')) {
         const validation = this.validateSodium(fact.value)
         if (!validation.isValid) {
-          errors.push(
+          // Sodium rounding is a MINOR labeling error - WARNING, not CRITICAL
+          // FDA typically does not detain products solely for sodium rounding violations
+          // This should result in a lower risk score (3-4 range, not 8)
+          warnings.push(
             `Sodium value ${fact.value}mg does not follow FDA rounding rules. Expected: ${validation.expected}mg`
           )
         }

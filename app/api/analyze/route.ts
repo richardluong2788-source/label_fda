@@ -325,7 +325,7 @@ export async function POST(request: Request) {
           detectedProductType: visionResult.detectedProductType,
         })
 
-        // ─������ AUTO-DETECT PRODUCT DOMAIN FROM VISION ───────────────────────────
+        // ─������� AUTO-DETECT PRODUCT DOMAIN FROM VISION ───────────────────────────
         // When user hasn't selected a product type, upgrade productDomain from
         // Vision AI's label analysis instead of defaulting blindly to 'food'.
         const userChoseProductType = !!(report.product_type || report.product_category)
@@ -1302,7 +1302,7 @@ export async function POST(request: Request) {
       }
     }
 
-  // Add nutrition validation errors as violations
+  // Add nutrition validation errors as violations (CRITICAL level - e.g., impossible values)
   if (!nutritionValidation.isValid) {
   for (const error of nutritionValidation.errors) {
   violations.push({
@@ -1313,6 +1313,22 @@ export async function POST(request: Request) {
   suggested_fix: 'Correct the value according to FDA rounding rules',
   citations: [],
   confidence_score: 1.0, // Code validation is 100% confident
+  })
+  }
+  }
+  
+  // Add nutrition validation warnings as violations (WARNING level - e.g., rounding errors)
+  // These are minor labeling issues that don't typically result in detention
+  if (nutritionValidation.warnings && nutritionValidation.warnings.length > 0) {
+  for (const warning of nutritionValidation.warnings) {
+  violations.push({
+  category: 'Nutrition Facts Validation',
+  severity: 'warning' as const,
+  description: warning,
+  regulation_reference: '21 CFR 101.9(c)',
+  suggested_fix: 'Correct the value according to FDA rounding rules',
+  citations: [],
+  confidence_score: 1.0,
   })
   }
   }

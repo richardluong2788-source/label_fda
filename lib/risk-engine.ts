@@ -70,25 +70,41 @@ export function calculateViolationRisk(
   let riskScore = 0
 
   // Base risk by severity
-  // For warnings, distinguish between confirmed violations (4.0) and
-  // verification-needed / order-check advisories (3.0).
+  // WARNING: Critical = 8.0 is for violations that can cause detention/recall
+  // Warnings are for minor labeling errors that FDA usually handles with advisory
+  // 
+  // Calibrated weights based on FDA enforcement patterns:
+  // - Critical (8.0): Missing allergens, false health claims, contamination
+  // - Warning (3.5): Rounding errors, format issues, minor labeling errors
+  // - Info (1.0): Advisory/informational, no enforcement risk
   const severityWeights = {
     critical: 8.0,
-    warning: 4.0,
-    info: 1.5,
+    warning: 3.5,  // Reduced from 4.0 - minor issues don't warrant high risk
+    info: 1.0,     // Reduced from 1.5 - purely informational
   }
   riskScore = severityWeights[violation.severity]
 
-  // Soften warning score when the violation is a verification advisory
+  // Further calibrate warning score based on violation type
   if (violation.severity === 'warning') {
     const desc = violation.description.toLowerCase()
+    
+    // Minor rounding/format errors - lower risk (2.5-3.0)
+    const isMinorRoundingError =
+      desc.includes('rounding') || desc.includes('làm tròn') ||
+      desc.includes('expected:') || desc.includes('dự kiến:')
+    
+    // Verification/order warnings - low risk (2.5)
     const isVerificationWarning =
       desc.includes('thứ tự') || desc.includes('order') ||
       desc.includes('verify') || desc.includes('kiểm tra') ||
       desc.includes('xác nhận') || desc.includes('check')
+    
     const aiConfidence = violation.confidence_score ?? 1.0
-    if (isVerificationWarning || aiConfidence < 0.7) {
-      riskScore = 3.0  // Low-Medium instead of Medium
+    
+    if (isMinorRoundingError) {
+      riskScore = 2.5  // Rounding errors are very minor
+    } else if (isVerificationWarning || aiConfidence < 0.7) {
+      riskScore = 2.5  // Low-Medium instead of Medium
     }
   }
 

@@ -805,10 +805,18 @@ export async function POST(request: Request) {
       }
     }
 
-    // Nutrition validation errors
+    // Nutrition validation errors (CRITICAL - impossible values, missing mandatory nutrients)
     if (!nutritionValidation.isValid) {
       for (const error of nutritionValidation.errors) {
         violations.push({ category: 'Nutrition Facts Validation', severity: 'critical' as const, description: error, regulation_reference: '21 CFR 101.9(c)', suggested_fix: 'Correct the value according to FDA rounding rules', citations: [], confidence_score: 1.0 })
+      }
+    }
+    
+    // Nutrition validation warnings (WARNING - rounding errors, minor issues)
+    // These don't typically cause detention but should be fixed
+    if (nutritionValidation.warnings && nutritionValidation.warnings.length > 0) {
+      for (const warning of nutritionValidation.warnings) {
+        violations.push({ category: 'Nutrition Facts Validation', severity: 'warning' as const, description: warning, regulation_reference: '21 CFR 101.9(c)', suggested_fix: 'Correct the value according to FDA rounding rules', citations: [], confidence_score: 1.0 })
       }
     }
 
