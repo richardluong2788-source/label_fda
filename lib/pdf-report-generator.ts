@@ -1844,10 +1844,10 @@ ${(() => {
     <div style="font-size: 14px; font-weight: 700; margin-bottom: 6px;">${L.upgradeTitle}</div>
     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 12px; line-height: 1.6;">${L.upgradeDesc}<br/>${L.upgradeDesc2}</div>
     <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-      <a href="https://vexim.global/pricing" style="display: inline-block; background: white; color: #1e40af; padding: 10px 20px; border-radius: 8px; font-size: 11px; font-weight: 700; text-decoration: none;">${L.requestVerification}</a>
-      <a href="mailto:support@vexim.global" style="display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 10px 20px; border-radius: 8px; font-size: 11px; font-weight: 600; text-decoration: none; border: 1px solid rgba(255,255,255,0.3);">${L.contactConsulting}</a>
+      <a href="https://ailabelpro.com/pricing" style="display: inline-block; background: white; color: #1e40af; padding: 10px 20px; border-radius: 8px; font-size: 11px; font-weight: 700; text-decoration: none;">${L.requestVerification}</a>
+      <a href="mailto:support@veximglobal.com" style="display: inline-block; background: rgba(255,255,255,0.2); color: white; padding: 10px 20px; border-radius: 8px; font-size: 11px; font-weight: 600; text-decoration: none; border: 1px solid rgba(255,255,255,0.3);">${L.contactConsulting}</a>
     </div>
-    <div style="margin-top: 8px; font-size: 9px; opacity: 0.8;">Hotline: +1 (555) 123-4567 | Email: support@vexim.global</div>
+    <div style="margin-top: 8px; font-size: 9px; opacity: 0.8;">Hotline: +84 (373) 685634 | Email: support@veximglobal.com</div>
   </div>` : ''}
 
   <!-- Signature Section -->
