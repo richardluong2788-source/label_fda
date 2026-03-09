@@ -122,7 +122,7 @@ export const vi = {
     productTypeDrugOTC: 'Dược phẩm OTC',
     productTypeInfant: 'Sữa công thức trẻ em',
     productTypeMedical: 'Thực phẩm y học',
-    selectProductType: 'Chọn lo��i sản phẩm...',
+    selectProductType: 'Chọn loại sản phẩm...',
     notApplicable: 'Không áp dụng',
     recommended: 'Khuyến nghị',
     // Guide banner
@@ -530,7 +530,7 @@ export const vi = {
     pkgBag: 'Bao / Túi lớn',
     targetAudience: 'Đối tượng sử dụng',
     selectAudience: 'Chọn đối tượng',
-    audienceAdults: 'Ngư���i lớn',
+    audienceAdults: 'Người lớn',
     audienceChildren: 'Trẻ em (4 - 12 tuổi)',
     audienceInfants: 'Trẻ sơ sinh (dưới 2 tuổi)',
     audienceElderly: 'Người cao tuổi',
@@ -616,7 +616,7 @@ export const vi = {
     advancedTitle: 'Tùy chọn nâng cao để tăng độ chính xác',
     advancedDesc: 'Những thông tin bổ sung này giúp AI áp dụng đúng bộ quy định cho sản phẩm của bạn.',
     advancedTips: [
-      { title: 'Chọn đúng danh mục sản phẩm', desc: 'Vào "Tùy chọn nâng cao" và chọn đúng Product Category (Food, Beverage, Dietary Supplement, Cosmetic...). AI sẽ áp dụng bộ quy định FDA đúng với loại s���n phẩm của bạn thay vì dùng mặc định.' },
+      { title: 'Chọn đúng danh mục sản phẩm', desc: 'Vào "Tùy chọn nâng cao" và chọn đúng Product Category (Food, Beverage, Dietary Supplement, Cosmetic...). AI sẽ áp dụng bộ quy định FDA đúng với loại sản phẩm của bạn thay vì dùng mặc định.' },
       { title: 'Nhập kích thước vật lý của nhãn', desc: 'Đo chiều rộng × chiều cao của bề mặt nhãn (cm) và nhập vào ô Kích thước vật lý. AI dùng thông tin này để kiểm tra font size có đạt chuẩn tối thiểu 21 CFR 101.105 hay không.' },
       { title: 'Khai báo ngôn ngữ phụ', desc: 'Nếu nhãn có song ngữ (Anh + Việt), bắt "Nhãn này có chữ ngoài tiếng Anh" và chọn ngôn ngữ. AI sẽ kiểm tra xem tất cả thông tin bắt buộc đã dịch đầy đủ chưa theo 21 CFR 101.15.' },
       { title: 'Cách chụp ảnh chất lượng cao', desc: 'Đặt sản phẩm lên nền trắng, chụp bằng điện thoại ở chế độ ban ngày tự nhiên hoặc đèn trắng. Giữ điện thoại song song với mặt nhãn. Không dùng zoom số.' },
