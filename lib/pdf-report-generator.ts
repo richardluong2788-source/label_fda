@@ -169,7 +169,7 @@ colorContrast: 'Độ tương phản màu',
     pendingExpertVerification: 'đang chờ xác minh chuyên gia',
     certificationDesc2: 'Các phát hiện dựa trên phân tích tự động nhãn đã gửi so với các quy định FDA hiện hành (21 CFR) và tiền lệ xử phạt.',
     fdaComplianceExpert: 'Chuyên gia tuân thủ FDA',
-    veximAiSystem: 'Hệ thống phân tích AI Label Pro (Vexim Global)',
+    veximAiSystem: 'Hệ thống AI Label Pro — Chờ xác minh chuyên gia',
     certId: 'Mã chứng nhận',
     disclaimer: 'Tuyên bố miễn trừ trách nhiệm',
     disclaimerText: 'Báo cáo này được tạo theo 21 CFR đã sửa đổi ngày 1 tháng 4, 2025. Báo cáo có hiệu lực trong 12 tháng kể từ ngày phát hành; cần xem xét lại nếu quy định thay đổi. Báo cáo này chỉ bao gồm nhãn sản phẩm và KHÔNG cấu thành đánh giá về công thức sản phẩm, thực hành sản xuất (GMP), hay tuyên bố lâm sàng. Không nên sử dụng thay thế cho tư vấn với chuyên gia quản lý quy định FDA có trình độ. Các phát hiện Import Alert chỉ là tín hiệu rủi ro và không cấu thành vi phạm quy định hoặc trích dẫn pháp lý. Vexim Global không chịu trách nhiệm pháp lý cho bất kỳ quyết định nào được đưa ra dựa trên báo cáo này.',
@@ -177,7 +177,15 @@ colorContrast: 'Độ tương phản màu',
     defaultRiskLow: (score: string) => `Nhãn sản phẩm có điểm rủi ro ${score}/10. Không phát hiện vấn đề nghiêm trọng, nhưng cần cải thiện một số điểm.`,
     expertTipCritical: 'Nhãn sản phẩm này có các vấn đề tuân thủ FDA nghiêm trọng cần được khắc phục trước khi phân phối tại thị trường Hoa Kỳ. Không tuân thủ có thể dẫn đến Import Alert, hàng bị giữ tại cảng, hoặc Thư cảnh báo FDA.',
     expertTipWarning: 'Nhãn sản phẩm này đáp ứng yêu cầu FDA tối thiểu nhưng có các điểm cần cải thiện. Khắc phục các cảnh báo sẽ giảm rủi ro bị xử phạt và tăng niềm tin của người tiêu dùng.',
-    expertTipPass: 'Nhãn sản phẩm này thể hiện sự tuân thủ FDA tốt. Tiếp tục theo dõi các cập nhật quy định và duy trì các tiêu chuẩn ghi nhãn hiện tại.',
+    expertTipPass: `<strong>Nhãn sản phẩm này thể hiện sự tuân thủ FDA tốt.</strong>
+
+<p style="margin-top:8px;"><strong>Các bước tiếp theo được khuyến nghị:</strong></p>
+<ul style="margin:6px 0 0 16px;padding:0;list-style:disc;">
+  <li>Lưu trữ báo cáo này như tài liệu tuân thủ cho đợt xuất khẩu</li>
+  <li>Kiểm tra lại nhãn sau 12 tháng hoặc khi có cập nhật 21 CFR</li>
+  <li>Theo dõi FDA Warning Letters và Recalls trong ngành để cập nhật xu hướng thực thi</li>
+  <li>Lưu ý: Nếu thay đổi công thức hoặc nội dung nhãn, cần kiểm tra lại tuân thủ</li>
+</ul>`,
     riskHigh: 'Cao',
     riskMedHigh: 'Trung bình - Cao',
     riskMed: 'Trung bình',
@@ -193,6 +201,8 @@ colorContrast: 'Độ tương phản màu',
     legalConfidence: 'Phân tích pháp lý',
     healthClaims: 'Tuyên Bố Sức Khỏe',
     healthClaimsWarning: 'Tuyên bố bệnh bị cấm theo 21 CFR 101.93',
+    verifiedNutrientClaims: 'Công Bố Hàm Lượng Dinh Dưỡng (Tuân Thủ)',
+    verifiedCompliant: 'Đã Xác Minh - Tuân Thủ',
     specialClaims: 'Tuyên Bố Đặc Biệt',
     enforcementInsights: 'Xu Hướng Xử Phạt FDA',
     consequencesTitle: 'HẬU QUẢ NẾU KHÔNG KHẮC PHỤC',
@@ -400,7 +410,7 @@ colorContrast: 'Color Contrast',
     pendingExpertVerification: 'is pending expert verification',
     certificationDesc2: 'Findings are based on automated analysis of the submitted label against current FDA regulations (21 CFR) and enforcement precedent.',
     fdaComplianceExpert: 'FDA Compliance Expert',
-    veximAiSystem: 'AI Label Pro Analysis System (Vexim Global)',
+    veximAiSystem: 'AI Label Pro System — Pending Expert Verification',
     certId: 'Certification ID',
     disclaimer: 'Disclaimer',
     disclaimerText: 'Report generated against 21 CFR revised April 1, 2025. This report is valid for 12 months from issue date; re-review if regulations change. This report covers label artwork only and does NOT constitute review of product formulation, manufacturing practices (GMP), or clinical claims. It should not be used as a substitute for consultation with qualified FDA regulatory professionals. Import Alert findings are risk signals only and do not constitute regulatory violations or legal citations. Vexim Global bears no legal liability for any decisions made based on this report.',
@@ -408,7 +418,15 @@ colorContrast: 'Color Contrast',
     defaultRiskLow: (score: string) => `Product label has a risk score of ${score}/10. No critical issues found, but some areas need improvement.`,
     expertTipCritical: 'This product label has critical FDA compliance issues that must be addressed before distribution in the US market. Non-compliance could lead to Import Alerts, port detention, or FDA Warning Letters.',
     expertTipWarning: 'This product label meets minimum FDA requirements but has areas for improvement. Addressing warnings will reduce enforcement risk and increase consumer confidence.',
-    expertTipPass: 'This product label demonstrates good FDA compliance. Continue monitoring regulatory updates and maintaining current labeling standards.',
+    expertTipPass: `<strong>This product label demonstrates good FDA compliance.</strong>
+
+<p style="margin-top:8px;"><strong>Recommended next steps:</strong></p>
+<ul style="margin:6px 0 0 16px;padding:0;list-style:disc;">
+  <li>Archive this report as compliance documentation for your export shipment</li>
+  <li>Re-audit the label after 12 months or when 21 CFR updates occur</li>
+  <li>Monitor FDA Warning Letters and Recalls in your category for enforcement trends</li>
+  <li>Note: If formulation or label content changes, re-audit is required</li>
+</ul>`,
     riskHigh: 'High',
     riskMedHigh: 'Medium-High',
     riskMed: 'Medium',
@@ -424,6 +442,8 @@ colorContrast: 'Color Contrast',
     legalConfidence: 'Legal analysis',
     healthClaims: 'Health Claims',
     healthClaimsWarning: 'Prohibited disease claims under 21 CFR 101.93',
+    verifiedNutrientClaims: 'Verified Nutrient Claims (Compliant)',
+    verifiedCompliant: 'Verified - Compliant',
     specialClaims: 'Special Claims',
     enforcementInsights: 'FDA Enforcement Trends',
     consequencesTitle: 'CONSEQUENCES OF NON-COMPLIANCE',
@@ -1245,14 +1265,46 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     </div>
   </div>` : ''}
 
-  <!-- Special Claims -->
-  ${specialClaims.length > 0 ? `
+  <!-- Verified Nutrient Claims (from special_claims that match nutrient patterns) -->
+  ${(() => {
+    // Filter special claims that are nutrient content claims (Low-Fat, Fat Free, etc.)
+    const nutrientClaimPatterns = /low[- ]?fat|fat[- ]?free|reduced[- ]?fat|lite|light|lean|extra lean|low[- ]?calorie|calorie[- ]?free|low[- ]?sodium|sodium[- ]?free|low[- ]?cholesterol|cholesterol[- ]?free|sugar[- ]?free|no sugar|low[- ]?sugar|\d+%\s*milk\s*fat/i
+    const verifiedNutrientClaims = specialClaims.filter((claim: string) => nutrientClaimPatterns.test(claim))
+    
+    if (verifiedNutrientClaims.length === 0) return ''
+    
+    return `
+  <div class="section">
+    <div style="font-size:10px;font-weight:700;color:#16a34a;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.verifiedNutrientClaims}</div>
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;">
+      ${verifiedNutrientClaims.map((claim: string) => `
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;">
+        <span style="color:#16a34a;font-size:14px;">&#10003;</span>
+        <div>
+          <span style="font-weight:600;color:#166534;font-size:10px;">${escapeHtml(claim)}</span>
+          <div style="font-size:8px;color:#15803d;margin-top:2px;">&#10003; ${L.verifiedCompliant}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`
+  })()}
+
+  <!-- Special Claims (non-nutrient) -->
+  ${(() => {
+    // Filter out nutrient content claims from special claims
+    const nutrientClaimPatterns = /low[- ]?fat|fat[- ]?free|reduced[- ]?fat|lite|light|lean|extra lean|low[- ]?calorie|calorie[- ]?free|low[- ]?sodium|sodium[- ]?free|low[- ]?cholesterol|cholesterol[- ]?free|sugar[- ]?free|no sugar|low[- ]?sugar|\d+%\s*milk\s*fat/i
+    const nonNutrientClaims = specialClaims.filter((claim: string) => !nutrientClaimPatterns.test(claim))
+    
+    if (nonNutrientClaims.length === 0) return ''
+    
+    return `
   <div class="section">
     <div style="font-size:10px;font-weight:700;color:#1E40AF;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.specialClaims}</div>
     <div style="padding:4px 0;">
-      ${specialClaims.map((claim: string) => `<span class="special-claim-tag">${escapeHtml(claim)}</span>`).join('')}
+      ${nonNutrientClaims.map((claim: string) => `<span class="special-claim-tag">${escapeHtml(claim)}</span>`).join('')}
     </div>
-  </div>` : ''}
+  </div>`
+  })()}
 
   <!-- Ingredient List -->
   ${report.ingredient_list ? `
@@ -1544,61 +1596,65 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   </div>` : ''}
 
 ${(() => {
-  // Only show commercial summary if it has meaningful content
-  const rawSummary = report.commercial_summary?.trim() || ''
-  // Skip generic boilerplate like "FDA LABEL COMPLIANCE REPORT - VEXIM GLOBAL"
-  const isBoilerplate = rawSummary.length < 50 || /^FDA LABEL|^VEXIM/i.test(rawSummary)
+  // Always generate localized commercial summary - never use raw English boilerplate
+  // This ensures Vietnamese users see Vietnamese content in the PDF
+  const criticalCount = sortedViolations.filter(v => v.severity === 'critical').length
+  const warningCount = sortedViolations.filter(v => v.severity === 'warning').length
+  const infoCount = sortedViolations.filter(v => v.severity === 'info').length
+  const isPassing = report.overall_result === 'pass' || report.overall_result === 'approved'
   
-  if (isBoilerplate && !report.commercial_summary) {
-    // Generate contextual fallback based on result
-    const fallbackContent = (report.overall_result === 'pass' || report.overall_result === 'approved')
-      ? (lang === 'vi'
-        ? 'Nhãn sản phẩm đáp ứng các yêu cầu ghi nhãn FDA theo 21 CFR Part 101. Không phát hiện vi phạm nghiêm trọng. Sản phẩm có thể phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.'
-        : 'The product label meets FDA labeling requirements under 21 CFR Part 101. No critical violations detected. The product may be distributed in the US market with low legal risk.')
-      : (lang === 'vi'
-        ? 'Phát hiện một số vấn đề tuân thủ cần được khắc phục trước khi phân phối. Vui lòng xem Chi Tiết Phát Hiện và Danh Sách Hành Động bên dưới.'
-        : 'Compliance issues were identified that require remediation before distribution. Please review the Findings Detail and Action Items sections.')
-    
-    return `<!-- ═══════════════ COMMERCIAL SUMMARY (inline section) ═══════════════ -->
-  <div class="section">
-    <div class="section-title"><span class="section-number">${secCommercial}</span>${L.commercialSummary}</div>
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;overflow-wrap:break-word;">
-      ${markdownToHtml(fallbackContent)}
-      
-      <!-- FDA Enforcement History Section -->
-      <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0;">
-        <div style="font-size:10px;font-weight:700;color:#334155;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">${L.fdaEnforcementHistory}</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <div style="flex:1;min-width:100px;background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;">
-            <div style="font-size:8px;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:4px;">
-              <span style="font-size:10px;">&#9993;</span> ${L.warningLetters}
-            </div>
-            <div style="font-size:11px;font-weight:700;color:#16a34a;">${L.none}</div>
-          </div>
-          <div style="flex:1;min-width:100px;background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;">
-            <div style="font-size:8px;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:4px;">
-              <span style="font-size:10px;">&#128260;</span> ${L.recalls}
-            </div>
-            <div style="font-size:11px;font-weight:700;color:#16a34a;">${L.none}</div>
-          </div>
-          <div style="flex:1;min-width:100px;background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;">
-            <div style="font-size:8px;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:4px;">
-              <span style="font-size:10px;">&#128274;</span> ${L.importAlertsLabel}
-            </div>
-            <div style="font-size:11px;font-weight:700;color:${importAlertViolations.length > 0 ? '#f59e0b' : '#16a34a'};">${importAlertViolations.length > 0 ? importAlertViolations.length : L.none}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>`
+  // Generate contextual summary based on violations
+  let summaryContent = ''
+  if (isPassing && criticalCount === 0) {
+    if (lang === 'vi') {
+      summaryContent = `**Nhãn sản phẩm tuân thủ tất cả các quy định FDA được kiểm tra.**
+
+Vexim AI không phát hiện vi phạm nghiêm trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR. Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA. Sản phẩm có thể được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.`
+    } else {
+      summaryContent = `**Your label complies with all FDA regulations checked.**
+
+Vexim AI did not find any critical violations during the inspection process. The label complies with labeling regulations under 21 CFR. No Warning Letters, Recalls, or Import Alerts were found in the FDA database. The product can be distributed in the US market with low legal risk.`
+    }
+  } else if (criticalCount > 0) {
+    if (lang === 'vi') {
+      summaryContent = `**Phát hiện ${criticalCount} vấn đề nghiêm trọng cần khắc phục ngay.**
+
+Nhãn sản phẩm không đáp ứng một số yêu cầu FDA quan trọng. Các vi phạm này có thể dẫn đến giữ hàng tại cảng, thư cảnh báo FDA, hoặc thu hồi sản phẩm. Vui lòng xem Chi Tiết Phát Hiện và Danh Sách Hành Động để biết các bước khắc phục cụ thể.
+
+**Lưu ý:** Khắc phục tất cả vấn đề nghiêm trọng trước khi xuất khẩu sang thị trường Hoa Kỳ.`
+    } else {
+      summaryContent = `**${criticalCount} critical issue(s) require immediate attention.**
+
+The product label does not meet certain important FDA requirements. These violations may lead to port detention, FDA Warning Letters, or product recalls. Please see Findings Detail and Action Items for specific remediation steps.
+
+**Note:** Address all critical issues before exporting to the US market.`
+    }
+  } else if (warningCount > 0) {
+    if (lang === 'vi') {
+      summaryContent = `**Nhãn sản phẩm đáp ứng yêu cầu FDA tối thiểu nhưng có ${warningCount} điểm cần cải thiện.**
+
+Không có vi phạm nghiêm trọng, nhưng một số cảnh báo cần được xem xét để giảm rủi ro. Khuyến nghị xem lại và khắc phục trước khi phân phối để đảm bảo tuân thủ tối ưu.`
+    } else {
+      summaryContent = `**The product label meets minimum FDA requirements but has ${warningCount} areas for improvement.**
+
+No critical violations found, but some warnings should be addressed to reduce risk. We recommend reviewing and addressing these before distribution for optimal compliance.`
+    }
+  } else {
+    if (lang === 'vi') {
+      summaryContent = 'Nhãn sản phẩm đáp ứng các yêu cầu ghi nhãn FDA theo 21 CFR Part 101. Không phát hiện vi phạm nghiêm trọng. Sản phẩm có thể phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.'
+    } else {
+      summaryContent = 'The product label meets FDA labeling requirements under 21 CFR Part 101. No critical violations detected. The product may be distributed in the US market with low legal risk.'
+    }
   }
   
-  // Has real content - render inline without page wrapper
+  const fallbackContent = summaryContent
+    
+    // Always render with localized content - never use raw English boilerplate
   return `<!-- ═══════════════ COMMERCIAL SUMMARY (inline section) ═══════════════ -->
   <div class="section">
     <div class="section-title"><span class="section-number">${secCommercial}</span>${L.commercialSummary}</div>
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;overflow-wrap:break-word;">
-      ${markdownToHtml(rawSummary)}
+      ${markdownToHtml(fallbackContent)}
       
       <!-- FDA Enforcement History Section -->
       <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0;">
