@@ -89,12 +89,32 @@ export class ViolationToCFRMapper {
   /**
    * Map net weight violations (dual declaration required)
    * Domain-aware: food/supplement → 21 CFR 101.105, cosmetic → 21 CFR 701.13
+   * 
+   * IMPORTANT: Per 21 CFR 101.105(b), net quantity can be expressed as:
+   *   - Weight (g/oz) for solid foods
+   *   - Measure (ml/fl oz) for liquids
+   *   - Numerical count for discrete units (capsules, tablets, pills, etc.)
+   *   - Combination of the above
+   * 
+   * Count-based products (e.g., "30 Capsules", "60 Tablets") are COMPLIANT
+   * and do NOT require metric weight declaration.
    */
   static mapNetWeightViolation(
     netQuantityText: string,
     regulation: KnowledgeSearchResult | null,
     domain: ProductDomain = 'food'
   ): ViolationMapping | null {
+    // Check for count-based net quantity (capsules, tablets, pills, etc.)
+    // Per 21 CFR 101.105(b): "numerical count" is a valid declaration method
+    const countBasedUnits = /\d+\s*(capsules?|tablets?|pills?|softgels?|caplets?|gummies?|lozenges?|packets?|sachets?|pouches?|pieces?|counts?|servings?|doses?|units?)\b/i
+    const isCountBased = countBasedUnits.test(netQuantityText)
+    
+    // If count-based, this is COMPLIANT per FDA regulations - no dual unit required
+    if (isCountBased) {
+      return null // No violation - count-based declaration is valid
+    }
+    
+    // For weight/volume-based products, check for dual unit declaration
     // Improved regex: handles parenthetical notation like "(6mL)", "(680g)", 
     // optional spaces, and period-containing units like "FL. OZ."
     const hasMetric = /\d+\.?\d*\s*(g|kg|ml|mL|l|L)\b/i.test(netQuantityText)

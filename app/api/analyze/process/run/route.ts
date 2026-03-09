@@ -962,6 +962,7 @@ export async function POST(request: Request) {
         commercial_summary:      commercialSummary,
         expert_tips:             expertTips,
         nutrition_facts:         visionResult.nutritionFacts || [],
+        detected_panel_type:     productDomain === 'supplement' ? 'supplementFacts' : (productDomain === 'drug_otc' ? 'drugFacts' : 'nutritionFacts'),
         is_multi_column_nutrition: isMultiColumn,
         nutrition_facts_columns: isMultiColumn ? visionResult.nutritionFactsColumns : null,
         nutrition_column_format_type: isMultiColumn && visionResult.nutritionFactsColumns 

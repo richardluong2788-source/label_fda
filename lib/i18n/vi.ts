@@ -121,7 +121,7 @@ export const vi = {
     productTypeDrugOTC: 'Dược phẩm OTC',
     productTypeInfant: 'Sữa công thức trẻ em',
     productTypeMedical: 'Thực phẩm y học',
-    selectProductType: 'Chọn loại sản phẩm...',
+    selectProductType: 'Chọn lo��i sản phẩm...',
     notApplicable: 'Không áp dụng',
     recommended: 'Khuyến nghị',
     // Guide banner
@@ -323,6 +323,7 @@ export const vi = {
     packagingFormatLabel: 'DẠNG BAO BÌ',
     detectedLanguagesTitle: 'NGÔN NGỮ PHÁT HIỆN',
     nutritionFactsTitle: 'THÀNH PHẦN DINH DƯỠNG',
+    supplementFactsTitle: 'THÔNG TIN BỔ SUNG',
     multiColumnLabel: 'ĐA CỘT',
     multiColumnWarnings: 'Phát hiện không nhất quán giữa các cột:',
     multiColumnDetectedNoData: 'Phát hiện Nutrition Facts đa cột',
@@ -382,7 +383,7 @@ export const vi = {
     kbFixItems: [
       'Liên hệ Admin để nạp tài liệu FDA vào Knowledge Base.',
       'Truy cập trang Knowledge Base và sử dụng chức năng "Nạp tài liệu mới" hoặc "FDA Warning Letters Pipeline".',
-      'Sau khi nạp xong, quay lại đây để chạy phân tích.',
+      'Sau khi nạp xong, quay lại đây để chạy phân t��ch.',
     ],
     retryAnalysis: 'Thử lại phân tích',
     reuploadImages: 'Tải lại hình ảnh',

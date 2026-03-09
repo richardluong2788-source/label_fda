@@ -323,6 +323,7 @@ export const en: TranslationKeys = {
     packagingFormatLabel: 'PACKAGING FORMAT',
     detectedLanguagesTitle: 'DETECTED LANGUAGES',
     nutritionFactsTitle: 'NUTRITION FACTS',
+    supplementFactsTitle: 'SUPPLEMENT FACTS',
     multiColumnLabel: 'MULTI-COLUMN',
     multiColumnWarnings: 'Column Inconsistencies Detected:',
     multiColumnDetectedNoData: 'Multi-column Nutrition Facts Detected',

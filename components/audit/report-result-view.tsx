@@ -663,7 +663,7 @@ function MiniConfidenceBar({ label, value }: { label: string; value: number }) {
   )
 }
 
-// ────────────────────────────────���───────────────────────────
+// ────────────���───────────────────���───────────────────────────
 // Ingredient Tags
 // ───────────────────────────────────────────────────────────��
 
@@ -1961,14 +1961,29 @@ export function ReportResultView({
               </div>
             </Card>
 
-            {/* Nutrition Facts Card (NEW) */}
-            {nutritionFacts.length > 0 && (
+            {/* Nutrition/Supplement Facts Card */}
+            {nutritionFacts.length > 0 && (() => {
+              // Determine panel type based on product category/type
+              const productCategory = (report as any).product_category || (report as any).product_type || ''
+              const isSupplementCategory = ['dietary_supplement', 'supplement', 'vitamin', 'mineral', 'probiotic', 'herbal'].some(
+                cat => productCategory.toLowerCase().includes(cat)
+              )
+              // Also check if vision detected "Supplement Facts" panel
+              const visionDetectedSupplement = (report as any).detected_panel_type === 'supplementFacts'
+              const isSupplement = isSupplementCategory || visionDetectedSupplement
+              
+              const panelTitle = isSupplement ? 'Supplement Facts' : 'Nutrition Facts'
+              const sectionTitle = isSupplement 
+                ? (t.report.supplementFactsTitle || t.report.nutritionFactsTitle)
+                : t.report.nutritionFactsTitle
+              
+              return (
               <Card className="bg-white border-slate-200 overflow-hidden">
                 <div className="p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Utensils className="h-4 w-4 text-slate-500" />
                     <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                      {t.report.nutritionFactsTitle}
+                      {sectionTitle}
                     </h2>
                     <Badge variant="secondary" className="text-[9px] ml-auto">
                       {nutritionFacts.length}
@@ -1976,7 +1991,7 @@ export function ReportResultView({
                   </div>
                   <div className="border border-slate-200 rounded-lg overflow-hidden">
                     <div className="bg-slate-800 text-white px-3 py-2 text-xs font-bold uppercase tracking-wider flex items-center justify-between">
-                      <span>Nutrition Facts</span>
+                      <span>{panelTitle}</span>
                       {(report as any).is_multi_column_nutrition && (
                         <Badge variant="outline" className="text-[9px] bg-amber-500/20 text-amber-100 border-amber-400/50">
                           {t.report.multiColumnLabel || 'MULTI-COLUMN'}
@@ -2126,7 +2141,8 @@ export function ReportResultView({
                   </div>
                 </div>
               </Card>
-            )}
+              )
+            })()}
 
             {/* Confidence Meters (NEW) */}
             {(report.extraction_confidence || report.legal_reasoning_confidence) && (
