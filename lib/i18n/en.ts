@@ -562,7 +562,7 @@ export const en: TranslationKeys = {
     howItWorksTitle: 'How does the system work?',
     howItWorksDesc: 'Understanding how AI reads labels helps you prepare better images.',
     steps: [
-      { step: '01', title: 'Analyze each image independently', desc: 'Each image is processed independently by AI Vexim Vision. PDP image extracts Brand/Product/Net Weight. Nutrition Facts image extracts all nutritional values. Ingredients image extracts ingredient list and allergens.' },
+      { step: '01', title: 'Analyze each image independently', desc: 'Each image is processed independently by Vexim AI Vision. PDP image extracts Brand/Product/Net Weight. Nutrition Facts image extracts all nutritional values. Ingredients image extracts ingredient list and allergens.' },
       { step: '02', title: 'Combine data from all images', desc: 'The system aggregates information from all uploaded images. Missing images lead to missing analysis data — PDP and Nutrition Facts in particular are mandatory and cannot be skipped.' },
       { step: '03', title: 'Cross-reference with FDA Knowledge Base', desc: 'Extracted data is compared against a database of 21 CFR, real Warning Letters, Recalls and Import Alerts to detect violations and suggest fixes.' },
     ],
