@@ -265,6 +265,15 @@ colorContrast: 'Độ tương phản màu',
     multiColumnNFDesc: 'Sản phẩm có nhiều biến thể — mỗi cột tương ứng một sản phẩm riêng biệt.',
     multiColumnVariant: 'Biến thể',
     multiColumnServingSize: 'Khẩu phần',
+    // FDA Enforcement History
+    fdaEnforcementHistory: 'Lịch Sử Xử Phạt FDA',
+    warningLetters: 'Thư Cảnh Báo',
+    recalls: 'Thu Hồi Sản Phẩm',
+    importAlertsLabel: 'Cảnh Báo Nhập Khẩu',
+    none: 'Không có',
+    regulationsChecked: 'Quy Định Đã Kiểm Tra',
+    overallAssessmentVexim: 'Đánh Giá Tổng Thể Từ Vexim Global',
+    conclusionLabel: 'Kết Luận',
   },
   en: {
     downloadTitle: 'FDA Compliance Audit Report',
@@ -487,6 +496,15 @@ colorContrast: 'Color Contrast',
     multiColumnNFDesc: 'Product contains multiple variants — each column represents a separate product.',
     multiColumnVariant: 'Variant',
     multiColumnServingSize: 'Serving Size',
+    // FDA Enforcement History
+    fdaEnforcementHistory: 'FDA Enforcement History',
+    warningLetters: 'Warning Letters',
+    recalls: 'Recalls',
+    importAlertsLabel: 'Import Alerts',
+    none: 'None',
+    regulationsChecked: 'Regulations Checked',
+    overallAssessmentVexim: 'Overall Assessment by Vexim Global',
+    conclusionLabel: 'Conclusion',
   },
 }
 
@@ -989,7 +1007,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
 <div class="page-content-wrapper">
 
-<!-- ═════════════��═════════ COVER PAGE ═══════════════════════ -->
+<!-- ═════════════��═���═══════ COVER PAGE ═══════════════════════ -->
 <div class="page cover-page">
   <div class="cover-accent"></div>
   <div class="cover-header">
@@ -1546,6 +1564,31 @@ ${(() => {
     <div class="section-title"><span class="section-number">${secCommercial}</span>${L.commercialSummary}</div>
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;overflow-wrap:break-word;">
       ${markdownToHtml(fallbackContent)}
+      
+      <!-- FDA Enforcement History Section -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0;">
+        <div style="font-size:10px;font-weight:700;color:#334155;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">${L.fdaEnforcementHistory}</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:100px;background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;">
+            <div style="font-size:8px;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:4px;">
+              <span style="font-size:10px;">&#9993;</span> ${L.warningLetters}
+            </div>
+            <div style="font-size:11px;font-weight:700;color:#16a34a;">${L.none}</div>
+          </div>
+          <div style="flex:1;min-width:100px;background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;">
+            <div style="font-size:8px;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:4px;">
+              <span style="font-size:10px;">&#128260;</span> ${L.recalls}
+            </div>
+            <div style="font-size:11px;font-weight:700;color:#16a34a;">${L.none}</div>
+          </div>
+          <div style="flex:1;min-width:100px;background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;">
+            <div style="font-size:8px;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:4px;">
+              <span style="font-size:10px;">&#128274;</span> ${L.importAlertsLabel}
+            </div>
+            <div style="font-size:11px;font-weight:700;color:${importAlertViolations.length > 0 ? '#f59e0b' : '#16a34a'};">${importAlertViolations.length > 0 ? importAlertViolations.length : L.none}</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>`
   }
@@ -1556,6 +1599,31 @@ ${(() => {
     <div class="section-title"><span class="section-number">${secCommercial}</span>${L.commercialSummary}</div>
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;overflow-wrap:break-word;">
       ${markdownToHtml(rawSummary)}
+      
+      <!-- FDA Enforcement History Section -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0;">
+        <div style="font-size:10px;font-weight:700;color:#334155;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">${L.fdaEnforcementHistory}</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:100px;background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;">
+            <div style="font-size:8px;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:4px;">
+              <span style="font-size:10px;">&#9993;</span> ${L.warningLetters}
+            </div>
+            <div style="font-size:11px;font-weight:700;color:#16a34a;">${L.none}</div>
+          </div>
+          <div style="flex:1;min-width:100px;background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;">
+            <div style="font-size:8px;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:4px;">
+              <span style="font-size:10px;">&#128260;</span> ${L.recalls}
+            </div>
+            <div style="font-size:11px;font-weight:700;color:#16a34a;">${L.none}</div>
+          </div>
+          <div style="flex:1;min-width:100px;background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;">
+            <div style="font-size:8px;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:4px;">
+              <span style="font-size:10px;">&#128274;</span> ${L.importAlertsLabel}
+            </div>
+            <div style="font-size:11px;font-weight:700;color:${importAlertViolations.length > 0 ? '#f59e0b' : '#16a34a'};">${importAlertViolations.length > 0 ? importAlertViolations.length : L.none}</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>`
 })()} 
@@ -1664,16 +1732,21 @@ ${(() => {
   <!-- ═══════════════ EXPERT RECOMMENDATIONS (inline section) ═══════════════ -->
   <div class="section">
     <div class="section-title"><span class="section-number">${secExpert}</span>${L.expertRecommendations}</div>
-    ${report.expert_tips && report.expert_tips.length > 0 ? `
+    <!-- Only show default expert tip if no tips already exist in commercial_summary -->
+    ${report.expert_tips && report.expert_tips.length > 0 && !report.commercial_summary?.includes('Vexim Tip') ? `
       ${report.expert_tips.map((tip: string, idx: number) => `
       <div class="expert-tip">
         <div class="expert-tip-label">${L.recommendation} ${idx + 1}</div>
         ${markdownToHtml(tip)}
       </div>`).join('')}
-    ` : `
+    ` : !report.commercial_summary?.includes('Vexim Tip') ? `
       <div class="expert-tip">
         <div class="expert-tip-label">${L.veximAdvice}</div>
         ${defaultExpertTip}
+      </div>
+    ` : `
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:9px;color:#166534;">
+        ${lang === 'vi' ? 'Xem khuyến nghị chuyên gia trong phần Tóm Tắt Phân Tích Thương Mại ở trên.' : 'See expert recommendations in the Commercial Analysis Summary section above.'}
       </div>
     `}
 
@@ -1733,7 +1806,17 @@ ${(() => {
           <td><span style="font-size:7px;font-weight:700;color:${priorityColor};text-transform:uppercase;">${priority}</span></td>
           <td><span class="severity-badge" style="background: ${getSeverityColor(v.severity).text}; color: white; font-size: 7px; padding: 2px 6px;">${getSeverityLabel(v.severity, L)}</span></td>
           <td style="overflow-wrap:break-word;word-break:break-word;">${escapeHtml(translateCategory(v.category, L))}</td>
-          <td style="overflow-wrap:break-word;word-break:break-word;">${escapeHtml((v.suggested_fix || L.seeDetails).slice(0, 100))}${(v.suggested_fix || '').length > 100 ? '...' : ''}</td>
+          <td style="overflow-wrap:break-word;word-break:break-word;">${(() => {
+            // Clean markdown from suggested_fix for table display
+            const rawFix = v.suggested_fix || L.seeDetails
+            const cleanFix = rawFix
+              .replace(/\*\*(.+?)\*\*/g, '$1')  // Remove **bold**
+              .replace(/\*(.+?)\*/g, '$1')      // Remove *italic*
+              .replace(/[①②③④⑤⑥⑦⑧⑨⑩]/g, '')  // Remove circled numbers
+              .replace(/⚠️?/g, '')              // Remove warning emoji
+              .trim()
+            return escapeHtml(cleanFix.slice(0, 120)) + (cleanFix.length > 120 ? '...' : '')
+          })()}</td>
         </tr>`
         }).join('')}
         ${sortedViolations.length === 0 ? `
@@ -1748,15 +1831,15 @@ ${(() => {
     </table>
   </div>
 
-  <!-- Verification Status -->
+  <!-- Verification Status - Only show "verified" badge if expert review was actually completed -->
   <div style="display: flex; justify-content: center; margin: 14px 0;">
-    ${report.status === 'verified'
+    ${expertReview && expertReview.status === 'completed'
       ? `<div class="verification-badge verified"><span style="font-size: 14px;">&#10003;</span>${L.reportVerified}</div>`
       : `<div class="verification-badge pending"><span style="font-size: 14px;">&#9888;</span>${L.pendingVerification}</div>`
     }
   </div>
 
-  ${report.status !== 'verified' ? `
+  ${!(expertReview && expertReview.status === 'completed') ? `
   <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 40%, #2563eb 100%); border-radius: 12px; padding: 20px; margin: 16px 0; color: white; text-align: center;">
     <div style="font-size: 14px; font-weight: 700; margin-bottom: 6px;">${L.upgradeTitle}</div>
     <div style="font-size: 10px; opacity: 0.9; margin-bottom: 12px; line-height: 1.6;">${L.upgradeDesc}<br/>${L.upgradeDesc2}</div>
@@ -1771,13 +1854,13 @@ ${(() => {
   <div class="signature-section">
     <div style="font-size: 10px; font-weight: 600; color: #334155; margin-bottom: 4px;">${L.certification}</div>
     <div style="font-size: 8px; color: #64748b; margin-bottom: 12px; overflow-wrap: break-word;">
-      ${L.certificationDesc} ${report.status === 'verified' ? L.verifiedByExpert : L.pendingExpertVerification}.
+      ${L.certificationDesc} ${expertReview && expertReview.status === 'completed' ? L.verifiedByExpert : L.pendingExpertVerification}.
       ${L.certificationDesc2}
     </div>
     <div class="signature-grid">
       <div class="signature-box">
         <div class="signature-name">${escapeHtml(generatedBy)}</div>
-        <div class="signature-title">${report.status === 'verified' ? L.fdaComplianceExpert : L.veximAiSystem}</div>
+        <div class="signature-title">${expertReview && expertReview.status === 'completed' ? L.fdaComplianceExpert : L.veximAiSystem}</div>
         <div class="signature-title">${formatDate(generatedAt, lang)}</div>
       </div>
       <div class="signature-box">
