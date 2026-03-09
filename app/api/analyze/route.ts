@@ -745,11 +745,23 @@ export async function POST(request: Request) {
     const extractedNutritionFacts = visionResult.nutritionFacts
     
     // Check for multi-column Nutrition Facts (variety packs)
-    const isMultiColumnNutrition = visionResult.isMultiColumnNutrition || false
+    // CRITICAL FIX: AI may incorrectly report isMultiColumnNutrition=true with empty columns array
+    // We require BOTH the flag AND actual column data (>=2) to consider it multi-column
     const nutritionFactsColumns = visionResult.nutritionFactsColumns || []
+    const aiSaysMultiColumn = visionResult.isMultiColumnNutrition || false
+    const hasActualColumns = nutritionFactsColumns.length >= 2
+    
+    // Only trust multi-column detection if AI provides actual column data
+    const isMultiColumnNutrition = aiSaysMultiColumn && hasActualColumns
+    
     let multiColumnValidation: { isValid: boolean; errors: string[]; warnings: string[]; columnIssues: any[] } | null = null
     
-    if (isMultiColumnNutrition && nutritionFactsColumns.length >= 2) {
+    // Warn if AI says multi-column but didn't provide column data
+    if (aiSaysMultiColumn && !hasActualColumns) {
+      console.warn('[v0] WARNING: AI reported isMultiColumnNutrition=true but nutritionFactsColumns has <2 columns. Treating as single-column.')
+    }
+    
+    if (isMultiColumnNutrition) {
       console.log(`[v0] Multi-column Nutrition Facts detected: ${nutritionFactsColumns.length} columns`)
       multiColumnValidation = NutritionValidator.validateMultiColumnNutritionFacts(
         nutritionFactsColumns,

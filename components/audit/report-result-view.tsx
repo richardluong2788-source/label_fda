@@ -176,6 +176,139 @@ function getClaimTooltips(locale: string): Record<string, ClaimTooltipInfo> {
       regulation: isVi ? 'Chứng nhận Halal' : 'Halal Certification',
       note: isVi ? 'Phải có chứng nhận từ tổ chức Halal được công nhận.' : 'Must have certification from recognized Halal organization.',
     },
+    
+    // ═══════════════════════════════════════════════════════════
+    // COSMETIC CLAIMS (21 CFR 701)
+    // ═══════════════════════════════════════════════════════════
+    
+    // Hypoallergenic - No FDA definition
+    'hypoallergenic': {
+      regulation: isVi ? 'Không có quy định FDA (21 CFR 701)' : 'No FDA regulation (21 CFR 701)',
+      note: isVi ? 'FDA không có định nghĩa hoặc tiêu chuẩn cho "hypoallergenic". Nhà sản xuất tự chịu trách nhiệm.' : 'FDA has no definition or standard for "hypoallergenic". Manufacturer bears responsibility.',
+    },
+    // Dermatologist tested
+    'dermatologist tested': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim cần có bằng chứng về clinical testing. Không có tiêu chuẩn cụ thể.' : 'Claim requires evidence of clinical testing. No specific standard exists.',
+    },
+    'dermatologically tested': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim cần có bằng chứng về clinical testing. Không có tiêu chuẩn cụ thể.' : 'Claim requires evidence of clinical testing. No specific standard exists.',
+    },
+    // Non-comedogenic
+    'non-comedogenic': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim không được FDA quy định. Cần clinical evidence để support.' : 'Not regulated by FDA. Requires clinical evidence to support.',
+    },
+    'noncomedogenic': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim không được FDA quy định. Cần clinical evidence để support.' : 'Not regulated by FDA. Requires clinical evidence to support.',
+    },
+    // Fragrance-free
+    'fragrance free': {
+      regulation: '21 CFR §701.3',
+      note: isVi ? 'Sản phẩm không được chứa fragrance ingredients. Masking agents có thể được phép.' : 'Product must not contain fragrance ingredients. Masking agents may be permitted.',
+    },
+    'fragrance-free': {
+      regulation: '21 CFR §701.3',
+      note: isVi ? 'Sản phẩm không được chứa fragrance ingredients. Masking agents có thể được phép.' : 'Product must not contain fragrance ingredients. Masking agents may be permitted.',
+    },
+    'unscented': {
+      regulation: '21 CFR §701.3',
+      note: isVi ? 'Có thể chứa masking fragrance để neutralize odor. Khác với "fragrance-free".' : 'May contain masking fragrance to neutralize odor. Different from "fragrance-free".',
+    },
+    // Paraben-free
+    'paraben free': {
+      regulation: isVi ? 'Không có quy định FDA cụ thể' : 'No specific FDA regulation',
+      note: isVi ? 'Sản phẩm không chứa parabens. Claim tự nguyện, cần verify ingredient list.' : 'Product contains no parabens. Voluntary claim, verify ingredient list.',
+    },
+    'paraben-free': {
+      regulation: isVi ? 'Không có quy định FDA cụ thể' : 'No specific FDA regulation',
+      note: isVi ? 'Sản phẩm không chứa parabens. Claim tự nguyện, cần verify ingredient list.' : 'Product contains no parabens. Voluntary claim, verify ingredient list.',
+    },
+    // Sulfate-free
+    'sulfate free': {
+      regulation: isVi ? 'Không có quy định FDA cụ thể' : 'No specific FDA regulation',
+      note: isVi ? 'Sản phẩm không chứa sulfates (SLS, SLES). Claim tự nguyện.' : 'Product contains no sulfates (SLS, SLES). Voluntary claim.',
+    },
+    'sulfate-free': {
+      regulation: isVi ? 'Không có quy định FDA cụ thể' : 'No specific FDA regulation',
+      note: isVi ? 'Sản phẩm không chứa sulfates (SLS, SLES). Claim tự nguyện.' : 'Product contains no sulfates (SLS, SLES). Voluntary claim.',
+    },
+    // Cruelty-free
+    'cruelty free': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'FDA không quy định animal testing. Nên có chứng nhận từ Leaping Bunny hoặc PETA.' : 'FDA does not regulate animal testing. Certification from Leaping Bunny or PETA recommended.',
+    },
+    'cruelty-free': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'FDA không quy định animal testing. Nên có chứng nhận từ Leaping Bunny hoặc PETA.' : 'FDA does not regulate animal testing. Certification from Leaping Bunny or PETA recommended.',
+    },
+    'not tested on animals': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'FDA không quy định animal testing. Nên có chứng nhận từ Leaping Bunny hoặc PETA.' : 'FDA does not regulate animal testing. Certification from Leaping Bunny or PETA recommended.',
+    },
+    // Organic cosmetics
+    'certified organic': {
+      regulation: 'USDA NOP (7 CFR Part 205)',
+      note: isVi ? 'Cosmetics có thể dùng USDA Organic seal nếu đáp ứng tiêu chuẩn food organic.' : 'Cosmetics may use USDA Organic seal if meeting food organic standards.',
+    },
+    // SPF claims
+    'spf': {
+      regulation: '21 CFR §201.327 (OTC Drug)',
+      note: isVi ? 'Sản phẩm có SPF được quy định như OTC drug. Cần tuân thủ FDA sunscreen monograph.' : 'Products with SPF are regulated as OTC drugs. Must comply with FDA sunscreen monograph.',
+      needsLabTest: true
+    },
+    'broad spectrum': {
+      regulation: '21 CFR §201.327',
+      note: isVi ? 'Phải pass FDA broad spectrum test. Chỉ SPF 15+ mới được claim "reduce skin cancer risk".' : 'Must pass FDA broad spectrum test. Only SPF 15+ can claim "reduce skin cancer risk".',
+      needsLabTest: true
+    },
+    // Anti-aging claims
+    'anti-aging': {
+      regulation: isVi ? 'FD&C Act - Drug vs Cosmetic' : 'FD&C Act - Drug vs Cosmetic',
+      note: isVi ? 'Claim cần thận trọng. Nếu claim thay đổi cấu trúc da, sản phẩm có thể bị classify là drug.' : 'Use caution. If claiming to alter skin structure, product may be classified as drug.',
+    },
+    'anti-wrinkle': {
+      regulation: isVi ? 'FD&C Act - Drug vs Cosmetic' : 'FD&C Act - Drug vs Cosmetic',
+      note: isVi ? 'Claim cần thận trọng. Nếu claim thay đổi cấu trúc da, sản phẩm có thể bị classify là drug.' : 'Use caution. If claiming to alter skin structure, product may be classified as drug.',
+    },
+    // Sensitive skin
+    'for sensitive skin': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim không được FDA định nghĩa. Nên có clinical testing để support.' : 'Not defined by FDA. Should have clinical testing to support.',
+    },
+    'sensitive skin': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim không được FDA định nghĩa. Nên có clinical testing để support.' : 'Not defined by FDA. Should have clinical testing to support.',
+    },
+    // Alcohol-free
+    'alcohol free': {
+      regulation: isVi ? 'Không có quy định FDA cụ thể' : 'No specific FDA regulation',
+      note: isVi ? 'Thường nghĩa là không có ethyl alcohol. Fatty alcohols (cetyl, cetearyl) có thể được phép.' : 'Usually means no ethyl alcohol. Fatty alcohols (cetyl, cetearyl) may be permitted.',
+    },
+    'alcohol-free': {
+      regulation: isVi ? 'Không có quy định FDA cụ thể' : 'No specific FDA regulation',
+      note: isVi ? 'Thường nghĩa là không có ethyl alcohol. Fatty alcohols (cetyl, cetearyl) có thể được phép.' : 'Usually means no ethyl alcohol. Fatty alcohols (cetyl, cetearyl) may be permitted.',
+    },
+    // Oil-free
+    'oil free': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim tự nguyện. Verify ingredient list không có oil-based ingredients.' : 'Voluntary claim. Verify ingredient list contains no oil-based ingredients.',
+    },
+    'oil-free': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim tự nguyện. Verify ingredient list không có oil-based ingredients.' : 'Voluntary claim. Verify ingredient list contains no oil-based ingredients.',
+    },
+    // Clinically proven
+    'clinically proven': {
+      regulation: isVi ? 'FTC Act (Substantiation)' : 'FTC Act (Substantiation)',
+      note: isVi ? 'Phải có clinical study evidence. FTC có thể yêu cầu substantiation nếu bị challenge.' : 'Must have clinical study evidence. FTC may request substantiation if challenged.',
+    },
+    'clinically tested': {
+      regulation: isVi ? 'FTC Act (Substantiation)' : 'FTC Act (Substantiation)',
+      note: isVi ? 'Phải có clinical study evidence. FTC có thể yêu cầu substantiation nếu bị challenge.' : 'Must have clinical study evidence. FTC may request substantiation if challenged.',
+    },
   }
 }
 
@@ -1057,7 +1190,7 @@ function ContrastViolationCard({
 
 // ────────────────────────────────────────────────────��───────
 // Geometry Violation Card
-// ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────���──────────────────────
 
 function GeometryViolationCard({ violation, t }: { violation: GeometryViolation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (

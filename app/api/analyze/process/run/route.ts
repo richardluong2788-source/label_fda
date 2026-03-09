@@ -341,17 +341,31 @@ export async function POST(request: Request) {
     const nutritionValidation = NutritionValidator.validateNutritionFacts(extractedNutritionFacts, productDomain)
 
     // Multi-column Nutrition Facts validation (21 CFR §101.9(b)(12))
-    // CRITICAL: This validation was implemented but never called - now active
-    const isMultiColumn = visionResult.isMultiColumnNutrition || (visionResult.nutritionFactsColumns?.length ?? 0) >= 2
+    // CRITICAL FIX: AI may incorrectly report isMultiColumnNutrition=true with empty columns array
+    // We require BOTH the flag AND actual column data (>=2) to consider it multi-column
+    const columnsCount = visionResult.nutritionFactsColumns?.length ?? 0
+    const aiSaysMultiColumn = visionResult.isMultiColumnNutrition || false
+    const hasActualColumns = columnsCount >= 2
+    
+    // Only trust multi-column detection if AI provides actual column data
+    // This prevents false positives where AI hallucinates isMultiColumnNutrition=true
+    const isMultiColumn = aiSaysMultiColumn && hasActualColumns
+    
     let multiColumnValidation: ReturnType<typeof NutritionValidator.validateMultiColumnNutritionFacts> | null = null
     
     // Detailed logging for multi-column detection debugging
     console.log('[v0] Multi-column detection check:', {
-      isMultiColumnNutrition: visionResult.isMultiColumnNutrition,
-      nutritionFactsColumnsLength: visionResult.nutritionFactsColumns?.length ?? 0,
+      isMultiColumnNutrition: aiSaysMultiColumn,
+      nutritionFactsColumnsLength: columnsCount,
+      hasActualColumns,
       computedIsMultiColumn: isMultiColumn,
       columnNames: visionResult.nutritionFactsColumns?.map(c => c.columnName) ?? [],
     })
+    
+    // Warn if AI says multi-column but didn't provide column data (likely hallucination)
+    if (aiSaysMultiColumn && !hasActualColumns) {
+      console.warn('[v0] WARNING: AI reported isMultiColumnNutrition=true but nutritionFactsColumns is empty or has <2 columns. Treating as single-column.')
+    }
     
     if (isMultiColumn && visionResult.nutritionFactsColumns?.length >= 2) {
       console.log(`[v0] Multi-column Nutrition Facts CONFIRMED: ${visionResult.nutritionFactsColumns.length} columns detected`)
