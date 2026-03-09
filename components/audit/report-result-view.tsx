@@ -1241,9 +1241,10 @@ export function ReportResultView({
                       'bonus pack', 'twin pack', 'multi-pack', 'variety pack', 'combo pack'
                     ]
                     
-                    // Nutrient content claims/statements - COMPLIANT per 21 CFR 101.13
+                    // Nutrient content claims/statements - COMPLIANT per 21 CFR 101.13 & 101.60
                     // These are factual statements about nutrient quantities, NOT health claims
                     // Examples: "20g Protein", "3g Fiber", "27 Vitamins & Minerals", "250 Calories"
+                    // 21 CFR 101.60(c): "No sugar added" / "Without added sugars" are valid nutrient content claims
                     const nutrientContentPatterns = [
                       /^\d+\.?\d*\s*(g|mg|mcg|kcal|cal|oz|ml|%)\s/i,  // "20g Protein", "3g Fiber"
                       /^\d+\.?\d*\s*(grams?|milligrams?|micrograms?|calories?)\s/i,  // "20 grams Protein"
@@ -1252,6 +1253,10 @@ export function ReportResultView({
                       /^(high|good|excellent)\s+source\s+of\s/i,  // "Good Source of Fiber"
                       /^(low|reduced|less|free)\s+(fat|sodium|sugar|calories?)/i,  // "Low Fat", "Reduced Sodium"
                       /for daily nutrition/i,  // "27 Vitamins & Minerals for Daily Nutrition"
+                      /no\s+sugar(s)?\s+added/i,  // "No Sugar Added" - 21 CFR 101.60(c)
+                      /without\s+added\s+sugar(s)?/i,  // "Without Added Sugars" - 21 CFR 101.60(c)
+                      /sugar[\s-]?free/i,  // "Sugar Free" / "Sugar-Free" - 21 CFR 101.60(c)
+                      /\d+%\s*(juice|fruit)/i,  // "100% Juice" - factual statement
                     ]
                     
                     // Structure/Function indicators that require DSHEA disclaimer
