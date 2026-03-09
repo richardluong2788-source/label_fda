@@ -35,6 +35,7 @@ import {
 } from 'lucide-react'
 import type { AuditReport, Violation, LabelImageEntry, GeometryViolation } from '@/lib/types'
 import { LabelImageGallery } from '@/components/label-image-gallery'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { LabelPreview } from '@/components/label-preview'
 import { getLabelConfig } from '@/lib/label-field-config'
 import { useTranslation } from '@/lib/i18n'
@@ -1464,12 +1465,82 @@ export function ReportResultView({
                                         </p>
                                       </div>
                                     ))}
-                                    {unverifiableClaims.map((claim, idx) => (
-                                      <p key={`uv-${idx}`} className="text-xs text-amber-800 flex items-start gap-1.5">
-                                        <Info className="h-3 w-3 shrink-0 mt-0.5" />
-                                        {claim}
-                                      </p>
-                                    ))}
+                                    {unverifiableClaims.map((claim, idx) => {
+                                      // Claim-specific tooltips with CFR references and expert upsell
+                                      const claimTooltips: Record<string, { regulation: string; note: string; needsLabTest?: boolean }> = {
+                                        'gf': {
+                                          regulation: '21 CFR §101.91',
+                                          note: '< 20ppm gluten để được gọi là "Gluten-Free"',
+                                          needsLabTest: true
+                                        },
+                                        'gluten free': {
+                                          regulation: '21 CFR §101.91',
+                                          note: '< 20ppm gluten để được gọi là "Gluten-Free"',
+                                          needsLabTest: true
+                                        },
+                                        'gluten-free': {
+                                          regulation: '21 CFR §101.91',
+                                          note: '< 20ppm gluten để được gọi là "Gluten-Free"',
+                                          needsLabTest: true
+                                        },
+                                        'keto': {
+                                          regulation: 'Không có quy định FDA',
+                                          note: 'Claim không được FDA quy định chính thức. Thường hiểu là low-carb, high-fat.',
+                                          needsLabTest: false
+                                        },
+                                        'keto friendly': {
+                                          regulation: 'Không có quy định FDA',
+                                          note: 'Claim không được FDA quy định chính thức. Thường hiểu là low-carb, high-fat.',
+                                          needsLabTest: false
+                                        },
+                                        'paleo': {
+                                          regulation: 'Không có quy định FDA',
+                                          note: 'Claim không được FDA quy định chính thức.',
+                                          needsLabTest: false
+                                        },
+                                        'non-gmo': {
+                                          regulation: 'USDA Bioengineered (BE) Disclosure',
+                                          note: 'Phải tuân thủ National Bioengineered Food Disclosure Standard.',
+                                          needsLabTest: false
+                                        }
+                                      }
+                                      
+                                      const claimLower = claim.toLowerCase().trim()
+                                      const tooltipInfo = claimTooltips[claimLower]
+                                      
+                                      if (tooltipInfo) {
+                                        return (
+                                          <TooltipProvider key={`uv-${idx}`}>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <p className="text-xs text-amber-800 flex items-start gap-1.5 cursor-help hover:text-amber-900 transition-colors">
+                                                  <Info className="h-3 w-3 shrink-0 mt-0.5" />
+                                                  <span className="underline decoration-dotted underline-offset-2">{claim}</span>
+                                                </p>
+                                              </TooltipTrigger>
+                                              <TooltipContent side="top" className="max-w-xs p-3 bg-slate-900 text-white border-slate-700">
+                                                <div className="space-y-1.5">
+                                                  <p className="text-[10px] font-mono text-amber-300">{tooltipInfo.regulation}</p>
+                                                  <p className="text-xs">{tooltipInfo.note}</p>
+                                                  {tooltipInfo.needsLabTest && (
+                                                    <p className="text-[10px] text-blue-300 pt-1 border-t border-slate-700">
+                                                      Cần lab test để xác nhận tuân thủ
+                                                    </p>
+                                                  )}
+                                                </div>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+                                        )
+                                      }
+                                      
+                                      return (
+                                        <p key={`uv-${idx}`} className="text-xs text-amber-800 flex items-start gap-1.5">
+                                          <Info className="h-3 w-3 shrink-0 mt-0.5" />
+                                          {claim}
+                                        </p>
+                                      )
+                                    })}
                                   </div>
                                 </div>
                               )}
@@ -1514,21 +1585,108 @@ export function ReportResultView({
                     )
                   })()}
 
-                  {/* Special Claims (NEW) */}
-                  {specialClaims.length > 0 && (
-                    <div>
-                      <p className="text-[11px] text-slate-400 uppercase tracking-wider mb-2">
-                        {t.report.specialClaimsTitle}
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {specialClaims.map((claim, idx) => (
-                          <span key={idx} className="px-2 py-0.5 text-[10px] rounded-full bg-green-50 text-green-700 border border-green-200 font-medium">
-                            {claim}
-                          </span>
-                        ))}
+                  {/* Special Claims (NEW) - with tooltips for regulated claims */}
+                  {specialClaims.length > 0 && (() => {
+                    // Claim-specific tooltips with CFR references
+                    const specialClaimTooltips: Record<string, { regulation: string; note: string; needsLabTest?: boolean }> = {
+                      'gf': {
+                        regulation: '21 CFR §101.91',
+                        note: '< 20ppm gluten để được gọi là "Gluten-Free"',
+                        needsLabTest: true
+                      },
+                      'gluten free': {
+                        regulation: '21 CFR §101.91',
+                        note: '< 20ppm gluten để được gọi là "Gluten-Free"',
+                        needsLabTest: true
+                      },
+                      'gluten-free': {
+                        regulation: '21 CFR §101.91',
+                        note: '< 20ppm gluten để được gọi là "Gluten-Free"',
+                        needsLabTest: true
+                      },
+                      'keto': {
+                        regulation: 'Không có quy định FDA',
+                        note: 'Claim không được FDA quy định chính thức',
+                      },
+                      'keto friendly': {
+                        regulation: 'Không có quy định FDA',
+                        note: 'Claim không được FDA quy định chính thức',
+                      },
+                      'usda organic': {
+                        regulation: 'USDA NOP (7 CFR Part 205)',
+                        note: 'Phải có chứng nhận USDA Organic',
+                      },
+                      'organic': {
+                        regulation: 'USDA NOP (7 CFR Part 205)',
+                        note: 'Phải có chứng nhận từ certifying agent',
+                      },
+                      'non-gmo': {
+                        regulation: 'USDA BE Disclosure',
+                        note: 'Tuân thủ National Bioengineered Food Disclosure Standard',
+                      },
+                      'gmo free': {
+                        regulation: 'USDA BE Disclosure',
+                        note: 'Tuân thủ National Bioengineered Food Disclosure Standard',
+                      },
+                      'kosher': {
+                        regulation: 'Chứng nhận bởi tổ chức Kosher',
+                        note: 'Phải có chứng nhận từ tổ chức Kosher được công nhận',
+                      },
+                      'halal': {
+                        regulation: 'Chứng nhận bởi tổ chức Halal',
+                        note: 'Phải có chứng nhận từ tổ chức Halal được công nhận',
+                      },
+                      'vegan': {
+                        regulation: 'Không có quy định FDA',
+                        note: 'Claim tự nguyện, nên có chứng nhận bên thứ ba',
+                      },
+                    }
+                    
+                    return (
+                      <div>
+                        <p className="text-[11px] text-slate-400 uppercase tracking-wider mb-2">
+                          {t.report.specialClaimsTitle}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {specialClaims.map((claim, idx) => {
+                            const claimLower = claim.toLowerCase().trim()
+                            const tooltipInfo = specialClaimTooltips[claimLower]
+                            
+                            if (tooltipInfo) {
+                              return (
+                                <TooltipProvider key={idx}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="px-2 py-0.5 text-[10px] rounded-full bg-green-50 text-green-700 border border-green-200 font-medium cursor-help hover:bg-green-100 transition-colors">
+                                        {claim}
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-xs p-3 bg-slate-900 text-white border-slate-700">
+                                      <div className="space-y-1.5">
+                                        <p className="text-[10px] font-mono text-green-300">{tooltipInfo.regulation}</p>
+                                        <p className="text-xs">{tooltipInfo.note}</p>
+                                        {tooltipInfo.needsLabTest && (
+                                          <p className="text-[10px] text-blue-300 pt-1 border-t border-slate-700">
+                                            Cần lab test để xác nhận tuân thủ
+                                          </p>
+                                        )}
+                                      </div>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )
+                            }
+                            
+                            return (
+                              <span key={idx} className="px-2 py-0.5 text-[10px] rounded-full bg-green-50 text-green-700 border border-green-200 font-medium">
+                                {claim}
+                              </span>
+                            )
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )
+                  })()}
 
                   {report.product_category && (
                     <div>
