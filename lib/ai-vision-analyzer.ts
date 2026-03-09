@@ -910,13 +910,14 @@ detectedLanguages: Array.isArray(parsed.detectedLanguages) ? parsed.detectedLang
     if (!normalized.isMultiColumnNutrition && normalized.textElements.allText) {
       const allTextLower = normalized.textElements.allText.toLowerCase()
       
-      // Improved regex patterns for calories detection:
-      // Pattern 1: "calories 240" or "calories  240" (number AFTER calories, with 0+ spaces/special chars)
-      // Pattern 2: "240 calories" (number BEFORE calories)
-      // Pattern 3: "calories: 240" or "calories - 240" (with punctuation)
-      // We capture the FULL number by using \d+ and allowing for optional separators
-      const caloriesAfterMatches = allTextLower.match(/calories[\s:.\-]*(\d{2,4})/g) || []
-      const caloriesBeforeMatches = allTextLower.match(/(\d{2,4})[\s]*calories/g) || []
+  // Improved regex patterns for calories detection:
+  // Pattern 1: "calories 240" or "calories  240" (number AFTER calories, with 0+ spaces/special chars)
+  // Pattern 2: "240 calories" (number BEFORE calories)
+  // Pattern 3: "calories: 240" or "calories - 240" (with punctuation)
+  // Pattern 4: "calories 0" (single digit, including 0 for zero-calorie products)
+  // We capture the FULL number by using \d{1,4} to match 1-4 digit numbers (including 0)
+  const caloriesAfterMatches = allTextLower.match(/calories[\s:.\-]*(\d{1,4})/g) || []
+  const caloriesBeforeMatches = allTextLower.match(/(\d{1,4})[\s]*calories/g) || []
       const caloriesMatches = [...caloriesAfterMatches, ...caloriesBeforeMatches]
       
       const servingSizeMatches = allTextLower.match(/serving\s*size/gi) || []
@@ -965,7 +966,7 @@ detectedLanguages: Array.isArray(parsed.detectedLanguages) ? parsed.detectedLang
     if (imageHash) {
       setVisionCache(imageHash, normalized).catch(() => {})
     }
-    // ────────────────────────────────────────────────────────────────────────
+    // ───────────────────────────────────────────────────────────────────���────
 
     return normalized
   } catch (error: any) {
