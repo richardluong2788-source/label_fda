@@ -814,7 +814,17 @@ export function generatePDFReportHTML(data: PDFReportData): string {
 
   // Data from report (with safe access)
   const healthClaims = (report as any).health_claims as string[] | undefined
-  const specialClaims = report.special_claims || []
+  // Deduplicate special claims case-insensitively (e.g., "USDA ORGANIC" vs "USDA Organic")
+  const specialClaims = (() => {
+    const rawClaims = report.special_claims || []
+    const seen = new Set<string>()
+    return rawClaims.filter((claim: string) => {
+      const normalized = claim.toLowerCase().trim()
+      if (seen.has(normalized)) return false
+      seen.add(normalized)
+      return true
+    })
+  })()
   const enforcementInsights = report.enforcement_insights || []
 
   // Dynamic section numbering

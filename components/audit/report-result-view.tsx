@@ -388,7 +388,7 @@ function MiniConfidenceBar({ label, value }: { label: string; value: number }) {
   )
 }
 
-// ────────────────────────────────────────────────────────────
+// ────────────────────────────────���───────────────────────────
 // Ingredient Tags
 // ───────────────────────────────────────────────────────────��
 
@@ -1072,7 +1072,17 @@ export function ReportResultView({
   const detectedLanguages = (report as any).detected_languages as string[] | undefined
   const netQuantity = (report as any).net_quantity as string | undefined
   const packagingFormat = report.packaging_format
-  const specialClaims = report.special_claims || []
+  // Deduplicate special claims case-insensitively (e.g., "USDA ORGANIC" and "USDA Organic" -> keep first)
+  const specialClaims = (() => {
+    const rawClaims = report.special_claims || []
+    const seen = new Set<string>()
+    return rawClaims.filter((claim: string) => {
+      const normalized = claim.toLowerCase().trim()
+      if (seen.has(normalized)) return false
+      seen.add(normalized)
+      return true
+    })
+  })()
 
   return (
     <div className="bg-slate-50">
