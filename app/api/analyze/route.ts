@@ -298,7 +298,8 @@ export async function POST(request: Request) {
               inciData.textElements?.allText,
             ].filter(Boolean).join(' ')
           },
-          detectedClaims: [...(pdpData.detectedClaims || []), ...(nutritionData.detectedClaims || [])],
+          // Deduplicate claims case-insensitively when merging from multiple images
+          detectedClaims: [...new Map([...(pdpData.detectedClaims || []), ...(nutritionData.detectedClaims || [])].map((c: string) => [c.toLowerCase().trim(), c])).values()],
           ingredients: ingredientsData.ingredients || inciData.ingredients || pdpData.ingredients || [],
           allergens: ingredientsData.allergens || pdpData.allergens || [],
           warnings: [...(pdpData.warnings || []), ...(nutritionData.warnings || []), ...(ingredientsData.warnings || []), ...(drugData.warnings || [])],
@@ -325,7 +326,7 @@ export async function POST(request: Request) {
           detectedProductType: visionResult.detectedProductType,
         })
 
-        // ─������� AUTO-DETECT PRODUCT DOMAIN FROM VISION ───────────────────────────
+        // ─�������� AUTO-DETECT PRODUCT DOMAIN FROM VISION ───────────────────────────
         // When user hasn't selected a product type, upgrade productDomain from
         // Vision AI's label analysis instead of defaulting blindly to 'food'.
         const userChoseProductType = !!(report.product_type || report.product_category)

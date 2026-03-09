@@ -190,7 +190,8 @@ export async function POST(request: Request) {
               inciData.textElements?.allText,
             ].filter(Boolean).join(' '),
           },
-          detectedClaims:    [...(pdpData.detectedClaims || []), ...(nutritionData.detectedClaims || [])],
+          // Deduplicate claims case-insensitively when merging from multiple images
+          detectedClaims:    [...new Map([...(pdpData.detectedClaims || []), ...(nutritionData.detectedClaims || [])].map((c: string) => [c.toLowerCase().trim(), c])).values()],
           ingredients:       ingredientsData.ingredients || inciData.ingredients || pdpData.ingredients || [],
           allergens:         ingredientsData.allergens || pdpData.allergens || [],
           warnings:          [...(pdpData.warnings || []), ...(nutritionData.warnings || []), ...(ingredientsData.warnings || []), ...(drugData.warnings || [])],
