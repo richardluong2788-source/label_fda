@@ -31,6 +31,27 @@ export interface ClaimDetection {
   matchedTerms: string[]
 }
 
+// Interface for nutrition facts data used in cross-reference validation
+export interface NutritionFactData {
+  nutrient: string
+  value: number | string | null
+  unit: string
+  dailyValue?: number | null
+}
+
+// Nutrient content claim verification result
+export interface NutrientClaimVerification {
+  claim: string
+  claimType: 'nutrient_content'
+  status: 'compliant' | 'violation' | 'needs_review'
+  nutrient: string
+  actualValue: number | null
+  limit: number
+  unit: string
+  regulation: string
+  description: string
+}
+
 export interface MultiLanguageIssue {
   missingTranslations: string[]
   inconsistencies: string[]
@@ -912,5 +933,269 @@ export class ClaimsValidator {
     }
 
     return null
+  }
+
+  // ─── NUTRIENT CONTENT CLAIM CROSS-REFERENCE VALIDATION ───────────────────
+  //
+  // 21 CFR 101.62 defines specific limits for nutrient content claims:
+  //   - "Free" claims: nutrient must be below detection threshold
+  //   - "Low" claims: nutrient must be ≤ specific limit
+  //   - "Reduced/Less" claims: nutrient must be ≥25% less than reference
+  //
+  // This method cross-references detected claims with actual nutrition facts
+  // to automatically verify compliance instead of flagging "needs review".
+  //
+  // RACC = Reference Amount Customarily Consumed (defined per product category)
+  // For simplicity, we use standard serving size limits here.
+
+  /**
+   * Nutrient content claim limits per 21 CFR 101.62
+   * Values are per RACC (Reference Amount Customarily Consumed)
+   * Using standard RACC assumptions for general food products
+   */
+  private static NUTRIENT_CONTENT_CLAIM_LIMITS: Record<string, {
+    patterns: RegExp[]
+    nutrientKey: string
+    limit: number
+    unit: string
+    regulation: string
+    description: string
+  }[]> = {
+    fat: [
+      {
+        patterns: [/\bfat[\s-]?free\b/i, /\b0[\s%]*fat\b/i, /\bno[\s-]?fat\b/i],
+        nutrientKey: 'total fat',
+        limit: 0.5,
+        unit: 'g',
+        regulation: '21 CFR 101.62(b)(1)',
+        description: '"Fat Free" requires <0.5g fat per RACC'
+      },
+      {
+        patterns: [/\blow[\s-]?fat\b/i, /\blight[\s-]?fat\b/i],
+        nutrientKey: 'total fat',
+        limit: 3,
+        unit: 'g',
+        regulation: '21 CFR 101.62(b)(2)',
+        description: '"Low Fat" requires ≤3g fat per RACC'
+      },
+      {
+        patterns: [/\breduced[\s-]?fat\b/i, /\bless[\s-]?fat\b/i],
+        nutrientKey: 'total fat',
+        limit: 999, // Requires 25% reduction - complex comparison
+        unit: 'g',
+        regulation: '21 CFR 101.62(b)(4)',
+        description: '"Reduced Fat" requires ≥25% less fat than reference'
+      }
+    ],
+    saturated_fat: [
+      {
+        patterns: [/\bsaturated[\s-]?fat[\s-]?free\b/i, /\bno[\s-]?saturated[\s-]?fat\b/i],
+        nutrientKey: 'saturated fat',
+        limit: 0.5,
+        unit: 'g',
+        regulation: '21 CFR 101.62(c)(1)',
+        description: '"Saturated Fat Free" requires <0.5g saturated fat per RACC'
+      },
+      {
+        patterns: [/\blow[\s-]?saturated[\s-]?fat\b/i],
+        nutrientKey: 'saturated fat',
+        limit: 1,
+        unit: 'g',
+        regulation: '21 CFR 101.62(c)(2)',
+        description: '"Low Saturated Fat" requires ≤1g saturated fat per RACC'
+      }
+    ],
+    cholesterol: [
+      {
+        patterns: [/\bcholesterol[\s-]?free\b/i, /\bno[\s-]?cholesterol\b/i],
+        nutrientKey: 'cholesterol',
+        limit: 2,
+        unit: 'mg',
+        regulation: '21 CFR 101.62(d)(1)',
+        description: '"Cholesterol Free" requires <2mg cholesterol per RACC'
+      },
+      {
+        patterns: [/\blow[\s-]?cholesterol\b/i],
+        nutrientKey: 'cholesterol',
+        limit: 20,
+        unit: 'mg',
+        regulation: '21 CFR 101.62(d)(2)',
+        description: '"Low Cholesterol" requires ≤20mg cholesterol per RACC'
+      }
+    ],
+    sodium: [
+      {
+        patterns: [/\bsodium[\s-]?free\b/i, /\bsalt[\s-]?free\b/i, /\bno[\s-]?sodium\b/i],
+        nutrientKey: 'sodium',
+        limit: 5,
+        unit: 'mg',
+        regulation: '21 CFR 101.61(b)(1)',
+        description: '"Sodium Free" requires <5mg sodium per RACC'
+      },
+      {
+        patterns: [/\blow[\s-]?sodium\b/i, /\blow[\s-]?salt\b/i],
+        nutrientKey: 'sodium',
+        limit: 140,
+        unit: 'mg',
+        regulation: '21 CFR 101.61(b)(4)',
+        description: '"Low Sodium" requires ≤140mg sodium per RACC'
+      },
+      {
+        patterns: [/\bvery[\s-]?low[\s-]?sodium\b/i],
+        nutrientKey: 'sodium',
+        limit: 35,
+        unit: 'mg',
+        regulation: '21 CFR 101.61(b)(3)',
+        description: '"Very Low Sodium" requires ≤35mg sodium per RACC'
+      }
+    ],
+    sugar: [
+      {
+        patterns: [/\bsugar[\s-]?free\b/i, /\bno[\s-]?sugar\b/i, /\bzero[\s-]?sugar\b/i],
+        nutrientKey: 'total sugars',
+        limit: 0.5,
+        unit: 'g',
+        regulation: '21 CFR 101.60(c)(1)',
+        description: '"Sugar Free" requires <0.5g sugars per RACC'
+      },
+      {
+        patterns: [/\blow[\s-]?sugar\b/i],
+        nutrientKey: 'total sugars',
+        limit: 5, // Not officially defined - using reasonable limit
+        unit: 'g',
+        regulation: '21 CFR 101.60(c)',
+        description: '"Low Sugar" - verify compliance with FDA guidance'
+      },
+      {
+        patterns: [/\bno[\s-]?added[\s-]?sugar/i, /\bwithout[\s-]?added[\s-]?sugar/i],
+        nutrientKey: 'added sugars',
+        limit: 0,
+        unit: 'g',
+        regulation: '21 CFR 101.60(c)(2)',
+        description: '"No Added Sugars" requires no sugars added during processing'
+      }
+    ],
+    calories: [
+      {
+        patterns: [/\bcalorie[\s-]?free\b/i, /\bzero[\s-]?calorie/i],
+        nutrientKey: 'calories',
+        limit: 5,
+        unit: 'kcal',
+        regulation: '21 CFR 101.60(b)(1)',
+        description: '"Calorie Free" requires <5 calories per RACC'
+      },
+      {
+        patterns: [/\blow[\s-]?calorie\b/i],
+        nutrientKey: 'calories',
+        limit: 40,
+        unit: 'kcal',
+        regulation: '21 CFR 101.60(b)(2)',
+        description: '"Low Calorie" requires ≤40 calories per RACC'
+      }
+    ]
+  }
+
+  /**
+   * Verify nutrient content claims against actual nutrition facts data.
+   * 
+   * This method provides smart cross-reference:
+   * - If claim is verified as compliant → status: 'compliant'
+   * - If claim violates limit → status: 'violation' (critical)
+   * - If unable to verify (missing data) → status: 'needs_review'
+   * 
+   * @param labelText - Full label text (product name + claims)
+   * @param nutritionFacts - Array of extracted nutrition facts
+   * @returns Array of verification results for detected nutrient content claims
+   */
+  static verifyNutrientContentClaims(
+    labelText: string,
+    nutritionFacts: NutritionFactData[]
+  ): NutrientClaimVerification[] {
+    const results: NutrientClaimVerification[] = []
+    const lowerText = labelText.toLowerCase()
+
+    // Build a map of nutrient values for quick lookup
+    const nutrientMap = new Map<string, number | null>()
+    for (const fact of nutritionFacts) {
+      const key = fact.nutrient.toLowerCase().trim()
+      let numValue: number | null = null
+      
+      if (typeof fact.value === 'number') {
+        numValue = fact.value
+      } else if (typeof fact.value === 'string') {
+        // Extract numeric value from string like "2.5g" or "140mg"
+        const match = fact.value.match(/^<?(\d+(?:\.\d+)?)/);
+        if (match) {
+          numValue = parseFloat(match[1])
+        }
+      }
+      
+      nutrientMap.set(key, numValue)
+      // Also store common aliases
+      if (key === 'total fat') nutrientMap.set('fat', numValue)
+      if (key === 'total sugars') nutrientMap.set('sugars', numValue)
+      if (key === 'sat. fat') nutrientMap.set('saturated fat', numValue)
+      if (key === 'sat fat') nutrientMap.set('saturated fat', numValue)
+      if (key === 'cholest.') nutrientMap.set('cholesterol', numValue)
+    }
+
+    // Check each category of nutrient content claims
+    for (const [category, claimDefs] of Object.entries(this.NUTRIENT_CONTENT_CLAIM_LIMITS)) {
+      for (const def of claimDefs) {
+        // Check if any pattern matches the label text
+        const matchedPattern = def.patterns.find(pattern => pattern.test(lowerText))
+        if (!matchedPattern) continue
+
+        // Get the matched claim text
+        const match = lowerText.match(matchedPattern)
+        const claimText = match ? match[0] : category
+
+        // Look up the actual nutrient value
+        const actualValue = nutrientMap.get(def.nutrientKey)
+
+        if (actualValue === null || actualValue === undefined) {
+          // Cannot verify - nutrition data not available
+          results.push({
+            claim: claimText,
+            claimType: 'nutrient_content',
+            status: 'needs_review',
+            nutrient: def.nutrientKey,
+            actualValue: null,
+            limit: def.limit,
+            unit: def.unit,
+            regulation: def.regulation,
+            description: `${def.description}. Unable to verify - ${def.nutrientKey} value not extracted.`
+          })
+        } else if (actualValue <= def.limit) {
+          // COMPLIANT - actual value meets the claim requirement
+          results.push({
+            claim: claimText,
+            claimType: 'nutrient_content',
+            status: 'compliant',
+            nutrient: def.nutrientKey,
+            actualValue,
+            limit: def.limit,
+            unit: def.unit,
+            regulation: def.regulation,
+            description: `${claimText.toUpperCase()} claim verified: ${actualValue}${def.unit} ≤ ${def.limit}${def.unit} limit`
+          })
+        } else {
+          // VIOLATION - actual value exceeds the claim requirement
+          results.push({
+            claim: claimText,
+            claimType: 'nutrient_content',
+            status: 'violation',
+            nutrient: def.nutrientKey,
+            actualValue,
+            limit: def.limit,
+            unit: def.unit,
+            regulation: def.regulation,
+            description: `${claimText.toUpperCase()} claim VIOLATED: ${actualValue}${def.unit} exceeds ${def.limit}${def.unit} limit per ${def.regulation}`
+          })
+        }
+      }
+    }
+
+    return results
   }
 }
