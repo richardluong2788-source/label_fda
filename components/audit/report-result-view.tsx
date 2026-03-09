@@ -39,6 +39,7 @@ import { LabelPreview } from '@/components/label-preview'
 import { getLabelConfig } from '@/lib/label-field-config'
 import { useTranslation } from '@/lib/i18n'
 import { useTranslateViolations } from '@/hooks/use-translate-violations'
+import { ClaimsValidator, type NutritionFactData } from '@/lib/claims-validator'
 
 // ────────────────────────────────────────────────────────────
 // Nutrition Value Parser - Fixes OCR merge bugs like "0mg0"
@@ -1252,23 +1253,34 @@ export function ReportResultView({
                       'bonus pack', 'twin pack', 'multi-pack', 'variety pack', 'combo pack'
                     ]
                     
-                    // Nutrient content claims/statements - COMPLIANT per 21 CFR 101.13 & 101.60
-                    // These are factual statements about nutrient quantities, NOT health claims
-                    // Examples: "20g Protein", "3g Fiber", "27 Vitamins & Minerals", "250 Calories"
-                    // 21 CFR 101.60(c): "No sugar added" / "Without added sugars" are valid nutrient content claims
-                    const nutrientContentPatterns = [
+                    // Nutrient content claims/statements - These need CROSS-REFERENCE with nutrition facts
+                    // Simple quantity statements like "20g Protein" are always compliant
+                    // But claims like "Low Fat", "Fat Free" need verification against actual fat values
+                    // We route them to otherClaims for smart cross-reference verification
+                    const simpleNutrientStatementPatterns = [
                       /^\d+\.?\d*\s*(g|mg|mcg|kcal|cal|oz|ml|%)\s/i,  // "20g Protein", "3g Fiber"
                       /^\d+\.?\d*\s*(grams?|milligrams?|micrograms?|calories?)\s/i,  // "20 grams Protein"
                       /^\d+\s*(vitamins?|minerals?)/i,  // "27 Vitamins & Minerals"
                       /\d+\s*(nutrient|calorie)/i,  // "250 Nutrient Rich Calories"
                       /^(high|good|excellent)\s+source\s+of\s/i,  // "Good Source of Fiber"
-                      /^(low|reduced|less|free)\s+(fat|sodium|sugar|calories?)/i,  // "Low Fat", "Reduced Sodium"
                       /for daily nutrition/i,  // "27 Vitamins & Minerals for Daily Nutrition"
-                      /no\s+sugar(s)?\s+added/i,  // "No Sugar Added" - 21 CFR 101.60(c)
-                      /without\s+added\s+sugar(s)?/i,  // "Without Added Sugars" - 21 CFR 101.60(c)
-                      /sugar[\s-]?free/i,  // "Sugar Free" / "Sugar-Free" - 21 CFR 101.60(c)
                       /\d+%\s*(juice|fruit)/i,  // "100% Juice" - factual statement
                     ]
+                    
+                    // Nutrient content CLAIMS that need cross-reference verification
+                    // These claims have specific FDA limits per 21 CFR 101.60-101.62
+                    // They will be routed to otherClaims for smart verification
+                    const nutrientContentClaimPatterns = [
+                      /\b(low|reduced|less)[\s-]?(fat|sodium|sugar|salt|cholesterol|calorie)/i,
+                      /\b(fat|sodium|sugar|salt|cholesterol|calorie)[\s-]?free\b/i,
+                      /\bno[\s-]?(fat|sodium|sugar|salt|cholesterol)\b/i,
+                      /\bzero[\s-]?(fat|sugar|calorie)/i,
+                      /\bno\s+sugar(s)?\s+added/i,
+                      /\bwithout\s+added\s+sugar(s)?/i,
+                    ]
+                    
+                    // Combined patterns for simple matching (but NOT for cross-reference claims)
+                    const nutrientContentPatterns = simpleNutrientStatementPatterns
                     
                     // Structure/Function indicators that require DSHEA disclaimer
                     // These are phrases that imply a bodily function benefit
@@ -1300,24 +1312,35 @@ export function ReportResultView({
                     const hasStructureFunctionKeyword = (claim: string) => 
                       structureFunctionKeywords.some(keyword => claim.toLowerCase().includes(keyword))
                     
-                    // Check if claim is a nutrient content statement
-                    const isNutrientContentClaim = (claim: string) => 
-                      nutrientContentPatterns.some(pattern => pattern.test(claim)) && !hasStructureFunctionKeyword(claim)
+                    // Check if claim is a SIMPLE nutrient content statement (e.g., "20g Protein")
+                    // These are always compliant and don't need cross-reference
+                    const isSimpleNutrientStatement = (claim: string) => 
+                      simpleNutrientStatementPatterns.some(pattern => pattern.test(claim)) && !hasStructureFunctionKeyword(claim)
+                    
+                    // Check if claim contains nutrient content CLAIMS that need verification
+                    // e.g., "Low-Fat", "Fat Free", "No Sugar Added" - these need cross-reference
+                    const needsNutrientVerification = (claim: string) =>
+                      nutrientContentClaimPatterns.some(pattern => pattern.test(claim))
                     
                     // Structure/Function claims - ONLY if they have S/F keywords
                     const structureFunctionClaims = actualClaims.filter(claim => hasStructureFunctionKeyword(claim))
                     
-                    // Nutrient Content claims - compliant per 21 CFR 101.13
-                    const nutrientContentClaims = actualClaims.filter(claim => isNutrientContentClaim(claim))
+                    // Simple Nutrient Content statements - always compliant per 21 CFR 101.13
+                    // BUT exclude claims that need verification (Low-Fat, Fat Free, etc.)
+                    const nutrientContentClaims = actualClaims.filter(claim => 
+                      isSimpleNutrientStatement(claim) && !needsNutrientVerification(claim)
+                    )
                     
                     // Factual/Negative claims (no artificial, etc.)
                     const factualClaims = actualClaims.filter(claim => 
                       factualClaimPatterns.some(pattern => claim.toLowerCase().includes(pattern)) &&
                       !hasStructureFunctionKeyword(claim) &&
-                      !isNutrientContentClaim(claim)
+                      !isSimpleNutrientStatement(claim) &&
+                      !needsNutrientVerification(claim)
                     )
                     
-                    // Other claims - only what doesn't fit above categories
+                    // Other claims - includes nutrient content claims that need cross-reference verification
+                    // "Low-Fat Greek Yogurt" will go here and be verified against nutrition facts
                     const otherClaims = actualClaims.filter(claim => 
                       !structureFunctionClaims.includes(claim) && 
                       !factualClaims.includes(claim) &&
@@ -1343,22 +1366,107 @@ export function ReportResultView({
                           </div>
                         )}
                         
-                        {/* Other claims that may need review */}
-                        {otherClaims.length > 0 && (
-                          <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
-                            <p className="text-[11px] text-amber-700 uppercase tracking-wider font-bold mb-1.5">
-                              {t.report.otherClaimsTitle || 'OTHER CLAIMS (REVIEW NEEDED)'}
-                            </p>
-                            <div className="space-y-1">
-                              {otherClaims.map((claim, idx) => (
-                                <p key={idx} className="text-xs text-amber-800 flex items-start gap-1.5">
-                                  <Info className="h-3 w-3 shrink-0 mt-0.5" />
-                                  {claim}
-                                </p>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                        {/* Other claims - cross-reference with nutrition facts for smart verification */}
+                        {otherClaims.length > 0 && (() => {
+                          // Convert nutrition facts to the format expected by ClaimsValidator
+                          const nfData: NutritionFactData[] = nutritionFacts.map((nf: any) => ({
+                            nutrient: nf.nutrient || nf.name || '',
+                            value: nf.value,
+                            unit: nf.unit || '',
+                            dailyValue: nf.dailyValue
+                          }))
+                          
+                          // Cross-reference claims with nutrition facts for smart verification
+                          const claimText = otherClaims.join(' ')
+                          const verifications = ClaimsValidator.verifyNutrientContentClaims(claimText, nfData)
+                          
+                          // Separate verified claims from unverifiable ones
+                          const verifiedCompliant = verifications.filter(v => v.status === 'compliant')
+                          const verifiedViolations = verifications.filter(v => v.status === 'violation')
+                          const needsReview = verifications.filter(v => v.status === 'needs_review')
+                          
+                          // Claims that couldn't be cross-referenced at all
+                          const verifiedClaimTexts = verifications.map(v => v.claim.toLowerCase())
+                          const unverifiableClaims = otherClaims.filter(claim => 
+                            !verifiedClaimTexts.some(vc => claim.toLowerCase().includes(vc))
+                          )
+                          
+                          return (
+                            <>
+                              {/* Verified COMPLIANT nutrient content claims */}
+                              {verifiedCompliant.length > 0 && (
+                                <div className="p-2.5 rounded-lg bg-green-50 border border-green-200">
+                                  <p className="text-[11px] text-green-700 uppercase tracking-wider font-bold mb-1.5">
+                                    {t.report.verifiedNutrientClaimsTitle || 'VERIFIED NUTRIENT CLAIMS (COMPLIANT)'}
+                                  </p>
+                                  <div className="space-y-1.5">
+                                    {verifiedCompliant.map((v, idx) => (
+                                      <div key={idx} className="text-xs text-green-800">
+                                        <p className="flex items-start gap-1.5">
+                                          <CheckCircle className="h-3 w-3 shrink-0 mt-0.5 text-green-600" />
+                                          <span className="font-medium">{v.claim.toUpperCase()}</span>
+                                        </p>
+                                        <p className="ml-4.5 text-[10px] text-green-600 mt-0.5">
+                                          {v.nutrient}: {v.actualValue}{v.unit} ≤ {v.limit}{v.unit} ({v.regulation})
+                                        </p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Verified VIOLATION nutrient content claims */}
+                              {verifiedViolations.length > 0 && (
+                                <div className="p-2.5 rounded-lg bg-red-50 border border-red-200">
+                                  <p className="text-[11px] text-red-700 uppercase tracking-wider font-bold mb-1.5">
+                                    {t.report.nutrientClaimViolationsTitle || 'NUTRIENT CLAIM VIOLATIONS'}
+                                  </p>
+                                  <div className="space-y-1.5">
+                                    {verifiedViolations.map((v, idx) => (
+                                      <div key={idx} className="text-xs text-red-800">
+                                        <p className="flex items-start gap-1.5">
+                                          <AlertCircle className="h-3 w-3 shrink-0 mt-0.5 text-red-600" />
+                                          <span className="font-medium">{v.claim.toUpperCase()}</span>
+                                        </p>
+                                        <p className="ml-4.5 text-[10px] text-red-600 mt-0.5">
+                                          {v.nutrient}: {v.actualValue}{v.unit} exceeds {v.limit}{v.unit} limit ({v.regulation})
+                                        </p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Claims needing review (nutrition data not available) */}
+                              {(needsReview.length > 0 || unverifiableClaims.length > 0) && (
+                                <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+                                  <p className="text-[11px] text-amber-700 uppercase tracking-wider font-bold mb-1.5">
+                                    {t.report.otherClaimsTitle || 'OTHER CLAIMS (REVIEW NEEDED)'}
+                                  </p>
+                                  <div className="space-y-1">
+                                    {needsReview.map((v, idx) => (
+                                      <div key={`nr-${idx}`} className="text-xs text-amber-800">
+                                        <p className="flex items-start gap-1.5">
+                                          <Info className="h-3 w-3 shrink-0 mt-0.5" />
+                                          <span>{v.claim}</span>
+                                        </p>
+                                        <p className="ml-4.5 text-[10px] text-amber-600 mt-0.5">
+                                          {v.description}
+                                        </p>
+                                      </div>
+                                    ))}
+                                    {unverifiableClaims.map((claim, idx) => (
+                                      <p key={`uv-${idx}`} className="text-xs text-amber-800 flex items-start gap-1.5">
+                                        <Info className="h-3 w-3 shrink-0 mt-0.5" />
+                                        {claim}
+                                      </p>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )
+                        })()}
                         
                         {/* Nutrient Content Claims - Compliant (21 CFR 101.13) */}
                         {nutrientContentClaims.length > 0 && (
