@@ -54,6 +54,17 @@ function parseNutritionValue(fact: any): { displayValue: string; displayDV: stri
   const unit = fact.unit || ''
   let dailyValue = fact.dailyValue
   
+  // Handle null/undefined/empty value - show unit with dailyValue if available
+  // This fixes display for micronutrients where Vision AI extracted %DV but not numeric value
+  if (value === null || value === undefined || value === '') {
+    // If we have dailyValue but no numeric value, show just the unit (e.g., "mg" with "10%")
+    // This is better than showing nothing since the %DV tells us the nutrient IS present
+    return {
+      displayValue: unit || '-',
+      displayDV: dailyValue != null ? String(dailyValue) : null
+    }
+  }
+  
   // If value is already a clean number, just format it
   if (typeof value === 'number') {
     return {
@@ -93,9 +104,9 @@ function parseNutritionValue(fact: any): { displayValue: string; displayDV: stri
     }
   }
   
-  // Fallback
+  // Fallback for any other type
   return {
-    displayValue: `${value ?? ''}${unit}`,
+    displayValue: String(value) + unit,
     displayDV: dailyValue != null ? String(dailyValue) : null
   }
 }
@@ -902,7 +913,7 @@ function ContrastViolationCard({
   )
 }
 
-// ────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────��───────
 // Geometry Violation Card
 // ────────────────────────────────────────────────────────────
 
