@@ -128,6 +128,12 @@ export function AdminDashboard({
                   Test RAG
                 </Link>
               </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/admin/re-embed">
+                  <Database className="mr-1.5 h-3.5 w-3.5" />
+                  Re-Embed
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
