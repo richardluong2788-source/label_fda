@@ -21,6 +21,7 @@ export function LandingHeader() {
 
   const navLinks = [
     { href: '/pricing', label: t.nav.pricingPage },
+    { href: '/risk-methodology', label: t.nav.riskMethodology },
     { href: '/knowledge', label: t.nav.knowledge },
   ]
 

@@ -30,6 +30,7 @@ export const en: TranslationKeys = {
     history: 'History',
     settings: 'Settings',
     guide: 'User Guide',
+    riskMethodology: 'Risk Scoring',
     knowledgeBase: 'Knowledge Base',
     revenue: 'Revenue',
     pricing: 'Pricing',

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   Home, Database, BarChart3, TrendingUp, Tag,
-  History, ScanLine, Settings, Menu, BookOpen,
+  History, ScanLine, Settings, Menu, BookOpen, Calculator,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -35,8 +35,9 @@ export function AppHeader({ email, isAdmin, showAuth = true }: AppHeaderProps) {
     { href: '/dashboard', label: t.nav.home,           icon: Home,       exact: true },
     { href: '/analyze',   label: t.nav.analyze,        icon: ScanLine,   exact: false },
     { href: '/history',   label: t.nav.history,        icon: History,    exact: false },
-    { href: '/guide',     label: t.nav.guide,          icon: BookOpen,   exact: false },
-    { href: '/settings',  label: t.nav.settings,       icon: Settings,   exact: false },
+    { href: '/guide',             label: t.nav.guide,            icon: BookOpen,   exact: false },
+    { href: '/risk-methodology',  label: t.nav.riskMethodology,  icon: Calculator, exact: false },
+    { href: '/settings',          label: t.nav.settings,         icon: Settings,   exact: false },
     ...(isAdmin
       ? [
           { href: '/admin/knowledge', label: t.nav.knowledgeBase, icon: Database,   exact: false },
@@ -53,11 +54,11 @@ export function AppHeader({ email, isAdmin, showAuth = true }: AppHeaderProps) {
   return (
     <header className="border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          {/* Mobile hamburger */}
+        <div className="flex items-center gap-4 min-w-0 flex-1">
+          {/* Mobile hamburger - show on smaller screens when nav overflows */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+              <Button variant="ghost" size="icon" className="xl:hidden shrink-0" aria-label="Open menu">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -128,8 +129,8 @@ export function AppHeader({ email, isAdmin, showAuth = true }: AppHeaderProps) {
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1" role="navigation" aria-label="Main navigation">
+          {/* Desktop Navigation - only show on xl screens to prevent overflow */}
+          <nav className="hidden xl:flex items-center gap-1 overflow-x-auto" role="navigation" aria-label="Main navigation">
             {navItems.map((item) => {
               const Icon = item.icon
               const active = isActive(item.href, item.exact)
@@ -138,10 +139,10 @@ export function AppHeader({ email, isAdmin, showAuth = true }: AppHeaderProps) {
                   <Button
                     variant={active ? 'secondary' : 'ghost'}
                     size="sm"
-                    className="gap-2"
+                    className="gap-1.5 whitespace-nowrap text-xs"
                   >
-                    <Icon className="h-4 w-4" />
-                    <span className="hidden lg:inline">{item.label}</span>
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <span>{item.label}</span>
                   </Button>
                 </Link>
               )
@@ -149,7 +150,7 @@ export function AppHeader({ email, isAdmin, showAuth = true }: AppHeaderProps) {
           </nav>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <LanguageSwitcher />
           {showAuth && email && <UserProfileMenu email={email} isAdmin={isAdmin} />}
         </div>
