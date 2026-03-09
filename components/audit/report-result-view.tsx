@@ -55,13 +55,12 @@ function parseNutritionValue(fact: any): { displayValue: string; displayDV: stri
   const unit = fact.unit || ''
   let dailyValue = fact.dailyValue
   
-  // Handle null/undefined/empty value - show unit with dailyValue if available
+  // Handle null/undefined/empty value - show "N/A" when numeric value is missing
   // This fixes display for micronutrients where Vision AI extracted %DV but not numeric value
+  // Shows "N/A" instead of just "mg" which looks like a software bug
   if (value === null || value === undefined || value === '') {
-    // If we have dailyValue but no numeric value, show just the unit (e.g., "mg" with "10%")
-    // This is better than showing nothing since the %DV tells us the nutrient IS present
     return {
-      displayValue: unit || '-',
+      displayValue: 'N/A',
       displayDV: dailyValue != null ? String(dailyValue) : null
     }
   }
@@ -391,7 +390,7 @@ function MiniConfidenceBar({ label, value }: { label: string; value: number }) {
 
 // ────────────────────────────────────────────────────────────
 // Ingredient Tags
-// ────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────��
 
 function IngredientTags({ ingredientList }: { ingredientList: string }) {
   const ingredients = ingredientList
