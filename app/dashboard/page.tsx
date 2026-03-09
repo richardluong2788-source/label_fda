@@ -37,10 +37,24 @@ export default async function DashboardPage() {
     adminRecord?.role === 'superadmin' ||
     adminRecord?.role === 'expert'
 
-  const planName = (subscription?.subscription_plans as any)?.name ?? 'Free Trial'
-  const reportsLimit = (subscription?.subscription_plans as any)?.reports_limit ?? 1
+  // Get plan info from subscription or fallback to actual free plan from database
+  let planName = (subscription?.subscription_plans as any)?.name
+  let reportsLimit = (subscription?.subscription_plans as any)?.reports_limit
   const reportsUsed = subscription?.reports_used ?? 0
   const planId = subscription?.plan_id ?? 'free'
+
+  // If no subscription or join failed, fetch the actual plan from database
+  // This ensures admin changes to plans are reflected immediately
+  if (planName === undefined || reportsLimit === undefined) {
+    const { data: freePlan } = await supabase
+      .from('subscription_plans')
+      .select('name, reports_limit')
+      .eq('id', planId)
+      .single()
+    
+    planName = freePlan?.name ?? 'Free Trial'
+    reportsLimit = freePlan?.reports_limit ?? 1
+  }
 
   return (
     <DashboardClient
