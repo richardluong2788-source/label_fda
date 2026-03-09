@@ -360,18 +360,25 @@ export async function POST(request: Request) {
               (allText.includes('infant') && allText.includes('formula')) ||
               (allText.includes('baby') && allText.includes('formula'))
             
+            // IMPORTANT: Check "Supplement Facts" BEFORE "Drug Facts" because
+            // supplements may mention terms like "active" but are NOT drugs.
+            // Only "Drug Facts" panel indicates OTC drug classification.
             if (isInfantFormula) {
-              ;(productDomain as any) = 'infant_formula'
-            } else if (allText.includes('drug facts') || allText.includes('active ingredient')) {
-              ;(productDomain as any) = 'drug_otc'
+              productDomain = 'infant_formula'
             } else if (allText.includes('supplement facts')) {
-              ;(productDomain as any) = 'supplement'
+              // Dietary supplements have "Supplement Facts" panel - regulated under DSHEA
+              productDomain = 'supplement'
+              console.log('[v0] Auto-detected domain: supplement (found "Supplement Facts" panel)')
+            } else if (allText.includes('drug facts')) {
+              // Only classify as drug_otc if "Drug Facts" panel is present
+              productDomain = 'drug_otc'
+              console.log('[v0] Auto-detected domain: drug_otc (found "Drug Facts" panel)')
             } else if (allText.includes('nutrition facts') || allText.includes('calories')) {
               // Explicit food panel detected — keep 'food', no override
-              ;(productDomain as any) = 'food'
+              productDomain = 'food'
             } else if (allText.includes('inci')) {
               // INCI keyword without any food/nutrition panel → cosmetic
-              ;(productDomain as any) = 'cosmetic'
+              productDomain = 'cosmetic'
             }
             // else: no strong signal → keep existing 'food' default
           }
@@ -387,14 +394,19 @@ export async function POST(request: Request) {
             allText.includes('nutrients per 100 calories') ||
             (allText.includes('infant') && allText.includes('formula'))
           
+          // IMPORTANT: Check "Supplement Facts" BEFORE "Drug Facts"
           if (isInfantFormula) {
-            ;(productDomain as any) = 'infant_formula'
-          } else if (allText.includes('drug facts') || allText.includes('active ingredient')) {
-            ;(productDomain as any) = 'drug_otc'
+            productDomain = 'infant_formula'
           } else if (allText.includes('supplement facts')) {
-            ;(productDomain as any) = 'supplement'
+            // Dietary supplements - regulated under DSHEA, NOT drug rules
+            productDomain = 'supplement'
+            console.log('[v0] Auto-detected domain: supplement (found "Supplement Facts")')
+          } else if (allText.includes('drug facts')) {
+            // Only "Drug Facts" panel indicates OTC drug
+            productDomain = 'drug_otc'
+            console.log('[v0] Auto-detected domain: drug_otc (found "Drug Facts")')
           } else if (!allText.includes('nutrition facts') && !allText.includes('calories') && allText.includes('inci')) {
-            ;(productDomain as any) = 'cosmetic'
+            productDomain = 'cosmetic'
           }
         }
         // ── END AUTO-DETECT ───────────────────────────────────────────────────

@@ -210,16 +210,33 @@ export async function POST(request: Request) {
 
         totalTokensUsed = visionResult.tokensUsed
 
-        // Auto-detect product domain from vision
-        const userChoseProductType = !!(report.product_type || report.product_category)
-        const allTextLow = visionResult.textElements.allText?.toLowerCase() || ''
-        if (!userChoseProductType) {
-          const isInfantFormula = allTextLow.includes('infant formula') || (allTextLow.includes('infant') && allTextLow.includes('formula'))
-          if (isInfantFormula) { (productDomain as any) = 'infant_formula' }
-          else if (allTextLow.includes('drug facts') || allTextLow.includes('active ingredient')) { (productDomain as any) = 'drug_otc' }
-          else if (allTextLow.includes('supplement facts')) { (productDomain as any) = 'supplement' }
-          else if (!allTextLow.includes('nutrition facts') && !allTextLow.includes('calories') && allTextLow.includes('inci')) { (productDomain as any) = 'cosmetic' }
-        }
+    // Auto-detect product domain from vision
+    // IMPORTANT: Order matters! Check more specific patterns first.
+    // "Supplement Facts" must be checked BEFORE "active ingredient" because
+    // supplements may mention "active ingredient" in probiotic blends but are NOT drugs.
+    const userChoseProductType = !!(report.product_type || report.product_category)
+    const allTextLow = visionResult.textElements.allText?.toLowerCase() || ''
+    if (!userChoseProductType) {
+      const isInfantFormula = allTextLow.includes('infant formula') || (allTextLow.includes('infant') && allTextLow.includes('formula'))
+      const hasSupplementFacts = allTextLow.includes('supplement facts')
+      const hasDrugFacts = allTextLow.includes('drug facts')
+      // "active ingredient" alone is NOT enough to classify as drug - it needs Drug Facts panel
+      const isOtcDrug = hasDrugFacts
+      
+      if (isInfantFormula) {
+        productDomain = 'infant_formula'
+      } else if (hasSupplementFacts) {
+        // Dietary supplements have "Supplement Facts" panel - regulated under DSHEA, NOT drug rules
+        productDomain = 'supplement'
+        console.log('[v0] Auto-detected domain: supplement (found "Supplement Facts" panel)')
+      } else if (isOtcDrug) {
+        // Only classify as drug_otc if "Drug Facts" panel is present
+        productDomain = 'drug_otc'
+        console.log('[v0] Auto-detected domain: drug_otc (found "Drug Facts" panel)')
+      } else if (!allTextLow.includes('nutrition facts') && !allTextLow.includes('calories') && allTextLow.includes('inci')) {
+        productDomain = 'cosmetic'
+      }
+    }
       } catch (error: any) {
         const isValidationError = error.isValidationError === true
         await supabase
