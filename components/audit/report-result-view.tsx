@@ -43,6 +43,147 @@ import { useTranslateViolations } from '@/hooks/use-translate-violations'
 import { ClaimsValidator, type NutritionFactData } from '@/lib/claims-validator'
 
 // ────────────────────────────────────────────────────────────
+// Claim Tooltips - i18n support for FDA regulation references
+// ────────────────────────────────────────────────────────────
+
+type ClaimTooltipInfo = { regulation: string; note: string; needsLabTest?: boolean }
+
+function getClaimTooltips(locale: string): Record<string, ClaimTooltipInfo> {
+  const isVi = locale === 'vi'
+  
+  return {
+    // Gluten Free - 21 CFR 101.91
+    'gf': {
+      regulation: '21 CFR §101.91',
+      note: isVi ? '< 20ppm gluten để được gọi là "Gluten-Free"' : '< 20ppm gluten required to label as "Gluten-Free"',
+      needsLabTest: true
+    },
+    'gluten free': {
+      regulation: '21 CFR §101.91',
+      note: isVi ? '< 20ppm gluten để được gọi là "Gluten-Free"' : '< 20ppm gluten required to label as "Gluten-Free"',
+      needsLabTest: true
+    },
+    'gluten-free': {
+      regulation: '21 CFR §101.91',
+      note: isVi ? '< 20ppm gluten để được gọi là "Gluten-Free"' : '< 20ppm gluten required to label as "Gluten-Free"',
+      needsLabTest: true
+    },
+    // Keto - Unregulated
+    'keto': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim không được FDA quy định chính thức. Thường hiểu là low-carb, high-fat.' : 'Not officially regulated by FDA. Generally understood as low-carb, high-fat.',
+    },
+    'keto friendly': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim không được FDA quy định chính thức. Thường hiểu là low-carb, high-fat.' : 'Not officially regulated by FDA. Generally understood as low-carb, high-fat.',
+    },
+    // Paleo - Unregulated
+    'paleo': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim không được FDA quy định chính thức.' : 'Not officially regulated by FDA.',
+    },
+    // Non-GMO
+    'non-gmo': {
+      regulation: 'USDA Bioengineered (BE) Disclosure',
+      note: isVi ? 'Phải tuân thủ National Bioengineered Food Disclosure Standard.' : 'Must comply with National Bioengineered Food Disclosure Standard.',
+    },
+    'gmo free': {
+      regulation: 'USDA Bioengineered (BE) Disclosure',
+      note: isVi ? 'Phải tuân thủ National Bioengineered Food Disclosure Standard.' : 'Must comply with National Bioengineered Food Disclosure Standard.',
+    },
+    // Superfood - Marketing claim
+    'superfood': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim marketing không được FDA định nghĩa. Có thể bị coi là misleading nếu không có evidence.' : 'Marketing claim not defined by FDA. May be considered misleading without evidence.',
+    },
+    // Vegan/Vegetarian
+    'vegan': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim tự nguyện. Khuyến nghị có chứng nhận từ bên thứ ba.' : 'Voluntary claim. Third-party certification recommended.',
+    },
+    'vegetarian': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim tự nguyện. Khuyến nghị có chứng nhận từ bên thứ ba.' : 'Voluntary claim. Third-party certification recommended.',
+    },
+    'plant-based': {
+      regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
+      note: isVi ? 'Claim không được FDA định nghĩa chính thức.' : 'Not officially defined by FDA.',
+    },
+    // Natural
+    'all natural': {
+      regulation: 'FDA Policy (no CFR)',
+      note: isVi ? 'FDA chưa có định nghĩa chính thức. Nên tránh sử dụng hoặc cần evidence.' : 'FDA has no formal definition. Avoid using or provide evidence.',
+    },
+    'natural': {
+      regulation: 'FDA Policy (no CFR)',
+      note: isVi ? 'FDA chưa có định nghĩa chính thức. Nên tránh sử dụng hoặc cần evidence.' : 'FDA has no formal definition. Avoid using or provide evidence.',
+    },
+    // Organic
+    'usda organic': {
+      regulation: 'USDA NOP (7 CFR Part 205)',
+      note: isVi ? 'Phải có chứng nhận USDA Organic từ certifying agent.' : 'Must have USDA Organic certification from accredited certifying agent.',
+    },
+    'organic': {
+      regulation: 'USDA NOP (7 CFR Part 205)',
+      note: isVi ? 'Phải có chứng nhận từ USDA-accredited certifying agent.' : 'Must have certification from USDA-accredited certifying agent.',
+    },
+    // No Artificial claims
+    'no artificial flavors': {
+      regulation: '21 CFR §101.22',
+      note: isVi ? 'Phải đảm bảo không có artificial flavors theo định nghĩa FDA.' : 'Must ensure no artificial flavors per FDA definition.',
+    },
+    'no artificial sweeteners': {
+      regulation: '21 CFR §101.22',
+      note: isVi ? 'Phải đảm bảo không có artificial sweeteners.' : 'Must ensure no artificial sweeteners.',
+    },
+    'no preservatives': {
+      regulation: '21 CFR §101.22',
+      note: isVi ? 'Phải đảm bảo không có preservatives theo định nghĩa FDA.' : 'Must ensure no preservatives per FDA definition.',
+    },
+    // Sugar claims
+    'no added sugar': {
+      regulation: '21 CFR §101.60(c)',
+      note: isVi ? 'Không được thêm đường trong quá trình sản xuất.' : 'No sugar added during processing.',
+    },
+    'sugar free': {
+      regulation: '21 CFR §101.60(c)',
+      note: isVi ? '< 0.5g đường mỗi khẩu phần.' : '< 0.5g sugar per serving.',
+    },
+    // Fat claims
+    'fat free': {
+      regulation: '21 CFR §101.62(b)',
+      note: isVi ? '< 0.5g chất béo mỗi khẩu phần.' : '< 0.5g fat per serving.',
+    },
+    'low fat': {
+      regulation: '21 CFR §101.62(b)',
+      note: isVi ? '≤ 3g chất béo mỗi khẩu phần.' : '≤ 3g fat per serving.',
+    },
+    // Sodium claims
+    'low sodium': {
+      regulation: '21 CFR §101.61',
+      note: isVi ? '≤ 140mg sodium mỗi khẩu phần.' : '≤ 140mg sodium per serving.',
+    },
+    'sodium free': {
+      regulation: '21 CFR §101.61',
+      note: isVi ? '< 5mg sodium mỗi khẩu phần.' : '< 5mg sodium per serving.',
+    },
+    // Religious certifications
+    'kosher': {
+      regulation: isVi ? 'Chứng nhận Kosher' : 'Kosher Certification',
+      note: isVi ? 'Phải có chứng nhận từ tổ chức Kosher được công nhận.' : 'Must have certification from recognized Kosher organization.',
+    },
+    'halal': {
+      regulation: isVi ? 'Chứng nhận Halal' : 'Halal Certification',
+      note: isVi ? 'Phải có chứng nhận từ tổ chức Halal được công nhận.' : 'Must have certification from recognized Halal organization.',
+    },
+  }
+}
+
+function getLabTestLabel(locale: string): string {
+  return locale === 'vi' ? 'Cần lab test để xác nhận tuân thủ' : 'Lab test required to confirm compliance'
+}
+
+// ────────────────────────────────────────────────────────────
 // Nutrition Value Parser - Fixes OCR merge bugs like "0mg0"
 // ────────────────────────────────────────────────────────────
 
@@ -1466,75 +1607,7 @@ export function ReportResultView({
                                       </div>
                                     ))}
                                     {unverifiableClaims.map((claim, idx) => {
-                                      // Claim-specific tooltips with CFR references and expert upsell
-                                      const claimTooltips: Record<string, { regulation: string; note: string; needsLabTest?: boolean }> = {
-                                        'gf': {
-                                          regulation: '21 CFR §101.91',
-                                          note: '< 20ppm gluten để được gọi là "Gluten-Free"',
-                                          needsLabTest: true
-                                        },
-                                        'gluten free': {
-                                          regulation: '21 CFR §101.91',
-                                          note: '< 20ppm gluten để được gọi là "Gluten-Free"',
-                                          needsLabTest: true
-                                        },
-                                        'gluten-free': {
-                                          regulation: '21 CFR §101.91',
-                                          note: '< 20ppm gluten để được gọi là "Gluten-Free"',
-                                          needsLabTest: true
-                                        },
-                                        'keto': {
-                                          regulation: 'Không có quy định FDA',
-                                          note: 'Claim không được FDA quy định chính thức. Thường hiểu là low-carb, high-fat.',
-                                          needsLabTest: false
-                                        },
-                                        'keto friendly': {
-                                          regulation: 'Không có quy định FDA',
-                                          note: 'Claim không được FDA quy định chính thức. Thường hiểu là low-carb, high-fat.',
-                                          needsLabTest: false
-                                        },
-                                        'paleo': {
-                                          regulation: 'Không có quy định FDA',
-                                          note: 'Claim không được FDA quy định chính thức.',
-                                          needsLabTest: false
-                                        },
-                                        'non-gmo': {
-                                          regulation: 'USDA Bioengineered (BE) Disclosure',
-                                          note: 'Phải tuân thủ National Bioengineered Food Disclosure Standard.',
-                                          needsLabTest: false
-                                        },
-                                        'superfood': {
-                                          regulation: 'Không có quy định FDA',
-                                          note: 'Claim marketing không được FDA định nghĩa. Có thể bị coi là misleading nếu không có evidence.',
-                                          needsLabTest: false
-                                        },
-                                        'vegan': {
-                                          regulation: 'Không có quy định FDA',
-                                          note: 'Claim tự nguyện. Khuyến nghị có chứng nhận từ bên thứ ba.',
-                                          needsLabTest: false
-                                        },
-                                        'vegetarian': {
-                                          regulation: 'Không có quy định FDA',
-                                          note: 'Claim tự nguyện. Khuyến nghị có chứng nhận từ bên thứ ba.',
-                                          needsLabTest: false
-                                        },
-                                        'plant-based': {
-                                          regulation: 'Không có quy định FDA',
-                                          note: 'Claim không được FDA định nghĩa chính thức.',
-                                          needsLabTest: false
-                                        },
-                                        'all natural': {
-                                          regulation: 'FDA Policy (không có CFR)',
-                                          note: 'FDA chưa có định nghĩa chính thức. Nên tránh sử dụng hoặc cần evidence.',
-                                          needsLabTest: false
-                                        },
-                                        'natural': {
-                                          regulation: 'FDA Policy (không có CFR)',
-                                          note: 'FDA chưa có định nghĩa chính thức. Nên tránh sử dụng hoặc cần evidence.',
-                                          needsLabTest: false
-                                        }
-                                      }
-                                      
+                                      const claimTooltips = getClaimTooltips(locale)
                                       const claimLower = claim.toLowerCase().trim()
                                       const tooltipInfo = claimTooltips[claimLower]
                                       
@@ -1554,7 +1627,7 @@ export function ReportResultView({
                                                   <p className="text-xs">{tooltipInfo.note}</p>
                                                   {tooltipInfo.needsLabTest && (
                                                     <p className="text-[10px] text-blue-300 pt-1 border-t border-slate-700">
-                                                      Cần lab test để xác nhận tuân thủ
+                                                      {getLabTestLabel(locale)}
                                                     </p>
                                                   )}
                                                 </div>
@@ -1597,88 +1670,7 @@ export function ReportResultView({
                         
                         {/* Factual/Negative Claims - Compliant with tooltips */}
                         {factualClaims.length > 0 && (() => {
-                          const factualClaimTooltips: Record<string, { regulation: string; note: string; needsLabTest?: boolean }> = {
-                            'usda organic': {
-                              regulation: 'USDA NOP (7 CFR Part 205)',
-                              note: 'Phải có chứng nhận USDA Organic từ certifying agent.',
-                              needsLabTest: false
-                            },
-                            'organic': {
-                              regulation: 'USDA NOP (7 CFR Part 205)',
-                              note: 'Phải có chứng nhận từ USDA-accredited certifying agent.',
-                              needsLabTest: false
-                            },
-                            'gluten free': {
-                              regulation: '21 CFR §101.91',
-                              note: '< 20ppm gluten để được gọi là "Gluten-Free".',
-                              needsLabTest: true
-                            },
-                            'gluten-free': {
-                              regulation: '21 CFR §101.91',
-                              note: '< 20ppm gluten để được gọi là "Gluten-Free".',
-                              needsLabTest: true
-                            },
-                            'non-gmo': {
-                              regulation: 'USDA BE Disclosure',
-                              note: 'Tuân thủ National Bioengineered Food Disclosure Standard.',
-                              needsLabTest: false
-                            },
-                            'no artificial flavors': {
-                              regulation: '21 CFR §101.22',
-                              note: 'Phải đảm bảo không có artificial flavors theo định nghĩa FDA.',
-                              needsLabTest: false
-                            },
-                            'no artificial sweeteners': {
-                              regulation: '21 CFR §101.22',
-                              note: 'Phải đảm bảo không có artificial sweeteners.',
-                              needsLabTest: false
-                            },
-                            'no preservatives': {
-                              regulation: '21 CFR §101.22',
-                              note: 'Phải đảm bảo không có preservatives theo định nghĩa FDA.',
-                              needsLabTest: false
-                            },
-                            'no added sugar': {
-                              regulation: '21 CFR §101.60(c)',
-                              note: 'Không được thêm đường trong quá trình sản xuất.',
-                              needsLabTest: false
-                            },
-                            'sugar free': {
-                              regulation: '21 CFR §101.60(c)',
-                              note: '< 0.5g sugar per serving.',
-                              needsLabTest: false
-                            },
-                            'fat free': {
-                              regulation: '21 CFR §101.62(b)',
-                              note: '< 0.5g fat per serving.',
-                              needsLabTest: false
-                            },
-                            'low fat': {
-                              regulation: '21 CFR §101.62(b)',
-                              note: '≤ 3g fat per serving.',
-                              needsLabTest: false
-                            },
-                            'low sodium': {
-                              regulation: '21 CFR §101.61',
-                              note: '≤ 140mg sodium per serving.',
-                              needsLabTest: false
-                            },
-                            'sodium free': {
-                              regulation: '21 CFR §101.61',
-                              note: '< 5mg sodium per serving.',
-                              needsLabTest: false
-                            },
-                            'kosher': {
-                              regulation: 'Chứng nhận Kosher',
-                              note: 'Phải có chứng nhận từ tổ chức Kosher được công nhận.',
-                              needsLabTest: false
-                            },
-                            'halal': {
-                              regulation: 'Chứng nhận Halal',
-                              note: 'Phải có chứng nhận từ tổ chức Halal được công nhận.',
-                              needsLabTest: false
-                            }
-                          }
+                          const claimTooltips = getClaimTooltips(locale)
                           
                           return (
                             <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
@@ -1688,7 +1680,7 @@ export function ReportResultView({
                               <div className="space-y-1">
                                 {factualClaims.map((claim, idx) => {
                                   const claimLower = claim.toLowerCase().trim()
-                                  const tooltipInfo = factualClaimTooltips[claimLower]
+                                  const tooltipInfo = claimTooltips[claimLower]
                                   
                                   if (tooltipInfo) {
                                     return (
@@ -1706,7 +1698,7 @@ export function ReportResultView({
                                               <p className="text-xs">{tooltipInfo.note}</p>
                                               {tooltipInfo.needsLabTest && (
                                                 <p className="text-[10px] text-blue-300 pt-1 border-t border-slate-700">
-                                                  Cần lab test để xác nhận tuân thủ
+                                                  {getLabTestLabel(locale)}
                                                 </p>
                                               )}
                                             </div>
@@ -1733,60 +1725,7 @@ export function ReportResultView({
 
                   {/* Special Claims (NEW) - with tooltips for regulated claims */}
                   {specialClaims.length > 0 && (() => {
-                    // Claim-specific tooltips with CFR references
-                    const specialClaimTooltips: Record<string, { regulation: string; note: string; needsLabTest?: boolean }> = {
-                      'gf': {
-                        regulation: '21 CFR §101.91',
-                        note: '< 20ppm gluten để được gọi là "Gluten-Free"',
-                        needsLabTest: true
-                      },
-                      'gluten free': {
-                        regulation: '21 CFR §101.91',
-                        note: '< 20ppm gluten để được gọi là "Gluten-Free"',
-                        needsLabTest: true
-                      },
-                      'gluten-free': {
-                        regulation: '21 CFR §101.91',
-                        note: '< 20ppm gluten để được gọi là "Gluten-Free"',
-                        needsLabTest: true
-                      },
-                      'keto': {
-                        regulation: 'Không có quy định FDA',
-                        note: 'Claim không được FDA quy định chính thức',
-                      },
-                      'keto friendly': {
-                        regulation: 'Không có quy định FDA',
-                        note: 'Claim không được FDA quy định chính thức',
-                      },
-                      'usda organic': {
-                        regulation: 'USDA NOP (7 CFR Part 205)',
-                        note: 'Phải có chứng nhận USDA Organic',
-                      },
-                      'organic': {
-                        regulation: 'USDA NOP (7 CFR Part 205)',
-                        note: 'Phải có chứng nhận từ certifying agent',
-                      },
-                      'non-gmo': {
-                        regulation: 'USDA BE Disclosure',
-                        note: 'Tuân thủ National Bioengineered Food Disclosure Standard',
-                      },
-                      'gmo free': {
-                        regulation: 'USDA BE Disclosure',
-                        note: 'Tuân thủ National Bioengineered Food Disclosure Standard',
-                      },
-                      'kosher': {
-                        regulation: 'Chứng nhận bởi tổ chức Kosher',
-                        note: 'Phải có chứng nhận từ tổ chức Kosher được công nhận',
-                      },
-                      'halal': {
-                        regulation: 'Chứng nhận bởi tổ chức Halal',
-                        note: 'Phải có chứng nhận từ tổ chức Halal được công nhận',
-                      },
-                      'vegan': {
-                        regulation: 'Không có quy định FDA',
-                        note: 'Claim tự nguyện, nên có chứng nhận bên thứ ba',
-                      },
-                    }
+                    const claimTooltips = getClaimTooltips(locale)
                     
                     return (
                       <div>
@@ -1796,7 +1735,7 @@ export function ReportResultView({
                         <div className="flex flex-wrap gap-1.5">
                           {specialClaims.map((claim, idx) => {
                             const claimLower = claim.toLowerCase().trim()
-                            const tooltipInfo = specialClaimTooltips[claimLower]
+                            const tooltipInfo = claimTooltips[claimLower]
                             
                             if (tooltipInfo) {
                               return (
@@ -1813,7 +1752,7 @@ export function ReportResultView({
                                         <p className="text-xs">{tooltipInfo.note}</p>
                                         {tooltipInfo.needsLabTest && (
                                           <p className="text-[10px] text-blue-300 pt-1 border-t border-slate-700">
-                                            Cần lab test để xác nhận tuân thủ
+                                            {getLabTestLabel(locale)}
                                           </p>
                                         )}
                                       </div>
