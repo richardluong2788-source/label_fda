@@ -1252,27 +1252,29 @@ export class ClaimsValidator {
           classification.status = 'needs_review'
           classification.has_disclaimer = false
           classification.severity = 'warning'
-          classification.description = `Structure/Function claim with symbol (${hasSymbol ? '‡/†' : 'other'}) detected but DSHEA disclaimer not found in OCR. May exist on back panel.`
+          classification.description = `Structure/Function claim: "${claim}" - Symbol detected but DSHEA disclaimer not found in OCR. May exist on back panel.`
           classification.suggested_fix = 'Verify DSHEA disclaimer is present on complete label. If present, ensure it\'s visible to OCR.'
         } else if (hasSymbol && hasDSHEADisclaimer) {
           // Symbol present and disclaimer found → COMPLIANT
           classification.status = 'compliant'
           classification.has_disclaimer = true
           classification.severity = 'info'
-          classification.description = 'Structure/Function claim compliant: has symbol and DSHEA disclaimer.'
+          classification.description = `Structure/Function claim: "${claim}" - Compliant with symbol and DSHEA disclaimer.`
         } else if (!hasSymbol && !hasDSHEADisclaimer) {
-          // No symbol, no disclaimer → VIOLATION (missing required elements)
-          classification.status = 'violation'
+          // No symbol, no disclaimer detected → NEEDS_REVIEW (not violation)
+          // Reason: OCR often misses ‡/† symbols and small disclaimer text on back panel
+          // Risk should be lower since this is likely OCR limitation, not actual non-compliance
+          classification.status = 'needs_review'
           classification.has_disclaimer = false
-          classification.severity = 'critical'
-          classification.description = 'Structure/Function claim lacks required symbol (‡/†) and/or DSHEA disclaimer. Add both to label.'
-          classification.suggested_fix = 'Add symbol (‡ or †) and DSHEA disclaimer footnote to label.'
+          classification.severity = 'warning'
+          classification.description = `Structure/Function claim: "${claim}" - Symbol (‡/†) and DSHEA disclaimer not detected by OCR. Likely present on back panel.`
+          classification.suggested_fix = 'Verify symbol (‡ or †) and DSHEA disclaimer are present on complete label. If present, ensure back panel image is uploaded for OCR.'
         } else {
           // No symbol but disclaimer present (unusual but compliant)
           classification.status = 'compliant'
           classification.has_disclaimer = true
           classification.severity = 'info'
-          classification.description = 'Structure/Function claim with DSHEA disclaimer.'
+          classification.description = `Structure/Function claim: "${claim}" - Compliant with DSHEA disclaimer.`
         }
       }
       // ──── FACTUAL CLAIMS ────
@@ -1286,7 +1288,7 @@ export class ClaimsValidator {
         classification.claim_type = 'FACTUAL'
         classification.status = 'compliant'
         classification.severity = 'info'
-        classification.description = 'Factual ingredient/potency/certification claim: no disclaimer required.'
+        classification.description = `Factual claim: "${claim}" - Potency/ingredient/certification statement. No disclaimer required.`
       }
       // ──── WARRANTY/GUARANTEE CLAIMS ────
       // "100% Satisfaction", "Money-back guarantee", etc.
@@ -1294,7 +1296,7 @@ export class ClaimsValidator {
         classification.claim_type = 'WARRANTY'
         classification.status = 'needs_review'
         classification.severity = 'warning'
-        classification.description = 'Warranty/Guarantee claim detected. Not a health/nutrient claim, but verify it complies with consumer protection regulations.'
+        classification.description = `Warranty claim: "${claim}" - Not a health/nutrient claim. Verify compliance with consumer protection regulations.`
         classification.suggested_fix = 'Ensure satisfaction guarantee terms are clearly disclosed and compliant with FTC regulations.'
       }
       // ──── MARKETING CLAIMS ────

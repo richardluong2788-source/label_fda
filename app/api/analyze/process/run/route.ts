@@ -562,8 +562,12 @@ export async function POST(request: Request) {
     let violations: any[] = []
 
     // Add classified supplement claims to violations for UI display
+    // ONLY add non-compliant claims (warnings/violations) - NOT compliant factual claims
     if (classifiedClaims.length > 0) {
-      violations.push(...classifiedClaims.map(claim => ({
+      const nonCompliantClaims = classifiedClaims.filter(claim => 
+        claim.status !== 'compliant' || claim.severity !== 'info'
+      )
+      violations.push(...nonCompliantClaims.map(claim => ({
         category: `Supplement Claim: ${claim.claim_type}`,
         severity: claim.severity,
         description: claim.description,

@@ -121,7 +121,7 @@ export const vi = {
     productTypeDrugOTC: 'Dược phẩm OTC',
     productTypeInfant: 'Sữa công thức trẻ em',
     productTypeMedical: 'Thực phẩm y học',
-    selectProductType: 'Chọn lo��i sản phẩm...',
+    selectProductType: 'Chọn loại sản phẩm...',
     notApplicable: 'Không áp dụng',
     recommended: 'Khuyến nghị',
     // Guide banner
@@ -383,7 +383,7 @@ export const vi = {
     kbFixItems: [
       'Liên hệ Admin để nạp tài liệu FDA vào Knowledge Base.',
       'Truy cập trang Knowledge Base và sử dụng chức năng "Nạp tài liệu mới" hoặc "FDA Warning Letters Pipeline".',
-      'Sau khi nạp xong, quay lại đây để chạy phân t��ch.',
+      'Sau khi nạp xong, quay lại đây để chạy phân tích.',
     ],
     retryAnalysis: 'Thử lại phân tích',
     reuploadImages: 'Tải lại hình ảnh',
@@ -798,7 +798,7 @@ export const vi = {
 
   // ─── Landing Page ────��───────────────────────────────
   landing: {
-    // Phần Badge nh��� phía trên tiêu đề để tạo bằng chứng số liệu
+    // Phần Badge nhãn phía trên tiêu đề để tạo bằng chứng số liệu
     heroBadge: 'Đối soát trực tiếp dữ liệu từ 5.346 vi phạm thực tế của FDA',
 
     // Tiêu đề chính: Ngắn gọn, đánh thẳng vào thời gian và tiền bạc

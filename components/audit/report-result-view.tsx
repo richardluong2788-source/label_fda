@@ -285,7 +285,7 @@ function getClaimTooltips(locale: string): Record<string, ClaimTooltipInfo> {
     // Alcohol-free
     'alcohol free': {
       regulation: isVi ? 'Không có quy định FDA cụ thể' : 'No specific FDA regulation',
-      note: isVi ? 'Thường nghĩa là không có ethyl alcohol. Fatty alcohols (cetyl, cetearyl) có thể được phép.' : 'Usually means no ethyl alcohol. Fatty alcohols (cetyl, cetearyl) may be permitted.',
+      note: isVi ? 'Thường ngh��a là không có ethyl alcohol. Fatty alcohols (cetyl, cetearyl) có thể được phép.' : 'Usually means no ethyl alcohol. Fatty alcohols (cetyl, cetearyl) may be permitted.',
     },
     'alcohol-free': {
       regulation: isVi ? 'Không có quy định FDA cụ thể' : 'No specific FDA regulation',
@@ -663,7 +663,7 @@ function MiniConfidenceBar({ label, value }: { label: string; value: number }) {
   )
 }
 
-// ────────────���������───────────────────���───────────────────────────
+// ────────────�����������───────────────────���───────────────────────────
 // Ingredient Tags
 // ───────────────────────────────────────────────────────────��
 
@@ -1684,7 +1684,10 @@ export function ReportResultView({
                   })()}
 
                   {/* Health Claims (NEW) - Split into Structure/Function vs Factual vs Nutrient Content */}
-                  {healthClaims && healthClaims.length > 0 && (() => {
+                  {/* SKIP this section for dietary supplements - use new classified claims system instead */}
+                  {healthClaims && healthClaims.length > 0 && 
+                   !(report.product_type === 'dietary_supplement' || report.product_category?.includes('supplement')) &&
+                   (() => {
                     // Lifestyle taglines/brand messaging - NOT health claims, should be ignored
                     // These are general marketing slogans, not FDA-regulated claims
                     const lifestyleTaglines = [
