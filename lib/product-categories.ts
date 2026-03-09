@@ -202,3 +202,34 @@ export function getMandatoryFields(
 
   return fields
 }
+
+/**
+ * Get dietary supplement-specific regulations (21 CFR 101.36, DSHEA, FD&C 403(s))
+ * Filters out cosmetic and food-specific rules
+ * 
+ * Used to display only relevant regulations for dietary supplements
+ * and hide cosmetic labeling requirements like 21 CFR 701
+ * 
+ * Reference: 21 CFR 101.36, DSHEA (Dietary Supplement Health and Education Act)
+ */
+export function getSupplementSpecificRegulations(): string[] {
+  return [
+    '21 CFR 101.36',           // Dietary Supplement Label Statements
+    'DSHEA',                   // Dietary Supplement Health and Education Act (1994)
+    'FD&C Act Section 403(s)', // Requirements for dietary supplement labeling
+    '21 CFR 101.4',            // Ingredient labeling requirements for supplements
+    '21 CFR Part 111',         // Dietary Supplement Current Good Manufacturing Practice (GMP)
+  ]
+}
+
+/**
+ * Get regulations to HIDE for dietary supplements
+ * (These are for cosmetics, drugs, conventional foods, etc.)
+ */
+export function getHiddenRegulationsForSupplements(): string[] {
+  return [
+    '21 CFR 701',    // Cosmetics labeling (not applicable to supplements)
+    '21 CFR 701.3',  // Cosmetics ingredient listing
+    '27 CFR',        // Alcohol regulations
+  ]
+}

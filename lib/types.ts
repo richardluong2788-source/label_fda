@@ -3,6 +3,35 @@ export interface LabelImageEntry {
   url: string
 }
 
+// ====== Claims Classification for Dietary Supplements (21 CFR 101.36, DSHEA) ======
+
+/**
+ * Classification type for dietary supplement claims
+ * Reference: 21 CFR 101.36, DSHEA (Dietary Supplement Health and Education Act)
+ */
+export type ClaimClassificationType = 
+  | 'STRUCTURE_FUNCTION'  // "Supports", "maintains", "promotes" etc. - Requires DSHEA disclaimer & symbol
+  | 'FACTUAL'             // Potency, ingredient count, storage instructions - No disclaimer needed
+  | 'MARKETING'           // "Third-party tested", "Developed with doctors" - No health claims
+  | 'WARRANTY'            // "100% Satisfaction Guarantee" - Not a nutrient content or structure/function claim
+  | 'HEALTH'              // Qualified health claims requiring FDA approval
+  | 'DISEASE'             // Drug claims (prohibited for supplements)
+
+/**
+ * Result of classifying a dietary supplement claim
+ */
+export interface ClassifiedClaim {
+  claim_text: string                // Original text from label
+  claim_type: ClaimClassificationType
+  severity: 'critical' | 'warning' | 'info'  // How serious is violation/issue
+  status: 'compliant' | 'violation' | 'needs_review'
+  has_symbol?: boolean              // ‡ or † symbol indicating structure/function
+  has_disclaimer?: boolean          // DSHEA disclaimer present for structure/function claims
+  description: string               // Human-readable explanation
+  regulation_reference?: string     // e.g., "21 CFR 101.36", "DSHEA"
+  suggested_fix?: string           // How to fix if non-compliant
+}
+
 // ====== Multi-Column Nutrition Facts Types (21 CFR §101.9(b)(12)) ======
 
 /**
@@ -209,6 +238,11 @@ export interface Violation {
   import_alert_number?: string // Reference to FDA Import Alert if source_type === 'import_alert'
   /** Raw OCR text from label - NOT AI rewritten. For "Currently on Label" display */
   raw_text_on_label?: string
+  
+  // ──── Claims Classification Fields (Dietary Supplements) ────
+  claim_type?: ClaimClassificationType  // Type of claim: STRUCTURE_FUNCTION, FACTUAL, MARKETING, WARRANTY, etc.
+  claim_text?: string                   // The actual claim text from label
+  has_disclaimer?: boolean              // For structure/function claims with symbols: is DSHEA disclaimer present?
 }
 
 export interface Citation {

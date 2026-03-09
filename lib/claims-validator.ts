@@ -133,6 +133,7 @@ export class ClaimsValidator {
   // Structure/function claim indicators — food/supplement need DSHEA disclaimer
   private static STRUCTURE_FUNCTION_INDICATORS = [
     'supports',
+    'support',  // singular variant
     'maintains',
     'promotes',
     'helps',
@@ -1197,5 +1198,135 @@ export class ClaimsValidator {
     }
 
     return results
+  }
+
+  /**
+   * Classify dietary supplement claims (21 CFR 101.36, DSHEA)
+   * 
+   * Reference: 21 CFR 101.36 - Dietary Supplement Label Statements
+   * DSHEA (Dietary Supplement Health and Education Act) 1994
+   * FD&C Act Section 403(s)
+   * 
+   * Input: array of claim strings extracted from label + full label text
+   * Output: ClassifiedClaim[] with type, status, and compliance info
+   */
+  static classifyClaimsForSupplements(claims: string[], fullLabelText: string): typeof ClassifiedClaim[] {
+    const { ClassifiedClaim } = require('../lib/types')
+    const classified: any[] = []
+
+    // Pattern to detect DSHEA disclaimer in label text
+    const dshea_disclaimer_patterns = [
+      /these statements? have not been evaluated by the food and drug administration/i,
+      /not intended to diagnose, treat, cure,? or prevent any disease/i,
+      /FDA disclaimer/i,
+    ]
+
+    const hasDSHEADisclaimer = dshea_disclaimer_patterns.some(pattern => 
+      pattern.test(fullLabelText)
+    )
+
+    // Pattern to detect structure/function claim symbols (‡, †, *)
+    const structureFunctionSymbols = /[‡†*]|footnote|dagger|symbol/i
+
+    for (const claim of claims) {
+      const claimLower = claim.toLowerCase().trim()
+      let classification: any = {
+        claim_text: claim,
+        severity: 'info',
+        regulation_reference: '21 CFR 101.36, DSHEA',
+      }
+
+      const hasSymbol = structureFunctionSymbols.test(claim)
+
+      // ──── STRUCTURE/FUNCTION CLAIMS ────
+      // "Supports", "maintains", "promotes", "helps" etc. require DSHEA disclaimer
+      if (this.STRUCTURE_FUNCTION_INDICATORS.some(indicator => 
+        claimLower.includes(indicator)
+      )) {
+        classification.claim_type = 'STRUCTURE_FUNCTION'
+        classification.has_symbol = hasSymbol
+
+        if (hasSymbol && !hasDSHEADisclaimer) {
+          // Symbol present but disclaimer missing → NEEDS_REVIEW (not VIOLATION)
+          // Reason: OCR may miss small disclaimer text
+          classification.status = 'needs_review'
+          classification.has_disclaimer = false
+          classification.severity = 'warning'
+          classification.description = `Structure/Function claim with symbol (${hasSymbol ? '‡/†' : 'other'}) detected but DSHEA disclaimer not found in OCR. May exist on back panel.`
+          classification.suggested_fix = 'Verify DSHEA disclaimer is present on complete label. If present, ensure it\'s visible to OCR.'
+        } else if (hasSymbol && hasDSHEADisclaimer) {
+          // Symbol present and disclaimer found → COMPLIANT
+          classification.status = 'compliant'
+          classification.has_disclaimer = true
+          classification.severity = 'info'
+          classification.description = 'Structure/Function claim compliant: has symbol and DSHEA disclaimer.'
+        } else if (!hasSymbol && !hasDSHEADisclaimer) {
+          // No symbol, no disclaimer → VIOLATION (missing required elements)
+          classification.status = 'violation'
+          classification.has_disclaimer = false
+          classification.severity = 'critical'
+          classification.description = 'Structure/Function claim lacks required symbol (‡/†) and/or DSHEA disclaimer. Add both to label.'
+          classification.suggested_fix = 'Add symbol (‡ or †) and DSHEA disclaimer footnote to label.'
+        } else {
+          // No symbol but disclaimer present (unusual but compliant)
+          classification.status = 'compliant'
+          classification.has_disclaimer = true
+          classification.severity = 'info'
+          classification.description = 'Structure/Function claim with DSHEA disclaimer.'
+        }
+      }
+      // ──── FACTUAL CLAIMS ────
+      // Potency (CFU), ingredient count, storage, origin, etc.
+      // NOTE: Check this BEFORE marketing/third-party claims to avoid misclassification
+      else if (
+        /\d+\s*(billion|million|billion\s*cfu|million\s*cfu|strains?|diverse|ingredient)/i.test(claimLower) ||
+        /made in|origin|country|storage|refrigeration|temperature|contains|ingredient/i.test(claimLower) ||
+        /potency|colony|cfu|billion|million|strain|verified|project|non.?gmo/i.test(claimLower)
+      ) {
+        classification.claim_type = 'FACTUAL'
+        classification.status = 'compliant'
+        classification.severity = 'info'
+        classification.description = 'Factual ingredient/potency/certification claim: no disclaimer required.'
+      }
+      // ──── WARRANTY/GUARANTEE CLAIMS ────
+      // "100% Satisfaction", "Money-back guarantee", etc.
+      else if (/satisfaction|guarantee|refund|money.back|warranty/i.test(claimLower)) {
+        classification.claim_type = 'WARRANTY'
+        classification.status = 'needs_review'
+        classification.severity = 'warning'
+        classification.description = 'Warranty/Guarantee claim detected. Not a health/nutrient claim, but verify it complies with consumer protection regulations.'
+        classification.suggested_fix = 'Ensure satisfaction guarantee terms are clearly disclosed and compliant with FTC regulations.'
+      }
+      // ──── MARKETING CLAIMS ────
+      // "Third-party tested", "Developed with doctors", unregulated marketing
+      else if (/third.?party.tested|developed with|doctor|physician|expert|professional|tested by laboratory|lab certified|approved/i.test(claimLower)) {
+        classification.claim_type = 'MARKETING'
+        classification.status = 'needs_review'
+        classification.severity = 'warning'
+        classification.description = `Marketing claim: "${claim}". Verify this is not making unauthorized health claims and complies with FTC regulations.`
+        classification.suggested_fix = 'Ensure marketing claims do not constitute unauthorized health claims. Add disclaimer if claim refers to body function.'
+      }
+      // ──── DISEASE CLAIMS (PROHIBITED) ────
+      else if (this.FOOD_SUPPLEMENT_PROHIBITED_DISEASE_CLAIMS.some(term =>
+        this.matchesTermWithBoundary(claimLower, term)
+      )) {
+        classification.claim_type = 'DISEASE'
+        classification.status = 'violation'
+        classification.severity = 'critical'
+        classification.description = `Prohibited disease/drug claim detected: "${claim}". Dietary supplements cannot make disease claims.`
+        classification.suggested_fix = 'Remove disease claim. Use structure/function language instead (e.g., "supports" instead of "treats").'
+      }
+      // ──── UNCLASSIFIED ────
+      else {
+        classification.claim_type = 'FACTUAL'
+        classification.status = 'needs_review'
+        classification.severity = 'info'
+        classification.description = `Claim "${claim}" could not be automatically classified. Please verify compliance manually.`
+      }
+
+      classified.push(classification)
+    }
+
+    return classified
   }
 }

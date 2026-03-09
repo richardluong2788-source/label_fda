@@ -521,6 +521,20 @@ export async function POST(request: Request) {
       productDomain as import('@/lib/claims-validator').ProductDomain
     )
 
+    // ──── Claims Classification for Dietary Supplements (21 CFR 101.36, DSHEA) ────
+    // If product is a dietary supplement, classify claims by type and compliance status
+    let classifiedClaims: any[] = []
+    if (report.product_type === 'dietary_supplement' || report.product_category?.includes('supplement')) {
+      const detectedClaimsArray = visionResult.detectedClaims || []
+      const fullLabelText = labelText + ' ' + detectedClaimsArray.join(' ')
+      
+      classifiedClaims = ClaimsValidator.classifyClaimsForSupplements(detectedClaimsArray, fullLabelText)
+      
+      console.log(`[v0] Classified ${classifiedClaims.length} supplement claims:`, 
+        classifiedClaims.map(c => ({ text: c.claim_text, type: c.claim_type, status: c.status }))
+      )
+    }
+
     // Multi-language
     let multiLanguageIssues = null
     const detectedLanguages = visionResult.detectedLanguages || []
@@ -546,6 +560,22 @@ export async function POST(request: Request) {
     await updateJobProgress(jobId, 'Validating allergen declarations', 85)
 
     let violations: any[] = []
+
+    // Add classified supplement claims to violations for UI display
+    if (classifiedClaims.length > 0) {
+      violations.push(...classifiedClaims.map(claim => ({
+        category: `Supplement Claim: ${claim.claim_type}`,
+        severity: claim.severity,
+        description: claim.description,
+        regulation_reference: claim.regulation_reference || '21 CFR 101.36, DSHEA',
+        suggested_fix: claim.suggested_fix,
+        claim_type: claim.claim_type,
+        claim_text: claim.claim_text,
+        has_disclaimer: claim.has_disclaimer,
+        status: claim.status,
+        citations: [],
+      })))
+    }
 
     // Prepare ingredient context for enhanced analysis
     // Dedupe allergens using CANONICAL names to prevent "Soy" + "Soybeans" duplicates

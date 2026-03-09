@@ -663,7 +663,7 @@ function MiniConfidenceBar({ label, value }: { label: string; value: number }) {
   )
 }
 
-// ────────────���───────────────────���───────────────────────────
+// ────────────���������───────────────────���───────────────────────────
 // Ingredient Tags
 // ───────────────────────────────────────────────────────────��
 
@@ -1520,6 +1520,169 @@ export function ReportResultView({
                     </div>
                   )}
 
+                  {/* DIETARY SUPPLEMENT CLAIMS CLASSIFICATION (21 CFR 101.36, DSHEA) */}
+                  {(report.product_type === 'dietary_supplement' || report.product_category?.includes('supplement')) && 
+                   (report as any).violations && (report as any).violations.length > 0 && (() => {
+                    // Filter only supplement claims (marked with claim_type or category containing "Supplement Claim")
+                    const supplementClaims = ((report as any).violations as any[]).filter(v => 
+                      v.claim_type || v.category?.includes('Supplement Claim')
+                    )
+                    
+                    if (supplementClaims.length === 0) return null
+                    
+                    // Group by claim_type
+                    const structureFunctionClaims = supplementClaims.filter(c => c.claim_type === 'STRUCTURE_FUNCTION')
+                    const factualClaims = supplementClaims.filter(c => c.claim_type === 'FACTUAL')
+                    const marketingClaims = supplementClaims.filter(c => c.claim_type === 'MARKETING')
+                    const warrantyClaims = supplementClaims.filter(c => c.claim_type === 'WARRANTY')
+                    const diseaseClaims = supplementClaims.filter(c => c.claim_type === 'DISEASE')
+                    
+                    return (
+                      <div className="space-y-3 mb-4">
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">
+                          {t.report.supplementClaimsClassification || 'DIETARY SUPPLEMENT CLAIMS (21 CFR 101.36, DSHEA)'}
+                        </div>
+                        
+                        {/* DISEASE CLAIMS - RED/CRITICAL */}
+                        {diseaseClaims.length > 0 && (
+                          <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-red-700 mb-2">
+                              Prohibited Disease Claims
+                            </p>
+                            <div className="space-y-1.5">
+                              {diseaseClaims.map((claim, idx) => (
+                                <div key={idx} className="flex items-start gap-2 text-xs text-red-800">
+                                  <AlertCircle className="h-3 w-3 shrink-0 mt-0.5 text-red-600" />
+                                  <div className="flex-1">
+                                    <p className="font-medium">{claim.claim_text || claim.description}</p>
+                                    {claim.suggested_fix && (
+                                      <p className="text-[10px] text-red-600 mt-0.5">Fix: {claim.suggested_fix}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* STRUCTURE/FUNCTION CLAIMS - organized by status */}
+                        {structureFunctionClaims.length > 0 && (() => {
+                          const compliant = structureFunctionClaims.filter(c => c.status === 'compliant')
+                          const needsReview = structureFunctionClaims.filter(c => c.status === 'needs_review')
+                          const violations = structureFunctionClaims.filter(c => c.status === 'violation')
+                          
+                          return (
+                            <>
+                              {/* Compliant - GREEN */}
+                              {compliant.length > 0 && (
+                                <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-green-700 mb-2">
+                                    Structure/Function - Compliant (Has Disclaimer)
+                                  </p>
+                                  <div className="space-y-1.5">
+                                    {compliant.map((claim, idx) => (
+                                      <div key={idx} className="flex items-start gap-2 text-xs text-green-800">
+                                        <CheckCircle className="h-3 w-3 shrink-0 mt-0.5 text-green-600" />
+                                        <div className="flex-1">
+                                          <p className="font-medium">{claim.claim_text || claim.description}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Needs Review - YELLOW */}
+                              {needsReview.length > 0 && (
+                                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 mb-2">
+                                    Structure/Function - Verify Disclaimer
+                                  </p>
+                                  <div className="space-y-1.5">
+                                    {needsReview.map((claim, idx) => (
+                                      <div key={idx} className="flex items-start gap-2 text-xs text-amber-900">
+                                        <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5 text-amber-600" />
+                                        <div className="flex-1">
+                                          <p className="font-medium">{claim.claim_text || claim.description}</p>
+                                          {claim.suggested_fix && (
+                                            <p className="text-[10px] text-amber-700 mt-0.5">Fix: {claim.suggested_fix}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Violations - RED */}
+                              {violations.length > 0 && (
+                                <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-red-700 mb-2">
+                                    Structure/Function - Missing Disclaimer/Symbol
+                                  </p>
+                                  <div className="space-y-1.5">
+                                    {violations.map((claim, idx) => (
+                                      <div key={idx} className="flex items-start gap-2 text-xs text-red-800">
+                                        <AlertCircle className="h-3 w-3 shrink-0 mt-0.5 text-red-600" />
+                                        <div className="flex-1">
+                                          <p className="font-medium">{claim.claim_text || claim.description}</p>
+                                          {claim.suggested_fix && (
+                                            <p className="text-[10px] text-red-600 mt-0.5">Fix: {claim.suggested_fix}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )
+                        })()}
+                        
+                        {/* FACTUAL CLAIMS - GREEN */}
+                        {factualClaims.length > 0 && (
+                          <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-green-700 mb-2">
+                              Factual Claims - Compliant (Potency, Ingredients, Origin)
+                            </p>
+                            <div className="space-y-1.5">
+                              {factualClaims.map((claim, idx) => (
+                                <div key={idx} className="flex items-start gap-2 text-xs text-green-800">
+                                  <CheckCircle className="h-3 w-3 shrink-0 mt-0.5 text-green-600" />
+                                  <div className="flex-1">
+                                    <p className="font-medium">{claim.claim_text || claim.description}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* MARKETING & WARRANTY - YELLOW */}
+                        {(marketingClaims.length > 0 || warrantyClaims.length > 0) && (
+                          <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 mb-2">
+                              Marketing & Warranty - Needs Review
+                            </p>
+                            <div className="space-y-1.5">
+                              {[...marketingClaims, ...warrantyClaims].map((claim, idx) => (
+                                <div key={idx} className="flex items-start gap-2 text-xs text-amber-900">
+                                  <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5 text-amber-600" />
+                                  <div className="flex-1">
+                                    <p className="font-medium">{claim.claim_text || claim.description}</p>
+                                    {claim.suggested_fix && (
+                                      <p className="text-[10px] text-amber-700 mt-0.5">Fix: {claim.suggested_fix}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
+
                   {/* Health Claims (NEW) - Split into Structure/Function vs Factual vs Nutrient Content */}
                   {healthClaims && healthClaims.length > 0 && (() => {
                     // Lifestyle taglines/brand messaging - NOT health claims, should be ignored
@@ -2353,9 +2516,21 @@ export function ReportResultView({
                       <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
                         {t.report.cfr101}
                       </span>
-                      <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
-                        {t.report.cfr701}
-                      </span>
+                      
+                      {/* HIDE 21 CFR 701 (Cosmetics) for Dietary Supplements - SHOW DSHEA instead */}
+                      {!(report.product_type === 'dietary_supplement' || report.product_category?.includes('supplement')) && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                          {t.report.cfr701}
+                        </span>
+                      )}
+                      
+                      {/* Show DSHEA for Dietary Supplements */}
+                      {(report.product_type === 'dietary_supplement' || report.product_category?.includes('supplement')) && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                          {'DSHEA 1994'}
+                        </span>
+                      )}
+                      
                       <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
                         {'FD&C Act Section 403'}
                       </span>
