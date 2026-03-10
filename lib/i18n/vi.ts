@@ -209,6 +209,8 @@ export const vi = {
     cfr701: '21 CFR 701 - Nhãn mỹ phẩm',
     cfr700: '21 CFR 700-740 - Mỹ phẩm',
     historicalDataCheck: 'HỒ SƠ THỰC THI FDA',
+    similarProductsNote: 'Số lượng sản phẩm tương tự đã bị FDA ghi nhận trong cùng danh mục',
+    similarProductsFlagged: 'sản phẩm tương tự bị ghi nhận',
     related: 'liên quan',
     none: 'Không có',
     conclusion: 'KẾT LUẬN',

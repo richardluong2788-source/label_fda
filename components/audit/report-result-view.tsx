@@ -2460,16 +2460,6 @@ export function ReportResultView({
               </Card>
             )}
 
-            {/* ── FDA COMPLIANCE INTELLIGENCE (Warnings, Alerts, Recalls) ── */}
-            <FDAComplianceIntelligenceSection
-              report={report}
-              importAlertMatches={importAlertViolations.length}
-              warningLetterMatches={wlViolations.length}
-              recallMatches={recallViolations.length}
-              dataWarnings={[]}
-              isExpanded={false}
-            />
-
             {/* ── ENFORCEMENT INSIGHTS (NEW) ─────────────────── */}
             {enforcementInsights.length > 0 && (
               <Card className="bg-white border-slate-200 overflow-hidden">
@@ -2561,8 +2551,11 @@ export function ReportResultView({
 
                   {/* Historical Data Check */}
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                       {t.report.historicalDataCheck}
+                    </p>
+                    <p className="text-[11px] text-slate-400 mb-2 italic">
+                      {t.report.similarProductsNote || 'Số lượng sản phẩm tương tự đã bị FDA cảnh báo trong cùng danh mục'}
                     </p>
                     <div className="grid sm:grid-cols-3 gap-3">
                       <div className={`rounded-lg p-3 ${
@@ -2573,8 +2566,13 @@ export function ReportResultView({
                           <span className="text-xs font-medium text-slate-700">Warning Letters</span>
                         </div>
                         <p className={`text-lg font-bold mt-1 ${wlViolations.length > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                          {wlViolations.length > 0 ? `${wlViolations.length} ${t.report.related}` : t.report.none}
+                          {wlViolations.length > 0 ? wlViolations.length : t.report.none}
                         </p>
+                        {wlViolations.length > 0 && (
+                          <p className="text-[10px] text-orange-500 mt-0.5">
+                            {t.report.similarProductsFlagged || 'sản phẩm tương tự bị cảnh báo'}
+                          </p>
+                        )}
                       </div>
                       
                       <div className={`rounded-lg p-3 ${
@@ -2585,8 +2583,13 @@ export function ReportResultView({
                           <span className="text-xs font-medium text-slate-700">Recalls</span>
                         </div>
                         <p className={`text-lg font-bold mt-1 ${recallViolations.length > 0 ? 'text-purple-600' : 'text-green-600'}`}>
-                          {recallViolations.length > 0 ? `${recallViolations.length} ${t.report.related}` : t.report.none}
+                          {recallViolations.length > 0 ? recallViolations.length : t.report.none}
                         </p>
+                        {recallViolations.length > 0 && (
+                          <p className="text-[10px] text-purple-500 mt-0.5">
+                            {t.report.similarProductsFlagged || 'sản phẩm tương tự bị thu hồi'}
+                          </p>
+                        )}
                       </div>
                       
                       <div className={`rounded-lg p-3 ${
@@ -2597,8 +2600,13 @@ export function ReportResultView({
                           <span className="text-xs font-medium text-slate-700">Import Alerts</span>
                         </div>
                         <p className={`text-lg font-bold mt-1 ${importAlertViolations.length > 0 ? 'text-cyan-600' : 'text-green-600'}`}>
-                          {importAlertViolations.length > 0 ? `${importAlertViolations.length} ${t.report.related}` : t.report.none}
+                          {importAlertViolations.length > 0 ? importAlertViolations.length : t.report.none}
                         </p>
+                        {importAlertViolations.length > 0 && (
+                          <p className="text-[10px] text-cyan-500 mt-0.5">
+                            {t.report.similarProductsFlagged || 'sản phẩm tương tự bị giữ hàng'}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -209,6 +209,8 @@ export const en: TranslationKeys = {
     cfr701: '21 CFR 701 - Cosmetic Labeling',
     cfr700: '21 CFR 700-740 - Cosmetics',
     historicalDataCheck: 'FDA ENFORCEMENT HISTORY',
+    similarProductsNote: 'Number of similar products flagged by FDA in the same category',
+    similarProductsFlagged: 'similar products flagged',
     related: 'related',
     none: 'None',
     conclusion: 'CONCLUSION',
