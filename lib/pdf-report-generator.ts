@@ -762,7 +762,10 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   const L = PDF_LABELS[lang] || PDF_LABELS.vi
 
   const importAlertViolations = violations.filter(v => v.source_type === 'import_alert')
-  const standardViolations = violations.filter(v => v.source_type !== 'import_alert')
+  // IMPORTANT: Exclude recall items from standard violations - they are "market intelligence" only.
+  // Recalls are displayed in a separate "Tham khảo" section and do NOT affect risk score.
+  const standardViolations = violations.filter(v => v.source_type !== 'import_alert' && v.source_type !== 'recall')
+  const recallViolations = violations.filter(v => v.source_type === 'recall')
 
   const criticalCount = standardViolations.filter(v => v.severity === 'critical').length
   const warningCount = standardViolations.filter(v => v.severity === 'warning').length

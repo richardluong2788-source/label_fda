@@ -327,18 +327,25 @@ export function calculateOverallRisk(input: RiskCalculationInput): RiskCalculati
   })
 
   // Calculate weighted overall risk
+  // IMPORTANT: Exclude recall items from risk calculation - they are "market intelligence" only
+  // Recalls are displayed in UI as "Tham khảo" (Reference) and do NOT affect risk score
   let overallRiskScore = 0
   let criticalCount = 0
   let warningCount = 0
 
-  for (const v of violationsWithRisk) {
+  // Filter out recall items for risk calculation
+  const violationsForRiskCalc = violationsWithRisk.filter(
+    v => (v as any).source_type !== 'recall'
+  )
+
+  for (const v of violationsForRiskCalc) {
     overallRiskScore += v.risk_score || 0
     if (v.severity === 'critical') criticalCount++
     if (v.severity === 'warning') warningCount++
   }
 
-  // Normalize to 0-10 scale
-  overallRiskScore = violationsWithRisk.length > 0 ? overallRiskScore / violationsWithRisk.length : 0
+  // Normalize to 0-10 scale (using filtered violations count, not total)
+  overallRiskScore = violationsForRiskCalc.length > 0 ? overallRiskScore / violationsForRiskCalc.length : 0
 
   // Boost for multiple critical issues
   if (criticalCount >= 3) {
@@ -352,13 +359,14 @@ export function calculateOverallRisk(input: RiskCalculationInput): RiskCalculati
   }
 
   // Calculate projected risk if critical issues are fixed
-  const criticalRisk = violationsWithRisk
+  // Use filtered violations (excluding recalls) for consistent calculation
+  const criticalRisk = violationsForRiskCalc
     .filter(v => v.severity === 'critical')
     .reduce((sum, v) => sum + (v.risk_score || 0), 0)
 
   const projectedRiskScore = Math.max(
     0,
-    overallRiskScore - (criticalRisk / (violationsWithRisk.length || 1)) * 0.7
+    overallRiskScore - (criticalRisk / (violationsForRiskCalc.length || 1)) * 0.7
   )
 
   // Determine risk assessment category
@@ -371,9 +379,10 @@ export function calculateOverallRisk(input: RiskCalculationInput): RiskCalculati
   else riskAssessment = 'Low'
 
   // Generate enforcement insights
+  // Use filtered violations (excluding recalls) for enforcement stats
   const enforcementInsights: string[] = []
 
-  const totalEnforcements = violationsWithRisk.reduce(
+  const totalEnforcements = violationsForRiskCalc.reduce(
     (sum, v) => sum + (v.enforcement_frequency || 0),
     0
   )

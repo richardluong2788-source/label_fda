@@ -398,9 +398,12 @@ function parseNutritionValue(fact: any): { displayValue: string; displayDV: stri
 
 function generateLocalizedCommercialSummary(report: AuditReport, t: ReturnType<typeof useTranslation>['t']): string {
   const violations = report.violations || []
-  const criticalViolations = violations.filter(v => v.severity === 'critical')
-  const warningViolations = violations.filter(v => v.severity === 'warning')
-  const infoViolations = violations.filter(v => v.severity === 'info')
+  // IMPORTANT: Exclude recall items from commercial summary - they are "market intelligence" only.
+  // Recalls are displayed in a separate "Tham khảo" section and do NOT affect risk score.
+  const violationsForSummary = violations.filter(v => v.source_type !== 'recall')
+  const criticalViolations = violationsForSummary.filter(v => v.severity === 'critical')
+  const warningViolations = violationsForSummary.filter(v => v.severity === 'warning')
+  const infoViolations = violationsForSummary.filter(v => v.severity === 'info')
   
   const criticalCount = criticalViolations.length
   const warningCount = warningViolations.length
@@ -1360,9 +1363,13 @@ export function ReportResultView({
   // NOTE: Contrast violations are DESIGN RECOMMENDATIONS, not FDA violations
   // They should NOT be counted in criticalCount/warningCount as they don't affect compliance
   // FDA 21 CFR does NOT specify contrast ratios - only "conspicuous and legible"
-  const criticalCount = allViolations.filter((v) => v.severity === 'critical').length
-  const warningCount = allViolations.filter((v) => v.severity === 'warning').length
-  const infoCount = allViolations.filter((v) => v.severity === 'info').length
+  //
+  // IMPORTANT: Also exclude recall items from counts - recalls are "market intelligence" only.
+  // They are displayed in a separate "Tham khảo" section and do NOT affect risk score.
+  const violationsForCounting = allViolations.filter((v) => v.source_type !== 'recall')
+  const criticalCount = violationsForCounting.filter((v) => v.severity === 'critical').length
+  const warningCount = violationsForCounting.filter((v) => v.severity === 'warning').length
+  const infoCount = violationsForCounting.filter((v) => v.severity === 'info').length
   
   // Track design recommendations separately (contrast violations are always 'info')
   const designRecommendationCount = contrastViolations.length
