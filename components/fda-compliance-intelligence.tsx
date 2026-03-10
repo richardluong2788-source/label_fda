@@ -98,7 +98,7 @@ interface IntelligenceItem {
 }
 
 export function FDAComplianceIntelligence({ report, showFullDetails = false, onAIAnalysisComplete }: FDAComplianceIntelligenceProps) {
-  const [expanded, setExpanded] = useState(showFullDetails) // Auto-expand for admin view
+  const [expanded, setExpanded] = useState(false) // Default collapsed, user must click to expand
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null)
   const [aiAnalyzing, setAiAnalyzing] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
