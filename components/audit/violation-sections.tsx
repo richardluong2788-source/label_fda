@@ -16,6 +16,7 @@ import {
   BookOpen,
 } from 'lucide-react'
 import type { Violation } from '@/lib/types'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 // ────────────────────────────────────────────────────────────
 // HELPER: Simple Markdown Renderer for Remediation Text
@@ -390,15 +391,16 @@ interface RecallSectionProps {
 }
 
 export function RecallSection({ violations }: RecallSectionProps) {
+  const { t } = useTranslation()
   const recallItems = violations.filter((v) => v.source_type === 'recall')
   if (recallItems.length === 0) return null
 
   // Extract summary info for free display
   const getSummaryInfo = (item: Violation) => {
-    const category = item.category?.replace('Recall Risk: ', '') || 'Unknown'
-    // Extract time period from description if available
-    const timeMatch = item.description?.match(/(\d{4})/g)
-    const timePeriod = timeMatch ? `${timeMatch[0]}${timeMatch.length > 1 ? `-${timeMatch[timeMatch.length - 1]}` : ''}` : 'Gần đây'
+    const category = item.category?.replace('Recall Risk: ', '') || t.report.recallSameCategory || 'Unknown'
+    // Extract year from description if available (look for 4-digit year between 2000-2030)
+    const timeMatch = item.description?.match(/\b(20[0-2][0-9]|2030)\b/g)
+    const timePeriod = timeMatch ? `${timeMatch[0]}${timeMatch.length > 1 ? `-${timeMatch[timeMatch.length - 1]}` : ''}` : (t.report.recallRecent || 'Recent')
     return { category, timePeriod }
   }
 
@@ -409,13 +411,13 @@ export function RecallSection({ violations }: RecallSectionProps) {
           <div className="rounded-full bg-amber-100 p-1.5">
             <RotateCcw className="h-5 w-5 text-amber-600" />
           </div>
-          <h2 className="text-lg font-bold text-slate-800">Cảnh Báo Thị Trường</h2>
+          <h2 className="text-lg font-bold text-slate-800">{t.report.marketWarningTitle || 'Market Warning'}</h2>
           <Badge className="bg-amber-500 text-white hover:bg-amber-500">
-            {recallItems.length} trường hợp
+            {recallItems.length}
           </Badge>
         </div>
         <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
-          Market Intelligence
+          {t.report.marketIntelligence || 'Market Intelligence'}
         </Badge>
       </div>
 
@@ -425,11 +427,7 @@ export function RecallSection({ violations }: RecallSectionProps) {
           <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold mb-1 text-amber-900">
-              FDA đang giám sát chặt category này
-            </p>
-            <p className="text-sm leading-relaxed text-amber-800">
-              Phát hiện <strong>{recallItems.length} trường hợp thu hồi</strong> cho sản phẩm tương tự. 
-              Đây là tín hiệu rủi ro thị trường - bạn nên chuẩn bị hồ sơ chứng minh an toàn thực phẩm.
+              {t.report.marketWarningMessage || 'FDA is closely monitoring this category. Similar products have been recalled.'}
             </p>
           </div>
         </div>
@@ -463,7 +461,7 @@ export function RecallSection({ violations }: RecallSectionProps) {
                   <div className="mt-3 pt-3 border-t border-dashed border-slate-200">
                     <div className="flex items-center gap-2 text-xs text-slate-400">
                       <ExternalLink className="h-3.5 w-3.5" />
-                      <span className="blur-[3px] select-none">Chi tiết: Company ABC, Recall #12345, Corrective action...</span>
+                      <span className="blur-[3px] select-none">{t.report.lockedForExpert || 'Details for experts only'}</span>
                     </div>
                   </div>
                 </div>
@@ -478,10 +476,10 @@ export function RecallSection({ violations }: RecallSectionProps) {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex-1">
             <h4 className="font-semibold text-slate-800 mb-1">
-              Xem báo cáo đầy đủ + Nhận tư vấn phòng ngừa
+              {t.report.getFullReport || 'Get Full Report + Consultation'}
             </h4>
             <p className="text-sm text-slate-600">
-              Bao gồm: Mã thu hồi FDA, tên công ty vi phạm, biện pháp khắc phục, và hướng dẫn chuẩn bị hồ sơ từ chuyên gia.
+              {t.report.recallCTAMessage || 'To view recall details (recall number, company, preventive actions), please contact our expert team.'}
             </p>
           </div>
           <a
@@ -490,7 +488,7 @@ export function RecallSection({ violations }: RecallSectionProps) {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors shrink-0"
           >
-            Liên hệ chuyên gia Vexim
+            {t.report.contactExpert || 'Contact Vexim Expert'}
             <ExternalLink className="h-4 w-4" />
           </a>
         </div>

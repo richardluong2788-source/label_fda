@@ -164,6 +164,18 @@ export const vi = {
   freeSummary: 'TÓM TẮT MIỄN PHÍ',
   fullReportIncludes: 'BÁO CÁO ĐẦY ĐỦ BAO GỒM',
   getFullReport: 'Nhận báo cáo đầy đủ + Tư vấn',
+  // Recall summary labels
+  recallCategory: 'Danh mục',
+  recallTimePeriod: 'Thời gian',
+  recallSignal: 'Tín hiệu',
+  recallHighRisk: 'Rủi ro cao',
+  recallRecent: 'Gần đây',
+  recallSameCategory: 'cùng category',
+  // Recall full report items
+  recallItem1: 'Mã thu hồi FDA chính thức',
+  recallItem2: 'Tên công ty vi phạm',
+  recallItem3: 'Biện pháp khắc phục chi tiết',
+  recallItem4: 'Hướng dẫn chuẩn bị hồ sơ phòng ngừa',
   // Recall teaser and locked content
   recallTeaser: (category: string) => `Phát hiện trường hợp thu hồi liên quan trong danh mục ${category}. Chi tiết được cung cấp trong báo cáo chuyên gia.`,
   lockedForExpert: 'Chi tiết dành cho chuyên gia',
@@ -526,7 +538,7 @@ export const vi = {
     productType: 'Loại sản phẩm',
     selectProductType: 'Chọn loại',
     productFood: 'Thực phẩm thông thường',
-    productSupplement: 'Thực phẩm chức năng / TPCN',
+    productSupplement: 'Thực phẩm ch���c năng / TPCN',
     productBeverage: 'Đồ uống',
     productInfant: 'Sữa công thức trẻ em',
     productMedical: 'Thực phẩm y học',
@@ -950,7 +962,7 @@ export const vi = {
     detentionCostValue: '$5.000–15.000',
     detentionCostDesc: 'Phí container, phí lưu bãi, phí trễ tàu — tăng theo từng ngày bị giữ.',
     delayTimeValue: '2–4 tuần',
-    delayTimeDesc: 'Chờ sửa nhãn hoặc vận chuyển về. Mất suất lên kệ siêu thị, mất buyer.',
+    delayTimeDesc: 'Chờ sửa nhãn hoặc vận chuyển về. Mất su���t lên kệ siêu thị, mất buyer.',
     reputationDamageValue: 'Khó phục hồi',
     reputationDamageDesc: 'FDA lưu hồ sơ vi phạm vĩnh viễn. Các lô hàng tiếp theo chắc chắn sẽ bị kiểm tra kỹ hơn.',
     // Comparison table

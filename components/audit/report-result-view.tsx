@@ -650,7 +650,7 @@ function OcrConfidenceBar({ confidence }: { confidence: number }) {
   )
 }
 
-// ───────────���────────────────────────────────────────────────
+// ───────────�����────────────────────────────────────────────────
 // Mini Confidence Bar (for extraction/legal reasoning)
 // ────────────────────────────────────────────────────────────
 
@@ -1005,10 +1005,10 @@ function WarningLetterCard({ violation, t }: { violation: Violation; t: ReturnTy
 
 function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
   // Extract category for display
-  const category = violation.category?.replace('Recall Risk: ', '') || 'cùng category'
-  // Extract time from description if available
-  const timeMatch = violation.description?.match(/(\d{4})/g)
-  const timePeriod = timeMatch ? timeMatch[0] : 'Gần đây'
+  const category = violation.category?.replace('Recall Risk: ', '') || t.report.recallSameCategory || 'same category'
+  // Extract year from description if available (look for 4-digit year between 2000-2030)
+  const timeMatch = violation.description?.match(/\b(20[0-2][0-9]|2030)\b/g)
+  const timePeriod = timeMatch ? timeMatch[0] : (t.report.recallRecent || 'Recent')
   
   return (
     <div className="rounded-xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50/50 overflow-hidden">
@@ -1051,16 +1051,16 @@ function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<type
           {/* Free info: category, time, risk type */}
           <div className="space-y-2 mb-4">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 w-20">Danh mục:</span>
+              <span className="text-xs text-slate-500 w-24">{t.report.recallCategory || 'Category'}:</span>
               <span className="text-sm font-medium text-slate-800">{category}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 w-20">Thời gian:</span>
+              <span className="text-xs text-slate-500 w-24">{t.report.recallTimePeriod || 'Time Period'}:</span>
               <span className="text-sm font-medium text-slate-800">{timePeriod}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 w-20">Tín hiệu:</span>
-              <span className="text-sm font-medium text-amber-700">Rủi ro cao</span>
+              <span className="text-xs text-slate-500 w-24">{t.report.recallSignal || 'Signal'}:</span>
+              <span className="text-sm font-medium text-amber-700">{t.report.recallHighRisk || 'High Risk'}</span>
             </div>
           </div>
           
@@ -1087,19 +1087,19 @@ function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<type
           <ul className="space-y-2 mb-4 text-sm text-slate-600">
             <li className="flex items-start gap-2">
               <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
-              <span>Mã thu hồi FDA chính thức</span>
+              <span>{t.report.recallItem1 || 'Official FDA recall number'}</span>
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
-              <span>Tên công ty vi phạm</span>
+              <span>{t.report.recallItem2 || 'Violating company name'}</span>
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
-              <span>Biện pháp khắc phục chi tiết</span>
+              <span>{t.report.recallItem3 || 'Detailed corrective actions'}</span>
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
-              <span>Hướng dẫn chuẩn bị hồ sơ phòng ngừa</span>
+              <span>{t.report.recallItem4 || 'Prevention documentation guide'}</span>
             </li>
           </ul>
           <a 
@@ -1311,7 +1311,7 @@ function GeometryViolationCard({ violation, t }: { violation: GeometryViolation;
   )
 }
 
-// ────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────��─
 // Main Report Result View
 // ───���────────────────────────────────────────────────────────
 
