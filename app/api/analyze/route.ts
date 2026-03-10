@@ -1328,34 +1328,47 @@ export async function POST(request: Request) {
     }
 
   // Add nutrition validation errors as violations (CRITICAL level - e.g., impossible values)
+  // Extract the actual label value to show in "HIỆN TẠI TRÊN NHÃN" field
   if (!nutritionValidation.isValid) {
-  for (const error of nutritionValidation.errors) {
-  violations.push({
-  category: 'Nutrition Facts Validation',
-  severity: 'critical' as const,
-  description: error,
-  regulation_reference: '21 CFR 101.9(c)',
-  suggested_fix: 'Correct the value according to FDA rounding rules',
-  citations: [],
-  confidence_score: 1.0, // Code validation is 100% confident
-  })
-  }
+    for (const error of nutritionValidation.errors) {
+      // Extract actual value from error: "Calories value 6 does not..." -> "6 kcal"
+      const valueMatch = error.match(/(\w+)\s+value\s+(\d+\.?\d*)/i)
+      const rawLabelText = valueMatch 
+        ? `${valueMatch[2]}${valueMatch[1].toLowerCase().includes('calorie') ? ' kcal' : 'g'}`
+        : null
+      violations.push({
+        category: 'Nutrition Facts Validation',
+        severity: 'critical' as const,
+        description: error,
+        regulation_reference: '21 CFR 101.9(c)',
+        suggested_fix: 'Correct the value according to FDA rounding rules',
+        citations: [],
+        confidence_score: 1.0,
+        raw_text_on_label: rawLabelText, // Actual value on label for A/B comparison
+      })
+    }
   }
   
   // Add nutrition validation warnings as violations (WARNING level - e.g., rounding errors)
   // These are minor labeling issues that don't typically result in detention
   if (nutritionValidation.warnings && nutritionValidation.warnings.length > 0) {
-  for (const warning of nutritionValidation.warnings) {
-  violations.push({
-  category: 'Nutrition Facts Validation',
-  severity: 'warning' as const,
-  description: warning,
-  regulation_reference: '21 CFR 101.9(c)',
-  suggested_fix: 'Correct the value according to FDA rounding rules',
-  citations: [],
-  confidence_score: 1.0,
-  })
-  }
+    for (const warning of nutritionValidation.warnings) {
+      // Extract actual value from warning: "Calories value 6 does not..." -> "6 kcal"
+      const valueMatch = warning.match(/(\w+)\s+value\s+(\d+\.?\d*)/i)
+      const rawLabelText = valueMatch 
+        ? `${valueMatch[2]}${valueMatch[1].toLowerCase().includes('calorie') ? ' kcal' : 'g'}`
+        : null
+      violations.push({
+        category: 'Nutrition Facts Validation',
+        severity: 'warning' as const,
+        description: warning,
+        regulation_reference: '21 CFR 101.9(c)',
+        suggested_fix: 'Correct the value according to FDA rounding rules',
+        citations: [],
+        confidence_score: 1.0,
+        raw_text_on_label: rawLabelText,
+      })
+    }
   }
   
   // Add multi-column Nutrition Facts violations (variety packs)
@@ -1580,6 +1593,49 @@ export async function POST(request: Request) {
     const commercialSummary = SmartCitationFormatter.createReportSummary(allFindingsForSummary, userLang)
     const expertTips = SmartCitationFormatter.generateExpertTips(allFindingsForSummary, userLang)
 
+    // Deduplicate violations: merge violations about the same issue (e.g., two "Calories rounding" violations)
+    // This can happen when both smart mapper AND nutrition validator detect the same rounding error
+    const deduplicatedViolations: typeof violations = []
+    const seenIssues = new Map<string, number>() // key -> index in deduplicatedViolations
+    
+    for (const v of violations) {
+      // Create a unique key based on the core issue (regulation + nutrient/value involved)
+      const desc = (v.description || '').toLowerCase()
+      const cat = (v.category || '').toLowerCase()
+      
+      // Extract the specific nutrient/value being flagged (e.g., "calories 6", "fat 2.3g")
+      const nutrientMatch = desc.match(/(calories|fat|sodium|sugar|carb|protein|cholesterol)\s*(?:value\s*)?(\d+\.?\d*)/i)
+      const nutrientKey = nutrientMatch ? `${nutrientMatch[1]}:${nutrientMatch[2]}` : ''
+      
+      // Key combines category + regulation + specific nutrient to detect duplicates
+      const issueKey = `${cat}|${v.regulation_reference}|${nutrientKey}`.toLowerCase()
+      
+      if (nutrientKey && seenIssues.has(issueKey)) {
+        // Duplicate found - keep the one with higher confidence or more detail
+        const existingIdx = seenIssues.get(issueKey)!
+        const existing = deduplicatedViolations[existingIdx]
+        const existingConfidence = existing.confidence_score ?? 0.5
+        const newConfidence = v.confidence_score ?? 0.5
+        
+        // Prefer the one with higher confidence, or if equal, prefer the one with more citations
+        if (newConfidence > existingConfidence || 
+            (newConfidence === existingConfidence && (v.citations?.length ?? 0) > (existing.citations?.length ?? 0))) {
+          deduplicatedViolations[existingIdx] = v
+        }
+        // Otherwise keep existing
+      } else {
+        seenIssues.set(issueKey, deduplicatedViolations.length)
+        deduplicatedViolations.push(v)
+      }
+    }
+    
+    // Replace violations with deduplicated version
+    const originalCount = violations.length
+    violations = deduplicatedViolations
+    if (originalCount !== violations.length) {
+      console.log(`[v0] Deduplicated violations: ${originalCount} -> ${violations.length} (removed ${originalCount - violations.length} duplicates)`)
+    }
+    
     // Update report with results including ALL analysis and cost tracking
     console.log('[v0] ========== ANALYSIS SUMMARY ==========')
     console.log('[v0] Packaging Format:', formatConfig?.name || 'Not specified (default: single_package)')

@@ -130,14 +130,18 @@ export class NutritionValidator {
       if (name.includes('calorie')) {
         const validation = this.validateCalories(fact.value)
         if (!validation.isValid) {
-          errors.push(
+          // Calories rounding is a MINOR labeling error - WARNING, not CRITICAL
+          // FDA typically does not detain products solely for calories rounding violations
+          // Risk score should be 2.5-3.5, not 8.0
+          warnings.push(
             `Calories value ${fact.value} does not follow FDA rounding rules. Expected: ${validation.expected}`
           )
         }
       } else if (name.includes('fat') && !name.includes('fatty')) {
         const validation = this.validateFat(fact.value)
         if (!validation.isValid) {
-          errors.push(
+          // Fat rounding is a MINOR labeling error - WARNING, not CRITICAL
+          warnings.push(
             `Fat value ${fact.value}g does not follow FDA rounding rules. Expected: ${validation.expected}g`
           )
         }

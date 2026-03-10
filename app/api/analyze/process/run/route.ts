@@ -889,7 +889,10 @@ export async function POST(request: Request) {
     // Nutrition validation errors (CRITICAL - impossible values, missing mandatory nutrients)
     if (!nutritionValidation.isValid) {
       for (const error of nutritionValidation.errors) {
-        violations.push({ category: 'Nutrition Facts Validation', severity: 'critical' as const, description: error, regulation_reference: '21 CFR 101.9(c)', suggested_fix: 'Correct the value according to FDA rounding rules', citations: [], confidence_score: 1.0 })
+        // Extract actual value from error: "Calories value 6 does not..." -> "6 kcal"
+        const valueMatch = error.match(/(\w+)\s+value\s+(\d+\.?\d*)/i)
+        const rawLabelText = valueMatch ? `${valueMatch[2]}${valueMatch[1].toLowerCase().includes('calorie') ? ' kcal' : 'g'}` : null
+        violations.push({ category: 'Nutrition Facts Validation', severity: 'critical' as const, description: error, regulation_reference: '21 CFR 101.9(c)', suggested_fix: 'Correct the value according to FDA rounding rules', citations: [], confidence_score: 1.0, raw_text_on_label: rawLabelText })
       }
     }
     
@@ -897,7 +900,10 @@ export async function POST(request: Request) {
     // These don't typically cause detention but should be fixed
     if (nutritionValidation.warnings && nutritionValidation.warnings.length > 0) {
       for (const warning of nutritionValidation.warnings) {
-        violations.push({ category: 'Nutrition Facts Validation', severity: 'warning' as const, description: warning, regulation_reference: '21 CFR 101.9(c)', suggested_fix: 'Correct the value according to FDA rounding rules', citations: [], confidence_score: 1.0 })
+        // Extract actual value from warning
+        const valueMatch = warning.match(/(\w+)\s+value\s+(\d+\.?\d*)/i)
+        const rawLabelText = valueMatch ? `${valueMatch[2]}${valueMatch[1].toLowerCase().includes('calorie') ? ' kcal' : 'g'}` : null
+        violations.push({ category: 'Nutrition Facts Validation', severity: 'warning' as const, description: warning, regulation_reference: '21 CFR 101.9(c)', suggested_fix: 'Correct the value according to FDA rounding rules', citations: [], confidence_score: 1.0, raw_text_on_label: rawLabelText })
       }
     }
 
@@ -967,6 +973,32 @@ export async function POST(request: Request) {
     await updateJobProgress(jobId, 'Finalizing audit report', 90)
 
     const needsExpertReview = violations.some(v => (v.confidence_score ?? 1) < 0.8 || v.citations.length === 0)
+    // Deduplicate violations: merge violations about the same issue (e.g., two "Calories rounding" violations)
+    const deduplicatedViolations: typeof violations = []
+    const seenIssues = new Map<string, number>()
+    for (const v of violations) {
+      const desc = (v.description || '').toLowerCase()
+      const cat = (v.category || '').toLowerCase()
+      const nutrientMatch = desc.match(/(calories|fat|sodium|sugar|carb|protein|cholesterol)\s*(?:value\s*)?(\d+\.?\d*)/i)
+      const nutrientKey = nutrientMatch ? `${nutrientMatch[1]}:${nutrientMatch[2]}` : ''
+      const issueKey = `${cat}|${v.regulation_reference}|${nutrientKey}`.toLowerCase()
+      if (nutrientKey && seenIssues.has(issueKey)) {
+        const existingIdx = seenIssues.get(issueKey)!
+        const existing = deduplicatedViolations[existingIdx]
+        if ((v.confidence_score ?? 0.5) > (existing.confidence_score ?? 0.5) || 
+            ((v.confidence_score ?? 0.5) === (existing.confidence_score ?? 0.5) && (v.citations?.length ?? 0) > (existing.citations?.length ?? 0))) {
+          deduplicatedViolations[existingIdx] = v
+        }
+      } else {
+        seenIssues.set(issueKey, deduplicatedViolations.length)
+        deduplicatedViolations.push(v)
+      }
+    }
+    if (violations.length !== deduplicatedViolations.length) {
+      console.log(`[v0] Deduplicated violations: ${violations.length} -> ${deduplicatedViolations.length}`)
+    }
+    violations = deduplicatedViolations
+    
     const citationCount = violations.reduce((sum: number, v: any) => sum + v.citations.length, 0)
     const extractionConfidence = isManualEntry ? 1.0 : visionResult.overallConfidence || 0
     const avgCitationSimilarity = citationCount > 0 ? violations.reduce((sum: number, v: any) => { const avg = v.citations.reduce((s: number, c: any) => s + c.relevance_score, 0) / (v.citations.length || 1); return sum + avg }, 0) / violations.length : 0
