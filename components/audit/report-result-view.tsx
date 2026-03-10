@@ -41,6 +41,7 @@ import { getLabelConfig } from '@/lib/label-field-config'
 import { useTranslation } from '@/lib/i18n'
 import { useTranslateViolations } from '@/hooks/use-translate-violations'
 import { ClaimsValidator, type NutritionFactData } from '@/lib/claims-validator'
+import { FDAComplianceIntelligenceSection } from '@/components/audit/report-sections'
 
 // ────────────────────────────────────────────────────────────
 // Claim Tooltips - i18n support for FDA regulation references
@@ -993,7 +994,7 @@ function WarningLetterCard({ violation, t }: { violation: Violation; t: ReturnTy
 // Recall Card (Reference Only - NOT a violation)
 // Recalls are market intelligence context, they do NOT affect risk score.
 // Per logic-ng spec: No severity badge, different title, reference note.
-// ────────────────────────────────────────────────────────────
+// ───��────────────────────────────────────────────────────────
 
 function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
   return (
@@ -2408,7 +2409,7 @@ export function ReportResultView({
               </div>
             </Card>
 
-            {/* ── EXPERT TIPS & AI SUMMARY (NEW) ──────────────�� */}
+            {/* ��─ EXPERT TIPS & AI SUMMARY (NEW) ──────────────�� */}
             {(expertTips.length > 0 || commercialSummary) && (
               <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 overflow-hidden">
                 <button
@@ -2458,6 +2459,16 @@ export function ReportResultView({
                 )}
               </Card>
             )}
+
+            {/* ── FDA COMPLIANCE INTELLIGENCE (Warnings, Alerts, Recalls) ── */}
+            <FDAComplianceIntelligenceSection
+              report={report}
+              importAlertMatches={importAlertViolations.length}
+              warningLetterMatches={wlViolations.length}
+              recallMatches={recallViolations.length}
+              dataWarnings={[]}
+              isExpanded={false}
+            />
 
             {/* ── ENFORCEMENT INSIGHTS (NEW) ─────────────────── */}
             {enforcementInsights.length > 0 && (
