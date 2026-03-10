@@ -258,51 +258,6 @@ export function ReportResultView({
         <div className="grid lg:grid-cols-[320px_1fr] gap-6">
           {/* LEFT COLUMN: Product Info & Images */}
           <div className="space-y-6">
-            {/* Risk Score Card */}
-            <Card className="bg-white border-slate-200 overflow-hidden">
-              <div className="p-6 flex flex-col items-center">
-                <RiskScoreGauge score={riskScore} label={riskLabel} />
-                
-                {/* Projected risk score after fix */}
-                {projectedRiskScore !== undefined && projectedRiskScore < riskScore && (
-                  <div className="mt-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-200">
-                    <TrendingDown className="h-3 w-3 text-green-600" />
-                    <span className="text-xs text-green-700">
-                      {t.report.projectedRiskAfterFix}: <strong>{projectedRiskScore.toFixed(1)}</strong>
-                    </span>
-                  </div>
-                )}
-
-                {/* Issue counts */}
-                <div className="flex items-center gap-4 mt-4">
-                  {criticalCount > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-                      <span className="text-xs text-slate-600">
-                        {criticalCount} {t.report.critical}
-                      </span>
-                    </div>
-                  )}
-                  {warningCount > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                      <span className="text-xs text-slate-600">
-                        {warningCount} {t.report.warning}
-                      </span>
-                    </div>
-                  )}
-                  {infoCount > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-                      <span className="text-xs text-slate-600">
-                        {infoCount} {t.report.info || 'Info'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Card>
-
             {/* Label Images */}
             {report.label_images && report.label_images.length > 0 && (
               <Card className="bg-white border-slate-200 overflow-hidden">
@@ -1184,6 +1139,80 @@ export function ReportResultView({
 
           {/* RIGHT COLUMN: Violations & Assessment */}
           <div className="space-y-6">
+            {/* Risk Score & OCR Confidence Header */}
+            <Card className="bg-white border-slate-200 overflow-hidden">
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-6">
+                  {/* Risk Score with Label */}
+                  <div className="flex items-center gap-4">
+                    <RiskScoreGauge score={riskScore} size="lg" />
+                    <div className="flex flex-col gap-1">
+                      <span className={`text-base font-bold ${
+                        riskScore >= 7 ? 'text-red-600' : 
+                        riskScore >= 4 ? 'text-amber-600' : 
+                        riskScore >= 2 ? 'text-amber-500' : 'text-green-600'
+                      }`}>
+                        {t.report.riskLevel}: <span className={
+                          riskScore >= 7 ? 'text-red-600' : 
+                          riskScore >= 4 ? 'text-amber-600' : 
+                          riskScore >= 2 ? 'text-amber-500' : 'text-green-600'
+                        }>{riskLabel}</span>
+                      </span>
+                      <p className="text-sm text-slate-600">
+                        {descParts.length > 0 
+                          ? `${t.report.labelHas} ${descParts.join(', ')} ${t.report.fixBeforeDistribution}`
+                          : t.report.labelCompliant
+                        }
+                      </p>
+                      
+                      {/* Projected risk score after fix */}
+                      {projectedRiskScore !== undefined && projectedRiskScore < riskScore && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-200 w-fit mt-1">
+                          <TrendingDown className="h-3 w-3 text-green-600" />
+                          <span className="text-xs text-green-700">
+                            {t.report.projectedRiskAfterFix}: <strong>{projectedRiskScore.toFixed(1)}</strong>
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Issue counts */}
+                      <div className="flex items-center gap-4 mt-1">
+                        {criticalCount > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                            <span className="text-xs text-slate-600">
+                              {criticalCount} {t.report.critical}
+                            </span>
+                          </div>
+                        )}
+                        {warningCount > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                            <span className="text-xs text-slate-600">
+                              {warningCount} {t.report.warning}
+                            </span>
+                          </div>
+                        )}
+                        {infoCount > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                            <span className="text-xs text-slate-600">
+                              {infoCount} {t.report.info || 'Info'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* OCR Confidence */}
+                  {report.ocr_confidence !== undefined && (
+                    <OcrConfidenceBar confidence={report.ocr_confidence} />
+                  )}
+                </div>
+              </div>
+            </Card>
+
             {/* Commercial Summary */}
             {commercialSummary && (
               <Card className="bg-white border-slate-200 overflow-hidden">
