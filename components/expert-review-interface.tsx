@@ -5,7 +5,6 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -22,16 +21,12 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
 import {
-  AlertCircle,
-  AlertTriangle,
-  BookOpen,
   CheckCircle,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
   Database,
-  ExternalLink,
   Eye,
   FileSearch,
   FileText,
@@ -39,157 +34,29 @@ import {
   Info,
   Languages,
   Lightbulb,
-  Mail,
   Package,
-  Quote,
-  RotateCcw,
+  Plus,
   Ruler,
   Save,
   Shield,
   ShieldAlert,
   ShieldCheck,
-  Ship,
   Sparkles,
   XCircle,
-  Trash2,
-  Plus,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { LabelImageGallery } from '@/components/label-image-gallery'
 import type { Violation, LabelImageEntry } from '@/lib/types'
 
-// ────────────────────────────────────────────────────────────
-// Risk Score Circular Gauge
-// ────────────────────────────────────────────────────────────
-
-function RiskScoreGauge({ score, size = 'md' }: { score: number; size?: 'sm' | 'md' }) {
-  const color =
-    score >= 7 ? '#ef4444' : score >= 4 ? '#f59e0b' : '#22c55e'
-  const circumference = 2 * Math.PI * 42
-  const dashLength = (score / 10) * circumference
-  const sizeClass = size === 'sm' ? 'h-16 w-16' : 'h-24 w-24'
-  const textClass = size === 'sm' ? 'text-lg' : 'text-2xl'
-
-  return (
-    <div className="relative flex items-center justify-center shrink-0">
-      <svg viewBox="0 0 100 100" className={`${sizeClass} -rotate-90`}>
-        <circle cx="50" cy="50" r="42" fill="none" stroke="#e5e7eb" strokeWidth="8" />
-        <circle
-          cx="50" cy="50" r="42" fill="none" stroke={color}
-          strokeWidth="8" strokeLinecap="round"
-          strokeDasharray={`${dashLength} ${circumference}`}
-        />
-      </svg>
-      <span className={`absolute ${textClass} font-bold`} style={{ color }}>
-        {score.toFixed(1)}
-      </span>
-    </div>
-  )
-}
-
-// ────────────────────────────────────────────────────────────
-// Confidence Bar
-// ────────────────────────────────────────────────────────────
-
-function ConfidenceBar({ label, value }: { label: string; value: number }) {
-  const pct = Math.round(value * 100)
-  const barColor = pct >= 80 ? 'bg-green-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500'
-  const textColor = pct >= 80 ? 'text-green-700' : pct >= 60 ? 'text-amber-700' : 'text-red-700'
-
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs text-muted-foreground w-28 shrink-0">{label}</span>
-      <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
-      </div>
-      <span className={`text-xs font-bold w-10 text-right ${textColor}`}>{pct}%</span>
-    </div>
-  )
-}
-
-// ────────────────────────────────────────────────────────────
-// Severity Badge
-// ────────────────────────────────────────────────────────────
-
-function SeverityBadge({ severity }: { severity: string }) {
-  if (severity === 'critical') {
-    return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wide bg-red-500 text-white">
-        Critical
-      </span>
-    )
-  }
-  if (severity === 'warning') {
-    return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wide bg-amber-500 text-white">
-        Warning
-      </span>
-    )
-  }
-  return (
-    <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wide bg-blue-500 text-white">
-      Info
-    </span>
-  )
-}
-
-// ────────────────────────────────────────────────────────────
-// Source Type Badge
-// ────────────────────────────────────────────────────────────
-
-function SourceTypeBadge({ sourceType }: { sourceType?: string }) {
-  if (sourceType === 'warning_letter') {
-    return <Badge className="bg-purple-600 hover:bg-purple-600 text-white text-xs">Warning Letter</Badge>
-  }
-  if (sourceType === 'recall') {
-    return <Badge className="bg-orange-600 hover:bg-orange-600 text-white text-xs">Recall</Badge>
-  }
-  if (sourceType === 'import_alert') {
-    return <Badge className="bg-cyan-600 hover:bg-cyan-600 text-white text-xs">Import Alert</Badge>
-  }
-  return <Badge className="bg-slate-600 hover:bg-slate-600 text-white text-xs">CFR Regulation</Badge>
-}
-
-// ────────────────────────────────────────────────────────────
-// Violation Icon
-// ────────────────────────────────────────────────────────────
-
-function ViolationIcon({ severity, type }: { severity: string; type?: string }) {
-  if (type === 'warning_letter') {
-    return <div className="rounded-full bg-purple-100 p-2 shrink-0"><Mail className="h-4 w-4 text-purple-600" /></div>
-  }
-  if (type === 'recall') {
-    return <div className="rounded-full bg-orange-100 p-2 shrink-0"><RotateCcw className="h-4 w-4 text-orange-600" /></div>
-  }
-  if (type === 'import_alert') {
-    return <div className="rounded-full bg-cyan-100 p-2 shrink-0"><Ship className="h-4 w-4 text-cyan-600" /></div>
-  }
-  if (severity === 'critical') {
-    return <div className="rounded-full bg-red-100 p-2 shrink-0"><AlertCircle className="h-4 w-4 text-red-600" /></div>
-  }
-  if (severity === 'info') {
-    return <div className="rounded-full bg-blue-100 p-2 shrink-0"><Info className="h-4 w-4 text-blue-600" /></div>
-  }
-  return <div className="rounded-full bg-amber-100 p-2 shrink-0"><AlertTriangle className="h-4 w-4 text-amber-600" /></div>
-}
-
-// ────────────────────────────────────────────────────────────
-// FDA Review Checklist Items
-// ────────────────────────────────────────────────────────────
-
-const FDA_CHECKLIST = [
-  { id: 'identity', label: 'Product identity statement verified', cfr: '21 CFR 101.3', hint: 'Common/usual name clearly displayed on PDP' },
-  { id: 'net_contents', label: 'Net contents declaration checked', cfr: '21 CFR 101.105', hint: 'Correct units (oz/g/ml), proper placement on lower 30% of PDP' },
-  { id: 'ingredients', label: 'Ingredient list order verified', cfr: '21 CFR 101.4', hint: 'Listed in descending order by weight, common names used' },
-  { id: 'allergens', label: 'Allergen declarations present (FALCPA)', cfr: 'FD&C Act 403(w)', hint: 'Big 9 allergens: milk, eggs, fish, shellfish, tree nuts, peanuts, wheat, soybeans, sesame' },
-  { id: 'nutrition', label: 'Nutrition Facts format correct', cfr: '21 CFR 101.9', hint: 'Serving size, calories, 13 mandatory nutrients, %DV, footnote' },
-  { id: 'health_claims', label: 'No prohibited health/disease claims', cfr: 'FD&C Act 403(r)', hint: 'No "cures", "treats", "prevents" disease language without FDA approval' },
-  { id: 'manufacturer', label: 'Manufacturer/distributor info present', cfr: '21 CFR 101.5', hint: 'Name and address of manufacturer, packer, or distributor' },
-  { id: 'warnings', label: 'Required warnings present (if applicable)', cfr: 'Various', hint: 'Juice HACCP, phenylalanine (aspartame), FD&C Yellow No. 5, sulfites' },
-  { id: 'font_size', label: 'Font size minimums met', cfr: '21 CFR 101.2', hint: 'Minimum 1/16 inch for most text, varies by PDP area' },
-  { id: 'country_origin', label: 'Country of origin declared (if imported)', cfr: 'US Customs / COOL', hint: 'Required on all imported food products entering the US' },
-]
+// Import from new modular files
+import { FDA_CHECKLIST } from '@/lib/fda-checklist'
+import { FindingCard } from '@/components/expert-review/finding-card'
+import {
+  RiskScoreGauge,
+  ConfidenceBar,
+  SeverityBadge,
+} from '@/components/expert-review/shared'
 
 // ────────────────────────────────────────────────────────────
 // Main Expert Review Interface
@@ -1069,202 +936,4 @@ export function ExpertReviewInterface({
   )
 }
 
-// ────────────────────────────────────────────────────────────
-// Enhanced Finding Card (Editable)
-// ────────────────────────────────────────────────────────────
 
-interface FindingCardProps {
-  finding: any
-  globalIndex: number
-  onUpdate: (index: number, field: string, value: any) => void
-  onDelete: (index: number) => void
-}
-
-function FindingCard({ finding, globalIndex, onUpdate, onDelete }: FindingCardProps) {
-  const [expanded, setExpanded] = useState(false)
-
-  const borderClass = finding.severity === 'critical'
-    ? 'border-l-4 border-l-red-500 border-red-200 bg-red-50/30'
-    : finding.severity === 'info'
-    ? 'border-l-4 border-l-blue-500 border-blue-200 bg-blue-50/30'
-    : 'border-l-4 border-l-amber-500 border-amber-200 bg-amber-50/30'
-
-  return (
-    <Card className={`p-4 ${borderClass}`}>
-      {/* Header Row */}
-      <div className="flex items-start gap-3 mb-3">
-        <ViolationIcon severity={finding.severity} type={finding.source_type} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <input
-              type="text"
-              value={finding.category}
-              onChange={(e) => onUpdate(globalIndex, 'category', e.target.value)}
-              className="font-semibold text-sm bg-transparent border-b border-transparent hover:border-slate-300 focus:border-primary focus:outline-none w-full"
-            />
-            <div className="flex items-center gap-1.5 shrink-0">
-              <select
-                value={finding.severity}
-                onChange={(e) => onUpdate(globalIndex, 'severity', e.target.value)}
-                className="text-xs border rounded px-1.5 py-0.5 bg-white"
-              >
-                <option value="critical">Critical</option>
-                <option value="warning">Warning</option>
-                <option value="info">Info</option>
-              </select>
-              <SourceTypeBadge sourceType={finding.source_type} />
-            </div>
-          </div>
-
-          {/* Risk Score + Enforcement inline */}
-          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-            {finding.risk_score !== undefined && (
-              <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                finding.risk_score >= 7 ? 'bg-red-100 text-red-700' :
-                finding.risk_score >= 4 ? 'bg-amber-100 text-amber-700' :
-                'bg-green-100 text-green-700'
-              }`}>
-                Risk: {finding.risk_score}/10
-              </span>
-            )}
-            {finding.enforcement_frequency && finding.enforcement_frequency > 0 && (
-              <span className="text-xs text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">
-                {finding.enforcement_frequency}x FDA enforced
-              </span>
-            )}
-            {finding.confidence_score !== undefined && (
-              <span className="text-xs text-muted-foreground">
-                AI Conf: {Math.round(finding.confidence_score * 100)}%
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Description */}
-      <Textarea
-        value={finding.description}
-        onChange={(e) => onUpdate(globalIndex, 'description', e.target.value)}
-        rows={2}
-        className="text-xs mb-2 bg-white/60"
-        placeholder="Describe the violation..."
-      />
-
-      {/* Regulation Reference */}
-      <div className="flex items-center gap-2 mb-2">
-        <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
-        <input
-          type="text"
-          value={finding.regulation_reference}
-          onChange={(e) => onUpdate(globalIndex, 'regulation_reference', e.target.value)}
-          className="w-full text-xs font-mono bg-white/60 border rounded px-2 py-1.5"
-          placeholder="e.g., 21 CFR 101.9"
-        />
-      </div>
-
-      {/* Suggested Fix */}
-      <div className="bg-blue-50/50 rounded-lg p-2.5 mb-2 border border-blue-100">
-        <Label className="text-xs font-medium text-blue-800 mb-1 block">Suggested Fix:</Label>
-        <Textarea
-          value={finding.suggested_fix}
-          onChange={(e) => onUpdate(globalIndex, 'suggested_fix', e.target.value)}
-          rows={2}
-          className="text-xs bg-white/80 border-blue-200"
-          placeholder="How to fix this issue..."
-        />
-      </div>
-
-      {/* Legal Basis / Enforcement Context (read-only from AI) */}
-      {(finding.legal_basis || finding.enforcement_context) && (
-        <div className="bg-slate-50 rounded-lg p-2.5 mb-2 border space-y-1.5">
-          {finding.legal_basis && (
-            <div>
-              <span className="text-xs font-medium text-slate-500">Legal Basis:</span>
-              <p className="text-xs text-slate-700">{finding.legal_basis}</p>
-            </div>
-          )}
-          {finding.enforcement_context && (
-            <div>
-              <span className="text-xs font-medium text-slate-500">Enforcement Context:</span>
-              <p className="text-xs text-slate-700">{finding.enforcement_context}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Warning Letter Link */}
-      {finding.warning_letter_id && (
-        <a
-          href={`https://www.fda.gov/inspections-compliance-enforcement-and-criminal-investigations/warning-letters/${finding.warning_letter_id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-purple-700 hover:underline mb-2"
-        >
-          View Warning Letter on FDA.gov <ExternalLink className="h-3 w-3" />
-        </a>
-      )}
-
-      {/* Import Alert Link */}
-      {finding.import_alert_number && (
-        <a
-          href={`https://www.accessdata.fda.gov/cms_ia/ialist.html#${finding.import_alert_number}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-cyan-700 hover:underline mb-2"
-        >
-          View Import Alert on FDA.gov <ExternalLink className="h-3 w-3" />
-        </a>
-      )}
-
-      {/* Expandable: Citations */}
-      {finding.citations && finding.citations.length > 0 && (
-        <Collapsible open={expanded} onOpenChange={setExpanded}>
-          <CollapsibleTrigger className="flex items-center gap-1.5 text-xs text-primary hover:underline mb-1">
-            <Quote className="h-3 w-3" />
-            {finding.citations.length} Citation{finding.citations.length !== 1 ? 's' : ''}
-            <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="space-y-2 mt-2 pl-2 border-l-2 border-primary/20">
-              {finding.citations.map((citation: any, citIdx: number) => (
-                <div key={citIdx} className="bg-white/80 rounded p-2.5 text-xs border">
-                  <p className="font-medium text-foreground mb-1">{citation.section || citation.regulation_id}</p>
-                  {citation.text && (
-                    <blockquote className="text-muted-foreground italic text-xs leading-relaxed mb-1.5">
-                      {'"'}{citation.text}{'"'}
-                    </blockquote>
-                  )}
-                  <div className="flex items-center gap-3 text-muted-foreground">
-                    <span>Source: {citation.source}</span>
-                    <span className={`font-medium ${
-                      citation.relevance_score >= 0.8 ? 'text-green-600' :
-                      citation.relevance_score >= 0.5 ? 'text-amber-600' : 'text-slate-500'
-                    }`}>
-                      Relevance: {(citation.relevance_score * 100).toFixed(0)}%
-                    </span>
-                    {citation.relevance_tier && (
-                      <Badge variant="outline" className="text-xs capitalize">{citation.relevance_tier}</Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      )}
-
-      {/* Footer: Delete */}
-      <div className="flex items-center justify-end pt-2 mt-2 border-t">
-        <Button
-          onClick={() => onDelete(globalIndex)}
-          variant="ghost"
-          size="sm"
-          className="text-destructive hover:text-destructive text-xs h-7"
-        >
-          <Trash2 className="h-3 w-3 mr-1" />
-          Delete
-        </Button>
-      </div>
-    </Card>
-  )
-}
