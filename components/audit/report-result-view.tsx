@@ -997,6 +997,10 @@ function WarningLetterCard({ violation, t }: { violation: Violation; t: ReturnTy
 // ───��────────────────────────────────────────────────────────
 
 function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
+  // Extract category from description for teaser (e.g., "Organic Spices" category)
+  // Public users only see teaser - details are locked for expert consultation
+  const category = violation.category || 'cùng category'
+  
   return (
     <div className="rounded-xl border border-slate-200 bg-amber-50/30 overflow-hidden">
       <div className="flex items-start justify-between p-5 pb-3">
@@ -1030,19 +1034,46 @@ function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<type
       </div>
 
       <div className="grid md:grid-cols-2 gap-0">
+        {/* LEFT: Teaser only - details are locked */}
         <div className="p-5 bg-slate-50/60 border-t border-r border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-3">
             {t.report.recallInfo}
           </p>
-          <p className="text-sm text-slate-700 leading-relaxed italic">
-            &ldquo;{violation.description}&rdquo;
+          {/* Teaser message - no specific details */}
+          <p className="text-sm text-slate-700 leading-relaxed">
+            {t.report.recallTeaser?.(category) || `Phát hiện trường hợp thu hồi liên quan trong ${category}. Chi tiết được cung cấp trong báo cáo chuyên gia.`}
           </p>
+          
+          {/* Blurred preview of locked content */}
+          <div className="mt-3 relative">
+            <div className="p-3 rounded-lg bg-slate-100/80 border border-slate-200 blur-[6px] select-none pointer-events-none">
+              <p className="text-xs text-slate-500">Thu hồi #H-XXXX-2026 - Công ty ABC...</p>
+              <p className="text-xs text-slate-400 mt-1">Lý do: Thông tin chi tiết...</p>
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/90 text-white text-xs font-medium shadow-lg">
+                <Landmark className="h-3 w-3" />
+                {t.report.lockedForExpert || 'Chi tiết dành cho chuyên gia'}
+              </span>
+            </div>
+          </div>
         </div>
+        
+        {/* RIGHT: CTA to contact expert */}
         <div className="p-5 bg-slate-50/60 border-t border-slate-200">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-3">
             {t.report.veximRecommendation}
           </p>
-          <MarkdownContent content={violation.suggested_fix || t.report.recallDefaultFix} />
+          <p className="text-sm text-slate-600 leading-relaxed mb-4">
+            {t.report.recallCTAMessage || 'Để xem chi tiết về các trường hợp thu hồi liên quan (mã thu hồi, công ty, biện pháp khắc phục), vui lòng liên hệ chuyên gia của chúng tôi.'}
+          </p>
+          <a 
+            href="#expert-request" 
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <MessageSquare className="h-4 w-4" />
+            {t.report.contactExpert || 'Liên hệ chuyên gia Vexim'}
+          </a>
         </div>
       </div>
     </div>

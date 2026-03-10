@@ -158,6 +158,11 @@ export const vi = {
     recallReferenceNote: 'Đây là dữ liệu lịch sử thị trường để tham khảo — không phải vi phạm, không ảnh hưởng điểm rủi ro.',
     recallsReferenceSection: 'LỊCH SỬ THU HỒI (THAM KHẢO)',
     marketIntelligence: 'Dữ liệu tham khảo',
+    // Recall teaser and locked content
+    recallTeaser: (category: string) => `Phát hiện trường hợp thu hồi liên quan trong danh mục ${category}. Chi tiết được cung cấp trong báo cáo chuyên gia.`,
+    lockedForExpert: 'Chi tiết dành cho chuyên gia',
+    recallCTAMessage: 'Để xem chi tiết về các trường hợp thu hồi liên quan (mã thu hồi, công ty, biện pháp khắc phục), vui lòng liên hệ chuyên gia của chúng tôi.',
+    contactExpert: 'Liên hệ chuyên gia Vexim',
     // Fallback commercial summary (when AI doesn't generate one)
     unknownProduct: 'Sản phẩm',
     fallbackCompliantSummary: 'đã được kiểm tra và tuân thủ tốt các quy định FDA. Không phát hiện vi phạm nghiêm trọng trong quá trình phân tích.',
@@ -382,7 +387,7 @@ export const vi = {
       'Cần ít nhất 1 tài liệu được nạp vào để bắt đầu phân tích.',
     ],
     kbDocsCount: (count: number) => `Hiện tại có ${count} tài liệu trong Knowledge Base.`,
-    kbFixTitle: 'Cách khắc phục:',
+    kbFixTitle: 'Cách khắc ph��c:',
     kbFixItems: [
       'Liên hệ Admin để nạp tài liệu FDA vào Knowledge Base.',
       'Truy cập trang Knowledge Base và sử dụng chức năng "Nạp tài liệu mới" hoặc "FDA Warning Letters Pipeline".',
@@ -1065,7 +1070,7 @@ export const vi = {
     noExpertReview: 'Không bao gồm Expert Review',
     upgradeToAccess: 'Nâng cấp lên Starter trở lên để sử dụng.',
     buyPerUse: 'Mua thêm theo lần',
-    perUse: '₫/lần',
+    perUse: '���/lần',
     payPerRequest: 'Thanh toán riêng mỗi lần yêu cầu Expert Review.',
     includedInPlan: 'Đã bao gồm trong gói',
     creditsPerMonth: 'lượt/tháng',

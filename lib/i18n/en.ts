@@ -159,6 +159,11 @@ export const en: TranslationKeys = {
     recallReferenceNote: 'This is market intelligence data for reference only — not a violation, does not affect risk score.',
     recallsReferenceSection: 'RECALL HISTORY (REFERENCE)',
     marketIntelligence: 'Reference Data',
+    // Recall teaser and locked content
+    recallTeaser: (category: string) => `Recall case found in ${category} category. Details available in expert report.`,
+    lockedForExpert: 'Details for experts only',
+    recallCTAMessage: 'To view recall details (recall number, company, preventive actions), please contact our expert team.',
+    contactExpert: 'Contact Vexim Expert',
     // Fallback commercial summary (when AI doesn't generate one)
     unknownProduct: 'Product',
     fallbackCompliantSummary: 'has been reviewed and complies with FDA regulations. No serious violations detected during analysis.',

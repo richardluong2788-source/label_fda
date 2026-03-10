@@ -316,8 +316,8 @@ export function ExpertReviewWorkspace({
               </div>
             </Card>
 
-            {/* FDA Compliance Intelligence */}
-            <FDAComplianceIntelligence report={report} />
+            {/* FDA Compliance Intelligence - Full details for expert view */}
+            <FDAComplianceIntelligence report={report} showFullDetails={true} />
 
             {/* Ảnh nhãn sản phẩm - hiển thị tất cả ảnh */}
             <Card className="p-5">

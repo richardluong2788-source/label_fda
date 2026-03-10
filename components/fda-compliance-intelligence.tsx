@@ -15,6 +15,15 @@ import {
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 
+interface RecallDetail {
+  recall_number?: string
+  company_name?: string
+  reason?: string
+  description?: string
+  preventive_action?: string
+  category?: string
+}
+
 interface FDAComplianceIntelligenceProps {
   report: {
     warning_letter_weight?: number
@@ -24,7 +33,17 @@ interface FDAComplianceIntelligenceProps {
     brand_name?: string
     product_name?: string
     product_category?: string
+    // Full details for admin view
+    findings?: Array<{
+      category?: string
+      description?: string
+      suggested_fix?: string
+      recall_number?: string
+      company_name?: string
+    }>
   }
+  // When true, shows full details (for admin/expert view)
+  showFullDetails?: boolean
 }
 
 interface IntelligenceItem {
@@ -39,8 +58,8 @@ interface IntelligenceItem {
   fdaLinkLabel?: string
 }
 
-export function FDAComplianceIntelligence({ report }: FDAComplianceIntelligenceProps) {
-  const [expanded, setExpanded] = useState(false)
+export function FDAComplianceIntelligence({ report, showFullDetails = false }: FDAComplianceIntelligenceProps) {
+  const [expanded, setExpanded] = useState(showFullDetails) // Auto-expand for admin view
 
   // Parse counts from heat index values (stored as 0-100 scale)
   // warning_letter_weight: count of matched warning letters
@@ -52,6 +71,11 @@ export function FDAComplianceIntelligence({ report }: FDAComplianceIntelligenceP
 
   // Check if any intelligence data exists
   const hasData = warningLetterCount > 0 || recallCount > 0 || importAlertCount > 0
+  
+  // Extract recall details from findings for admin view
+  const recallFindings = (report.findings || []).filter(
+    f => f.category?.toLowerCase().includes('recall') || f.category?.toLowerCase().includes('thu hồi')
+  )
 
   const items: IntelligenceItem[] = [
     {
@@ -208,6 +232,58 @@ export function FDAComplianceIntelligence({ report }: FDAComplianceIntelligenceP
               </div>
             )
           })}
+
+          {/* ADMIN ONLY: Full Recall Details */}
+          {showFullDetails && recallFindings.length > 0 && (
+            <div className="bg-orange-50 rounded-lg border border-orange-200 p-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-orange-700 mb-3 flex items-center gap-2">
+                <AlertOctagon className="h-4 w-4" />
+                Chi tiết Thu hồi (Chỉ dành cho Chuyên gia)
+              </p>
+              <div className="space-y-3">
+                {recallFindings.map((recall, idx) => {
+                  // Parse recall details from description
+                  // Format: "...Thu hồi #H-0465-2026 (Công ty Gia vị Organic)..."
+                  const recallMatch = recall.description?.match(/Thu hồi #([A-Z0-9-]+)\s*\(([^)]+)\)/i)
+                  const recallNumber = recallMatch?.[1] || `RECALL-${idx + 1}`
+                  const companyName = recallMatch?.[2] || 'Không xác định'
+                  
+                  return (
+                    <div key={idx} className="bg-white rounded-lg border border-orange-100 p-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <span className="text-xs font-mono font-bold text-orange-700">
+                            #{recallNumber}
+                          </span>
+                          <span className="text-xs text-slate-500 ml-2">
+                            {companyName}
+                          </span>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-orange-100 text-orange-700 border border-orange-200">
+                          FDA Recall
+                        </span>
+                      </div>
+                      
+                      <p className="text-sm text-slate-700 leading-relaxed mb-2">
+                        {recall.description}
+                      </p>
+                      
+                      {recall.suggested_fix && (
+                        <div className="bg-blue-50 rounded p-2 border border-blue-100">
+                          <p className="text-[10px] font-bold uppercase text-blue-700 mb-1">
+                            Biện pháp phòng ngừa:
+                          </p>
+                          <p className="text-xs text-blue-800">
+                            {recall.suggested_fix}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Context Info */}
           <div className="bg-muted/50 rounded-lg p-3">
