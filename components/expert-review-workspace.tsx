@@ -38,6 +38,7 @@ interface ViolationReview {
   confirmed: boolean
   wording_fix: string
   legal_note: string
+  prevention_guide?: string // Only for source_type='recall' - prevention documentation guide
 }
 
 interface RecommendedAction {
