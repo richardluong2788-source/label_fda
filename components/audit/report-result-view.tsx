@@ -650,7 +650,7 @@ function OcrConfidenceBar({ confidence }: { confidence: number }) {
   )
 }
 
-// ────────────────────────────────────────────────────────────
+// ───────────���────────────────────────────────────────────────
 // Mini Confidence Bar (for extraction/legal reasoning)
 // ────────────────────────────────────────────────────────────
 
@@ -1123,17 +1123,6 @@ function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<type
     </div>
   )
 }
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            <MessageSquare className="h-4 w-4" />
-            {t.report.contactExpert || 'Liên hệ chuyên gia Vexim'}
-          </a>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ────────────────────────────────────────────────────────────
 // Import Alert Card
@@ -1324,7 +1313,7 @@ function GeometryViolationCard({ violation, t }: { violation: GeometryViolation;
 
 // ────────────────────────────────────────────────────────────
 // Main Report Result View
-// ────────────────────────────────────────────────────────────
+// ───���────────────────────────────────────────────────────────
 
 interface ReportResultViewProps {
   report: AuditReport
