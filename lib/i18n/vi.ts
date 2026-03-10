@@ -249,7 +249,7 @@ export const vi = {
     conclusionLowDesc: (noFdaData: boolean) => {
       let s = 'Vexim AI không phát hiện vi phạm nghiêm trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR.'
       if (noFdaData) s += ' Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA.'
-      s += ' Sản phẩm có th��� được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.'
+      s += ' Sản phẩm có thể được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.'
       return s
     },
     cfrComplianceDetail: 'CHI TIẾT KIỂM TRA TUÂN THỦ (21 CFR)',
@@ -533,7 +533,7 @@ export const vi = {
     productCosmetic: 'Mỹ phẩm',
     productOTC: 'Dược phẩm không kê đơn (OTC)',
     productTypeNote: 'Ảnh hưởng đến quy định FDA áp dụng',
-    packageShape: 'Hình d���ng bao bì',
+    packageShape: 'Hình dạng bao bì',
     selectPackage: 'Chọn bao bì',
     pkgBottle: 'Chai / Lọ dạng chai',
     pkgBox: 'Hộp',
