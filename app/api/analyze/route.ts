@@ -1599,16 +1599,17 @@ export async function POST(request: Request) {
     const seenIssues = new Map<string, number>() // key -> index in deduplicatedViolations
     
     for (const v of violations) {
-      // Create a unique key based on the core issue (regulation + nutrient/value involved)
+      // Create a unique key based on the core issue - IGNORE category since same nutrient issue can be detected by multiple analyzers
+      // (e.g., nutrition validator + AI mapper might both detect Calories rounding but with different category labels)
       const desc = (v.description || '').toLowerCase()
-      const cat = (v.category || '').toLowerCase()
       
       // Extract the specific nutrient/value being flagged (e.g., "calories 6", "fat 2.3g")
       const nutrientMatch = desc.match(/(calories|fat|sodium|sugar|carb|protein|cholesterol)\s*(?:value\s*)?(\d+\.?\d*)/i)
       const nutrientKey = nutrientMatch ? `${nutrientMatch[1]}:${nutrientMatch[2]}` : ''
       
-      // Key combines category + regulation + specific nutrient to detect duplicates
-      const issueKey = `${cat}|${v.regulation_reference}|${nutrientKey}`.toLowerCase()
+      // Key ONLY combines regulation + specific nutrient (NOT category)
+      // This allows merging of "Calories rounding" detected by both validator and mapper
+      const issueKey = `${v.regulation_reference}|${nutrientKey}`.toLowerCase()
       
       if (nutrientKey && seenIssues.has(issueKey)) {
         // Duplicate found - keep the one with higher confidence or more detail

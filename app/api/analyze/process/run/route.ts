@@ -974,14 +974,15 @@ export async function POST(request: Request) {
 
     const needsExpertReview = violations.some(v => (v.confidence_score ?? 1) < 0.8 || v.citations.length === 0)
     // Deduplicate violations: merge violations about the same issue (e.g., two "Calories rounding" violations)
+    // Ignore category since same nutrient issue can be detected by multiple analyzers with different category labels
     const deduplicatedViolations: typeof violations = []
     const seenIssues = new Map<string, number>()
     for (const v of violations) {
       const desc = (v.description || '').toLowerCase()
-      const cat = (v.category || '').toLowerCase()
       const nutrientMatch = desc.match(/(calories|fat|sodium|sugar|carb|protein|cholesterol)\s*(?:value\s*)?(\d+\.?\d*)/i)
       const nutrientKey = nutrientMatch ? `${nutrientMatch[1]}:${nutrientMatch[2]}` : ''
-      const issueKey = `${cat}|${v.regulation_reference}|${nutrientKey}`.toLowerCase()
+      // Key only uses regulation + nutrient (NOT category) to merge duplicate findings
+      const issueKey = `${v.regulation_reference}|${nutrientKey}`.toLowerCase()
       if (nutrientKey && seenIssues.has(issueKey)) {
         const existingIdx = seenIssues.get(issueKey)!
         const existing = deduplicatedViolations[existingIdx]
