@@ -375,11 +375,14 @@ export function WarningLetterSection({ violations }: WarningLetterSectionProps) 
 }
 
 // ────────────────────────────────────────────────────────────
-// SECTION: Recall Context (Market Intelligence - NOT Violations)
+// SECTION: Recall Context (Market Intelligence - Freemium Model)
 // 
-// IMPORTANT: Recalls are informational context only.
-// They do NOT affect risk score and are displayed with 
-// "THAM KHẢO" (Reference) badge instead of "CẢNH BÁO" (Warning).
+// IMPORTANT: Recalls are market intelligence, NOT violations.
+// They do NOT affect risk score.
+// 
+// FREEMIUM MODEL:
+// - FREE: Summary info (product type, reason, time period)
+// - PAID: Detailed info (company names, corrective actions, FDA response)
 // ────────────────────────────────────────────────────────────
 
 interface RecallSectionProps {
@@ -390,67 +393,107 @@ export function RecallSection({ violations }: RecallSectionProps) {
   const recallItems = violations.filter((v) => v.source_type === 'recall')
   if (recallItems.length === 0) return null
 
+  // Extract summary info for free display
+  const getSummaryInfo = (item: Violation) => {
+    const category = item.category?.replace('Recall Risk: ', '') || 'Unknown'
+    // Extract time period from description if available
+    const timeMatch = item.description?.match(/(\d{4})/g)
+    const timePeriod = timeMatch ? `${timeMatch[0]}${timeMatch.length > 1 ? `-${timeMatch[timeMatch.length - 1]}` : ''}` : 'Gần đây'
+    return { category, timePeriod }
+  }
+
   return (
-    <Card className="p-6 border-slate-200 bg-slate-50/30">
-      <div className="flex items-center justify-between mb-2">
+    <Card className="p-6 border-amber-200 bg-gradient-to-br from-amber-50/50 to-orange-50/30">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <RotateCcw className="h-5 w-5 text-slate-500" />
-          <h2 className="text-xl font-bold text-slate-700">Liên quan đến sản phẩm bị thu hồi</h2>
-          <Badge className="bg-slate-100 text-slate-600 hover:bg-slate-100">
-            {recallItems.length}
+          <div className="rounded-full bg-amber-100 p-1.5">
+            <RotateCcw className="h-5 w-5 text-amber-600" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-800">Cảnh Báo Thị Trường</h2>
+          <Badge className="bg-amber-500 text-white hover:bg-amber-500">
+            {recallItems.length} trường hợp
           </Badge>
+        </div>
+        <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
+          Market Intelligence
+        </Badge>
+      </div>
+
+      {/* Warning Banner */}
+      <div className="rounded-lg border-l-4 border-amber-400 bg-amber-100/60 p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold mb-1 text-amber-900">
+              FDA đang giám sát chặt category này
+            </p>
+            <p className="text-sm leading-relaxed text-amber-800">
+              Phát hiện <strong>{recallItems.length} trường hợp thu hồi</strong> cho sản phẩm tương tự. 
+              Đây là tín hiệu rủi ro thị trường - bạn nên chuẩn bị hồ sơ chứng minh an toàn thực phẩm.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="rounded-lg border-l-4 border-slate-300 bg-slate-100/50 p-4 mb-6">
-        <p className="text-sm font-semibold mb-1 text-slate-700">
-          Thông tin tham khảo từ lịch sử FDA Recall
-        </p>
-        <p className="text-sm leading-relaxed text-slate-600">
-          Đây là thông tin tham khảo từ cơ sở dữ liệu openFDA Recall — <strong>không phải vi phạm CFR</strong>.
-          Nhãn của bạn có một số từ khóa tương đồng với sản phẩm đã bị thu hồi trong quá khứ.
-          Thông tin này <strong>không ảnh hưởng đến mức độ rủi ro</strong> của báo cáo và chỉ mang tính chất tham khảo.
-        </p>
+      {/* Free Summary Cards */}
+      <div className="space-y-3 mb-6">
+        {recallItems.map((item, index) => {
+          const summary = getSummaryInfo(item)
+          return (
+            <Card
+              key={index}
+              className="p-4 border-amber-200/60 bg-white"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="text-xs bg-amber-100 text-amber-700 hover:bg-amber-100">
+                      {summary.category}
+                    </Badge>
+                    <span className="text-xs text-slate-400">|</span>
+                    <span className="text-xs text-slate-500">{summary.timePeriod}</span>
+                  </div>
+                  
+                  {/* Truncated description - free preview */}
+                  <p className="text-sm text-slate-600 line-clamp-2">
+                    {item.description?.slice(0, 150)}...
+                  </p>
+                  
+                  {/* Blurred/Hidden details indicator */}
+                  <div className="mt-3 pt-3 border-t border-dashed border-slate-200">
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      <span className="blur-[3px] select-none">Chi tiết: Company ABC, Recall #12345, Corrective action...</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )
+        })}
       </div>
 
-      <div className="space-y-4">
-        {recallItems.map((item, index) => (
-          <Card
-            key={index}
-            className="p-5 border-slate-200 bg-white"
+      {/* CTA - Upgrade to see full details */}
+      <div className="rounded-xl bg-gradient-to-r from-primary/10 to-blue-500/10 border border-primary/20 p-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1">
+            <h4 className="font-semibold text-slate-800 mb-1">
+              Xem báo cáo đầy đủ + Nhận tư vấn phòng ngừa
+            </h4>
+            <p className="text-sm text-slate-600">
+              Bao gồm: Mã thu hồi FDA, tên công ty vi phạm, biện pháp khắc phục, và hướng dẫn chuẩn bị hồ sơ từ chuyên gia.
+            </p>
+          </div>
+          <a
+            href="https://calendly.com/vexim-consulting/fda-consultation"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors shrink-0"
           >
-            <div className="flex items-start gap-4">
-              <div className="shrink-0">
-                <div className="rounded-full bg-slate-100 p-2">
-                  <RotateCcw className="h-5 w-5 text-slate-500" />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <h3 className="font-semibold text-base text-slate-700">{item.category}</h3>
-                  <Badge className="text-xs bg-slate-500 hover:bg-slate-500 text-white">
-                    THAM KHẢO
-                  </Badge>
-                </div>
-
-                <p className="text-sm mb-3 leading-relaxed text-slate-600">{item.description}</p>
-
-                {item.suggested_fix && (
-                  <div className="bg-slate-50 rounded-lg p-3 mb-3 border border-slate-200">
-                    <p className="text-xs font-medium text-slate-500 mb-1">
-                      KHUYẾN NGHỊ TỪ VEXIM
-                    </p>
-                    <p className="text-xs text-slate-600">{item.suggested_fix}</p>
-                  </div>
-                )}
-
-                <p className="text-xs text-slate-400 mt-3 italic border-t border-slate-100 pt-2">
-                  Đây là thông tin tham khảo từ lịch sử FDA Recall — không phải vi phạm và không ảnh hưởng điểm rủi ro.
-                </p>
-              </div>
-            </div>
-          </Card>
-        ))}
+            Liên hệ chuyên gia Vexim
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        </div>
       </div>
     </Card>
   )
