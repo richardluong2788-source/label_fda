@@ -1278,12 +1278,15 @@ export class ClaimsValidator {
         }
       }
       // ──── FACTUAL CLAIMS ────
-      // Potency (CFU), ingredient count, storage, origin, etc.
+      // Potency (CFU), ingredient count, storage, origin, country of origin, etc.
       // NOTE: Check this BEFORE marketing/third-party claims to avoid misclassification
       else if (
         /\d+\s*(billion|million|billion\s*cfu|million\s*cfu|strains?|diverse|ingredient)/i.test(claimLower) ||
         /made in|origin|country|storage|refrigeration|temperature|contains|ingredient/i.test(claimLower) ||
-        /potency|colony|cfu|billion|million|strain|verified|project|non.?gmo/i.test(claimLower)
+        /potency|colony|cfu|billion|million|strain|verified|project|non.?gmo/i.test(claimLower) ||
+        // Country of origin patterns: "Raw from Sri Lanka", "from [country]", "grown in", "sourced from"
+        /\bfrom\s+[a-z]+/i.test(claimLower) ||
+        /\braw\s+from\b|\bsourced\s+from\b|\bgrown\s+in\b|\bharvested\s+in\b|\bimported\s+from\b/i.test(claimLower)
       ) {
         classification.claim_type = 'FACTUAL'
         classification.status = 'compliant'

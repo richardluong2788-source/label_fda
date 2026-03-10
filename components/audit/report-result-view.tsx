@@ -48,8 +48,9 @@ import { ClaimsValidator, type NutritionFactData } from '@/lib/claims-validator'
 
 type ClaimTooltipInfo = { regulation: string; note: string; needsLabTest?: boolean }
 
-function getClaimTooltips(locale: string): Record<string, ClaimTooltipInfo> {
+function getClaimTooltips(locale: string, productCategory?: string): Record<string, ClaimTooltipInfo> {
   const isVi = locale === 'vi'
+  const isCosmetic = productCategory === 'cosmetic'
   
   return {
     // Gluten Free - 21 CFR 101.91
@@ -248,10 +249,12 @@ function getClaimTooltips(locale: string): Record<string, ClaimTooltipInfo> {
       regulation: isVi ? 'Không có quy định FDA' : 'No FDA regulation',
       note: isVi ? 'FDA không quy định animal testing. Nên có chứng nhận từ Leaping Bunny hoặc PETA.' : 'FDA does not regulate animal testing. Certification from Leaping Bunny or PETA recommended.',
     },
-    // Organic cosmetics
+    // Organic cosmetics / food
     'certified organic': {
       regulation: 'USDA NOP (7 CFR Part 205)',
-      note: isVi ? 'Cosmetics có thể dùng USDA Organic seal nếu đáp ứng tiêu chuẩn food organic.' : 'Cosmetics may use USDA Organic seal if meeting food organic standards.',
+      note: isCosmetic
+        ? (isVi ? 'Cosmetics có thể dùng USDA Organic seal nếu đáp ứng tiêu chuẩn food organic.' : 'Cosmetics may use USDA Organic seal if meeting food organic standards.')
+        : (isVi ? 'Phải có chứng nhận USDA Organic từ USDA-accredited certifying agent.' : 'Must have USDA Organic certification from accredited certifying agent.'),
     },
     // SPF claims
     'spf': {
@@ -1906,7 +1909,7 @@ export function ReportResultView({
                                       </div>
                                     ))}
                                     {unverifiableClaims.map((claim, idx) => {
-                                      const claimTooltips = getClaimTooltips(locale)
+                                      const claimTooltips = getClaimTooltips(locale, report.product_category)
                                       const claimLower = claim.toLowerCase().trim()
                                       const tooltipInfo = claimTooltips[claimLower]
                                       
@@ -2520,14 +2523,14 @@ export function ReportResultView({
                         {t.report.cfr101}
                       </span>
                       
-                      {/* HIDE 21 CFR 701 (Cosmetics) for Dietary Supplements - SHOW DSHEA instead */}
-                      {!(report.product_type === 'dietary_supplement' || report.product_category?.includes('supplement')) && (
+                      {/* 21 CFR 701 (Cosmetics labeling) — ONLY show for cosmetic category */}
+                      {report.product_category === 'cosmetic' && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
                           {t.report.cfr701}
                         </span>
                       )}
                       
-                      {/* Show DSHEA for Dietary Supplements */}
+                      {/* DSHEA 1994 — only for dietary supplements */}
                       {(report.product_type === 'dietary_supplement' || report.product_category?.includes('supplement')) && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
                           {'DSHEA 1994'}
