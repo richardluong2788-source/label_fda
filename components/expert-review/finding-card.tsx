@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +24,80 @@ import {
   Ship,
   Trash2,
 } from 'lucide-react'
+
+// ────────────────────────────────────────────────────────────
+// Helper: Extract recall info from description/regulation_reference
+// For backward compatibility with old data that doesn't have separate fields
+// ────────────────────────────────────────────────────────────
+
+interface ExtractedRecallInfo {
+  recall_number?: string
+  recalling_firm?: string
+  recall_classification?: string
+  recall_reason?: string
+  preventive_action?: string
+}
+
+function extractRecallInfoFromText(finding: {
+  description?: string
+  regulation_reference?: string
+  recall_number?: string
+  recalling_firm?: string
+  recall_classification?: string
+  recall_reason?: string
+  preventive_action?: string
+  suggested_fix?: string
+}): ExtractedRecallInfo {
+  // If already has explicit fields, use them
+  if (finding.recall_number || finding.recalling_firm) {
+    return {
+      recall_number: finding.recall_number,
+      recalling_firm: finding.recalling_firm,
+      recall_classification: finding.recall_classification,
+      recall_reason: finding.recall_reason,
+      preventive_action: finding.preventive_action,
+    }
+  }
+
+  const result: ExtractedRecallInfo = {}
+  const desc = finding.description || ''
+  const ref = finding.regulation_reference || ''
+
+  // Extract recall number: "Recall #H-0434-2026" or "FDA Recall H-0434-2026"
+  const recallMatch = desc.match(/Recall\s*#?(H-\d{4}-\d{4})/i) || ref.match(/FDA\s+Recall\s+(H-\d{4}-\d{4})/i)
+  if (recallMatch) {
+    result.recall_number = recallMatch[1]
+  }
+
+  // Extract company name: "(SUPERFOODS, INC.)" or "(Company Name)"
+  const companyMatch = desc.match(/\(([A-Z][A-Za-z\s,\.]+(?:LLC|INC|Inc|Corp|Co|Ltd)?\.?)\)/i)
+  if (companyMatch) {
+    result.recalling_firm = companyMatch[1].trim()
+  }
+
+  // Extract classification from description: "Class I" / "Class II" / "Class III"
+  const classMatch = desc.match(/Class\s+(I{1,3}|1|2|3)/i)
+  if (classMatch) {
+    const classNum = classMatch[1].toUpperCase()
+    result.recall_classification = classNum === '1' ? 'Class I' : classNum === '2' ? 'Class II' : classNum === '3' ? 'Class III' : `Class ${classNum}`
+  }
+
+  // Extract reason: "Reason: ..." until next sentence
+  const reasonMatch = desc.match(/Reason:\s*([^.]+\.)/i)
+  if (reasonMatch) {
+    result.recall_reason = reasonMatch[1].trim()
+  }
+
+  // Extract preventive action from suggested_fix or description
+  const preventiveMatch = desc.match(/Preventive action:\s*(.+?)(?:\.|$)/i)
+  if (preventiveMatch) {
+    result.preventive_action = preventiveMatch[1].trim()
+  } else if (finding.suggested_fix) {
+    result.preventive_action = finding.suggested_fix
+  }
+
+  return result
+}
 
 // ────────────────────────────────────────────────────────────
 // Local Violation Icon (Expert Review specific)
@@ -123,6 +197,14 @@ export function FindingCard({
   onDelete,
 }: FindingCardProps) {
   const [expanded, setExpanded] = useState(false)
+
+  // Extract recall info from description if not available as separate fields
+  const recallInfo = useMemo(() => {
+    if (finding.source_type === 'recall') {
+      return extractRecallInfoFromText(finding)
+    }
+    return null
+  }, [finding])
 
   const borderClass =
     finding.severity === 'critical'
@@ -253,7 +335,7 @@ export function FindingCard({
       )}
 
       {/* Recall Details Section (for source_type === 'recall') */}
-      {finding.source_type === 'recall' && (finding.recall_number || finding.recalling_firm || finding.preventive_action) && (
+      {finding.source_type === 'recall' && recallInfo && (recallInfo.recall_number || recallInfo.recalling_firm || recallInfo.preventive_action) && (
         <div className="bg-orange-50 rounded-lg p-3 mb-2 border border-orange-200 space-y-2">
           <div className="flex items-center gap-2 mb-2">
             <RotateCcw className="h-4 w-4 text-orange-600" />
@@ -263,31 +345,31 @@ export function FindingCard({
           </div>
           
           {/* Recall Number */}
-          {finding.recall_number && (
+          {recallInfo.recall_number && (
             <div className="flex items-start gap-2">
               <span className="text-xs font-medium text-orange-700 shrink-0 w-32">
                 Recall Number:
               </span>
               <span className="text-xs font-mono text-orange-900 bg-orange-100 px-1.5 py-0.5 rounded">
-                {finding.recall_number}
+                {recallInfo.recall_number}
               </span>
             </div>
           )}
           
           {/* Recalling Firm */}
-          {finding.recalling_firm && (
+          {recallInfo.recalling_firm && (
             <div className="flex items-start gap-2">
               <span className="text-xs font-medium text-orange-700 shrink-0 w-32">
                 Company:
               </span>
               <span className="text-xs text-orange-900">
-                {finding.recalling_firm}
+                {recallInfo.recalling_firm}
               </span>
             </div>
           )}
           
           {/* Classification */}
-          {finding.recall_classification && (
+          {recallInfo.recall_classification && (
             <div className="flex items-start gap-2">
               <span className="text-xs font-medium text-orange-700 shrink-0 w-32">
                 Classification:
@@ -295,32 +377,32 @@ export function FindingCard({
               <Badge 
                 variant="outline" 
                 className={`text-xs ${
-                  finding.recall_classification === 'Class I' 
+                  recallInfo.recall_classification === 'Class I' 
                     ? 'border-red-500 text-red-700 bg-red-50' 
-                    : finding.recall_classification === 'Class II'
+                    : recallInfo.recall_classification === 'Class II'
                       ? 'border-amber-500 text-amber-700 bg-amber-50'
                       : 'border-slate-500 text-slate-700 bg-slate-50'
                 }`}
               >
-                {finding.recall_classification}
+                {recallInfo.recall_classification}
               </Badge>
             </div>
           )}
           
           {/* Recall Reason */}
-          {finding.recall_reason && (
+          {recallInfo.recall_reason && (
             <div className="flex items-start gap-2">
               <span className="text-xs font-medium text-orange-700 shrink-0 w-32">
                 Reason:
               </span>
               <span className="text-xs text-orange-900 leading-relaxed">
-                {finding.recall_reason}
+                {recallInfo.recall_reason}
               </span>
             </div>
           )}
           
           {/* Preventive Action */}
-          {finding.preventive_action && (
+          {recallInfo.preventive_action && (
             <div className="mt-2 pt-2 border-t border-orange-200">
               <div className="flex items-center gap-1.5 mb-1">
                 <AlertTriangle className="h-3 w-3 text-orange-600" />
@@ -329,7 +411,7 @@ export function FindingCard({
                 </span>
               </div>
               <p className="text-xs text-orange-900 bg-white/60 p-2 rounded border border-orange-100 leading-relaxed">
-                {finding.preventive_action}
+                {recallInfo.preventive_action}
               </p>
             </div>
           )}

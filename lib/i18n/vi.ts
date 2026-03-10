@@ -286,9 +286,9 @@ export const vi = {
     },
     conclusionLow: 'Nhãn sản phẩm tuân thủ tốt các quy định FDA.',
     conclusionLowDesc: (noFdaData: boolean) => {
-      let s = 'Vexim AI không phát hi���n vi phạm nghiêm trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR.'
+      let s = 'Vexim AI không phát hiện vi phạm nghiêm trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR.'
       if (noFdaData) s += ' Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA.'
-      s += ' Sản phẩm có th��� được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.'
+      s += ' Sản phẩm có thể được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.'
       return s
     },
     cfrComplianceDetail: 'CHI TIẾT KIỂM TRA TUÂN THỦ (21 CFR)',
@@ -566,14 +566,14 @@ export const vi = {
     productType: 'Loại sản phẩm',
     selectProductType: 'Chọn loại',
     productFood: 'Thực phẩm thông thường',
-    productSupplement: 'Thực phẩm ch���c năng / TPCN',
+    productSupplement: 'Thực phẩm chức năng / TPCN',
     productBeverage: 'Đồ uống',
     productInfant: 'Sữa công thức trẻ em',
     productMedical: 'Thực phẩm y học',
     productCosmetic: 'Mỹ phẩm',
     productOTC: 'Dược phẩm không kê đơn (OTC)',
     productTypeNote: 'Ảnh hưởng đến quy định FDA áp dụng',
-    packageShape: 'Hình d���ng bao bì',
+    packageShape: 'Hình dạng bao bì',
     selectPackage: 'Chọn bao bì',
     pkgBottle: 'Chai / Lọ dạng chai',
     pkgBox: 'Hộp',
@@ -679,7 +679,7 @@ export const vi = {
       { issue: 'Upload 1 ảnh duy nhất chụp toàn bộ hộp sản phẩm', fix: 'Tách riêng từng mặt: mặt trước PDP và bảng Nutrition Facts phải là 2 ảnh riêng. AI phân tích tốt nhất khi mỗi ảnh chỉ chứa 1 loại thông tin.' },
       { issue: 'Ảnh Nutrition Facts bị cắt mất dòng đầu hoặc dòng cuối', fix: 'Toàn bộ bảng từ dòng "Nutrition Facts" đến dòng cuối cùng (thường là Vitamin/Mineral) phải nằm trong một ảnh. Lùi máy ảnh ra xa hơn nếu cần.' },
       { issue: 'Không upload ảnh Ingredients riêng khi ingredient list ở mặt khác bảng Nutrition', fix: 'Nếu danh sách thành phần nằm ở mặt sau hoặc mặt bên, upload thêm 1 ảnh phân loại "Thành phần & Allergens". Không upload = AI không kiểm tra được allergen.' },
-      { issue: 'Để mặc định không chọn Product Category', fix: 'Bật "Tùy chọn nâng cao" và chọn đúng danh mục. Beverage, Dietary Supplement, Infant Food đều có b�� quy định CFR riêng — AI sẽ kiểm tra sai nếu để mặc định.' },
+      { issue: 'Để mặc định không chọn Product Category', fix: 'Bật "Tùy chọn nâng cao" và chọn đúng danh mục. Beverage, Dietary Supplement, Infant Food đều có bộ quy định CFR riêng — AI sẽ kiểm tra sai nếu để mặc định.' },
       { issue: 'Ảnh tên file có dấu tiếng Việt (ảnh nhãn.jpg)', fix: 'Đổi tên file về không dấu trước khi upload: label-front.jpg, nutrition-facts.jpg. Hệ thống đã tự xử lý nhưng để chắc chắn nên đổi tên từ trước.' },
     ],
     checklistTitle: 'Checklist trước khi nhấn Phân tích',
@@ -990,7 +990,7 @@ export const vi = {
     detentionCostValue: '$5.000–15.000',
     detentionCostDesc: 'Phí container, phí lưu bãi, phí trễ tàu — tăng theo từng ngày bị giữ.',
     delayTimeValue: '2–4 tuần',
-    delayTimeDesc: 'Chờ sửa nhãn hoặc vận chuyển về. Mất su���t lên kệ siêu thị, mất buyer.',
+    delayTimeDesc: 'Chờ sửa nhãn hoặc vận chuyển về. Mất suất lên kệ siêu thị, mất buyer.',
     reputationDamageValue: 'Khó phục hồi',
     reputationDamageDesc: 'FDA lưu hồ sơ vi phạm vĩnh viễn. Các lô hàng tiếp theo chắc chắn sẽ bị kiểm tra kỹ hơn.',
     // Comparison table
