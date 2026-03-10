@@ -979,8 +979,24 @@ export async function POST(request: Request) {
     const seenIssues = new Map<string, number>()
     for (const v of violations) {
       const desc = (v.description || '').toLowerCase()
+      const cat = (v.category || '').toLowerCase()
+      const rawLabel = (v.raw_text_on_label || '').toLowerCase()
+      
+      // Pattern 1: Standard format "Calories value 6 does not..."
       const nutrientMatch = desc.match(/(calories|fat|sodium|sugar|carb|protein|cholesterol)\s*(?:value\s*)?(\d+\.?\d*)/i)
-      const nutrientKey = nutrientMatch ? `${nutrientMatch[1]}:${nutrientMatch[2]}` : ''
+      // Pattern 2: Rounding violations with "X kcal" in raw_text_on_label or description
+      const kcalMatch = rawLabel.match(/(\d+\.?\d*)\s*kcal/i) || desc.match(/(\d+\.?\d*)\s*kcal/i)
+      // Pattern 3: Rounding keyword detection (ViolationToCFRMapper uses type: 'rounding')
+      const isRoundingViolation = desc.includes('rounding') || desc.includes('làm tròn') || cat.includes('rounding') || cat.includes('làm tròn')
+      
+      let nutrientKey = ''
+      if (nutrientMatch) {
+        nutrientKey = `${nutrientMatch[1]}:${nutrientMatch[2]}`
+      } else if (kcalMatch && isRoundingViolation) {
+        // Map kcal value to calories rounding key
+        nutrientKey = `calories:${kcalMatch[1]}`
+      }
+      
       // Normalize regulation reference by removing parenthetical sections
       // "21 CFR 101.9(c)(1)" -> "21 cfr 101.9" to match similar regulations
       const normRegulation = (v.regulation_reference || '')
@@ -988,13 +1004,24 @@ export async function POST(request: Request) {
         .replace(/\([a-z0-9)\-]*\)/g, '')
         .replace(/\s+/g, ' ')
         .trim()
-      // Key only uses normalized regulation + nutrient (NOT category) to merge duplicate findings
-      const issueKey = `${normRegulation}|${nutrientKey}`.toLowerCase()
-      if (nutrientKey && seenIssues.has(issueKey)) {
+      
+      // Key uses normalized regulation + nutrient (NOT category) to merge duplicate findings
+      // Also use violation type pattern for rounding violations without explicit nutrient value
+      const typePattern = isRoundingViolation ? 'rounding' : ''
+      const issueKey = nutrientKey 
+        ? `${normRegulation}|${nutrientKey}`.toLowerCase()
+        : (typePattern ? `${normRegulation}|${typePattern}` : `${normRegulation}|${cat}`)
+      
+      if (seenIssues.has(issueKey)) {
         const existingIdx = seenIssues.get(issueKey)!
         const existing = deduplicatedViolations[existingIdx]
-        if ((v.confidence_score ?? 0.5) > (existing.confidence_score ?? 0.5) || 
-            ((v.confidence_score ?? 0.5) === (existing.confidence_score ?? 0.5) && (v.citations?.length ?? 0) > (existing.citations?.length ?? 0))) {
+        // Prefer higher severity, then higher confidence, then more citations
+        const vSeverityRank = v.severity === 'critical' ? 3 : v.severity === 'warning' ? 2 : 1
+        const existingSeverityRank = existing.severity === 'critical' ? 3 : existing.severity === 'warning' ? 2 : 1
+        const shouldReplace = vSeverityRank > existingSeverityRank ||
+          (vSeverityRank === existingSeverityRank && (v.confidence_score ?? 0.5) > (existing.confidence_score ?? 0.5)) ||
+          (vSeverityRank === existingSeverityRank && (v.confidence_score ?? 0.5) === (existing.confidence_score ?? 0.5) && (v.citations?.length ?? 0) > (existing.citations?.length ?? 0))
+        if (shouldReplace) {
           deduplicatedViolations[existingIdx] = v
         }
       } else {
