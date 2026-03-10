@@ -43,40 +43,51 @@ export async function POST(request: Request) {
     )
     .join('\n\n')
 
+  // Count actual violations vs market warnings for summary
+  const actualViolations = findings.filter((f: any) => f.source_type !== 'recall')
+  const recallWarnings = findings.filter((f: any) => f.source_type === 'recall')
+  
   const systemPrompt = `Bạn là chuyên gia tư vấn FDA compliance hàng đầu Việt Nam, chuyên về nhãn mác sản phẩm xuất khẩu sang thị trường ${targetMarket ?? 'US'}.
 
-Nhiệm vụ: Dựa vào danh sách vi phạm AI phát hiện, bạn soạn thảo BẢN NHÁP đầy đủ cho expert review:
+Nhiệm vụ: Dựa vào danh sách phát hiện từ AI, bạn soạn thảo BẢN NHÁP đầy đủ cho expert review.
 
-NGUYÊN TẮC QUAN TRỌNG:
-1. Wording fix phải CỤ THỂ, có thể copy-paste vào nhãn ngay — không chung chung
-2. Legal note phải trích dẫn CHÍNH XÁC điều luật (21 CFR section cụ thể)
-3. Viết bằng tiếng Việt, wording trên nhãn viết bằng tiếng Anh (vì nhãn xuất khẩu)
-4. Nếu vi phạm có confidence thấp hoặc không rõ — đánh dấu confirmed=false và giải thích
-5. Recommended actions phải thực tế, có thể thực hiện ngay
+═══════════════════════════════════════════════════════════════════════════
+NGUYÊN TẮC TỐI QUAN TRỌNG - PHÂN BIỆT 2 LOẠI PHÁT HIỆN:
+═══════════════════════════════════════════════════════════════════════════
 
-PHÂN BIỆT LOẠI PHÁT HIỆN (BẮT BUỘC TUÂN THỦ):
-
-**Loại 1: VI PHẠM THỰC TẾ** (source_type="ai_detected" hoặc "cfr_violation")
-- confirmed = true
-- wording_fix = đề xuất cụ thể, copy-paste được
+📌 **MỤC 1: VI PHẠM THỰC TẾ TRÊN NHÃN** (source_type != "recall")
+- Đây là lỗi thực sự trên nhãn sản phẩm đang kiểm tra
+- confirmed = TRUE nếu vi phạm rõ ràng
+- wording_fix = đề xuất sửa cụ thể, copy-paste được
 - legal_note = trích dẫn CFR cụ thể
+- CÓ ảnh hưởng đến đánh giá tuân thủ
 
-**Loại 2: CẢNH BÁO THỊ TRƯỜNG** (source_type="recall") - QUAN TRỌNG:
-- confirmed = FALSE (BẮT BUỘC) - vì đây KHÔNG PHẢI vi phạm trên nhãn hiện tại
-- wording_fix = "Không áp dụng - đây là cảnh báo thị trường, không phải vi phạm trên nhãn sản phẩm này."
-- legal_note PHẢI bắt đầu bằng: "ĐÂY LÀ CẢNH BÁO THỊ TRƯỜNG THAM KHẢO, không phải vi phạm trên nhãn sản phẩm này. Sản phẩm thuộc category có lịch sử thu hồi tại FDA..." rồi mới đến chi tiết vụ recall.
-- prevention_guide = hướng dẫn phòng ngừa chi tiết bao gồm:
-  1. Kiểm tra lại độ chính xác thông tin thành phần trên nhãn
-  2. Đảm bảo quy trình kiểm soát chất lượng (QC) trước xuất khẩu
-  3. Chuẩn bị hồ sơ chứng minh nguồn gốc nguyên liệu
-  4. Lưu trữ kết quả kiểm nghiệm an toàn thực phẩm (ATTP)
-  5. Liên hệ chuyên gia Vexim để được tư vấn chi tiết
+📌 **MỤC 2: CẢNH BÁO THỊ TRƯỜNG** (source_type = "recall") - RẤT QUAN TRỌNG:
+- Đây là thông tin THAM KHẢO về các sản phẩm CÙNG LOẠI đã bị thu hồi
+- KHÔNG PHẢI vi phạm trên nhãn sản phẩm đang kiểm tra
+- confirmed = FALSE (BẮT BUỘC)
+- wording_fix = "Không áp dụng - đây là cảnh báo thị trường tham khảo."
+- legal_note PHẢI bắt đầu bằng: "⚠️ ĐÂY LÀ CẢNH BÁO THỊ TRƯỜNG THAM KHẢO, không phải lỗi trên nhãn sản phẩm này. Thông tin này cho biết sản phẩm cùng category có lịch sử thu hồi tại FDA..."
+- KHÔNG ảnh hưởng đến đánh giá tuân thủ của nhãn
+
+═══════════════════════════════════════════════════════════════════════════
+HƯỚNG DẪN VIẾT NHẬN XÉT TỔNG QUAN (expertSummary):
+═══════════════════════════════════════════════════════════════════════════
+
+Nhận xét tổng quan PHẢI được viết theo cấu trúc sau:
+
+**Nếu KHÔNG CÓ vi phạm thực tế (chỉ có recall warnings):**
+"Nhãn sản phẩm ${productName ?? 'này'} TUÂN THỦ tốt các quy định FDA. Vexim AI không phát hiện vi phạm nghiêm trọng nào trong quá trình kiểm tra. [Nếu có recall warnings thì thêm:] Lưu ý: Sản phẩm thuộc category có ${recallWarnings.length} vụ thu hồi gần đây tại thị trường Mỹ - đây là thông tin tham khảo để phòng ngừa rủi ro, không phải lỗi trên nhãn hiện tại."
+
+**Nếu CÓ vi phạm thực tế:**
+"Sản phẩm ${productName ?? 'này'} có ${actualViolations.length} vấn đề cần khắc phục trên nhãn: [liệt kê ngắn gọn]. [Chi tiết đề xuất sửa trong từng mục bên dưới.] [Nếu có recall warnings thì thêm:] Ngoài ra, sản phẩm thuộc category có lịch sử thu hồi - xem mục Cảnh báo thị trường để phòng ngừa."
 
 Thông tin sản phẩm:
 - Tên: ${productName ?? 'Không rõ'}
 - Ngành: ${productCategory ?? 'food'}
 - Thị trường: ${targetMarket ?? 'US'}
-- Kết quả AI: ${overallResult ?? 'N/A'}, Risk score: ${overallRiskScore ?? 'N/A'}/10
+- Số vi phạm thực tế trên nhãn: ${actualViolations.length}
+- Số cảnh báo thị trường (tham khảo): ${recallWarnings.length}
 ${userContext ? `- Ghi chú từ khách hàng: "${userContext}"` : ''}`
 
   try {

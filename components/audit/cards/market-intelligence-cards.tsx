@@ -84,8 +84,23 @@ export function CombinedMarketIntelligenceCard({ recalls, warningLetters, import
         </div>
       </div>
 
+      {/* Info Banner - NOT a violation notice */}
+      <div className="mx-5 mt-4 mb-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+        <div className="flex items-start gap-2">
+          <CheckCircle className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-medium text-blue-800">
+              ĐÂY LÀ THÔNG TIN THAM KHẢO - Không phải vi phạm trên nhãn của bạn
+            </p>
+            <p className="text-xs text-blue-700 mt-0.5">
+              Các cảnh báo bên dưới liên quan đến sản phẩm CÙNG LOẠI đã bị thu hồi hoặc cảnh báo. Sử dụng thông tin này để phòng ngừa rủi ro.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Warning Banner */}
-      <div className="mx-5 mt-4 mb-3 p-3 rounded-lg bg-amber-100/80 border border-amber-200">
+      <div className="mx-5 mb-3 p-3 rounded-lg bg-amber-100/80 border border-amber-200">
         <p className="text-sm text-amber-800 font-medium">
           {recalls.length > 0 
             ? (t.report.marketWarningMessage || 'FDA đang giám sát chặt category này. Sản phẩm tương tự đã bị thu hồi.')

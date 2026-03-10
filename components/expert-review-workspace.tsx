@@ -317,10 +317,14 @@ const [violationReviews, setViolationReviews] = useState<ViolationReview[]>(
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Kết quả AI:</span>
-                  <Badge variant={report?.overall_result === 'fail' ? 'destructive' : 'secondary'} className="text-xs">
+                  <Badge variant={report?.overall_result === 'fail' ? 'destructive' : report?.overall_result === 'pass' ? 'secondary' : 'outline'} className={`text-xs ${report?.overall_result === 'pass' ? 'bg-green-100 text-green-700 border-green-200' : ''}`}>
                     {report?.overall_result?.toUpperCase() ?? '—'}
                   </Badge>
                 </div>
+                {/* Note about how result is calculated */}
+                <p className="text-[10px] text-muted-foreground/70 pt-1">
+                  * Kết quả chỉ dựa trên vi phạm nhãn thực tế, không tính cảnh báo thị trường (recalls)
+                </p>
                 {request.user_context && (
                   <div className="pt-2 border-t">
                     <p className="text-xs text-muted-foreground mb-1">Ghi chú từ khách hàng:</p>
@@ -355,10 +359,39 @@ const [violationReviews, setViolationReviews] = useState<ViolationReview[]>(
 
             {/* Danh sách vi phạm — review từng cái */}
             <Card className="p-5">
-              <h2 className="font-semibold mb-4 flex items-center gap-2">
-                <FileText className="h-4 w-4 text-primary" />
-                Vi phạm AI phát hiện ({findings.length})
-              </h2>
+              {(() => {
+                const actualViolations = findings.filter((f: any) => f.source_type !== 'recall')
+                const recallWarnings = findings.filter((f: any) => f.source_type === 'recall')
+                return (
+                  <>
+                    <h2 className="font-semibold mb-4 flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      Vi phạm nhãn ({actualViolations.length})
+                      {recallWarnings.length > 0 && (
+                        <Badge variant="outline" className="ml-2 text-xs bg-amber-50 text-amber-700 border-amber-200">
+                          + {recallWarnings.length} cảnh báo thị trường
+                        </Badge>
+                      )}
+                    </h2>
+                    
+                    {/* Notice about label being compliant if only recalls */}
+                    {actualViolations.length === 0 && recallWarnings.length > 0 && (
+                      <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200">
+                        <div className="flex gap-2 items-start">
+                          <CheckCircle className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-green-800">Nhãn sản phẩm TUÂN THỦ các quy định FDA</p>
+                            <p className="text-xs text-green-700 mt-1">
+                              Không phát hiện vi phạm trên nhãn. Các mục bên dưới là CẢNH BÁO THỊ TRƯỜNG (sản phẩm cùng loại đã bị thu hồi) - 
+                              đây là thông tin tham khảo để phòng ngừa rủi ro, KHÔNG PHẢI lỗi trên nhãn hiện tại.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
 
               {findings.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Không có vi phạm nào được ghi nhận.</p>
@@ -366,26 +399,40 @@ const [violationReviews, setViolationReviews] = useState<ViolationReview[]>(
                 <div className="space-y-4">
                   {findings.map((f: any, i: number) => {
                     const vr = violationReviews[i] ?? { violation_index: i, confirmed: true, wording_fix: '', legal_note: '' }
+                    const isRecall = f.source_type === 'recall'
                     return (
                       <div
                         key={i}
                         className={`rounded-lg border p-4 space-y-3 ${
-                          f.severity === 'critical' ? 'border-red-200 bg-red-50/40' : 'border-amber-200 bg-amber-50/40'
+                          isRecall 
+                            ? 'border-amber-300 bg-amber-50/60' // Recall - distinct amber color
+                            : f.severity === 'critical' 
+                              ? 'border-red-200 bg-red-50/40' 
+                              : 'border-amber-200 bg-amber-50/40'
                         }`}
                       >
                         {/* Header vi phạm */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            {f.severity === 'critical' ? (
+                            {isRecall ? (
+                              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                            ) : f.severity === 'critical' ? (
                               <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
                             ) : (
                               <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
                             )}
                             <span className="font-medium text-sm">{f.category}</span>
                           </div>
-                          <Badge variant={f.severity === 'critical' ? 'destructive' : 'default'} className="text-xs shrink-0">
-                            {f.severity === 'critical' ? 'Critical' : 'Warning'}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            {isRecall && (
+                              <Badge variant="outline" className="text-xs bg-amber-100 text-amber-800 border-amber-300">
+                                Tham khảo
+                              </Badge>
+                            )}
+                            <Badge variant={isRecall ? 'outline' : f.severity === 'critical' ? 'destructive' : 'default'} className="text-xs shrink-0">
+                              {isRecall ? 'Cảnh báo thị trường' : f.severity === 'critical' ? 'Critical' : 'Warning'}
+                            </Badge>
+                          </div>
                         </div>
 
                         <p className="text-xs text-muted-foreground">{f.description}</p>

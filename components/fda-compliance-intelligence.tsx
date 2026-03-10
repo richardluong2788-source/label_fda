@@ -196,8 +196,8 @@ export function FDAComplianceIntelligence({ report, showFullDetails = false, onA
       bgColor: recallCount > 0 ? 'bg-orange-50' : 'bg-green-50',
       borderColor: recallCount > 0 ? 'border-orange-200' : 'border-green-200',
       description: recallCount > 0 
-        ? 'Similar issues found in FDA Recall database'
-        : 'No matching Recalls - product type has clean record',
+        ? 'Sản phẩm cùng loại đã bị thu hồi - THAM KHẢO, không phải lỗi trên nhãn này'
+        : 'Không có sản phẩm tương tự bị thu hồi',
       fdaLink: 'https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts',
       fdaLinkLabel: 'FDA Recalls Database',
     },

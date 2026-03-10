@@ -1048,8 +1048,13 @@ export async function POST(request: Request) {
     const riskResult = calculateOverallRisk({ violations, warningLetterMatches: warningLetterContext, recallMatches: recallContext, importAlertMatches: importAlertContext, extractionConfidence, legalReasoningConfidence })
     violations = riskResult.violationsWithRisk
 
-    const hasCritical = violations.some((v: any) => v.severity === 'critical')
-    const hasWarning  = violations.some((v: any) => v.severity === 'warning')
+    // CRITICAL: When calculating overall result, EXCLUDE recall items
+    // Recalls are "market intelligence" context, NOT confirmed violations of THIS label.
+    // A product should NOT be marked as FAIL just because similar products were recalled.
+    // Only actual violations on THIS label should affect the result.
+    const violationsForResult = violations.filter((v: any) => v.source_type !== 'recall')
+    const hasCritical = violationsForResult.some((v: any) => v.severity === 'critical')
+    const hasWarning  = violationsForResult.some((v: any) => v.severity === 'warning')
     const overallResult = hasCritical ? 'fail' : hasWarning ? 'warning' : 'pass'
     const finalStatus = needsExpertReview ? 'ai_completed' : 'verified'
 
