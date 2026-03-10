@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   const findingsText = findings
     .map(
       (f: any, i: number) =>
-        `[Vi phạm #${i + 1}] Severity: ${f.severity ?? 'unknown'}\nCategory: ${f.category ?? ''}\nDescription: ${f.description ?? ''}\nAI suggested_fix: ${f.suggested_fix ?? 'N/A'}\nRegulation: ${f.regulation_reference ?? 'N/A'}\nConfidence: ${f.confidence_score ?? 'N/A'}`
+        `[${f.source_type === 'recall' ? 'Cảnh báo thị trường' : 'Vi phạm'} #${i + 1}] Severity: ${f.severity ?? 'unknown'}\nCategory: ${f.category ?? ''}\nDescription: ${f.description ?? ''}\nAI suggested_fix: ${f.suggested_fix ?? 'N/A'}\nRegulation: ${f.regulation_reference ?? 'N/A'}\nConfidence: ${f.confidence_score ?? 'N/A'}\nSource Type: ${f.source_type ?? 'ai_detected'}`
     )
     .join('\n\n')
 
@@ -53,6 +53,17 @@ NGUYÊN TẮC QUAN TRỌNG:
 3. Viết bằng tiếng Việt, wording trên nhãn viết bằng tiếng Anh (vì nhãn xuất khẩu)
 4. Nếu vi phạm có confidence thấp hoặc không rõ — đánh dấu confirmed=false và giải thích
 5. Recommended actions phải thực tế, có thể thực hiện ngay
+
+PHÂN BIỆT LOẠI PHÁT HIỆN:
+- source_type="ai_detected" hoặc "cfr_violation": Đây là VI PHẠM THỰC TẾ trên nhãn → cần wording fix cụ thể
+- source_type="recall": Đây là CẢNH BÁO THỊ TRƯỜNG (market intelligence) → sản phẩm HIỆN TẠI không vi phạm, chỉ thuộc category có lịch sử thu hồi
+  + Legal note cho recall phải ghi rõ: "Đây là cảnh báo thị trường tham khảo, không phải vi phạm trên nhãn sản phẩm này. Sản phẩm thuộc category có lịch sử thu hồi, tham khảo vụ [recall info]."
+  + Wording fix cho recall: để trống hoặc ghi "Không áp dụng - đây là cảnh báo thị trường"
+  + Thêm phần HƯỚNG DẪN PHÒNG NGỪA cho recall bao gồm:
+    * Kiểm tra lại độ chính xác thông tin thành phần trên nhãn
+    * Đảm bảo quy trình kiểm soát chất lượng trước xuất khẩu
+    * Chuẩn bị hồ sơ chứng minh nguồn gốc nguyên liệu
+    * Lưu trữ kết quả kiểm nghiệm an toàn thực phẩm
 
 Thông tin sản phẩm:
 - Tên: ${productName ?? 'Không rõ'}
@@ -72,9 +83,10 @@ ${userContext ? `- Ghi chú từ khách hàng: "${userContext}"` : ''}`
           violationReviews: z.array(
             z.object({
               violation_index: z.number().describe('Index vi phạm (bắt đầu từ 0)'),
-              confirmed: z.boolean().describe('true = xác nhận cần sửa, false = không nghiêm trọng/false positive'),
-              wording_fix: z.string().describe('Wording mới đề xuất — cụ thể, copy-paste được. Để trống nếu confirmed=false'),
-              legal_note: z.string().describe('Giải thích pháp lý chi tiết + trích dẫn CFR cụ thể'),
+              confirmed: z.boolean().describe('true = xác nhận cần sửa, false = không nghiêm trọng/false positive. Với recall (cảnh báo thị trường), luôn để false vì đây không phải vi phạm thực tế'),
+              wording_fix: z.string().describe('Wording mới đề xuất — cụ thể, copy-paste được. Để trống nếu confirmed=false hoặc source_type=recall'),
+              legal_note: z.string().describe('Giải thích pháp lý chi tiết + trích dẫn CFR cụ thể. Với recall: ghi rõ "Đây là cảnh báo thị trường tham khảo, sản phẩm thuộc category có lịch sử thu hồi..."'),
+              prevention_guide: z.string().optional().describe('Chỉ áp dụng cho source_type=recall. Hướng dẫn phòng ngừa bao gồm: kiểm tra độ chính xác nhãn, quy trình QC, hồ sơ nguồn gốc nguyên liệu, kết quả kiểm nghiệm ATTP'),
             })
           ),
           recommendedActions: z.array(

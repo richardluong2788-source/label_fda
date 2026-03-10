@@ -38,6 +38,7 @@ interface ViolationReview {
   confirmed: boolean
   wording_fix: string
   legal_note: string
+  prevention_guide?: string // Only for source_type='recall' - prevention documentation guide
 }
 
 interface RecommendedAction {
@@ -68,15 +69,16 @@ export function ExpertReviewWorkspace({
   )
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const labelImageUrl = report?.label_image_url ?? null
-  const [violationReviews, setViolationReviews] = useState<ViolationReview[]>(
-    request.violation_reviews?.length
-      ? request.violation_reviews
-      : findings.map((_: any, i: number) => ({
-          violation_index: i,
-          confirmed: true,
-          wording_fix: '',
-          legal_note: '',
-        }))
+const [violationReviews, setViolationReviews] = useState<ViolationReview[]>(
+  request.violation_reviews?.length
+  ? request.violation_reviews
+  : findings.map((f: any, i: number) => ({
+  violation_index: i,
+  confirmed: f.source_type !== 'recall', // Recall items default to not confirmed (they are market warnings, not violations)
+  wording_fix: '',
+  legal_note: '',
+  prevention_guide: '',
+  }))
   )
   const [recommendedActions, setRecommendedActions] = useState<RecommendedAction[]>(
     request.recommended_actions?.length
@@ -118,6 +120,7 @@ export function ExpertReviewWorkspace({
             confirmed: vr.confirmed ?? true,
             wording_fix: vr.wording_fix ?? '',
             legal_note: vr.legal_note ?? '',
+            prevention_guide: vr.prevention_guide ?? '', // For recall items
           }))
         )
       }
@@ -489,6 +492,26 @@ export function ExpertReviewWorkspace({
                                   disabled={isReadOnly}
                                 />
                               </div>
+                              {/* Prevention Guide - Only for recall items */}
+                              {findings[i]?.source_type === 'recall' && (
+                                <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                                  <Label className="text-xs mb-1 block flex items-center gap-1.5 text-amber-800">
+                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                    Hướng dẫn chuẩn bị hồ sơ phòng ngừa
+                                    {aiDrafted && vr.prevention_guide && (
+                                      <span className="text-[10px] text-green-600 font-normal">(AI soạn)</span>
+                                    )}
+                                  </Label>
+                                  <Textarea
+                                    value={vr.prevention_guide || ''}
+                                    onChange={(e) => updateVR(i, 'prevention_guide', e.target.value)}
+                                    placeholder="Hướng dẫn phòng ngừa: Kiểm tra độ chính xác nhãn, quy trình QC, hồ sơ nguồn gốc nguyên liệu, kết quả kiểm nghiệm ATTP..."
+                                    rows={3}
+                                    className={`text-xs ${aiDrafted && vr.prevention_guide ? 'border-green-300 bg-green-50/50' : 'bg-white'}`}
+                                    disabled={isReadOnly}
+                                  />
+                                </div>
+                              )}
                             </>
                           )}
                         </div>

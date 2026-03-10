@@ -46,6 +46,7 @@ interface ExpertRequest {
     confirmed: boolean
     wording_fix?: string
     legal_note?: string
+    prevention_guide?: string // For recall items - prevention documentation guide
   }>
   recommended_actions?: Array<{
     action: string
@@ -292,6 +293,15 @@ export function ExpertRequestPanel({
                       )}
                       {vr.legal_note && (
                         <p className="mt-2 text-xs text-muted-foreground italic">{vr.legal_note}</p>
+                      )}
+                      {vr.prevention_guide && (
+                        <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                          <p className="text-xs font-medium text-amber-800 mb-1 flex items-center gap-1.5">
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                            {t.expert.preventionGuideTitle || 'Hướng dẫn chuẩn bị hồ sơ phòng ngừa'}
+                          </p>
+                          <p className="text-xs text-amber-700 whitespace-pre-line">{vr.prevention_guide}</p>
+                        </div>
                       )}
                     </div>
                   ))}
