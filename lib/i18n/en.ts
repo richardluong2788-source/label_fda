@@ -454,6 +454,7 @@ export const en: TranslationKeys = {
     statusCancelled: 'Cancelled',
     expertSummaryTitle: 'Expert overview assessment',
     violationFixTitle: 'Fix guidance per violation',
+    preventionGuideTitle: 'Prevention documentation guide',
     violationConfirmed: 'Confirmed - needs fix',
     violationNotSerious: 'Not serious',
     violationIndex: (idx: number) => `Violation #${idx}`,
@@ -1094,7 +1095,7 @@ export const en: TranslationKeys = {
     cancelAnytime: 'Cancel anytime',
     emailSupport: '24/7 email support',
   },
-  // ─── ANALYSIS PROGRESS PAGE ─────────────────────────────────────
+  // ─── ANALYSIS PROGRESS PAGE ─────���───────────────────────────────
   analysisProgress: {
     title: 'Analysis Progress',
     step: 'Step',

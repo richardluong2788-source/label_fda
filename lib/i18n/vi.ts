@@ -454,6 +454,7 @@ export const vi = {
     statusCancelled: 'Đã huỷ',
     expertSummaryTitle: 'Nhận xét tổng quan từ chuyên gia',
     violationFixTitle: 'Hướng dẫn sửa từng vi phạm',
+    preventionGuideTitle: 'Hướng dẫn chuẩn bị hồ sơ phòng ngừa',
     violationConfirmed: 'Xác nhận cần sửa',
     violationNotSerious: 'Không nghiêm trọng',
     violationIndex: (idx: number) => `Vi phạm #${idx}`,
