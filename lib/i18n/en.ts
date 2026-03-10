@@ -165,6 +165,18 @@ export const en: TranslationKeys = {
     freeSummary: 'FREE SUMMARY',
     fullReportIncludes: 'FULL REPORT INCLUDES',
     getFullReport: 'Get Full Report + Consultation',
+    // Recall summary labels
+    recallCategory: 'Category',
+    recallTimePeriod: 'Time Period',
+    recallSignal: 'Signal',
+    recallHighRisk: 'High Risk',
+    recallRecent: 'Recent',
+    recallSameCategory: 'same category',
+    // Recall full report items
+    recallItem1: 'Official FDA recall number',
+    recallItem2: 'Violating company name',
+    recallItem3: 'Detailed corrective actions',
+    recallItem4: 'Prevention documentation guide',
     // Recall teaser and locked content
     recallTeaser: (category: string) => `Recall case found in ${category} category. Details available in expert report.`,
     lockedForExpert: 'Details for experts only',
