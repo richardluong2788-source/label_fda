@@ -72,14 +72,17 @@ export function ExpertReviewWorkspace({
 const [violationReviews, setViolationReviews] = useState<ViolationReview[]>(
   request.violation_reviews?.length
   ? request.violation_reviews
-  : findings.map((f: any, i: number) => ({
-  violation_index: i,
-  confirmed: f.source_type !== 'recall', // Recall items default to not confirmed (they are market warnings, not violations)
-  wording_fix: '',
-  legal_note: '',
-  prevention_guide: '',
-  }))
-  )
+  : findings.map((f: any, i: number) => {
+    const isRecall = f.source_type === 'recall'
+    return {
+      violation_index: i,
+      confirmed: !isRecall, // Recall items default to not confirmed (they are market warnings, not violations)
+      wording_fix: isRecall ? 'Không áp dụng - đây là cảnh báo thị trường, không phải vi phạm trên nhãn sản phẩm này.' : '',
+      legal_note: '',
+      prevention_guide: '',
+    }
+  })
+)
   const [recommendedActions, setRecommendedActions] = useState<RecommendedAction[]>(
     request.recommended_actions?.length
       ? request.recommended_actions
@@ -115,13 +118,20 @@ const [violationReviews, setViolationReviews] = useState<ViolationReview[]>(
       if (draft.expert_summary) setExpertSummary(draft.expert_summary)
       if (draft.violation_reviews?.length) {
         setViolationReviews(
-          draft.violation_reviews.map((vr: any, i: number) => ({
-            violation_index: vr.violation_index ?? i,
-            confirmed: vr.confirmed ?? true,
-            wording_fix: vr.wording_fix ?? '',
-            legal_note: vr.legal_note ?? '',
-            prevention_guide: vr.prevention_guide ?? '', // For recall items
-          }))
+          draft.violation_reviews.map((vr: any, i: number) => {
+            const finding = findings[vr.violation_index ?? i]
+            const isRecall = finding?.source_type === 'recall'
+            return {
+              violation_index: vr.violation_index ?? i,
+              // IMPORTANT: Recall items MUST be confirmed=false (they are market warnings, not violations)
+              confirmed: isRecall ? false : (vr.confirmed ?? true),
+              wording_fix: isRecall 
+                ? (vr.wording_fix || 'Không áp dụng - đây là cảnh báo thị trường, không phải vi phạm trên nhãn sản phẩm này.')
+                : (vr.wording_fix ?? ''),
+              legal_note: vr.legal_note ?? '',
+              prevention_guide: vr.prevention_guide ?? '',
+            }
+          })
         )
       }
       if (draft.recommended_actions?.length) {
