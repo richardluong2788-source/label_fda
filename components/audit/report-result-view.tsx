@@ -931,9 +931,9 @@ function ViolationCard({ violation, index, t, showExpertCta }: { violation: Viol
           <span className="text-xs text-red-700">
             {t.report.criticalNeedsExpert}
           </span>
-          <a href="#expert-request" className="text-xs font-semibold text-red-600 hover:text-red-800 flex items-center gap-1 transition-colors">
-            {t.report.getExpertHelp}
-            <MessageSquare className="h-3 w-3" />
+<a href="#expert-request-panel" onClick={(e) => { e.preventDefault(); document.getElementById('expert-request-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }} className="text-xs font-semibold text-red-600 hover:text-red-800 flex items-center gap-1 transition-colors">
+                {t.report.getExpertHelp}
+                <MessageSquare className="h-3 w-3" />
           </a>
         </div>
       )}
@@ -1068,7 +1068,17 @@ function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<type
             {t.report.recallCTAMessage || 'Để xem chi tiết về các trường hợp thu hồi liên quan (mã thu hồi, công ty, biện pháp khắc phục), vui lòng liên hệ chuyên gia của chúng tôi.'}
           </p>
           <a 
-            href="#expert-request" 
+            href="#expert-request-panel" 
+            onClick={(e) => {
+              e.preventDefault()
+              const panel = document.getElementById('expert-request-panel')
+              if (panel) {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                // Highlight effect
+                panel.classList.add('ring-2', 'ring-primary', 'ring-offset-2')
+                setTimeout(() => panel.classList.remove('ring-2', 'ring-primary', 'ring-offset-2'), 2000)
+              }
+            }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
           >
             <MessageSquare className="h-4 w-4" />
@@ -2714,9 +2724,9 @@ export function ReportResultView({
                     </div>
                   </div>
                   <div className="mt-3 flex items-center justify-end">
-                    <a href="#expert-request" className="text-xs font-semibold text-red-600 hover:text-red-800 flex items-center gap-1">
-                      {t.report.getExpertHelp}
-                      <MessageSquare className="h-3 w-3" />
+<a href="#expert-request-panel" onClick={(e) => { e.preventDefault(); document.getElementById('expert-request-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }} className="text-xs font-semibold text-red-600 hover:text-red-800 flex items-center gap-1">
+              {t.report.getExpertHelp}
+              <MessageSquare className="h-3 w-3" />
                     </a>
                   </div>
                 </div>
