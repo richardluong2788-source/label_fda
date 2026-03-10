@@ -236,6 +236,13 @@ export const vi = {
     riskDescWithAdvisory: (issues: string, advisory: string) => `Nhãn có ${issues} cần được sửa trước khi phân phối. Ngoài ra có ${advisory}.`,
     riskDescAdvisoryOnly: (advisory: string) => `Nhãn có ${advisory} — không ảnh hưởng điểm tuân thủ.`,
     riskDescCompliant: 'Nhãn tuân thủ các quy định FDA được kiểm tra. Rủi ro thấp.',
+    // Risk level detailed descriptions based on score ranges
+    riskDesc_0_2_4: 'Nhãn sản phẩm tuân thủ tốt quy định FDA. Khả năng bị kiểm tra hoặc giữ hàng rất thấp.',
+    riskDesc_2_5_3_9: 'Nhãn có một số lỗi nhỏ không ảnh hưởng đến an toàn. Nên sửa để tăng tính chuyên nghiệp.',
+    riskDesc_4_0_5_4: 'Có các lỗi nhãn cần được sửa. FDA có thể yêu cầu kiểm tra hoặc gửi cảnh báo.',
+    riskDesc_5_5_6_9: 'Nhãn có vấn đề nghiêm trọng. Khả năng cao bị FDA kiểm tra chi tiết hoặc yêu cầu giải trình.',
+    riskDesc_7_0_8_4: 'Nhãn vi phạm nghiêm trọng quy định FDA. Rất có thể bị giữ hàng tại cảng (Detention) và yêu cầu sửa đổi.',
+    riskDesc_8_5_10: 'Nhãn có vi phạm nghiêm trọng về an toàn (thiếu cảnh báo dị ứng, tuyên bố bệnh). Hàng SẼ bị giữ và có thể bị tiêu hủy.',
     generating: 'Đang tạo...',
     exportReport: 'Xuất Báo Cáo',
     labelImages: 'Hình ảnh nhãn',

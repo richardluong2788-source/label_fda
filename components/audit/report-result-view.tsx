@@ -1159,9 +1159,17 @@ export function ReportResultView({
                         }>{riskLabel}</span>
                       </span>
                       <p className="text-sm text-slate-600">
-                        {descParts.length > 0 
-                          ? `${t.report.labelHas} ${descParts.join(', ')} ${t.report.fixBeforeDistribution}`
-                          : t.report.labelCompliant
+                        {riskScore >= 8.5 
+                          ? t.report.riskDesc_8_5_10
+                          : riskScore >= 7
+                            ? t.report.riskDesc_7_0_8_4
+                            : riskScore >= 5.5
+                              ? t.report.riskDesc_5_5_6_9
+                              : riskScore >= 4
+                                ? t.report.riskDesc_4_0_5_4
+                                : riskScore >= 2.5
+                                  ? t.report.riskDesc_2_5_3_9
+                                  : t.report.riskDesc_0_2_4
                         }
                       </p>
                       

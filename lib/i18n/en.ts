@@ -236,6 +236,13 @@ export const en: TranslationKeys = {
     riskDescWithAdvisory: (issues: string, advisory: string) => `Label has ${issues} that need to be fixed before distribution. Additionally, ${advisory}.`,
     riskDescAdvisoryOnly: (advisory: string) => `Label has ${advisory} — does not affect compliance score.`,
     riskDescCompliant: 'Label complies with all FDA regulations checked. Low risk.',
+    // Risk level detailed descriptions based on score ranges
+    riskDesc_0_2_4: 'Product label complies well with FDA regulations. Very low likelihood of inspection or detention.',
+    riskDesc_2_5_3_9: 'Label has some minor issues that don\'t affect safety. Should be fixed to improve professionalism.',
+    riskDesc_4_0_5_4: 'Label has issues that need to be fixed. FDA may request inspection or send a warning.',
+    riskDesc_5_5_6_9: 'Label has significant issues. High likelihood of detailed FDA inspection or explanation request.',
+    riskDesc_7_0_8_4: 'Label seriously violates FDA regulations. Very likely to be detained at port and required to modify.',
+    riskDesc_8_5_10: 'Label has serious safety violations (missing allergen warnings, disease claims). Products WILL be detained and may be destroyed.',
     generating: 'Generating...',
     exportReport: 'Export Report',
     labelImages: 'Label Images',
@@ -1115,7 +1122,7 @@ export const en: TranslationKeys = {
     cancelAnytime: 'Cancel anytime',
     emailSupport: '24/7 email support',
   },
-  // ─── ANALYSIS PROGRESS PAGE ─────���───────────────────────────────
+  // ─── ANALYSIS PROGRESS PAGE ─────���─────────��─────────────────────
   analysisProgress: {
     title: 'Analysis Progress',
     step: 'Step',
