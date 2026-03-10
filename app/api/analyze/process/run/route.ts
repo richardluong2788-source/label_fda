@@ -770,6 +770,21 @@ export async function POST(request: Request) {
     
     console.log('[v0] Recall intelligence (market context, not violations):', recallIntelligence.length)
 
+    // Add recall as violations for similar products in market (for user awareness)
+    for (const recall of recallIntelligence) {
+      violations.push({
+        category: `Recall Risk: ${recall.issue_type}`,
+        severity: recall.classification === 'Class I' ? 'critical' : recall.classification === 'Class II' ? 'warning' : 'info',
+        description: `Similar products have been recalled for ${recall.issue_type.toLowerCase()}. Reason: ${recall.why_recalled}. Recall #${recall.recall_number} (${recall.recalling_firm}). Preventive action: ${recall.preventive_action}`,
+        regulation_reference: `FDA Recall ${recall.recall_number}`,
+        suggested_fix: recall.preventive_action || 'Review recall details and ensure your product does not have similar issues.',
+        citations: [],
+        confidence_score: Math.min(0.9, 0.4 + recall.similarity),
+        source_type: 'recall',
+        recall_number: recall.recall_number,
+      })
+    }
+
     // Import Alert signals - REAL violations when matching country + category
     // These are NOT just "reference" - they indicate real detention risk at US border
     for (const ia of importAlertContext) {
