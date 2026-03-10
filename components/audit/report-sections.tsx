@@ -50,11 +50,11 @@ export function FDAComplianceIntelligenceSection({
 }: FDAComplianceIntelligenceProps) {
   const [expanded, setExpanded] = useState(isExpanded)
   
-  // Count from violations if not provided
-  const violations = report.violations || []
-  const actualImportAlerts = importAlertMatches || violations.filter(v => v.source_type === 'import_alert').length
-  const actualWarningLetters = warningLetterMatches || violations.filter(v => v.source_type === 'warning_letter').length
-  const actualRecalls = recallMatches || violations.filter(v => v.source_type === 'recall').length
+  // Count from violations if not provided - check both 'findings' and 'violations' fields
+  const violations = (report as any).findings || report.violations || []
+  const actualImportAlerts = importAlertMatches || violations.filter((v: any) => v.source_type === 'import_alert').length
+  const actualWarningLetters = warningLetterMatches || violations.filter((v: any) => v.source_type === 'warning_letter').length
+  const actualRecalls = recallMatches || violations.filter((v: any) => v.source_type === 'recall').length
   
   // Determine overall status
   const hasIssues = actualImportAlerts > 0 || actualWarningLetters > 0
@@ -627,7 +627,7 @@ export function CommercialSummarySection({ summary }: CommercialSummaryProps) {
             if (line.startsWith('### ')) {
               return (
                 <h3 key={idx} className="text-base font-bold mt-4 mb-2">
-                  {line.replace(/^### /, '').replace(/[^\w\sÀ-ỹà-ỹ.,;:!?()[\]{}'"\/\-–—&@#%+=<>|\\`~^$*_]/g, '').trim()}
+                  {line.replace(/^### /, '').replace(/[^\w\sÀ-ỹà-ỹ.,;:!?()[\]{}'"\/\-��—&@#%+=<>|\\`~^$*_]/g, '').trim()}
                 </h3>
               )
             }
