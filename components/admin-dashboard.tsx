@@ -446,8 +446,10 @@ function ExpertQueueCard({ request, onAssigned }: { request: any; onAssigned: ()
 
 function RiskReportCard({ report }: { report: any }) {
   const findings = report.findings || []
-  const criticalCount = findings.filter((f: any) => f.severity === 'critical').length
-  const warningCount = findings.filter((f: any) => f.severity === 'warning').length
+  // IMPORTANT: Exclude recall items from counts - they are "market intelligence" only and do NOT affect risk score.
+  const findingsForCount = findings.filter((f: any) => f.source_type !== 'recall')
+  const criticalCount = findingsForCount.filter((f: any) => f.severity === 'critical').length
+  const warningCount = findingsForCount.filter((f: any) => f.severity === 'warning').length
   const productName = report.product_name || report.brand_name || report.file_name || 'Sản phẩm không tên'
   const userEmail = report.user_email || 'Unknown user'
   const riskScore = report.overall_risk_score ?? 0
