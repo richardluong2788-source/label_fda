@@ -83,7 +83,7 @@ FDA Intelligence Summary:
 
   try {
     const result = await generateText({
-      model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
+      model: groq('llama-3.3-70b-versatile'),
       system: systemPrompt,
       prompt: fdaContext 
         ? `Dưới đây là chi tiết FDA intelligence findings:\n\n${fdaContext}\n\nHãy phân tích chi tiết và đưa ra nhận định chuyên gia.`
