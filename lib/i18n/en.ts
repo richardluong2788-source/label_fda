@@ -159,9 +159,24 @@ export const en: TranslationKeys = {
     recallReferenceNote: 'This is market intelligence data for reference only — not a violation, does not affect risk score.',
     recallsReferenceSection: 'MARKET WARNING',
     marketIntelligence: 'Market Intelligence',
-    // Freemium Model - Recall section
+    // Freemium Model - Market Intelligence section (Recall, Warning Letter, Import Alert)
     marketWarningTitle: 'Market Warning',
     marketWarningMessage: 'FDA is closely monitoring this category. Similar products have been recalled.',
+    // Warning Letter Market Intelligence
+    warningLetterMarketMessage: 'Label contains language similar to FDA Warning Letter cases.',
+    warningLetterBadge: 'FDA Warning Letter',
+    warningLetterItem1: 'Original Warning Letter reference',
+    warningLetterItem2: 'Specific violating language',
+    warningLetterItem3: 'FDA-required corrective actions',
+    warningLetterItem4: 'Guidance to avoid repeat violations',
+    // Import Alert Market Intelligence  
+    importAlertMarketMessage: 'Product or manufacturer on FDA Import Alert list.',
+    importAlertBadge: 'FDA Import Alert',
+    importAlertItem1: 'Official Import Alert number',
+    importAlertItem2: 'Reason for listing',
+    importAlertItem3: 'DWPE procedure explanation',
+    importAlertItem4: 'Border clearance guidance',
+    // Common Market Intelligence
     freeSummary: 'FREE SUMMARY',
     fullReportIncludes: 'FULL REPORT INCLUDES',
     getFullReport: 'Get Full Report + Consultation',
@@ -177,6 +192,11 @@ export const en: TranslationKeys = {
     recallItem2: 'Violating company name',
     recallItem3: 'Detailed corrective actions',
     recallItem4: 'Prevention documentation guide',
+    // Combined Market Intelligence labels
+    recallBadge: 'FDA Recall',
+    recallsFound: 'related recalls',
+    warningLettersFound: 'similar warning letters',
+    importAlertsFound: 'import alerts',
     // Recall teaser and locked content
     recallTeaser: (category: string) => `Recall case found in ${category} category. Details available in expert report.`,
     lockedForExpert: 'Details for experts only',

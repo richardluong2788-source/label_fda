@@ -158,9 +158,24 @@ export const vi = {
   recallReferenceNote: 'Đây là dữ liệu lịch sử thị trường để tham khảo — không phải vi phạm, không ảnh hưởng điểm rủi ro.',
   recallsReferenceSection: 'CẢNH BÁO THỊ TRƯỜNG',
   marketIntelligence: 'Market Intelligence',
-  // Freemium Model - Recall section
+  // Freemium Model - Market Intelligence section (Recall, Warning Letter, Import Alert)
   marketWarningTitle: 'Cảnh Báo Thị Trường',
   marketWarningMessage: 'FDA đang giám sát chặt category này. Sản phẩm tương tự đã bị thu hồi.',
+  // Warning Letter Market Intelligence
+  warningLetterMarketMessage: 'Nhãn có ngôn ngữ tương tự đã bị FDA gửi Warning Letter.',
+  warningLetterBadge: 'FDA Warning Letter',
+  warningLetterItem1: 'Mã Warning Letter gốc',
+  warningLetterItem2: 'Ngôn ngữ vi phạm cụ thể',
+  warningLetterItem3: 'Hành động khắc phục được FDA yêu cầu',
+  warningLetterItem4: 'Hướng dẫn phòng tránh lặp lại',
+  // Import Alert Market Intelligence  
+  importAlertMarketMessage: 'Sản phẩm hoặc nhà sản xuất có trong danh sách Import Alert.',
+  importAlertBadge: 'FDA Import Alert',
+  importAlertItem1: 'Số Import Alert chính thức',
+  importAlertItem2: 'Lý do bị đưa vào danh sách',
+  importAlertItem3: 'Quy trình DWPE giải thích chi tiết',
+  importAlertItem4: 'Hướng dẫn vượt qua kiểm tra biên giới',
+  // Common Market Intelligence
   freeSummary: 'TÓM TẮT MIỄN PHÍ',
   fullReportIncludes: 'BÁO CÁO ĐẦY ĐỦ BAO GỒM',
   getFullReport: 'Nhận báo cáo đầy đủ + Tư vấn',
@@ -176,6 +191,11 @@ export const vi = {
   recallItem2: 'Tên công ty vi phạm',
   recallItem3: 'Biện pháp khắc phục chi tiết',
   recallItem4: 'Hướng dẫn chuẩn bị hồ sơ phòng ngừa',
+  // Combined Market Intelligence labels
+  recallBadge: 'FDA Recall',
+  recallsFound: 'thu hồi liên quan',
+  warningLettersFound: 'warning letter tương tự',
+  importAlertsFound: 'import alert',
   // Recall teaser and locked content
   recallTeaser: (category: string) => `Phát hiện trường hợp thu hồi liên quan trong danh mục ${category}. Chi tiết được cung cấp trong báo cáo chuyên gia.`,
   lockedForExpert: 'Chi tiết dành cho chuyên gia',
@@ -259,7 +279,7 @@ export const vi = {
     },
     conclusionLow: 'Nhãn sản phẩm tuân thủ tốt các quy định FDA.',
     conclusionLowDesc: (noFdaData: boolean) => {
-      let s = 'Vexim AI không phát hiện vi phạm nghiêm trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR.'
+      let s = 'Vexim AI không phát hi���n vi phạm nghiêm trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR.'
       if (noFdaData) s += ' Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA.'
       s += ' Sản phẩm có th��� được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.'
       return s
@@ -652,7 +672,7 @@ export const vi = {
       { issue: 'Upload 1 ảnh duy nhất chụp toàn bộ hộp sản phẩm', fix: 'Tách riêng từng mặt: mặt trước PDP và bảng Nutrition Facts phải là 2 ảnh riêng. AI phân tích tốt nhất khi mỗi ảnh chỉ chứa 1 loại thông tin.' },
       { issue: 'Ảnh Nutrition Facts bị cắt mất dòng đầu hoặc dòng cuối', fix: 'Toàn bộ bảng từ dòng "Nutrition Facts" đến dòng cuối cùng (thường là Vitamin/Mineral) phải nằm trong một ảnh. Lùi máy ảnh ra xa hơn nếu cần.' },
       { issue: 'Không upload ảnh Ingredients riêng khi ingredient list ở mặt khác bảng Nutrition', fix: 'Nếu danh sách thành phần nằm ở mặt sau hoặc mặt bên, upload thêm 1 ảnh phân loại "Thành phần & Allergens". Không upload = AI không kiểm tra được allergen.' },
-      { issue: 'Để mặc định không chọn Product Category', fix: 'Bật "Tùy chọn nâng cao" và chọn đúng danh mục. Beverage, Dietary Supplement, Infant Food đều có bộ quy định CFR riêng — AI sẽ kiểm tra sai nếu để mặc định.' },
+      { issue: 'Để mặc định không chọn Product Category', fix: 'Bật "Tùy chọn nâng cao" và chọn đúng danh mục. Beverage, Dietary Supplement, Infant Food đều có b�� quy định CFR riêng — AI sẽ kiểm tra sai nếu để mặc định.' },
       { issue: 'Ảnh tên file có dấu tiếng Việt (ảnh nhãn.jpg)', fix: 'Đổi tên file về không dấu trước khi upload: label-front.jpg, nutrition-facts.jpg. Hệ thống đã tự xử lý nhưng để chắc chắn nên đổi tên từ trước.' },
     ],
     checklistTitle: 'Checklist trước khi nhấn Phân tích',
@@ -1040,7 +1060,7 @@ export const vi = {
     infoCount: 'Thông tin',
   },
 
-  // ─── Language ────────────────────────────────────────
+  // ─── Language ───────────────────────��────────────────
   language: {
     vi: 'Tiếng Việt',
     en: 'English',

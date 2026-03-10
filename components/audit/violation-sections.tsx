@@ -249,7 +249,14 @@ export function CFRViolationsSection({ violations }: CFRViolationsSectionProps) 
 }
 
 // ────────────────────────────────────────────────────────────
-// SECTION: Warning Letter Patterns
+// SECTION: Warning Letter Patterns (Market Intelligence - Freemium Model)
+// 
+// IMPORTANT: Warning Letters are market intelligence, NOT violations.
+// They do NOT affect risk score.
+// 
+// FREEMIUM MODEL:
+// - FREE: Summary info (category, warning type)
+// - PAID: Detailed info (warning letter ID, specific language, corrective actions)
 // ────────────────────────────────────────────────────────────
 
 interface WarningLetterSectionProps {
@@ -257,119 +264,107 @@ interface WarningLetterSectionProps {
 }
 
 export function WarningLetterSection({ violations }: WarningLetterSectionProps) {
+  const { t } = useTranslation()
   const wlViolations = violations.filter((v) => v.source_type === 'warning_letter')
   if (wlViolations.length === 0) return null
 
+  // Extract summary info for free display
+  const getSummaryInfo = (item: Violation) => {
+    const category = item.category?.replace('Warning Letter: ', '') || 'Labeling Issue'
+    const severity = item.severity === 'critical' ? t.report.riskHigh || 'High Risk' : t.report.riskMedium || 'Medium Risk'
+    return { category, severity }
+  }
+
   return (
-    <Card className="p-6 border-purple-200">
-      <div className="flex items-center justify-between mb-2">
+    <Card className="p-6 border-amber-200 bg-gradient-to-br from-amber-50/50 to-orange-50/30">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Mail className="h-5 w-5 text-purple-600" />
-          <h2 className="text-xl font-bold">Mẫu Cảnh báo FDA (Warning Letter)</h2>
-          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">
-            {wlViolations.length} mẫu phát hiện
+          <div className="rounded-full bg-amber-100 p-1.5">
+            <Mail className="h-5 w-5 text-amber-600" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-800">{t.report.marketWarningTitle || 'Market Warning'}</h2>
+          <Badge className="bg-amber-500 text-white hover:bg-amber-500">
+            {wlViolations.length}
           </Badge>
+        </div>
+        <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
+          {t.report.marketIntelligence || 'Market Intelligence'}
+        </Badge>
+      </div>
+
+      {/* Warning Banner */}
+      <div className="rounded-lg border-l-4 border-amber-400 bg-amber-100/60 p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold mb-1 text-amber-900">
+              {t.report.warningLetterMarketMessage || 'Label contains language similar to FDA Warning Letter cases.'}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="rounded-lg bg-purple-50 border-l-4 border-purple-400 p-4 mb-6">
-        <p className="text-sm font-semibold text-purple-900 mb-1">
-          Dựa trên lịch sử FDA Warning Letters thực tế
-        </p>
-        <p className="text-sm text-purple-800 leading-relaxed">
-          Các mục này không phải vi phạm CFR mới — chúng là{' '}
-          <span className="font-medium">mẫu lỗi lặp lại</span> mà FDA đã gửi Warning Letter
-          cho các doanh nghiệp khác với ngôn ngữ tương tự. Đây là tín hiệu rủi ro enforcement
-          cao. Không ảnh hưởng đến mức độ rủi ro tổng thể của nhãn.
-        </p>
+      {/* Free Summary Cards */}
+      <div className="space-y-3 mb-6">
+        {wlViolations.map((item, index) => {
+          const summary = getSummaryInfo(item)
+          return (
+            <Card
+              key={index}
+              className="p-4 border-amber-200/60 bg-white"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="text-xs bg-purple-100 text-purple-700 hover:bg-purple-100">
+                      {t.report.warningLetterBadge || 'FDA Warning Letter'}
+                    </Badge>
+                    <span className="text-xs text-slate-400">|</span>
+                    <Badge variant="outline" className="text-xs">
+                      {summary.category}
+                    </Badge>
+                  </div>
+                  
+                  {/* Truncated description - free preview */}
+                  <p className="text-sm text-slate-600 line-clamp-2">
+                    {item.description?.slice(0, 150)}...
+                  </p>
+                  
+                  {/* Blurred/Hidden details indicator */}
+                  <div className="mt-3 pt-3 border-t border-dashed border-slate-200">
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      <span className="blur-[3px] select-none">{t.report.lockedForExpert || 'Details for experts only'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )
+        })}
       </div>
 
-      <div className="space-y-4">
-        {wlViolations.map((violation, index) => (
-          <Card
-            key={index}
-            className={`p-5 border-purple-200 bg-purple-50/40 ${
-              violation.severity === 'critical' ? 'border-l-4 border-l-purple-500' : ''
-            }`}
+      {/* CTA - Upgrade to see full details */}
+      <div className="rounded-xl bg-gradient-to-r from-primary/10 to-blue-500/10 border border-primary/20 p-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1">
+            <h4 className="font-semibold text-slate-800 mb-1">
+              {t.report.getFullReport || 'Get Full Report + Consultation'}
+            </h4>
+            <p className="text-sm text-slate-600">
+              {t.report.warningLetterItem1 || 'Original Warning Letter reference'}, {t.report.warningLetterItem3 || 'FDA-required corrective actions'}
+            </p>
+          </div>
+          <a
+            href="https://calendly.com/vexim-consulting/fda-consultation"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors shrink-0"
           >
-            <div className="flex items-start gap-4">
-              <div className="shrink-0">
-                <div className="rounded-full bg-purple-100 p-2">
-                  <Mail className="h-5 w-5 text-purple-600" />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <h3 className="font-semibold text-base">{violation.category}</h3>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge className="bg-purple-600 hover:bg-purple-600 text-background text-xs">
-                      Warning Letter
-                    </Badge>
-                    <Badge
-                      variant={violation.severity === 'critical' ? 'destructive' : 'outline'}
-                      className="text-xs"
-                    >
-                      {violation.severity === 'critical' ? 'Nghiêm trọng' : 'Cảnh báo'}
-                    </Badge>
-                  </div>
-                </div>
-
-                <p className="text-sm mb-3 leading-relaxed">{violation.description}</p>
-
-                {violation.regulation_reference && (
-                  <div className="bg-purple-100/60 rounded-lg p-3 mb-3">
-                    <p className="text-xs font-medium text-purple-900 mb-0.5">
-                      Điều khoản liên quan:
-                    </p>
-                    <p className="text-xs font-mono text-purple-800">
-                      {violation.regulation_reference}
-                    </p>
-                  </div>
-                )}
-
-                {violation.suggested_fix && (
-                  <div className="bg-info/10 rounded-lg p-3 mb-3">
-                    <p className="text-xs font-medium text-info mb-1">
-                      Hướng dẫn khắc phục:
-                    </p>
-                    <p className="text-xs text-info/80">{violation.suggested_fix}</p>
-                  </div>
-                )}
-
-                {violation.warning_letter_id && (
-                  <a
-                    href={`https://www.fda.gov/inspections-compliance-enforcement-and-criminal-investigations/warning-letters/${violation.warning_letter_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-purple-700 hover:underline"
-                  >
-                    Xem Warning Letter gốc trên FDA.gov{' '}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
-
-                {violation.confidence_score !== undefined && (
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-muted-foreground">
-                        Mức tương đồng với Warning Letter:
-                      </span>
-                      <span className="font-medium">
-                        {Math.round(violation.confidence_score * 100)}%
-                      </span>
-                    </div>
-                    <Progress value={violation.confidence_score * 100} className="h-1" />
-                  </div>
-                )}
-
-                <p className="text-xs text-muted-foreground mt-3 italic border-t pt-2">
-                  Nguồn: Lịch sử Warning Letter của FDA — đây là tín hiệu rủi ro, không phải vi
-                  phạm CFR trực tiếp.
-                </p>
-              </div>
-            </div>
-          </Card>
-        ))}
+            {t.report.contactExpert || 'Contact Vexim Expert'}
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        </div>
       </div>
     </Card>
   )
@@ -641,7 +636,14 @@ export function RecallSectionLegacy({ violations }: RecallSectionProps) {
 }
 
 // ────────────────────────────────────────────────────────────
-// SECTION: Import Alert Border Risk
+// SECTION: Import Alert Border Risk (Market Intelligence - Freemium Model)
+// 
+// IMPORTANT: Import Alerts are market intelligence, NOT violations.
+// They do NOT affect risk score.
+// 
+// FREEMIUM MODEL:
+// - FREE: Summary info (alert type, country/region)
+// - PAID: Detailed info (import alert number, DWPE guidance, clearance steps)
 // ────────────────────────────────────────────────────────────
 
 interface ImportAlertSectionProps {
@@ -649,152 +651,281 @@ interface ImportAlertSectionProps {
 }
 
 export function ImportAlertSection({ violations }: ImportAlertSectionProps) {
+  const { t } = useTranslation()
   const importAlertViolations = violations.filter((v) => v.source_type === 'import_alert')
   if (importAlertViolations.length === 0) return null
 
-  const hasCritical = importAlertViolations.some((v) => v.severity === 'critical')
+  // Extract summary info for free display
+  const getSummaryInfo = (item: Violation) => {
+    const category = item.category?.replace('Import Alert: ', '') || 'Border Risk'
+    const severity = item.severity === 'critical' ? 'DWPE Risk' : 'Import Risk'
+    return { category, severity }
+  }
 
   return (
-    <Card className={`p-6 ${hasCritical ? 'border-destructive/30' : 'border-warning/30'}`}>
-      <div className="flex items-center justify-between mb-2">
+    <Card className="p-6 border-amber-200 bg-gradient-to-br from-amber-50/50 to-orange-50/30">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Ship
-            className={`h-5 w-5 ${hasCritical ? 'text-destructive' : 'text-warning'}`}
-          />
-          <h2 className="text-xl font-bold">Rủi ro Thông quan Biên giới</h2>
-          <Badge
-            className={`${
-              hasCritical
-                ? 'bg-destructive hover:bg-destructive'
-                : 'bg-warning hover:bg-warning'
-            } text-background`}
-          >
-            {importAlertViolations.length} Import Alert
+          <div className="rounded-full bg-amber-100 p-1.5">
+            <Ship className="h-5 w-5 text-amber-600" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-800">{t.report.marketWarningTitle || 'Market Warning'}</h2>
+          <Badge className="bg-amber-500 text-white hover:bg-amber-500">
+            {importAlertViolations.length}
           </Badge>
+        </div>
+        <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
+          {t.report.marketIntelligence || 'Market Intelligence'}
+        </Badge>
+      </div>
+
+      {/* Warning Banner */}
+      <div className="rounded-lg border-l-4 border-amber-400 bg-amber-100/60 p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold mb-1 text-amber-900">
+              {t.report.importAlertMarketMessage || 'Product or manufacturer on FDA Import Alert list.'}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div
-        className={`rounded-lg border-l-4 p-4 mb-6 ${
-          hasCritical
-            ? 'bg-destructive/5 border-destructive'
-            : 'bg-warning/10 border-warning'
-        }`}
-      >
-        <p
-          className={`text-sm font-semibold mb-1 ${
-            hasCritical ? 'text-destructive' : 'text-warning-foreground'
-          }`}
-        >
-          Quan trọng: Nhãn đúng luật không đảm bảo hàng qua cảng
-        </p>
-        <p
-          className={`text-sm leading-relaxed ${
-            hasCritical ? 'text-destructive/80' : 'text-warning-foreground/80'
-          }`}
-        >
-          Nhãn của bạn có thể <span className="font-medium">đạt</span> toàn bộ kiểm tra CFR
-          bên trên, nhưng hàng hóa vẫn có nguy cơ bị giữ tại cảng Mỹ (DWPE — Detention Without
-          Physical Examination) nếu sản phẩm hoặc nhà sản xuất thuộc diện Import Alert của FDA.
-          Đây là rủi ro biên giới độc lập với tuân thủ nhãn.
-        </p>
+      {/* Free Summary Cards */}
+      <div className="space-y-3 mb-6">
+        {importAlertViolations.map((item, index) => {
+          const summary = getSummaryInfo(item)
+          return (
+            <Card
+              key={index}
+              className="p-4 border-amber-200/60 bg-white"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="text-xs bg-cyan-100 text-cyan-700 hover:bg-cyan-100">
+                      {t.report.importAlertBadge || 'FDA Import Alert'}
+                    </Badge>
+                    <span className="text-xs text-slate-400">|</span>
+                    <Badge variant="outline" className="text-xs">
+                      {summary.category}
+                    </Badge>
+                  </div>
+                  
+                  {/* Truncated description - free preview */}
+                  <p className="text-sm text-slate-600 line-clamp-2">
+                    {item.description?.slice(0, 150)}...
+                  </p>
+                  
+                  {/* Blurred/Hidden details indicator */}
+                  <div className="mt-3 pt-3 border-t border-dashed border-slate-200">
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      <span className="blur-[3px] select-none">{t.report.lockedForExpert || 'Details for experts only'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )
+        })}
       </div>
 
-      <div className="space-y-4">
-        {importAlertViolations.map((violation, index) => (
-          <Card
-            key={index}
-            className={`p-6 ${
-              violation.severity === 'critical'
-                ? 'border-destructive/30 bg-destructive/5'
-                : 'border-warning/30 bg-warning/5'
-            }`}
+      {/* CTA - Upgrade to see full details */}
+      <div className="rounded-xl bg-gradient-to-r from-primary/10 to-blue-500/10 border border-primary/20 p-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1">
+            <h4 className="font-semibold text-slate-800 mb-1">
+              {t.report.getFullReport || 'Get Full Report + Consultation'}
+            </h4>
+            <p className="text-sm text-slate-600">
+              {t.report.importAlertItem1 || 'Official Import Alert number'}, {t.report.importAlertItem4 || 'Border clearance guidance'}
+            </p>
+          </div>
+          <a
+            href="https://calendly.com/vexim-consulting/fda-consultation"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors shrink-0"
           >
-            <div className="flex items-start gap-4">
-              <div className="shrink-0">
-                <div
-                  className={`rounded-full p-2 ${
-                    violation.severity === 'critical'
-                      ? 'bg-destructive/10'
-                      : 'bg-warning/10'
-                  }`}
-                >
-                  <Ship
-                    className={`h-5 w-5 ${
-                      violation.severity === 'critical'
-                        ? 'text-destructive'
-                        : 'text-warning'
-                    }`}
-                  />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-4 mb-2">
-                  <h3 className="font-semibold text-base">{violation.category}</h3>
-                  <Badge
-                    className={`text-xs ${
-                      violation.severity === 'critical'
-                        ? 'bg-destructive hover:bg-destructive'
-                        : 'bg-warning hover:bg-warning'
-                    } text-background`}
-                  >
-                    {violation.severity === 'critical' ? 'Rủi ro DWPE' : 'Rủi ro Nhập khẩu'}
-                  </Badge>
-                </div>
+            {t.report.contactExpert || 'Contact Vexim Expert'}
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        </div>
+      </div>
+    </Card>
+  )
+}
 
-                <p className="text-sm mb-3 leading-relaxed">{violation.description}</p>
+// ────────────────────────────────────────────────────────────
+// SECTION: Combined Market Intelligence (Freemium Model)
+// 
+// Consolidates Recalls, Warning Letters, Import Alerts into ONE card
+// ────────────────────────────────────────────────────────────
 
-                {violation.regulation_reference && (
-                  <div
-                    className={`rounded-lg p-3 mb-3 flex items-center gap-2 ${
-                      violation.severity === 'critical'
-                        ? 'bg-destructive/10'
-                        : 'bg-warning/10'
-                    }`}
-                  >
-                    <p className="text-xs font-mono font-medium flex-1">
-                      {violation.regulation_reference}
-                    </p>
-                    {violation.import_alert_number && (
-                      <a
-                        href={`https://www.accessdata.fda.gov/cms_ia/ialist.html#${violation.import_alert_number}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline flex items-center gap-1 shrink-0"
-                      >
-                        Xem trên FDA.gov <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-                  </div>
-                )}
+interface CombinedMarketIntelligenceSectionProps {
+  violations: Violation[]
+}
 
-                {violation.suggested_fix && (
-                  <div className="bg-info/10 rounded-lg p-3 mb-3">
-                    <p className="text-xs font-medium text-info mb-1">Khuyến nghị:</p>
-                    <p className="text-xs text-info/80">{violation.suggested_fix}</p>
-                  </div>
-                )}
+export function CombinedMarketIntelligenceSection({ violations }: CombinedMarketIntelligenceSectionProps) {
+  const { t } = useTranslation()
+  
+  const recalls = violations.filter((v) => v.source_type === 'recall')
+  const warningLetters = violations.filter((v) => v.source_type === 'warning_letter')
+  const importAlerts = violations.filter((v) => v.source_type === 'import_alert')
+  
+  const totalCount = recalls.length + warningLetters.length + importAlerts.length
+  if (totalCount === 0) return null
 
-                {violation.confidence_score !== undefined && (
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-muted-foreground">Mức liên quan:</span>
-                      <span className="font-medium">
-                        {Math.round(violation.confidence_score * 100)}%
-                      </span>
-                    </div>
-                    <Progress value={violation.confidence_score * 100} className="h-1" />
-                  </div>
-                )}
+  // Extract unique categories for each type
+  const getCategories = (items: Violation[], prefix: string) => {
+    const categories = items.map(v => v.category?.replace(`${prefix}: `, '') || 'Unknown')
+    return [...new Set(categories)].slice(0, 2)
+  }
 
-                <p className="text-xs text-muted-foreground mt-3 italic border-t pt-2">
-                  Import Alert là tín hiệu rủi ro biên giới — không phải vi phạm CFR trực tiếp.
-                  Không được tính vào mức rủi ro tổng thể của nhãn.
+  const recallCategories = getCategories(recalls, 'Recall')
+  const wlCategories = getCategories(warningLetters, 'Warning Letter')
+  const iaCategories = getCategories(importAlerts, 'Import Alert')
+
+  return (
+    <Card className="p-6 border-amber-200 bg-gradient-to-br from-amber-50/50 to-orange-50/30">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="rounded-full bg-amber-100 p-1.5">
+            <AlertTriangle className="h-5 w-5 text-amber-600" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-800">{t.report.marketWarningTitle || 'Cảnh Báo Thị Trường'}</h2>
+          <Badge className="bg-amber-500 text-white hover:bg-amber-500">
+            {totalCount}
+          </Badge>
+        </div>
+        <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
+          {t.report.marketIntelligence || 'Market Intelligence'}
+        </Badge>
+      </div>
+
+      {/* Badges for each type */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {recalls.length > 0 && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-red-500 text-white">
+            {t.report.recallBadge || 'FDA Recall'} ({recalls.length})
+          </span>
+        )}
+        {warningLetters.length > 0 && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-purple-500 text-white">
+            {t.report.warningLetterBadge || 'Warning Letter'} ({warningLetters.length})
+          </span>
+        )}
+        {importAlerts.length > 0 && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-cyan-500 text-white">
+            {t.report.importAlertBadge || 'Import Alert'} ({importAlerts.length})
+          </span>
+        )}
+      </div>
+
+      {/* Warning Banner */}
+      <div className="rounded-lg border-l-4 border-amber-400 bg-amber-100/60 p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-sm font-semibold text-amber-900">
+            {recalls.length > 0 
+              ? (t.report.marketWarningMessage || 'FDA đang giám sát chặt category này. Sản phẩm tương tự đã bị thu hồi.')
+              : warningLetters.length > 0
+              ? (t.report.warningLetterMarketMessage || 'Nhãn có ngôn ngữ tương tự đã bị FDA gửi Warning Letter.')
+              : (t.report.importAlertMarketMessage || 'Sản phẩm hoặc nhà sản xuất có trong danh sách Import Alert.')}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* LEFT: Free summary */}
+        <div className="space-y-4">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+            {t.report.freeSummary || 'TÓM TẮT MIỄN PHÍ'}
+          </p>
+          
+          {recalls.length > 0 && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-white/60 border border-amber-200/60">
+              <RotateCcw className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-slate-800">
+                  {recalls.length} {t.report.recallsFound || 'thu hồi liên quan'}
                 </p>
+                <p className="text-xs text-slate-500">{recallCategories.join(', ')}</p>
               </div>
             </div>
-          </Card>
-        ))}
+          )}
+          
+          {warningLetters.length > 0 && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-white/60 border border-amber-200/60">
+              <Mail className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-slate-800">
+                  {warningLetters.length} {t.report.warningLettersFound || 'warning letter tương tự'}
+                </p>
+                <p className="text-xs text-slate-500">{wlCategories.join(', ')}</p>
+              </div>
+            </div>
+          )}
+          
+          {importAlerts.length > 0 && (
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-white/60 border border-amber-200/60">
+              <Ship className="h-4 w-4 text-cyan-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-slate-800">
+                  {importAlerts.length} {t.report.importAlertsFound || 'import alert'}
+                </p>
+                <p className="text-xs text-slate-500">{iaCategories.join(', ')}</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Blurred locked content */}
+          <div className="relative">
+            <div className="p-3 rounded-lg bg-slate-100/80 border border-slate-200 blur-[4px] select-none pointer-events-none">
+              <p className="text-xs text-slate-500">Recall #R-XXXX-26 - Company...</p>
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800/90 text-white text-xs font-medium shadow-lg">
+                {t.report.lockedForExpert || 'Chi tiết dành cho chuyên gia'}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {/* RIGHT: CTA */}
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-primary mb-3">
+            {t.report.fullReportIncludes || 'BÁO CÁO ĐẦY ĐỦ BAO GỒM'}
+          </p>
+          <ul className="space-y-2 mb-4 text-sm text-slate-600">
+            <li className="flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              <span>{t.report.recallItem1 || 'Mã thu hồi FDA chính thức'}</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              <span>{t.report.recallItem2 || 'Tên công ty vi phạm'}</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              <span>{t.report.recallItem3 || 'Biện pháp khắc phục chi tiết'}</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              <span>{t.report.recallItem4 || 'Hướng dẫn chuẩn bị hồ sơ phòng ngừa'}</span>
+            </li>
+          </ul>
+          <a
+            href="https://calendly.com/vexim-consulting/fda-consultation"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 w-full justify-center px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
+          >
+            {t.report.getFullReport || 'Nhận báo cáo đầy đủ + Tư vấn'}
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        </div>
       </div>
     </Card>
   )
