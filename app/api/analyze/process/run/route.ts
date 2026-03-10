@@ -981,8 +981,15 @@ export async function POST(request: Request) {
       const desc = (v.description || '').toLowerCase()
       const nutrientMatch = desc.match(/(calories|fat|sodium|sugar|carb|protein|cholesterol)\s*(?:value\s*)?(\d+\.?\d*)/i)
       const nutrientKey = nutrientMatch ? `${nutrientMatch[1]}:${nutrientMatch[2]}` : ''
-      // Key only uses regulation + nutrient (NOT category) to merge duplicate findings
-      const issueKey = `${v.regulation_reference}|${nutrientKey}`.toLowerCase()
+      // Normalize regulation reference by removing parenthetical sections
+      // "21 CFR 101.9(c)(1)" -> "21 cfr 101.9" to match similar regulations
+      const normRegulation = (v.regulation_reference || '')
+        .toLowerCase()
+        .replace(/\([a-z0-9)\-]*\)/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+      // Key only uses normalized regulation + nutrient (NOT category) to merge duplicate findings
+      const issueKey = `${normRegulation}|${nutrientKey}`.toLowerCase()
       if (nutrientKey && seenIssues.has(issueKey)) {
         const existingIdx = seenIssues.get(issueKey)!
         const existing = deduplicatedViolations[existingIdx]

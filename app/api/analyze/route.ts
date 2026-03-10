@@ -1607,9 +1607,17 @@ export async function POST(request: Request) {
       const nutrientMatch = desc.match(/(calories|fat|sodium|sugar|carb|protein|cholesterol)\s*(?:value\s*)?(\d+\.?\d*)/i)
       const nutrientKey = nutrientMatch ? `${nutrientMatch[1]}:${nutrientMatch[2]}` : ''
       
-      // Key ONLY combines regulation + specific nutrient (NOT category)
+      // Normalize regulation reference: "21 CFR 101.9(c)(1)" -> "21 cfr 101.9" to match similar regulations
+      // This allows merging of violations flagged under slightly different CFR sections (e.g., (c) vs (c)(1))
+      const normRegulation = (v.regulation_reference || '')
+        .toLowerCase()
+        .replace(/\([a-z0-9)\-]*\)/g, '') // Remove all parenthetical sections (c), (1), etc.
+        .replace(/\s+/g, ' ')
+        .trim()
+      
+      // Key ONLY combines normalized regulation + specific nutrient (NOT category)
       // This allows merging of "Calories rounding" detected by both validator and mapper
-      const issueKey = `${v.regulation_reference}|${nutrientKey}`.toLowerCase()
+      const issueKey = `${normRegulation}|${nutrientKey}`.toLowerCase()
       
       if (nutrientKey && seenIssues.has(issueKey)) {
         // Duplicate found - keep the one with higher confidence or more detail
