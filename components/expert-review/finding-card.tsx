@@ -252,6 +252,90 @@ export function FindingCard({
         </div>
       )}
 
+      {/* Recall Details Section (for source_type === 'recall') */}
+      {finding.source_type === 'recall' && (finding.recall_number || finding.recalling_firm || finding.preventive_action) && (
+        <div className="bg-orange-50 rounded-lg p-3 mb-2 border border-orange-200 space-y-2">
+          <div className="flex items-center gap-2 mb-2">
+            <RotateCcw className="h-4 w-4 text-orange-600" />
+            <span className="text-xs font-bold text-orange-800 uppercase tracking-wide">
+              FDA Recall Details
+            </span>
+          </div>
+          
+          {/* Recall Number */}
+          {finding.recall_number && (
+            <div className="flex items-start gap-2">
+              <span className="text-xs font-medium text-orange-700 shrink-0 w-32">
+                Recall Number:
+              </span>
+              <span className="text-xs font-mono text-orange-900 bg-orange-100 px-1.5 py-0.5 rounded">
+                {finding.recall_number}
+              </span>
+            </div>
+          )}
+          
+          {/* Recalling Firm */}
+          {finding.recalling_firm && (
+            <div className="flex items-start gap-2">
+              <span className="text-xs font-medium text-orange-700 shrink-0 w-32">
+                Company:
+              </span>
+              <span className="text-xs text-orange-900">
+                {finding.recalling_firm}
+              </span>
+            </div>
+          )}
+          
+          {/* Classification */}
+          {finding.recall_classification && (
+            <div className="flex items-start gap-2">
+              <span className="text-xs font-medium text-orange-700 shrink-0 w-32">
+                Classification:
+              </span>
+              <Badge 
+                variant="outline" 
+                className={`text-xs ${
+                  finding.recall_classification === 'Class I' 
+                    ? 'border-red-500 text-red-700 bg-red-50' 
+                    : finding.recall_classification === 'Class II'
+                      ? 'border-amber-500 text-amber-700 bg-amber-50'
+                      : 'border-slate-500 text-slate-700 bg-slate-50'
+                }`}
+              >
+                {finding.recall_classification}
+              </Badge>
+            </div>
+          )}
+          
+          {/* Recall Reason */}
+          {finding.recall_reason && (
+            <div className="flex items-start gap-2">
+              <span className="text-xs font-medium text-orange-700 shrink-0 w-32">
+                Reason:
+              </span>
+              <span className="text-xs text-orange-900 leading-relaxed">
+                {finding.recall_reason}
+              </span>
+            </div>
+          )}
+          
+          {/* Preventive Action */}
+          {finding.preventive_action && (
+            <div className="mt-2 pt-2 border-t border-orange-200">
+              <div className="flex items-center gap-1.5 mb-1">
+                <AlertTriangle className="h-3 w-3 text-orange-600" />
+                <span className="text-xs font-medium text-orange-800">
+                  Preventive Action:
+                </span>
+              </div>
+              <p className="text-xs text-orange-900 bg-white/60 p-2 rounded border border-orange-100 leading-relaxed">
+                {finding.preventive_action}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Warning Letter Link */}
       {finding.warning_letter_id && (
         <a

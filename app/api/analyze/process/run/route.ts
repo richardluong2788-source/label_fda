@@ -781,7 +781,12 @@ export async function POST(request: Request) {
         citations: [],
         confidence_score: Math.min(0.9, 0.4 + recall.similarity),
         source_type: 'recall',
+        // ──── Recall-specific Fields for UI display ────
         recall_number: recall.recall_number,
+        recalling_firm: recall.recalling_firm || undefined,
+        recall_classification: recall.classification || undefined,
+        recall_reason: recall.why_recalled || undefined,
+        preventive_action: recall.preventive_action || undefined,
       })
     }
 

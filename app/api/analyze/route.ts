@@ -1200,6 +1200,12 @@ export async function POST(request: Request) {
             }],
             confidence_score: Math.min(0.6, 0.2 + matchedKeywords.length * 0.1), // Low confidence - just similarity
             source_type: 'recall', // Used by UI to render in separate "Tham khảo" section
+            // ──── Recall-specific Fields for UI display ────
+            recall_number: meta.recall_number || undefined,
+            recalling_firm: meta.recalling_firm || undefined,
+            recall_classification: meta.recall_classification || undefined,
+            recall_reason: meta.why_recalled || undefined,
+            preventive_action: meta.preventive_action || undefined,
           })
         }
       }

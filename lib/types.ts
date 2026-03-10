@@ -239,6 +239,13 @@ export interface Violation {
   /** Raw OCR text from label - NOT AI rewritten. For "Currently on Label" display */
   raw_text_on_label?: string
   
+  // ──── Recall-specific Fields (FDA Enforcement Reports) ────
+  recall_number?: string           // FDA official recall number (e.g., "H-0460-2026")
+  recalling_firm?: string          // Company name that issued recall
+  recall_classification?: string   // "Class I" | "Class II" | "Class III"
+  recall_reason?: string           // Why the product was recalled
+  preventive_action?: string       // Recommended preventive action
+  
   // ──── Claims Classification Fields (Dietary Supplements) ────
   claim_type?: ClaimClassificationType  // Type of claim: STRUCTURE_FUNCTION, FACTUAL, MARKETING, WARRANTY, etc.
   claim_text?: string                   // The actual claim text from label
