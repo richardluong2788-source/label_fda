@@ -52,6 +52,12 @@ export class ViolationToCFRMapper {
 
   /**
    * Map rounding rule violations
+   * 
+   * NOTE: Rounding errors are classified as WARNING (not CRITICAL) because:
+   * - FDA typically issues Warning Letters requesting correction, not detention
+   * - Easy to fix without product recall (just update label)
+   * - No health/safety risk to consumers
+   * - Common minor labeling error, especially for international brands
    */
   static mapRoundingViolation(
     nutrient: string,
@@ -63,7 +69,7 @@ export class ViolationToCFRMapper {
     if (nutrient === 'Calories' && detectedValue % 5 !== 0) {
       return {
         type: 'rounding',
-        severity: 'critical',
+        severity: 'warning', // Minor labeling error - FDA typically requests correction
         detectedValue: `${detectedValue} kcal`,
         requiredValue: `${correctValue} kcal`,
         regulationSection: regulation?.regulation_id || '21 CFR 101.9(c)(1)',
@@ -75,7 +81,7 @@ export class ViolationToCFRMapper {
     if (nutrient === 'Trans Fat' && detectedValue > 0 && detectedValue < 0.5) {
       return {
         type: 'rounding',
-        severity: 'critical',
+        severity: 'warning', // Minor labeling error - FDA typically requests correction
         detectedValue: `${detectedValue}g`,
         requiredValue: '0g',
         regulationSection: regulation?.regulation_id || '21 CFR 101.9(c)(2)(ii)',
