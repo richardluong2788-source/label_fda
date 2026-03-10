@@ -54,16 +54,23 @@ NGUYÊN TẮC QUAN TRỌNG:
 4. Nếu vi phạm có confidence thấp hoặc không rõ — đánh dấu confirmed=false và giải thích
 5. Recommended actions phải thực tế, có thể thực hiện ngay
 
-PHÂN BIỆT LOẠI PHÁT HIỆN:
-- source_type="ai_detected" hoặc "cfr_violation": Đây là VI PHẠM THỰC TẾ trên nhãn → cần wording fix cụ thể
-- source_type="recall": Đây là CẢNH BÁO THỊ TRƯỜNG (market intelligence) → sản phẩm HIỆN TẠI không vi phạm, chỉ thuộc category có lịch sử thu hồi
-  + Legal note cho recall phải ghi rõ: "Đây là cảnh báo thị trường tham khảo, không phải vi phạm trên nhãn sản phẩm này. Sản phẩm thuộc category có lịch sử thu hồi, tham khảo vụ [recall info]."
-  + Wording fix cho recall: để trống hoặc ghi "Không áp dụng - đây là cảnh báo thị trường"
-  + Thêm phần HƯỚNG DẪN PHÒNG NGỪA cho recall bao gồm:
-    * Kiểm tra lại độ chính xác thông tin thành phần trên nhãn
-    * Đảm bảo quy trình kiểm soát chất lượng trước xuất khẩu
-    * Chuẩn bị hồ sơ chứng minh nguồn gốc nguyên liệu
-    * Lưu trữ kết quả kiểm nghiệm an toàn thực phẩm
+PHÂN BIỆT LOẠI PHÁT HIỆN (BẮT BUỘC TUÂN THỦ):
+
+**Loại 1: VI PHẠM THỰC TẾ** (source_type="ai_detected" hoặc "cfr_violation")
+- confirmed = true
+- wording_fix = đề xuất cụ thể, copy-paste được
+- legal_note = trích dẫn CFR cụ thể
+
+**Loại 2: CẢNH BÁO THỊ TRƯỜNG** (source_type="recall") - QUAN TRỌNG:
+- confirmed = FALSE (BẮT BUỘC) - vì đây KHÔNG PHẢI vi phạm trên nhãn hiện tại
+- wording_fix = "Không áp dụng - đây là cảnh báo thị trường, không phải vi phạm trên nhãn sản phẩm này."
+- legal_note PHẢI bắt đầu bằng: "ĐÂY LÀ CẢNH BÁO THỊ TRƯỜNG THAM KHẢO, không phải vi phạm trên nhãn sản phẩm này. Sản phẩm thuộc category có lịch sử thu hồi tại FDA..." rồi mới đến chi tiết vụ recall.
+- prevention_guide = hướng dẫn phòng ngừa chi tiết bao gồm:
+  1. Kiểm tra lại độ chính xác thông tin thành phần trên nhãn
+  2. Đảm bảo quy trình kiểm soát chất lượng (QC) trước xuất khẩu
+  3. Chuẩn bị hồ sơ chứng minh nguồn gốc nguyên liệu
+  4. Lưu trữ kết quả kiểm nghiệm an toàn thực phẩm (ATTP)
+  5. Liên hệ chuyên gia Vexim để được tư vấn chi tiết
 
 Thông tin sản phẩm:
 - Tên: ${productName ?? 'Không rõ'}
@@ -83,10 +90,10 @@ ${userContext ? `- Ghi chú từ khách hàng: "${userContext}"` : ''}`
           violationReviews: z.array(
             z.object({
               violation_index: z.number().describe('Index vi phạm (bắt đầu từ 0)'),
-              confirmed: z.boolean().describe('true = xác nhận cần sửa, false = không nghiêm trọng/false positive. Với recall (cảnh báo thị trường), luôn để false vì đây không phải vi phạm thực tế'),
-              wording_fix: z.string().describe('Wording mới đề xuất — cụ thể, copy-paste được. Để trống nếu confirmed=false hoặc source_type=recall'),
-              legal_note: z.string().describe('Giải thích pháp lý chi tiết + trích dẫn CFR cụ thể. Với recall: ghi rõ "Đây là cảnh báo thị trường tham khảo, sản phẩm thuộc category có lịch sử thu hồi..."'),
-              prevention_guide: z.string().optional().describe('Chỉ áp dụng cho source_type=recall. Hướng dẫn phòng ngừa bao gồm: kiểm tra độ chính xác nhãn, quy trình QC, hồ sơ nguồn gốc nguyên liệu, kết quả kiểm nghiệm ATTP'),
+              confirmed: z.boolean().describe('BẮT BUỘC: Với source_type=recall → confirmed=FALSE. Với vi phạm thực tế → confirmed=true nếu cần sửa'),
+              wording_fix: z.string().describe('Với recall: "Không áp dụng - đây là cảnh báo thị trường, không phải vi phạm trên nhãn sản phẩm này." Với vi phạm thực tế: wording cụ thể'),
+              legal_note: z.string().describe('Với recall: BẮT BUỘC bắt đầu bằng "ĐÂY LÀ CẢNH BÁO THỊ TRƯỜNG THAM KHẢO, không phải vi phạm trên nhãn sản phẩm này...". Với vi phạm thực tế: trích dẫn CFR'),
+              prevention_guide: z.string().optional().describe('CHỈ cho source_type=recall. Hướng dẫn phòng ngừa 5 điểm: (1) kiểm tra nhãn, (2) QC, (3) hồ sơ nguồn gốc, (4) kiểm nghiệm ATTP, (5) liên hệ Vexim'),
             })
           ),
           recommendedActions: z.array(

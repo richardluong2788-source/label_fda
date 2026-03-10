@@ -261,7 +261,7 @@ export const vi = {
     conclusionLowDesc: (noFdaData: boolean) => {
       let s = 'Vexim AI không phát hiện vi phạm nghiêm trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR.'
       if (noFdaData) s += ' Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA.'
-      s += ' Sản phẩm có thể được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.'
+      s += ' Sản phẩm có th��� được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.'
       return s
     },
     cfrComplianceDetail: 'CHI TIẾT KIỂM TRA TUÂN THỦ (21 CFR)',
@@ -539,14 +539,14 @@ export const vi = {
     productType: 'Loại sản phẩm',
     selectProductType: 'Chọn loại',
     productFood: 'Thực phẩm thông thường',
-    productSupplement: 'Thực phẩm chức năng / TPCN',
+    productSupplement: 'Thực phẩm ch���c năng / TPCN',
     productBeverage: 'Đồ uống',
     productInfant: 'Sữa công thức trẻ em',
     productMedical: 'Thực phẩm y học',
     productCosmetic: 'Mỹ phẩm',
     productOTC: 'Dược phẩm không kê đơn (OTC)',
     productTypeNote: 'Ảnh hưởng đến quy định FDA áp dụng',
-    packageShape: 'Hình dạng bao bì',
+    packageShape: 'Hình d���ng bao bì',
     selectPackage: 'Chọn bao bì',
     pkgBottle: 'Chai / Lọ dạng chai',
     pkgBox: 'Hộp',
@@ -963,7 +963,7 @@ export const vi = {
     detentionCostValue: '$5.000–15.000',
     detentionCostDesc: 'Phí container, phí lưu bãi, phí trễ tàu — tăng theo từng ngày bị giữ.',
     delayTimeValue: '2–4 tuần',
-    delayTimeDesc: 'Chờ sửa nhãn hoặc vận chuyển về. Mất suất lên kệ siêu thị, mất buyer.',
+    delayTimeDesc: 'Chờ sửa nhãn hoặc vận chuyển về. Mất su���t lên kệ siêu thị, mất buyer.',
     reputationDamageValue: 'Khó phục hồi',
     reputationDamageDesc: 'FDA lưu hồ sơ vi phạm vĩnh viễn. Các lô hàng tiếp theo chắc chắn sẽ bị kiểm tra kỹ hơn.',
     // Comparison table
