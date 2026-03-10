@@ -157,8 +157,14 @@ export const en: TranslationKeys = {
     recallHistoryTitle: 'Recall History in Same Category',
     referenceOnly: 'Reference',
     recallReferenceNote: 'This is market intelligence data for reference only — not a violation, does not affect risk score.',
-    recallsReferenceSection: 'RECALL HISTORY (REFERENCE)',
-    marketIntelligence: 'Reference Data',
+    recallsReferenceSection: 'MARKET WARNING',
+    marketIntelligence: 'Market Intelligence',
+    // Freemium Model - Recall section
+    marketWarningTitle: 'Market Warning',
+    marketWarningMessage: 'FDA is closely monitoring this category. Similar products have been recalled.',
+    freeSummary: 'FREE SUMMARY',
+    fullReportIncludes: 'FULL REPORT INCLUDES',
+    getFullReport: 'Get Full Report + Consultation',
     // Recall teaser and locked content
     recallTeaser: (category: string) => `Recall case found in ${category} category. Details available in expert report.`,
     lockedForExpert: 'Details for experts only',

@@ -994,67 +994,84 @@ function WarningLetterCard({ violation, t }: { violation: Violation; t: ReturnTy
 }
 
 // ────────────────────────────────────────────────────────────
-// Recall Card (Reference Only - NOT a violation)
-// Recalls are market intelligence context, they do NOT affect risk score.
-// Per logic-ng spec: No severity badge, different title, reference note.
-// ───��────────────────────────────────────────────────────────
+// Recall Card (Market Intelligence - Freemium Model)
+// 
+// FREEMIUM STRATEGY:
+// - FREE: Summary info (category, time period, risk signal)
+// - PAID: Full details (recall ID, company, corrective actions)
+// 
+// Recalls do NOT affect risk score - they are proactive market intelligence.
+// ────────────────────────────────────────────────────────────
 
 function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<typeof useTranslation>['t'] }) {
-  // Extract category from description for teaser (e.g., "Organic Spices" category)
-  // Public users only see teaser - details are locked for expert consultation
-  const category = violation.category || 'cùng category'
+  // Extract category for display
+  const category = violation.category?.replace('Recall Risk: ', '') || 'cùng category'
+  // Extract time from description if available
+  const timeMatch = violation.description?.match(/(\d{4})/g)
+  const timePeriod = timeMatch ? timeMatch[0] : 'Gần đây'
   
   return (
-    <div className="rounded-xl border border-slate-200 bg-amber-50/30 overflow-hidden">
-      <div className="flex items-start justify-between p-5 pb-3">
+    <div className="rounded-xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50/50 overflow-hidden">
+      {/* Header with warning styling */}
+      <div className="flex items-start justify-between p-5 pb-3 border-b border-amber-200/60">
         <div className="flex items-start gap-3">
-          <div className="rounded-full bg-slate-100 p-2.5 shrink-0">
-            <RotateCcw className="h-5 w-5 text-slate-500" />
+          <div className="rounded-full bg-amber-100 p-2.5 shrink-0">
+            <AlertTriangle className="h-5 w-5 text-amber-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-base text-slate-900 leading-tight">
-              {t.report.recallHistoryTitle}
+            <h3 className="font-bold text-base text-amber-900 leading-tight">
+              {t.report.marketWarningTitle || 'Cảnh Báo Thị Trường'}
             </h3>
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500 text-white">
                 FDA Recall
               </span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700 border border-amber-200">
-                {t.report.referenceOnly}
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700 border border-amber-300">
+                Market Intelligence
               </span>
             </div>
           </div>
         </div>
-        {/* NO severity badge - recalls are reference data, not violations */}
       </div>
 
-      {/* Reference notice */}
-      <div className="mx-5 mb-3 p-2.5 rounded-lg bg-amber-50 border border-amber-100">
-        <p className="text-[11px] text-amber-700 flex items-center gap-1.5">
-          <Info className="h-3 w-3 shrink-0" />
-          {t.report.recallReferenceNote}
+      {/* Warning message - stronger tone */}
+      <div className="mx-5 mt-4 mb-3 p-3 rounded-lg bg-amber-100/80 border border-amber-200">
+        <p className="text-sm text-amber-800 font-medium">
+          {t.report.marketWarningMessage || 'FDA đang giám sát chặt category này. Sản phẩm tương tự đã bị thu hồi.'}
         </p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-0">
-        {/* LEFT: Teaser only - details are locked */}
-        <div className="p-5 bg-slate-50/60 border-t border-r border-slate-200">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-3">
-            {t.report.recallInfo}
-          </p>
-          {/* Teaser message - no specific details */}
-          <p className="text-sm text-slate-700 leading-relaxed">
-            {t.report.recallTeaser?.(category) || `Phát hiện trường hợp thu hồi liên quan trong ${category}. Chi tiết được cung cấp trong báo cáo chuyên gia.`}
+        {/* LEFT: Free summary info */}
+        <div className="p-5 bg-white/60 border-t border-r border-amber-200/60">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700 mb-3">
+            {t.report.freeSummary || 'Tóm tắt miễn phí'}
           </p>
           
+          {/* Free info: category, time, risk type */}
+          <div className="space-y-2 mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 w-20">Danh mục:</span>
+              <span className="text-sm font-medium text-slate-800">{category}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 w-20">Thời gian:</span>
+              <span className="text-sm font-medium text-slate-800">{timePeriod}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 w-20">Tín hiệu:</span>
+              <span className="text-sm font-medium text-amber-700">Rủi ro cao</span>
+            </div>
+          </div>
+          
           {/* Blurred preview of locked content */}
-          <div className="mt-3 relative">
-            <div className="p-3 rounded-lg bg-slate-100/80 border border-slate-200 blur-[6px] select-none pointer-events-none">
-              <p className="text-xs text-slate-500">Thu hồi #H-XXXX-2026 - Công ty ABC...</p>
-              <p className="text-xs text-slate-400 mt-1">Lý do: Thông tin chi tiết...</p>
+          <div className="relative">
+            <div className="p-3 rounded-lg bg-slate-100/80 border border-slate-200 blur-[5px] select-none pointer-events-none">
+              <p className="text-xs text-slate-500">Recall #H-XXXX-2026 - Company Name Inc.</p>
+              <p className="text-xs text-slate-400 mt-1">Corrective Action: Full details here...</p>
             </div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/90 text-white text-xs font-medium shadow-lg">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800/90 text-white text-xs font-medium shadow-lg">
                 <Landmark className="h-3 w-3" />
                 {t.report.lockedForExpert || 'Chi tiết dành cho chuyên gia'}
               </span>
@@ -1062,14 +1079,29 @@ function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<type
           </div>
         </div>
         
-        {/* RIGHT: CTA to contact expert */}
-        <div className="p-5 bg-slate-50/60 border-t border-slate-200">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-3">
-            {t.report.veximRecommendation}
+        {/* RIGHT: CTA - stronger value proposition */}
+        <div className="p-5 bg-white/60 border-t border-amber-200/60">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-primary mb-3">
+            {t.report.fullReportIncludes || 'Báo cáo đầy đủ bao gồm'}
           </p>
-          <p className="text-sm text-slate-600 leading-relaxed mb-4">
-            {t.report.recallCTAMessage || 'Để xem chi tiết về các trường hợp thu hồi liên quan (mã thu hồi, công ty, biện pháp khắc phục), vui lòng liên hệ chuyên gia của chúng tôi.'}
-          </p>
+          <ul className="space-y-2 mb-4 text-sm text-slate-600">
+            <li className="flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              <span>Mã thu hồi FDA chính thức</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              <span>Tên công ty vi phạm</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              <span>Biện pháp khắc phục chi tiết</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+              <span>Hướng dẫn chuẩn bị hồ sơ phòng ngừa</span>
+            </li>
+          </ul>
           <a 
             href="#expert-request-panel" 
             onClick={(e) => {
@@ -1077,10 +1109,20 @@ function RecallCard({ violation, t }: { violation: Violation; t: ReturnType<type
               const panel = document.getElementById('expert-request-panel')
               if (panel) {
                 panel.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                // Highlight effect
                 panel.classList.add('ring-2', 'ring-primary', 'ring-offset-2')
                 setTimeout(() => panel.classList.remove('ring-2', 'ring-primary', 'ring-offset-2'), 2000)
               }
+            }}
+            className="inline-flex items-center gap-2 w-full justify-center px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <MessageSquare className="h-4 w-4" />
+            {t.report.getFullReport || 'Nhận báo cáo đầy đủ + Tư vấn'}
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
             }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
           >

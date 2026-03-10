@@ -153,16 +153,22 @@ export const vi = {
     findingsDesc: (count: number) => `Phát hiện ${count} vấn đề cần xử lý`,
     warningLetterTitle: 'Cảnh báo từ FDA Warning Letter',
     recallTitle: 'Liên quan đến sản phẩm bị thu hồi',
-    recallHistoryTitle: 'Lịch sử thu hồi trong cùng category',
-    referenceOnly: 'Tham khảo',
-    recallReferenceNote: 'Đây là dữ liệu lịch sử thị trường để tham khảo — không phải vi phạm, không ảnh hưởng điểm rủi ro.',
-    recallsReferenceSection: 'LỊCH SỬ THU HỒI (THAM KHẢO)',
-    marketIntelligence: 'Dữ liệu tham khảo',
-    // Recall teaser and locked content
-    recallTeaser: (category: string) => `Phát hiện trường hợp thu hồi liên quan trong danh mục ${category}. Chi tiết được cung cấp trong báo cáo chuyên gia.`,
-    lockedForExpert: 'Chi tiết dành cho chuyên gia',
-    recallCTAMessage: 'Để xem chi tiết về các trường hợp thu hồi liên quan (mã thu hồi, công ty, biện pháp khắc phục), vui lòng liên hệ chuyên gia của chúng tôi.',
-    contactExpert: 'Liên hệ chuyên gia Vexim',
+  recallHistoryTitle: 'Lịch sử thu hồi trong cùng category',
+  referenceOnly: 'Tham khảo',
+  recallReferenceNote: 'Đây là dữ liệu lịch sử thị trường để tham khảo — không phải vi phạm, không ảnh hưởng điểm rủi ro.',
+  recallsReferenceSection: 'CẢNH BÁO THỊ TRƯỜNG',
+  marketIntelligence: 'Market Intelligence',
+  // Freemium Model - Recall section
+  marketWarningTitle: 'Cảnh Báo Thị Trường',
+  marketWarningMessage: 'FDA đang giám sát chặt category này. Sản phẩm tương tự đã bị thu hồi.',
+  freeSummary: 'TÓM TẮT MIỄN PHÍ',
+  fullReportIncludes: 'BÁO CÁO ĐẦY ĐỦ BAO GỒM',
+  getFullReport: 'Nhận báo cáo đầy đủ + Tư vấn',
+  // Recall teaser and locked content
+  recallTeaser: (category: string) => `Phát hiện trường hợp thu hồi liên quan trong danh mục ${category}. Chi tiết được cung cấp trong báo cáo chuyên gia.`,
+  lockedForExpert: 'Chi tiết dành cho chuyên gia',
+  recallCTAMessage: 'Để xem chi tiết về các trường hợp thu hồi liên quan (mã thu hồi, công ty, biện pháp khắc phục), vui lòng liên hệ chuyên gia của chúng tôi.',
+  contactExpert: 'Liên hệ chuyên gia Vexim',
     // Fallback commercial summary (when AI doesn't generate one)
     unknownProduct: 'Sản phẩm',
     fallbackCompliantSummary: 'đã được kiểm tra và tuân thủ tốt các quy định FDA. Không phát hiện vi phạm nghiêm trọng trong quá trình phân tích.',
@@ -243,7 +249,7 @@ export const vi = {
     conclusionLowDesc: (noFdaData: boolean) => {
       let s = 'Vexim AI không phát hiện vi phạm nghiêm trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR.'
       if (noFdaData) s += ' Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA.'
-      s += ' Sản phẩm có thể được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.'
+      s += ' Sản phẩm có th��� được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.'
       return s
     },
     cfrComplianceDetail: 'CHI TIẾT KIỂM TRA TUÂN THỦ (21 CFR)',
@@ -446,7 +452,7 @@ export const vi = {
     priorityLow: 'Nên làm',
     signedBy: 'Ký xác nhận bởi',
     pendingMessage: (hours: number) => `Yêu cầu của bạn đã được ghi nhận. Chuyên gia Vexim sẽ phản hồi trong vòng ${hours} giờ làm việc.`,
-    inReviewMessage: 'Chuyên gia Vexim đang xem xét báo cáo của bạn. Kết quả sẽ có trong thời gian sớm nhất.',
+    inReviewMessage: 'Chuyên gia Vexim đang xem xét báo cáo của bạn. Kết quả sẽ có trong thời gian s��m nhất.',
     questionBannerHighRisk: 'Bạn có cần hỗ trợ từ chuyên gia Vexim không?',
     questionBannerHighRiskDesc: 'AI phát hiện một số điểm cần chuyên gia xem xét kỹ hơn để đảm bảo tuân thủ FDA.',
     questionBannerNormalDesc: 'Chuyên gia sẽ giúp bạn hiểu rõ hơn về kết quả và tối ưu hóa nhãn sản phẩm.',
@@ -527,7 +533,7 @@ export const vi = {
     productCosmetic: 'Mỹ phẩm',
     productOTC: 'Dược phẩm không kê đơn (OTC)',
     productTypeNote: 'Ảnh hưởng đến quy định FDA áp dụng',
-    packageShape: 'Hình dạng bao bì',
+    packageShape: 'Hình d���ng bao bì',
     selectPackage: 'Chọn bao bì',
     pkgBottle: 'Chai / Lọ dạng chai',
     pkgBox: 'Hộp',
