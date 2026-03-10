@@ -33,7 +33,9 @@ export default async function ExpertReviewPage({
         findings, needs_expert_review, product_category, status,
         label_image_url, label_images, ingredient_list, health_claims,
         allergen_declaration, brand_name, net_quantity,
-        commercial_summary, expert_tips, form_data
+        commercial_summary, expert_tips, form_data,
+        warning_letter_weight, recall_heat_index, import_alert_heat_index,
+        enforcement_risk_score
       )
     `)
     .eq('id', requestId)

@@ -30,6 +30,7 @@ import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import { AppHeader } from '@/components/app-header'
 import { LabelImageGallery } from '@/components/label-image-gallery'
+import { FDAComplianceIntelligence } from '@/components/fda-compliance-intelligence'
 import type { LabelImageEntry } from '@/lib/types'
 
 interface ViolationReview {
@@ -314,6 +315,9 @@ export function ExpertReviewWorkspace({
                 )}
               </div>
             </Card>
+
+            {/* FDA Compliance Intelligence */}
+            <FDAComplianceIntelligence report={report} />
 
             {/* Ảnh nhãn sản phẩm - hiển thị tất cả ảnh */}
             <Card className="p-5">
