@@ -30,7 +30,7 @@ import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import { AppHeader } from '@/components/app-header'
 import { LabelImageGallery } from '@/components/label-image-gallery'
-import { FDAComplianceIntelligence } from '@/components/fda-compliance-intelligence'
+import { FDAComplianceIntelligence, FDAIntelligenceAnalysisCard, type AIAnalysis } from '@/components/fda-compliance-intelligence'
 import type { LabelImageEntry } from '@/lib/types'
 
 interface ViolationReview {
@@ -88,6 +88,7 @@ export function ExpertReviewWorkspace({
   const [aiDrafting, setAiDrafting] = useState(false)
   const [aiDraftError, setAiDraftError] = useState<string | null>(null)
   const [aiDrafted, setAiDrafted] = useState(false)
+  const [fdaAIAnalysis, setFdaAIAnalysis] = useState<AIAnalysis | null>(null)
 
   // -- AI Draft Assistant --
   const handleAIDraft = async () => {
@@ -317,7 +318,11 @@ export function ExpertReviewWorkspace({
             </Card>
 
             {/* FDA Compliance Intelligence - Full details for expert view */}
-            <FDAComplianceIntelligence report={report} showFullDetails={true} />
+            <FDAComplianceIntelligence 
+              report={report} 
+              showFullDetails={true} 
+              onAIAnalysisComplete={setFdaAIAnalysis}
+            />
 
             {/* Ảnh nhãn sản phẩm - hiển thị tất cả ảnh */}
             <Card className="p-5">
@@ -642,6 +647,11 @@ export function ExpertReviewWorkspace({
                 </div>
               )}
             </Card>
+
+            {/* FDA Intelligence AI Analysis - displayed after Hành động ưu tiên */}
+            {fdaAIAnalysis && (
+              <FDAIntelligenceAnalysisCard analysis={fdaAIAnalysis} />
+            )}
 
             {/* Sign Off */}
             {!isReadOnly && (

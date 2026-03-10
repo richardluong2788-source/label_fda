@@ -21,7 +21,7 @@ import {
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 
-interface AIAnalysis {
+export interface AIAnalysis {
   riskAssessment: {
     level: 'low' | 'medium' | 'high' | 'critical'
     summary: string
@@ -81,6 +81,8 @@ interface FDAComplianceIntelligenceProps {
   }
   // When true, shows full details (for admin/expert view)
   showFullDetails?: boolean
+  // Callback when AI analysis completes
+  onAIAnalysisComplete?: (analysis: AIAnalysis) => void
 }
 
 interface IntelligenceItem {
@@ -95,7 +97,7 @@ interface IntelligenceItem {
   fdaLinkLabel?: string
 }
 
-export function FDAComplianceIntelligence({ report, showFullDetails = false }: FDAComplianceIntelligenceProps) {
+export function FDAComplianceIntelligence({ report, showFullDetails = false, onAIAnalysisComplete }: FDAComplianceIntelligenceProps) {
   const [expanded, setExpanded] = useState(showFullDetails) // Auto-expand for admin view
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null)
   const [aiAnalyzing, setAiAnalyzing] = useState(false)
@@ -129,6 +131,7 @@ export function FDAComplianceIntelligence({ report, showFullDetails = false }: F
 
       const { analysis } = await res.json()
       setAiAnalysis(analysis)
+      onAIAnalysisComplete?.(analysis)
     } catch (err: any) {
       setAiError(err.message)
     } finally {
@@ -258,7 +261,7 @@ export function FDAComplianceIntelligence({ report, showFullDetails = false }: F
         </div>
       </div>
 
-      {/* AI Analysis Results */}
+      {/* AI Analysis Error */}
       {aiError && (
         <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
           <AlertTriangle className="h-4 w-4 inline mr-2" />
@@ -266,141 +269,22 @@ export function FDAComplianceIntelligence({ report, showFullDetails = false }: F
         </div>
       )}
 
+      {/* AI Analysis status indicator */}
       {aiAnalysis && (
-        <div className="mb-4 space-y-4 p-4 rounded-xl bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 border border-violet-200">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-violet-900 flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-violet-600" />
-              Phân tích AI - FDA Intelligence
-            </h3>
-            <Badge className={`text-xs ${
-              aiAnalysis.riskAssessment.level === 'low' ? 'bg-green-100 text-green-700 border-green-200' :
-              aiAnalysis.riskAssessment.level === 'medium' ? 'bg-amber-100 text-amber-700 border-amber-200' :
-              aiAnalysis.riskAssessment.level === 'high' ? 'bg-orange-100 text-orange-700 border-orange-200' :
-              'bg-red-100 text-red-700 border-red-200'
+        <div className="mb-4 p-3 rounded-lg bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200">
+          <div className="flex items-center gap-2 text-sm text-violet-700">
+            <Sparkles className="h-4 w-4" />
+            <span className="font-medium">AI đã phân tích xong</span>
+            <Badge className={`text-xs ml-auto ${
+              aiAnalysis.riskAssessment.level === 'low' ? 'bg-green-100 text-green-700' :
+              aiAnalysis.riskAssessment.level === 'medium' ? 'bg-amber-100 text-amber-700' :
+              aiAnalysis.riskAssessment.level === 'high' ? 'bg-orange-100 text-orange-700' :
+              'bg-red-100 text-red-700'
             }`}>
-              Rủi ro: {aiAnalysis.riskAssessment.level.toUpperCase()}
+              {aiAnalysis.complianceScore.score}/100
             </Badge>
           </div>
-
-          {/* Risk Summary */}
-          <div className="bg-white/80 rounded-lg p-3 border border-violet-100">
-            <p className="text-sm text-slate-700">{aiAnalysis.riskAssessment.summary}</p>
-          </div>
-
-          {/* Compliance Score */}
-          <div className="bg-white/80 rounded-lg p-3 border border-violet-100">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-slate-600">Điểm Tuân thủ FDA</span>
-              <span className={`text-lg font-bold ${
-                aiAnalysis.complianceScore.score >= 80 ? 'text-green-600' :
-                aiAnalysis.complianceScore.score >= 60 ? 'text-amber-600' :
-                'text-red-600'
-              }`}>
-                {aiAnalysis.complianceScore.score}/100
-              </span>
-            </div>
-            <div className="w-full bg-slate-100 rounded-full h-2 mb-2">
-              <div 
-                className={`h-2 rounded-full transition-all ${
-                  aiAnalysis.complianceScore.score >= 80 ? 'bg-green-500' :
-                  aiAnalysis.complianceScore.score >= 60 ? 'bg-amber-500' :
-                  'bg-red-500'
-                }`}
-                style={{ width: `${aiAnalysis.complianceScore.score}%` }}
-              />
-            </div>
-            <p className="text-xs text-slate-600">{aiAnalysis.complianceScore.interpretation}</p>
-          </div>
-
-          {/* Analysis by Type */}
-          <div className="grid gap-3">
-            {/* Import Alert Analysis */}
-            {aiAnalysis.importAlertAnalysis.relevance !== 'none' && (
-              <div className="bg-white/80 rounded-lg p-3 border border-red-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <ShieldAlert className="h-4 w-4 text-red-600" />
-                  <span className="text-xs font-bold text-red-700">Import Alerts</span>
-                  <Badge variant="outline" className="text-[10px] ml-auto">
-                    Liên quan: {aiAnalysis.importAlertAnalysis.relevance}
-                  </Badge>
-                </div>
-                <p className="text-xs text-slate-700 mb-2">{aiAnalysis.importAlertAnalysis.insight}</p>
-                <div className="flex items-start gap-1.5 text-xs text-blue-700 bg-blue-50 rounded p-2">
-                  <ArrowRight className="h-3 w-3 mt-0.5 shrink-0" />
-                  {aiAnalysis.importAlertAnalysis.action}
-                </div>
-              </div>
-            )}
-
-            {/* Warning Letter Analysis */}
-            {aiAnalysis.warningLetterAnalysis.relevance !== 'none' && (
-              <div className="bg-white/80 rounded-lg p-3 border border-amber-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileWarning className="h-4 w-4 text-amber-600" />
-                  <span className="text-xs font-bold text-amber-700">Warning Letters</span>
-                  <Badge variant="outline" className="text-[10px] ml-auto">
-                    Liên quan: {aiAnalysis.warningLetterAnalysis.relevance}
-                  </Badge>
-                </div>
-                <p className="text-xs text-slate-700 mb-2">{aiAnalysis.warningLetterAnalysis.insight}</p>
-                <div className="flex items-start gap-1.5 text-xs text-blue-700 bg-blue-50 rounded p-2">
-                  <ArrowRight className="h-3 w-3 mt-0.5 shrink-0" />
-                  {aiAnalysis.warningLetterAnalysis.action}
-                </div>
-              </div>
-            )}
-
-            {/* Recall Analysis */}
-            {aiAnalysis.recallAnalysis.relevance !== 'none' && (
-              <div className="bg-white/80 rounded-lg p-3 border border-orange-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertOctagon className="h-4 w-4 text-orange-600" />
-                  <span className="text-xs font-bold text-orange-700">Recalls</span>
-                  <Badge variant="outline" className="text-[10px] ml-auto">
-                    Liên quan: {aiAnalysis.recallAnalysis.relevance}
-                  </Badge>
-                </div>
-                <p className="text-xs text-slate-700 mb-2">{aiAnalysis.recallAnalysis.insight}</p>
-                <div className="flex items-start gap-1.5 text-xs text-blue-700 bg-blue-50 rounded p-2">
-                  <ArrowRight className="h-3 w-3 mt-0.5 shrink-0" />
-                  {aiAnalysis.recallAnalysis.action}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Expert Recommendations */}
-          {aiAnalysis.expertRecommendations.length > 0 && (
-            <div className="bg-white/80 rounded-lg p-3 border border-violet-100">
-              <h4 className="text-xs font-bold text-violet-800 mb-3 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Khuyến nghị từ AI
-              </h4>
-              <div className="space-y-2">
-                {aiAnalysis.expertRecommendations.map((rec, idx) => (
-                  <div key={idx} className={`p-2 rounded border-l-2 ${
-                    rec.priority === 'immediate' ? 'border-l-red-500 bg-red-50/50' :
-                    rec.priority === 'short-term' ? 'border-l-amber-500 bg-amber-50/50' :
-                    'border-l-blue-500 bg-blue-50/50'
-                  }`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className={`text-[10px] ${
-                        rec.priority === 'immediate' ? 'border-red-300 text-red-700' :
-                        rec.priority === 'short-term' ? 'border-amber-300 text-amber-700' :
-                        'border-blue-300 text-blue-700'
-                      }`}>
-                        {rec.priority === 'immediate' ? 'Ngay lập tức' :
-                         rec.priority === 'short-term' ? 'Ngắn hạn' : 'Dài hạn'}
-                      </Badge>
-                    </div>
-                    <p className="text-xs font-medium text-slate-800">{rec.recommendation}</p>
-                    <p className="text-[11px] text-slate-500 mt-1">{rec.rationale}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <p className="text-xs text-violet-600 mt-1">Xem chi tiết phân tích ở cột bên phải</p>
         </div>
       )}
 
@@ -667,6 +551,147 @@ export function FDAComplianceIntelligence({ report, showFullDetails = false }: F
               </div>
             </div>
           )}
+        </div>
+      )}
+    </Card>
+  )
+}
+
+// Separate component for AI Analysis display (for sidebar)
+export function FDAIntelligenceAnalysisCard({ analysis }: { analysis: AIAnalysis }) {
+  return (
+    <Card className="p-5 space-y-4 bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 border-violet-200">
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold text-violet-900 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-violet-600" />
+          Phân tích AI - FDA Intelligence
+        </h2>
+        <Badge className={`text-xs ${
+          analysis.riskAssessment.level === 'low' ? 'bg-green-100 text-green-700 border-green-200' :
+          analysis.riskAssessment.level === 'medium' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+          analysis.riskAssessment.level === 'high' ? 'bg-orange-100 text-orange-700 border-orange-200' :
+          'bg-red-100 text-red-700 border-red-200'
+        }`}>
+          Rủi ro: {analysis.riskAssessment.level.toUpperCase()}
+        </Badge>
+      </div>
+
+      {/* Risk Summary */}
+      <div className="bg-white/80 rounded-lg p-3 border border-violet-100">
+        <p className="text-sm text-slate-700">{analysis.riskAssessment.summary}</p>
+      </div>
+
+      {/* Compliance Score */}
+      <div className="bg-white/80 rounded-lg p-3 border border-violet-100">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-slate-600">Điểm Tuân thủ FDA</span>
+          <span className={`text-lg font-bold ${
+            analysis.complianceScore.score >= 80 ? 'text-green-600' :
+            analysis.complianceScore.score >= 60 ? 'text-amber-600' :
+            'text-red-600'
+          }`}>
+            {analysis.complianceScore.score}/100
+          </span>
+        </div>
+        <div className="w-full bg-slate-100 rounded-full h-2 mb-2">
+          <div 
+            className={`h-2 rounded-full transition-all ${
+              analysis.complianceScore.score >= 80 ? 'bg-green-500' :
+              analysis.complianceScore.score >= 60 ? 'bg-amber-500' :
+              'bg-red-500'
+            }`}
+            style={{ width: `${analysis.complianceScore.score}%` }}
+          />
+        </div>
+        <p className="text-xs text-slate-600">{analysis.complianceScore.interpretation}</p>
+      </div>
+
+      {/* Analysis by Type */}
+      <div className="space-y-3">
+        {/* Import Alert Analysis */}
+        {analysis.importAlertAnalysis.relevance !== 'none' && (
+          <div className="bg-white/80 rounded-lg p-3 border border-red-100">
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldAlert className="h-4 w-4 text-red-600" />
+              <span className="text-xs font-bold text-red-700">Import Alerts</span>
+              <Badge variant="outline" className="text-[10px] ml-auto">
+                Liên quan: {analysis.importAlertAnalysis.relevance}
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-700 mb-2">{analysis.importAlertAnalysis.insight}</p>
+            <div className="flex items-start gap-1.5 text-xs text-blue-700 bg-blue-50 rounded p-2">
+              <ArrowRight className="h-3 w-3 mt-0.5 shrink-0" />
+              {analysis.importAlertAnalysis.action}
+            </div>
+          </div>
+        )}
+
+        {/* Warning Letter Analysis */}
+        {analysis.warningLetterAnalysis.relevance !== 'none' && (
+          <div className="bg-white/80 rounded-lg p-3 border border-amber-100">
+            <div className="flex items-center gap-2 mb-2">
+              <FileWarning className="h-4 w-4 text-amber-600" />
+              <span className="text-xs font-bold text-amber-700">Warning Letters</span>
+              <Badge variant="outline" className="text-[10px] ml-auto">
+                Liên quan: {analysis.warningLetterAnalysis.relevance}
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-700 mb-2">{analysis.warningLetterAnalysis.insight}</p>
+            <div className="flex items-start gap-1.5 text-xs text-blue-700 bg-blue-50 rounded p-2">
+              <ArrowRight className="h-3 w-3 mt-0.5 shrink-0" />
+              {analysis.warningLetterAnalysis.action}
+            </div>
+          </div>
+        )}
+
+        {/* Recall Analysis */}
+        {analysis.recallAnalysis.relevance !== 'none' && (
+          <div className="bg-white/80 rounded-lg p-3 border border-orange-100">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertOctagon className="h-4 w-4 text-orange-600" />
+              <span className="text-xs font-bold text-orange-700">Recalls</span>
+              <Badge variant="outline" className="text-[10px] ml-auto">
+                Liên quan: {analysis.recallAnalysis.relevance}
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-700 mb-2">{analysis.recallAnalysis.insight}</p>
+            <div className="flex items-start gap-1.5 text-xs text-blue-700 bg-blue-50 rounded p-2">
+              <ArrowRight className="h-3 w-3 mt-0.5 shrink-0" />
+              {analysis.recallAnalysis.action}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Expert Recommendations */}
+      {analysis.expertRecommendations.length > 0 && (
+        <div className="bg-white/80 rounded-lg p-3 border border-violet-100">
+          <h4 className="text-xs font-bold text-violet-800 mb-3 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Khuyến nghị từ AI
+          </h4>
+          <div className="space-y-2">
+            {analysis.expertRecommendations.map((rec, idx) => (
+              <div key={idx} className={`p-2 rounded border-l-2 ${
+                rec.priority === 'immediate' ? 'border-l-red-500 bg-red-50/50' :
+                rec.priority === 'short-term' ? 'border-l-amber-500 bg-amber-50/50' :
+                'border-l-blue-500 bg-blue-50/50'
+              }`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge variant="outline" className={`text-[10px] ${
+                    rec.priority === 'immediate' ? 'border-red-300 text-red-700' :
+                    rec.priority === 'short-term' ? 'border-amber-300 text-amber-700' :
+                    'border-blue-300 text-blue-700'
+                  }`}>
+                    {rec.priority === 'immediate' ? 'Ngay lập tức' :
+                     rec.priority === 'short-term' ? 'Ngắn hạn' : 'Dài hạn'}
+                  </Badge>
+                </div>
+                <p className="text-xs font-medium text-slate-800">{rec.recommendation}</p>
+                <p className="text-[11px] text-slate-500 mt-1">{rec.rationale}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </Card>
