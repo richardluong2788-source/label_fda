@@ -861,13 +861,13 @@ export const vi = {
 
     // Phần mô tả: Logic, chặt chẽ và đánh trúng nỗi đau tài chính
     heroDesc1: 'Vexim AI tự động đối soát nhãn với 5.346 lỗi vi phạm thực tế ',
-    heroDesc2: 'giúp bạn loại bỏ rủi ro',
-    heroDesc3: 'Warning Letters và chi phí thu hồi hàng tỷ đồng ',
+    heroDesc2: 'giúp bạn loại bỏ rủi ro ',
+    heroDesc3: 'Warning Letters và chi phí thu hồi hàng tỷ đồng. ',
     heroDesc4: 'Chính xác hơn thủ công, an toàn hơn khi xuất khẩu.',
-    heroDesc5: '.',
-    heroDesc6: '.',
-    heroDesc7: '.',
-    heroDesc8: '.',
+    heroDesc5: '',
+    heroDesc6: '',
+    heroDesc7: '',
+    heroDesc8: '',
     ctaCheckLabel: 'Kiểm tra nhãn của bạn ngay',
     ctaViewCases: 'Xem các trường hợp vi phạm thực tế',
     trustStats: [

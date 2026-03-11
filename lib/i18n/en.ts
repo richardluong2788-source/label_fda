@@ -855,19 +855,19 @@ export const en: TranslationKeys = {
     heroBadge: 'Cross-referenced with 5,346 Real-world FDA Violations',
 
     landing: {
-    // Tiêu đề chính: Đánh thẳng vào thời gian và tiền bạc
+    // Hero title: Short, targeting time and money
     heroTitle: 'DETECT FDA LABEL ERRORS BEFORE CARGO DEPARTURE',
     heroTitleHighlight: 'Eliminate Export Risks to the U.S. Market',
 
-    // Phần mô tả: Logic, chặt chẽ và đánh trúng nỗi đau tài chính
-    heroDesc1: 'Vexim AI automates compliance audits by cross-referencing 5,346 real-world violations, ',
+    // Hero description: Logical, tight, hitting financial pain points
+    heroDesc1: 'Vexim AI automatically cross-references your label against 5,346 real FDA violations, ',
     heroDesc2: 'helping you eliminate the risk of ',
-    heroDesc3: 'FDA Warning Letters and multi-billion recall costs. ',
-    heroDesc4: 'Superior to manual reviews, safer for your exports.',
-	heroDesc5: '.',
-    heroDesc6: '.',
-    heroDesc7: '.',
-    heroDesc8: '.',
+    heroDesc3: 'Warning Letters and recall costs worth billions. ',
+    heroDesc4: 'More accurate than manual review, safer for your exports.',
+    heroDesc5: '',
+    heroDesc6: '',
+    heroDesc7: '',
+    heroDesc8: '',
     ctaCheckLabel: 'Check your label now',
     ctaViewCases: 'View real violation cases',
     trustStats: [
