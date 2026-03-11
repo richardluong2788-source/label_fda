@@ -863,7 +863,7 @@ export const en: TranslationKeys = {
     heroDesc1: 'Vexim AI automates compliance audits by cross-referencing 5,346 real-world violations, ',
     heroDesc2: 'helping you eliminate the risk of ',
     heroDesc3: 'FDA Warning Letters and multi-billion recall costs. ',
-    heroDesc4: 'Superior to manual reviews, safer for your exports.',\
+    heroDesc4: 'Superior to manual reviews, safer for your exports.',
 	heroDesc5: '.',
     heroDesc6: '.',
     heroDesc7: '.',
