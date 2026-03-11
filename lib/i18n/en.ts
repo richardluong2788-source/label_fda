@@ -854,18 +854,16 @@ export const en: TranslationKeys = {
     // Hero Badge: Focus on data authority
     heroBadge: 'Cross-referenced with 5,346 Real-world FDA Violations',
 
-    // Hero Title: Nhấn mạnh tính tuân thủ và phòng ngừa rủi ro
-    heroTitle: 'FDA Label Compliance Audit (21 CFR) -',
-    heroTitleHighlight: 'Detect Errors Before Cargo Departure',
+    landing: {
+    // Tiêu đề chính: Đánh thẳng vào thời gian và tiền bạc
+    heroTitle: 'DETECT FDA LABEL ERRORS BEFORE CARGO DEPARTURE',
+    heroTitleHighlight: 'Eliminate Export Risks to the U.S. Market',
 
-    // Hero Description: Chặt chẽ, đánh vào chi phí và s�� an toàn
-    heroDesc1: 'Are you certain your product labels are clear of ',
-    heroDesc2: 'FDA Warning Letters',
-    heroDesc3: '? Vexim AI automates complex compliance audits by cross-referencing ',
-    heroDesc4: '5,346 real-world violations',
-    heroDesc5: '. We detect ',
-    heroDesc6: 'hidden non-compliance issues',
-    heroDesc7: ' that manual reviews often miss, protecting your business from detention and multi-billion recall costs.',
+    // Phần mô tả: Logic, chặt chẽ và đánh trúng nỗi đau tài chính
+    heroDesc1: 'Vexim AI automates compliance audits by cross-referencing 5,346 real-world violations, ',
+    heroDesc2: 'helping you eliminate the risk of ',
+    heroDesc3: 'FDA Warning Letters and multi-billion recall costs. ',
+    heroDesc4: 'Superior to manual reviews, safer for your exports.',
     heroDesc8: '.',
     ctaCheckLabel: 'Check your label now',
     ctaViewCases: 'View real violation cases',
