@@ -446,8 +446,10 @@ function ExpertQueueCard({ request, onAssigned }: { request: any; onAssigned: ()
 
 function RiskReportCard({ report }: { report: any }) {
   const findings = report.findings || []
-  // IMPORTANT: Exclude recall items from counts - they are "market intelligence" only and do NOT affect risk score.
-  const findingsForCount = findings.filter((f: any) => f.source_type !== 'recall')
+  // IMPORTANT: Exclude market intelligence items from counts - they do NOT affect risk score.
+  // Warning Letters, Recalls, and Import Alerts are context info, NOT actual violations on THIS label.
+  const MARKET_INTELLIGENCE_TYPES = ['recall', 'warning_letter', 'import_alert']
+  const findingsForCount = findings.filter((f: any) => !MARKET_INTELLIGENCE_TYPES.includes(f.source_type))
   const criticalCount = findingsForCount.filter((f: any) => f.severity === 'critical').length
   const warningCount = findingsForCount.filter((f: any) => f.severity === 'warning').length
   const productName = report.product_name || report.brand_name || report.file_name || 'Sản phẩm không tên'

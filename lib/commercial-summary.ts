@@ -12,9 +12,10 @@ export function generateLocalizedCommercialSummary(
   t: ReturnType<typeof useTranslation>['t']
 ): string {
   const violations = report.violations || []
-  // IMPORTANT: Exclude recall items from commercial summary - they are "market intelligence" only.
-  // Recalls are displayed in a separate "Tham khảo" section and do NOT affect risk score.
-  const violationsForSummary = violations.filter(v => v.source_type !== 'recall')
+  // IMPORTANT: Exclude market intelligence items from commercial summary.
+  // Warning Letters, Recalls, and Import Alerts are displayed in separate sections and do NOT affect risk score.
+  const MARKET_INTELLIGENCE_TYPES = ['recall', 'warning_letter', 'import_alert']
+  const violationsForSummary = violations.filter(v => !MARKET_INTELLIGENCE_TYPES.includes(v.source_type))
   const criticalViolations = violationsForSummary.filter(v => v.severity === 'critical')
   const warningViolations = violationsForSummary.filter(v => v.severity === 'warning')
   const infoViolations = violationsForSummary.filter(v => v.severity === 'info')

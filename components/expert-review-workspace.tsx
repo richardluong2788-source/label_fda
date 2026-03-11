@@ -360,7 +360,9 @@ const [violationReviews, setViolationReviews] = useState<ViolationReview[]>(
             {/* Danh sách vi phạm — review từng cái */}
             <Card className="p-5">
               {(() => {
-                const actualViolations = findings.filter((f: any) => f.source_type !== 'recall')
+                // Exclude market intelligence items - they are displayed in separate sections
+                const MARKET_INTELLIGENCE_TYPES = ['recall', 'warning_letter', 'import_alert']
+                const actualViolations = findings.filter((f: any) => !MARKET_INTELLIGENCE_TYPES.includes(f.source_type))
                 const recallWarnings = findings.filter((f: any) => f.source_type === 'recall')
                 return (
                   <>

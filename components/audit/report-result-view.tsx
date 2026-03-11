@@ -143,9 +143,10 @@ export function ReportResultView({
   // They should NOT be counted in criticalCount/warningCount as they don't affect compliance
   // FDA 21 CFR does NOT specify contrast ratios - only "conspicuous and legible"
   //
-  // IMPORTANT: Also exclude recall items from counts - recalls are "market intelligence" only.
-  // They are displayed in a separate "Tham khảo" section and do NOT affect risk score.
-  const violationsForCounting = allViolations.filter((v) => v.source_type !== 'recall')
+  // IMPORTANT: Also exclude market intelligence items from counts.
+  // Warning Letters, Recalls, and Import Alerts are displayed in separate sections and do NOT affect risk score.
+  const MARKET_INTELLIGENCE_TYPES = ['recall', 'warning_letter', 'import_alert']
+  const violationsForCounting = allViolations.filter((v) => !MARKET_INTELLIGENCE_TYPES.includes(v.source_type))
   const criticalCount = violationsForCounting.filter((v) => v.severity === 'critical').length
   const warningCount = violationsForCounting.filter((v) => v.severity === 'warning').length
   const infoCount = violationsForCounting.filter((v) => v.severity === 'info').length

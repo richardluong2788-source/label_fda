@@ -333,9 +333,11 @@ export function calculateOverallRisk(input: RiskCalculationInput): RiskCalculati
   let criticalCount = 0
   let warningCount = 0
 
-  // Filter out recall items for risk calculation
+  // Filter out market intelligence items for risk calculation
+  // Warning Letters, Recalls, and Import Alerts are context info, NOT actual violations on THIS label
+  const MARKET_INTELLIGENCE_TYPES = ['recall', 'warning_letter', 'import_alert']
   const violationsForRiskCalc = violationsWithRisk.filter(
-    v => (v as any).source_type !== 'recall'
+    v => !MARKET_INTELLIGENCE_TYPES.includes((v as any).source_type)
   )
 
   for (const v of violationsForRiskCalc) {

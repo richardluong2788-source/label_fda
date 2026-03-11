@@ -39,8 +39,11 @@ export function DashboardClient({
   const pendingReports = allReports.filter(
     (r) => r.status === 'pending' || r.status === 'processing'
   ).length
+  // CRITICAL FIX: Exclude market intelligence items from critical count
+  // Warning Letters, Recalls, and Import Alerts are context info, NOT actual violations on THIS label
+  const MARKET_INTELLIGENCE_TYPES = ['recall', 'warning_letter', 'import_alert']
   const criticalViolations = allReports.reduce(
-    (sum, r) => sum + (r.violations?.filter((v) => v.severity === 'critical').length || 0),
+    (sum, r) => sum + (r.violations?.filter((v) => v.severity === 'critical' && !MARKET_INTELLIGENCE_TYPES.includes(v.source_type)).length || 0),
     0
   )
   const passCount = allReports.filter((r) => r.overall_result === 'pass').length
@@ -233,9 +236,9 @@ export function DashboardClient({
                     </p>
                   </div>
                   <div className="text-right shrink-0 ml-4">
-                    {report.violations && report.violations.length > 0 && (
+                    {report.violations && report.violations.filter((v: any) => v.severity === 'critical' && !MARKET_INTELLIGENCE_TYPES.includes(v.source_type)).length > 0 && (
                       <p className="text-sm font-medium text-red-600">
-                        {report.violations.filter((v) => v.severity === 'critical').length} {d.critical}
+                        {report.violations.filter((v: any) => v.severity === 'critical' && !MARKET_INTELLIGENCE_TYPES.includes(v.source_type)).length} {d.critical}
                       </p>
                     )}
                     {report.overall_risk_score != null && (

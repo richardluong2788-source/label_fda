@@ -1048,11 +1048,12 @@ export async function POST(request: Request) {
     const riskResult = calculateOverallRisk({ violations, warningLetterMatches: warningLetterContext, recallMatches: recallContext, importAlertMatches: importAlertContext, extractionConfidence, legalReasoningConfidence })
     violations = riskResult.violationsWithRisk
 
-    // CRITICAL: When calculating overall result, EXCLUDE recall items
-    // Recalls are "market intelligence" context, NOT confirmed violations of THIS label.
-    // A product should NOT be marked as FAIL just because similar products were recalled.
-    // Only actual violations on THIS label should affect the result.
-    const violationsForResult = violations.filter((v: any) => v.source_type !== 'recall')
+    // CRITICAL: When calculating overall result, EXCLUDE market intelligence items
+    // Warning Letters, Recalls, and Import Alerts are "market intelligence" context, NOT confirmed violations of THIS label.
+    // A product should NOT be marked as FAIL just because similar products were recalled/flagged.
+    // Only actual CFR violations detected on THIS label should affect the Pass/Warning/Fail result.
+    const MARKET_INTELLIGENCE_TYPES = ['recall', 'warning_letter', 'import_alert']
+    const violationsForResult = violations.filter((v: any) => !MARKET_INTELLIGENCE_TYPES.includes(v.source_type))
     const hasCritical = violationsForResult.some((v: any) => v.severity === 'critical')
     const hasWarning  = violationsForResult.some((v: any) => v.severity === 'warning')
     const overallResult = hasCritical ? 'fail' : hasWarning ? 'warning' : 'pass'

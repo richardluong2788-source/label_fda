@@ -43,8 +43,9 @@ export async function POST(request: Request) {
     )
     .join('\n\n')
 
-  // Count actual violations vs market warnings for summary
-  const actualViolations = findings.filter((f: any) => f.source_type !== 'recall')
+  // Count actual violations vs market intelligence items for summary
+  const MARKET_INTELLIGENCE_TYPES = ['recall', 'warning_letter', 'import_alert']
+  const actualViolations = findings.filter((f: any) => !MARKET_INTELLIGENCE_TYPES.includes(f.source_type))
   const recallWarnings = findings.filter((f: any) => f.source_type === 'recall')
   
   const systemPrompt = `Bạn là chuyên gia tư vấn FDA compliance hàng đầu Việt Nam, chuyên về nhãn mác sản phẩm xuất khẩu sang thị trường ${targetMarket ?? 'US'}.

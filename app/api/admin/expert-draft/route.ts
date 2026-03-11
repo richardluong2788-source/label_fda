@@ -62,8 +62,9 @@ export async function POST(request: Request) {
   const healthClaims = report?.health_claims ?? []
 
   // Build prompt context - include EXACT CFR references from findings to prevent hallucination
-  // Separate actual violations from market warnings (recalls)
-  const actualViolations = findings.filter((v: any) => v.source_type !== 'recall')
+  // Separate actual violations from market intelligence items (recalls, warning letters, import alerts)
+  const MARKET_INTELLIGENCE_TYPES = ['recall', 'warning_letter', 'import_alert']
+  const actualViolations = findings.filter((v: any) => !MARKET_INTELLIGENCE_TYPES.includes(v.source_type))
   const recallWarnings = findings.filter((v: any) => v.source_type === 'recall')
 
   const violationsSummary = actualViolations
