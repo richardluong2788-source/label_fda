@@ -163,12 +163,16 @@ ${violationsSummary || 'No actual violations detected on this label - LABEL IS C
 ${recallSummary}
 
 IMPORTANT REMINDER:
-- violation_reviews array should have exactly ${actualViolations.length} items (one per actual violation)
-- Do NOT create violation_reviews for market warnings
-- If there are 0 actual violations, violation_reviews should be an empty array []
-- overall_assessment should be "approved" if there are no actual violations
+- violation_reviews array should have exactly ${findings.length} items (one per finding, including both violations AND market warnings)
+- For actual violations (${actualViolations.length} total): confirmed=true, provide wording_fix and legal_note
+- For market warnings/recalls (${recallWarnings.length} total): 
+  - confirmed=false (BẮT BUỘC)
+  - wording_fix="Không áp dụng - đây là cảnh báo thị trường tham khảo"
+  - legal_note: Mô tả chi tiết vụ thu hồi bằng tiếng Việt gồm: nguyên nhân, loại sản phẩm bị ảnh hưởng, lý do FDA thu hồi, tác động sức khỏe
+  - prevention_guide: Hướng dẫn 5 bước phòng ngừa: (1) kiểm tra nhãn, (2) quy trình QC, (3) hồ sơ nguồn gốc, (4) kiểm nghiệm ATTP, (5) liên hệ Vexim
+- overall_assessment should be "${actualViolations.length === 0 ? 'approved' : 'needs_revision or rejected based on severity'}"
 
-Please provide a complete expert review draft.`
+Please provide a complete expert review draft with detailed content for ALL items.`
 
   // Instruct the model to return pure JSON — no Output.object() since Groq
   // rejects JSON Schema meta-properties ($schema, additionalProperties, etc.)
@@ -178,13 +182,20 @@ RESPONSE FORMAT: You MUST respond with ONLY valid JSON, no markdown, no code blo
 {
   "expert_summary": "Vietnamese summary: if 0 actual violations, state label is compliant. Mention market warnings as reference only.",
   "violation_reviews": [
-    // ONLY for ACTUAL violations (not market warnings)
-    // If 0 actual violations, this should be an empty array: []
+    // For ACTUAL violations (source_type != recall):
     {
       "violation_index": 0,
       "confirmed": true,
-      "wording_fix": "exact English text or null",
-      "legal_note": "Vietnamese explanation starting with 'Qua rà soát nhãn...' or null"
+      "wording_fix": "exact English text for label correction",
+      "legal_note": "Vietnamese explanation starting with 'Qua rà soát nhãn...' with CFR reference"
+    },
+    // For RECALL/MARKET WARNINGS (source_type = recall):
+    {
+      "violation_index": 1,
+      "confirmed": false,
+      "wording_fix": "Không áp dụng - đây là cảnh báo thị trường tham khảo",
+      "legal_note": "Mô tả chi tiết vụ thu hồi bằng tiếng Việt. Ví dụ: 'Vụ thu hồi #H-0465-2026 liên quan đến sản phẩm gia vị bị phát hiện ghi sai thành phần trên nhãn. FDA yêu cầu thu hồi vì có nguy cơ gây hại cho người tiêu dùng có dị ứng thực phẩm. Nguyên nhân chủ yếu: thiếu kiểm soát chất lượng nhãn mác trong quy trình sản xuất. Các nhà nhập khẩu cùng category nên rà soát lại quy trình kiểm tra nhãn.'",
+      "prevention_guide": "Hướng dẫn phòng ngừa 5 bước chi tiết:\n1. Kiểm tra lại độ chính xác thông tin thành phần và cảnh báo allergen trên nhãn\n2. Đảm bảo quy trình kiểm soát chất lượng (QC) nghiêm ngặt trước xuất khẩu, bao gồm kiểm tra nhãn mác\n3. Chuẩn bị hồ sơ chứng minh nguồn gốc nguyên liệu (COA, phiếu nhập, hợp đồng)\n4. Lưu trữ kết quả kiểm nghiệm an toàn thực phẩm (ATTP) đáp ứng tiêu chuẩn FDA\n5. Liên hệ chuyên gia Vexim để được tư vấn chi tiết về compliance và chuẩn bị hồ sơ xuất khẩu"
     }
   ],
   "recommended_actions": [
@@ -198,7 +209,11 @@ RESPONSE FORMAT: You MUST respond with ONLY valid JSON, no markdown, no code blo
   "estimated_fix_complexity": "simple|moderate|complex"
 }
 
-CRITICAL: If there are 0 actual violations, set overall_assessment to "approved" and violation_reviews to [].`
+IMPORTANT RULES:
+- violation_reviews array should contain ALL findings (both actual violations AND market warnings)
+- For actual violations: confirmed=true, provide wording_fix and legal_note
+- For market warnings (recalls): confirmed=false, wording_fix="Không áp dụng...", legal_note describes the recall, prevention_guide provides proactive steps
+- overall_assessment should be "approved" if there are 0 ACTUAL violations (recalls don't count)`
 
   try {
     const { text } = await generateText({

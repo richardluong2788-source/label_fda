@@ -504,7 +504,8 @@ const [violationReviews, setViolationReviews] = useState<ViolationReview[]>(
                             </div>
                           </div>
 
-                          {vr.confirmed && (
+                          {/* Show fields for ACTUAL VIOLATIONS (confirmed=true) */}
+                          {vr.confirmed && !isRecall && (
                             <>
                               <div>
                                 <Label className="text-xs mb-1 block flex items-center gap-1.5">
@@ -549,26 +550,58 @@ const [violationReviews, setViolationReviews] = useState<ViolationReview[]>(
                                   disabled={isReadOnly}
                                 />
                               </div>
-                              {/* Prevention Guide - Only for recall items */}
-                              {findings[i]?.source_type === 'recall' && (
-                                <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
-                                  <Label className="text-xs mb-1 block flex items-center gap-1.5 text-amber-800">
-                                    <AlertTriangle className="h-3.5 w-3.5" />
-                                    Hướng dẫn chuẩn bị hồ sơ phòng ngừa
-                                    {aiDrafted && vr.prevention_guide && (
-                                      <span className="text-[10px] text-green-600 font-normal">(AI soạn)</span>
-                                    )}
-                                  </Label>
-                                  <Textarea
-                                    value={vr.prevention_guide || ''}
-                                    onChange={(e) => updateVR(i, 'prevention_guide', e.target.value)}
-                                    placeholder="Hướng dẫn phòng ngừa: Kiểm tra độ chính xác nhãn, quy trình QC, hồ sơ nguồn gốc nguyên liệu, kết quả kiểm nghiệm ATTP..."
-                                    rows={3}
-                                    className={`text-xs ${aiDrafted && vr.prevention_guide ? 'border-green-300 bg-green-50/50' : 'bg-white'}`}
-                                    disabled={isReadOnly}
-                                  />
-                                </div>
-                              )}
+                            </>
+                          )}
+
+                          {/* Show fields for RECALL / MARKET WARNINGS - always visible regardless of confirmed status */}
+                          {isRecall && (
+                            <>
+                              {/* Market Warning Info Box */}
+                              <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                                <p className="text-xs text-blue-800 font-medium flex items-center gap-1.5">
+                                  <AlertTriangle className="h-3.5 w-3.5" />
+                                  Thông tin tham khảo - Không phải lỗi trên nhãn sản phẩm này
+                                </p>
+                                <p className="text-[11px] text-blue-700 mt-1">
+                                  Đây là cảnh báo về sản phẩm cùng loại đã bị thu hồi. Sử dụng thông tin này để phòng ngừa rủi ro.
+                                </p>
+                              </div>
+                              
+                              <div>
+                                <Label className="text-xs mb-1 block flex items-center gap-1.5">
+                                  Ghi chú về vụ thu hồi
+                                  {aiDrafted && vr.legal_note && (
+                                    <span className="text-[10px] text-green-600 font-normal">(AI soạn)</span>
+                                  )}
+                                </Label>
+                                <Textarea
+                                  value={vr.legal_note}
+                                  onChange={(e) => updateVR(i, 'legal_note', e.target.value)}
+                                  placeholder="Mô tả vụ thu hồi: Nguyên nhân, sản phẩm bị ảnh hưởng, hành động FDA yêu cầu..."
+                                  rows={3}
+                                  className={`text-xs ${aiDrafted && vr.legal_note ? 'border-green-300 bg-green-50/50' : ''}`}
+                                  disabled={isReadOnly}
+                                />
+                              </div>
+
+                              {/* Prevention Guide - For recall items */}
+                              <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                                <Label className="text-xs mb-1 block flex items-center gap-1.5 text-amber-800">
+                                  <AlertTriangle className="h-3.5 w-3.5" />
+                                  Hướng dẫn chuẩn bị hồ sơ phòng ngừa
+                                  {aiDrafted && vr.prevention_guide && (
+                                    <span className="text-[10px] text-green-600 font-normal">(AI soạn)</span>
+                                  )}
+                                </Label>
+                                <Textarea
+                                  value={vr.prevention_guide || ''}
+                                  onChange={(e) => updateVR(i, 'prevention_guide', e.target.value)}
+                                  placeholder="Hướng dẫn phòng ngừa: Kiểm tra độ chính xác nhãn, quy trình QC, hồ sơ nguồn gốc nguyên liệu, kết quả kiểm nghiệm ATTP..."
+                                  rows={3}
+                                  className={`text-xs ${aiDrafted && vr.prevention_guide ? 'border-green-300 bg-green-50/50' : 'bg-white'}`}
+                                  disabled={isReadOnly}
+                                />
+                              </div>
                             </>
                           )}
                         </div>

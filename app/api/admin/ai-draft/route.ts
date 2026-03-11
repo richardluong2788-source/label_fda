@@ -94,7 +94,20 @@ ${userContext ? `- Ghi chú từ khách hàng: "${userContext}"` : ''}`
     const result = await generateText({
       model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
       system: systemPrompt,
-      prompt: `Dưới đây là danh sách vi phạm AI phát hiện:\n\n${findingsText}\n\nHãy soạn expert review draft đầy đủ.`,
+      prompt: `Dưới đây là danh sách phát hiện AI:
+
+${findingsText}
+
+THỐNG KÊ:
+- Số vi phạm thực tế trên nhãn: ${actualViolations.length}
+- Số cảnh báo thị trường (recall): ${recallWarnings.length}
+
+YÊU CẦU BẮT BUỘC:
+1. violationReviews phải có đúng ${findings.length} items (mỗi finding một item)
+2. Với vi phạm thực tế: confirmed=true, wording_fix bằng tiếng Anh, legal_note trích dẫn CFR
+3. Với recall/cảnh báo thị trường: confirmed=false, wording_fix="Không áp dụng...", legal_note mô tả chi tiết vụ thu hồi, prevention_guide hướng dẫn 5 bước phòng ngừa
+
+Hãy soạn expert review draft đầy đủ với NỘI DUNG CHI TIẾT cho từng mục.`,
       output: Output.object({
         schema: z.object({
           expertSummary: z.string().describe('Nhận xét tổng quan 3-5 câu về mức độ tuân thủ, rủi ro chính, hướng khắc phục'),
@@ -102,9 +115,15 @@ ${userContext ? `- Ghi chú từ khách hàng: "${userContext}"` : ''}`
             z.object({
               violation_index: z.number().describe('Index vi phạm (bắt đầu từ 0)'),
               confirmed: z.boolean().describe('BẮT BUỘC: Với source_type=recall → confirmed=FALSE. Với vi phạm thực tế → confirmed=true nếu cần sửa'),
-              wording_fix: z.string().describe('Với recall: "Không áp dụng - đây là cảnh báo thị trường, không phải vi phạm trên nhãn sản phẩm này." Với vi phạm thực tế: wording cụ thể'),
-              legal_note: z.string().describe('Với recall: BẮT BUỘC bắt đầu bằng "ĐÂY LÀ CẢNH BÁO THỊ TRƯỜNG THAM KHẢO, không phải vi phạm trên nhãn sản phẩm này...". Với vi phạm thực tế: trích dẫn CFR'),
-              prevention_guide: z.string().optional().describe('CHỈ cho source_type=recall. Hướng dẫn phòng ngừa 5 điểm: (1) kiểm tra nhãn, (2) QC, (3) hồ sơ nguồn gốc, (4) kiểm nghiệm ATTP, (5) liên hệ Vexim'),
+              wording_fix: z.string().describe('Với recall: "Không áp dụng - đây là cảnh báo thị trường, không phải vi phạm trên nhãn sản phẩm này." Với vi phạm thực tế: wording cụ thể bằng tiếng Anh'),
+              legal_note: z.string().describe(`Với recall: Mô tả chi tiết vụ thu hồi bằng tiếng Việt - bao gồm: (1) Nguyên nhân thu hồi (ví dụ: nhiễm khuẩn, ghi sai nhãn, allergen không công bố), (2) Loại sản phẩm bị thu hồi, (3) Lý do FDA ra quyết định, (4) Tác động tiềm ẩn đến sức khỏe người tiêu dùng. Ví dụ: "Vụ thu hồi này liên quan đến sản phẩm gia vị bị phát hiện chứa chì vượt ngưỡng cho phép. FDA yêu cầu thu hồi vì có nguy cơ gây hại sức khỏe nếu tiêu thụ lâu dài. Các nhà nhập khẩu cùng category nên kiểm tra nguồn gốc nguyên liệu và kết quả kiểm nghiệm kim loại nặng." 
+              Với vi phạm thực tế: trích dẫn CFR cụ thể và giải thích vi phạm`),
+              prevention_guide: z.string().optional().describe(`CHỈ cho source_type=recall. Hướng dẫn phòng ngừa chi tiết bằng tiếng Việt gồm 5 điểm cụ thể:
+              1. Kiểm tra lại độ chính xác thông tin thành phần và cảnh báo trên nhãn
+              2. Đảm bảo quy trình kiểm soát chất lượng (QC) nghiêm ngặt trước xuất khẩu  
+              3. Chuẩn bị hồ sơ chứng minh nguồn gốc nguyên liệu (COA, phiếu nhập)
+              4. Lưu trữ kết quả kiểm nghiệm an toàn thực phẩm (ATTP) đáp ứng tiêu chuẩn FDA
+              5. Liên hệ chuyên gia Vexim để được tư vấn chi tiết về compliance`),
             })
           ),
           recommendedActions: z.array(
