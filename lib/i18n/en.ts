@@ -1178,4 +1178,4 @@ export const en: TranslationKeys = {
     mappingDetail3: 'Commercial report generation',
     mappingDetail4: 'Expert recommendations',
   },
-  } as const
+} as const
