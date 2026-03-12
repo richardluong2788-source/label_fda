@@ -234,6 +234,10 @@ export class ClaimsValidator {
     /\btreated\s+(water|milk|whey|cream|juice)/i,  // "treated water", "treated milk"
     /\b(ultra.?high\s+temperature|uht)\s+treated/i, // UHT treated
     /\b(pasteurized|homogenized)\b/i,                // dairy processing (contains no target terms but future-proofs)
+    // FDA agency name patterns - "drug" in these contexts is NOT a drug claim
+    /\bfood\s+and\s+drug\s+administration\b/i,       // "Food and Drug Administration"
+    /\bfda\b/i,                                       // "FDA" acronym
+    /\bdrug\s+administration\b/i,                    // "Drug Administration" (partial agency name)
   ]
 
   // ─── SHARED MATCHING UTILITIES ────────────────────────────────────────────
