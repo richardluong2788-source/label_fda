@@ -1,0 +1,29 @@
+### Khuyến nghị giải pháp:
+
+| Giải pháp | Chi phí | Storage | Phù hợp cho
+|-----|-----|-----|-----
+| **Vercel Blob Pro** | $20/tháng | 100GB | SaaS nhỏ-vừa
+| **Supabase Storage** | Free: 1GB, Pro: $25/tháng với 100GB | Linh hoạt | SaaS vừa
+| **AWS S3** | ~$0.023/GB/tháng | Không giới hạn | SaaS lớn/Enterprise
+| **Cloudflare R2** | Free: 10GB, sau đó $0.015/GB/tháng | Không giới hạn | SaaS mọi quy mô (rẻ nhất)
+
+
+### Đề xuất cho dự án SaaS của bạn:
+
+1. **Ngắn hạn (MVP/Testing)**: Giữ nguyên Vercel Blob, nhưng nên nâng lên Vercel Pro ($20/tháng)
+2. **Trung/Dài hạn**: Chuyển sang **AWS S3** hoặc **Cloudflare R2** vì:
+
+1. Chi phí theo dung lượng thực tế sử dụng
+2. Không giới hạn storage
+3. Tích hợp tốt với multi-tenant architecture
+4. Có thể set up storage quotas per tenant
+
+
+
+
+
+Bạn muốn tôi triển khai giải pháp nào? Tôi có thể:
+
+- Thêm tích hợp **AWS S3** hoặc **Cloudflare R2** thay thế Vercel Blob
+- Thêm tính năng **storage quota per tenant** để quản lý dung lượng mỗi khách hàng
+- Giữ nguyên Vercel Blob và nâng cấp lên Pro plan
