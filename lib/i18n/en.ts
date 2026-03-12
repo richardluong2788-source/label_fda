@@ -914,6 +914,11 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     footerPrivacy: 'Privacy Policy',
     footerDescFull: 'AI-powered FDA compliance platform for Vietnamese businesses exporting to the US market.',
     footerSupportLabel: 'Customer Support',
+    // Footer trust badges
+    badgeDataFrom: 'Data from',
+    badgePaymentVia: 'Payment via',
+    badgeDataProtection: 'Data Protection',
+    badgeCompliant: 'Compliant',
   },
 
   // ─── PDF Report ──────────────────────────────────────
