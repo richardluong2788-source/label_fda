@@ -857,7 +857,7 @@ export const vi = {
     heroBadge: 'Đối soát trực tiếp dữ liệu từ 5.346 vi phạm thực tế của FDA',
 
     // Tiêu đề chính: Ngắn gọn, đánh thẳng vào thời gian và tiền bạc
-    heroTitle: 'Phát Hiện Lỗi Nhãn Trước Khi Xuất Cảng',
+    heroTitle: 'Phát Hiện Lỗi Nhãn FDA Trước Khi Xuất Cảng',
     heroTitleHighlight: 'Tránh rủi ro khi xuất khẩu vào Mỹ',
 
     // Phần mô tả: Logic, chặt chẽ và đánh trúng nỗi đau tài chính
