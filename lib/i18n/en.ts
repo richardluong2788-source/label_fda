@@ -30,7 +30,7 @@ export const en: TranslationKeys = {
     history: 'History',
     settings: 'Settings',
     guide: 'User Guide',
-    fsvp: 'FSVP',
+    riskMethodology: 'Risk Scoring',
     knowledgeBase: 'Knowledge Base',
     revenue: 'Revenue',
     pricing: 'Pricing',
@@ -48,7 +48,7 @@ export const en: TranslationKeys = {
   analyze: {
     imageTypes: {
       pdp: { label: 'Front Panel (PDP)', description: 'Principal Display Panel - Net Weight, Brand, Product Name' },
-      nutrition: { label: 'Nutrition Facts', description: 'Detailed nutrition information panel' },
+      nutrition: { label: 'Nutrition Facts', description: 'Detailed nutrition information panel', hint: 'No Nutrition Facts? Small packages may be exempt - upload the back panel with ingredients instead' },
       supplementFacts: { label: 'Supplement Facts', description: 'Dietary supplement information panel' },
       drugFacts: { label: 'Drug Facts', description: 'OTC drug information panel' },
       inciIngredients: { label: 'INCI Ingredients', description: 'Cosmetic ingredients list (INCI)' },
@@ -154,12 +154,71 @@ export const en: TranslationKeys = {
     findingsDesc: (count: number) => `Found ${count} issue(s) requiring action`,
     warningLetterTitle: 'FDA Warning Letter Alert',
     recallTitle: 'Related to Recalled Product',
+    recallHistoryTitle: 'Recall History in Same Category',
+    referenceOnly: 'Reference',
+    recallReferenceNote: 'This is market intelligence data for reference only — not a violation, does not affect risk score.',
+    recallsReferenceSection: 'MARKET WARNING',
+    marketIntelligence: 'Market Intelligence',
+    // Freemium Model - Market Intelligence section (Recall, Warning Letter, Import Alert)
+    marketWarningTitle: 'Market Warning',
+    marketWarningMessage: 'FDA is closely monitoring this category. Similar products have been recalled.',
+    // Warning Letter Market Intelligence
+    warningLetterMarketMessage: 'Label contains language similar to FDA Warning Letter cases.',
+    warningLetterBadge: 'FDA Warning Letter',
+    warningLetterItem1: 'Original Warning Letter reference',
+    warningLetterItem2: 'Specific violating language',
+    warningLetterItem3: 'FDA-required corrective actions',
+    warningLetterItem4: 'Guidance to avoid repeat violations',
+    // Import Alert Market Intelligence  
+    importAlertMarketMessage: 'Product or manufacturer on FDA Import Alert list.',
+    importAlertBadge: 'FDA Import Alert',
+    importAlertItem1: 'Official Import Alert number',
+    importAlertItem2: 'Reason for listing',
+    importAlertItem3: 'DWPE procedure explanation',
+    importAlertItem4: 'Border clearance guidance',
+    // Common Market Intelligence
+    freeSummary: 'FREE SUMMARY',
+    fullReportIncludes: 'FULL REPORT INCLUDES',
+    getFullReport: 'Get Full Report + Consultation',
+    // Recall summary labels
+    recallCategory: 'Category',
+    recallTimePeriod: 'Time Period',
+    recallSignal: 'Signal',
+    recallHighRisk: 'High Risk',
+    recallRecent: 'Recent',
+    recallSameCategory: 'same category',
+    // Recall full report items
+    recallItem1: 'Official FDA recall number',
+    recallItem2: 'Violating company name',
+    recallItem3: 'Detailed corrective actions',
+    recallItem4: 'Prevention documentation guide',
+    // Combined Market Intelligence labels
+    recallBadge: 'FDA Recall',
+    recallsFound: 'related recalls',
+    warningLettersFound: 'similar warning letters',
+    importAlertsFound: 'import alerts',
+    // Recall teaser and locked content
+    recallTeaser: (category: string) => `Recall case found in ${category} category. Details available in expert report.`,
+    lockedForExpert: 'Details for experts only',
+    recallCTAMessage: 'To view recall details (recall number, company, preventive actions), please contact our expert team.',
+    contactExpert: 'Contact Vexim Expert',
+    // Fallback commercial summary (when AI doesn't generate one)
+    unknownProduct: 'Product',
+    fallbackCompliantSummary: 'has been reviewed and complies with FDA regulations. No serious violations detected during analysis.',
+    fallbackViolationSummary: 'requires attention on some compliance issues:',
+    fallbackRiskNote: 'Please review the detailed issues below.',
+    infoIssues: 'info note(s)',
     importAlertTitle: 'FDA Import Alert',
     lowContrastTitle: 'Low Color Contrast',
     fdaReadabilityReq: 'FDA label readability requirements',
+    // Design recommendation labels - clarify this is NOT an FDA requirement
+    designRecommendation: 'Design Recommendation',
+    notFdaRequired: 'Not required by CFR',
+    designNote: 'TIP',
+    designRecommendations: 'design recommendation(s)',
     contrastTitle: 'Low Color Contrast',
     contrastRef: 'FDA label readability requirements',
-    contrastRatio: (ratio: number, minRatio?: number) => `Contrast ratio ${ratio.toFixed(2)}:1 (Minimum required: ${(minRatio ?? 4.5).toFixed(1)}:1)`,
+    contrastRatio: (ratio: number, minRatio?: number) => `Contrast ratio ${ratio.toFixed(2)}:1 (Recommended minimum: ${(minRatio ?? 3.0).toFixed(1)}:1)`,
     contrastDefaultFix: 'Increase text boldness or change background color to ensure readability.',
     warningLetterDefaultFix: 'Review your label to avoid similar issues that FDA has previously warned about.',
     recallDefaultFix: 'Check if your product has similar ingredients or characteristics to the recalled product.',
@@ -177,22 +236,31 @@ export const en: TranslationKeys = {
     riskDescWithAdvisory: (issues: string, advisory: string) => `Label has ${issues} that need to be fixed before distribution. Additionally, ${advisory}.`,
     riskDescAdvisoryOnly: (advisory: string) => `Label has ${advisory} — does not affect compliance score.`,
     riskDescCompliant: 'Label complies with all FDA regulations checked. Low risk.',
+    // Risk level detailed descriptions based on score ranges
+    riskDesc_0_2_4: 'Product label complies well with FDA regulations. Very low likelihood of inspection or detention.',
+    riskDesc_2_5_3_9: 'Label has some minor issues that don\'t affect safety. Should be fixed to improve professionalism.',
+    riskDesc_4_0_5_4: 'Label has issues that need to be fixed. FDA may request inspection or send a warning.',
+    riskDesc_5_5_6_9: 'Label has significant issues. High likelihood of detailed FDA inspection or explanation request.',
+    riskDesc_7_0_8_4: 'Label seriously violates FDA regulations. Very likely to be detained at port and required to modify.',
+    riskDesc_8_5_10: 'Label has serious safety violations (missing allergen warnings, disease claims). Products WILL be detained and may be destroyed.',
     generating: 'Generating...',
     exportReport: 'Export Report',
     labelImages: 'Label Images',
     images: 'IMAGES',
-    productInfoAI: 'PRODUCT INFO (AI)',
+    productInfoAI: 'PRODUCT INFO',
     brand: 'BRAND',
     productName: 'PRODUCT NAME',
     extractedIngredients: 'EXTRACTED INGREDIENTS',
     category: 'CATEGORY',
     market: 'MARKET',
-    overallAssessment: 'Overall Assessment by Vexim AI',
+    overallAssessment: 'Overall Assessment by Vexim Global',
     regulationsChecked: 'REGULATIONS CHECKED',
     cfr101: '21 CFR 101 - Food Labeling',
     cfr701: '21 CFR 701 - Cosmetic Labeling',
     cfr700: '21 CFR 700-740 - Cosmetics',
-    historicalDataCheck: 'FDA HISTORICAL DATA CHECK',
+    historicalDataCheck: 'FDA ENFORCEMENT HISTORY',
+    similarProductsNote: 'Number of similar products flagged by FDA in the same category',
+    similarProductsFlagged: 'similar products flagged',
     related: 'related',
     none: 'None',
     conclusion: 'CONCLUSION',
@@ -224,9 +292,22 @@ export const en: TranslationKeys = {
       return s
     },
     cfrComplianceDetail: 'CFR COMPLIANCE DETAILS (21 CFR)',
-    noCfrViolations: 'No CFR Violations',
-    labelCompliant: 'Your label complies with all FDA regulations checked',
-    warningLettersSection: 'FDA WARNING LETTERS',
+  noCfrViolations: 'No CFR Violations',
+  labelCompliant: 'Your label complies with all FDA regulations checked',
+  // Commercial Summary - Compliant
+  commercialSummaryTitle: 'FDA LABEL COMPLIANCE REPORT - VEXIM GLOBAL',
+  commercialCompliantTitle: 'NO CFR VIOLATIONS DETECTED',
+  commercialCompliantDesc: 'Your label complies with all FDA regulations checked. Vexim AI did not find any critical violations during the inspection process.',
+  commercialCompliantRecommendation: 'The product can be distributed in the US market with low legal risk. We recommend periodic re-inspection when updating label content.',
+  // Commercial Summary - With violations
+  commercialCriticalLabel: 'CRITICAL ISSUES',
+  commercialCriticalNote: 'These issues may result in detention at port:',
+  commercialWarningLabel: 'WARNINGS',
+  commercialWarningNote: 'Presentation issues that should be fixed to avoid risk:',
+  commercialInfoLabel: 'INFORMATION',
+  commercialInfoNote: 'Additional notes to improve label:',
+  commercialLegalBasis: 'Legal basis',
+  warningLettersSection: 'FDA WARNING LETTERS',
     recallsSection: 'RELATED PRODUCT RECALLS',
     importAlertsSection: 'FDA IMPORT ALERTS',
     categoryNames: {
@@ -271,7 +352,7 @@ export const en: TranslationKeys = {
     afterFix: 'AFTER FIX',
     projectedRiskDesc: (score: number) => `After fixing critical issues, projected risk score drops to ${score.toFixed(1)}/10`,
     // Expert insights / AI summary
-    expertInsightsTitle: 'AI Expert Insights',
+    expertInsightsTitle: 'Expert Insights',
     expertInsightsDesc: 'Commercial summary and expert recommendations based on FDA data',
     aiSummary: 'COMMERCIAL SUMMARY',
     expertTipsLabel: 'EXPERT RECOMMENDATIONS',
@@ -288,10 +369,22 @@ export const en: TranslationKeys = {
     netQuantity: 'NET QUANTITY',
     allergenDeclaration: 'ALLERGEN DECLARATION',
     healthClaimsTitle: 'HEALTH CLAIMS (WARNING)',
+    structureFunctionClaimsTitle: 'STRUCTURE/FUNCTION CLAIMS (NEED DSHEA)',
+    factualClaimsTitle: 'FACTUAL/NEGATIVE CLAIMS (COMPLIANT)',
+    otherClaimsTitle: 'OTHER CLAIMS (REVIEW NEEDED)',
     specialClaimsTitle: 'SPECIAL CLAIMS',
     packagingFormatLabel: 'PACKAGING FORMAT',
     detectedLanguagesTitle: 'DETECTED LANGUAGES',
     nutritionFactsTitle: 'NUTRITION FACTS',
+    supplementFactsTitle: 'SUPPLEMENT FACTS',
+    multiColumnLabel: 'MULTI-COLUMN',
+    multiColumnWarnings: 'Column Inconsistencies Detected:',
+    multiColumnDetectedNoData: 'Multi-column Nutrition Facts Detected',
+    multiColumnDetectedNoDataDesc: 'This label appears to have multiple Nutrition Facts panels (variety pack format), but only the first panel data was extracted. For complete analysis, please ensure the image clearly shows all panels.',
+    // Dual column specific (as packaged / as prepared) - NOT variety pack
+    dualColumnDetected: 'Dual-Column Format Detected (As Packaged/As Prepared)',
+    dualColumnDesc: 'The Nutrition Facts panel shows two columns with "as packaged" and "as prepared" values (or similar). This is a standard format for products requiring preparation such as powders, cereals, and infant formulas.',
+    nutrientContentClaimsTitle: 'NUTRIENT CONTENT CLAIMS (COMPLIANT)',
     // Confidence metrics
     confidenceMetrics: 'ANALYSIS CONFIDENCE',
     ocrLabel: 'OCR (Text reading)',
@@ -310,7 +403,7 @@ export const en: TranslationKeys = {
     geometrySection: 'GEOMETRY & FONT SIZE CHECK (21 CFR)',
   },
 
-  // ─── Audit Page ─────���─────��──────────────────────────
+  // ─── Audit Page ─────────�����─��──────────────────────────
   audit: {
     loading: 'Analyzing product label...',
     loadingDesc: 'AI system is scanning and cross-referencing your label with the FDA database',
@@ -365,11 +458,17 @@ export const en: TranslationKeys = {
     pdfDownloadError: 'Unable to download report. Please try again.',
   },
 
-  // ─── Label Image Gallery ─���───���───────────────────────
+  // ─── Label Image Gallery ─────────────────────────────
   gallery: {
     noImages: 'No images',
     scanning: 'Scanning...',
     labelImageCount: (current: number, total: number) => `${current} / ${total} label images`,
+    clickToZoom: 'Click to zoom',
+    // Label type names
+    labelTypePdp: 'PDP',
+    labelTypeNutrition: 'Nutrition Facts',
+    labelTypeIngredients: 'Ingredients',
+    labelTypeOther: 'Other',
   },
 
   // ─── Expert Request Panel ────────────────────────────
@@ -382,6 +481,7 @@ export const en: TranslationKeys = {
     statusCancelled: 'Cancelled',
     expertSummaryTitle: 'Expert overview assessment',
     violationFixTitle: 'Fix guidance per violation',
+    preventionGuideTitle: 'Prevention documentation guide',
     violationConfirmed: 'Confirmed - needs fix',
     violationNotSerious: 'Not serious',
     violationIndex: (idx: number) => `Violation #${idx}`,
@@ -420,25 +520,25 @@ export const en: TranslationKeys = {
     errorSubmitFailed: 'Failed to submit request',
     viewPricing: 'View pricing',
     submitting: 'Submitting...',
-submitFreeInPlan: 'Request consultation (Free in plan)',
-  submitWithPrice: (price: string) => `Request consultation — ${price}`,
-  submitDefault: 'Request consultation',
-  proUpgradeNote: 'Business/Pro plans include free Expert Review credits.',
-  // Quota-related translations
-  creditsRemaining: 'remaining',
-  upgradeRequired: 'Pro/Business required',
-  upgradeToAccess: 'Upgrade to access Expert Consultation',
-  upgradeToPro: 'Upgrade to Pro/Business',
-  quotaExhaustedUpgrade: 'You have used all your Expert Review credits this month.',
-  upgradeForMore: 'Upgrade for unlimited',
-  // Addon purchase translations
-  quotaExhaustedTitle: 'Monthly quota exhausted',
-  quotaExhaustedDesc: 'You have used all your Expert Review credits this month.',
-  buyAddon: (price: string) => `Buy 1 review - ${price}₫`,
-  processingPayment: 'Processing payment...',
-  upgradeToEnterprise: 'Upgrade to Enterprise - Unlimited',
-  addonPurchaseSuccess: 'Expert Review purchased successfully!',
-  addonPurchaseDesc: 'Your request has been submitted. Our expert will review within 48 hours.',
+    submitFreeInPlan: 'Request consultation (Free in plan)',
+    submitWithPrice: (price: string) => `Request consultation — ${price}`,
+    submitDefault: 'Request consultation',
+    proUpgradeNote: 'Business/Pro plans include free Expert Review credits.',
+    // Quota-related translations
+    creditsRemaining: 'remaining',
+    upgradeRequired: 'Pro/Business required',
+    upgradeToAccess: 'Upgrade to access Expert Consultation',
+    upgradeToPro: 'Upgrade to Pro/Business',
+    quotaExhaustedUpgrade: 'You have used all your Expert Review credits this month.',
+    upgradeForMore: 'Upgrade for unlimited',
+    // Addon purchase translations
+    quotaExhaustedTitle: 'Monthly quota exhausted',
+    quotaExhaustedDesc: 'You have used all your Expert Review credits this month.',
+    buyAddon: (price: string) => `Buy 1 review - ${price}₫`,
+    processingPayment: 'Processing payment...',
+    upgradeToEnterprise: 'Upgrade to Enterprise - Unlimited',
+    addonPurchaseSuccess: 'Expert Review purchased successfully!',
+    addonPurchaseDesc: 'Your request has been submitted. Our expert will review within 48 hours.',
   },
 
   // ─── Advanced Settings (Analyze form) ────────────────
@@ -450,7 +550,7 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     marketCA: 'Canada',
     marketEU: 'European Union (EU)',
     marketMultiple: 'Multiple markets',
-    marketNote: 'Each market has different FDA/CFIA/EFSA regulations',
+    marketNote: 'Currently only US market (FDA) is supported. Other markets coming soon.',
     labelLanguage: 'Label language',
     selectLanguage: 'Select language',
     langEn: 'English',
@@ -517,7 +617,7 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     howItWorksTitle: 'How does the system work?',
     howItWorksDesc: 'Understanding how AI reads labels helps you prepare better images.',
     steps: [
-      { step: '01', title: 'Analyze each image independently', desc: 'Each image is processed independently by AI GPT-4o Vision. PDP image extracts Brand/Product/Net Weight. Nutrition Facts image extracts all nutritional values. Ingredients image extracts ingredient list and allergens.' },
+      { step: '01', title: 'Analyze each image independently', desc: 'Each image is processed independently by Vexim AI Vision. PDP image extracts Brand/Product/Net Weight. Nutrition Facts image extracts all nutritional values. Ingredients image extracts ingredient list and allergens.' },
       { step: '02', title: 'Combine data from all images', desc: 'The system aggregates information from all uploaded images. Missing images lead to missing analysis data — PDP and Nutrition Facts in particular are mandatory and cannot be skipped.' },
       { step: '03', title: 'Cross-reference with FDA Knowledge Base', desc: 'Extracted data is compared against a database of 21 CFR, real Warning Letters, Recalls and Import Alerts to detect violations and suggest fixes.' },
     ],
@@ -620,6 +720,7 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     unlimitedDesc: (planName: string) => `Your account has unlimited access — no monthly limits.`,
     usedOf: (used: number, limit: number) => `Used ${used} / ${limit} credits`,
     almostOut: '— almost out of quota',
+    quotaExhaustedLabel: '— quota exhausted',
     upgradePlan: 'Upgrade Plan',
     resultDistribution: 'Result Distribution',
     pass: 'Pass',
@@ -697,7 +798,7 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     deleteConfirmDesc: 'This action cannot be undone. This will permanently delete the audit report and all associated data.',
   },
 
-  // ─── Settings ────────────────────────────────────────
+  // ─── Settings ─��──────────────────────────────────────
   settings: {
     title: 'Settings',
     subtitle: 'Manage your account and subscription',
@@ -726,6 +827,7 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     monthlyUsage: 'Analysis credits this month',
     usedOfLimit: (used: number, limit: number) => `${used}/${limit} credits`,
     almostOutQuota: 'Almost out of quota — upgrade to continue.',
+    outOfQuota: 'Out of quota — upgrade to continue using.',
     viewAllPlans: 'View all plans',
     cancelPlan: 'Cancel plan',
     upgradePlan: 'Upgrade plan',
@@ -743,18 +845,20 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     statusCancelled: 'Cancelled',
     statusExpired: 'Expired',
     statusPendingPayment: 'Pending payment',
+    annualSavingsHint: 'Visit pricing page for annual billing with up to 20% savings.',
+    viewAllPlansWithAnnual: 'View all plans including annual pricing',
   },
 
   // ─── Landing Page ────────────────────────────────────
   landing: {
     // Hero Badge: Focus on data authority
     heroBadge: 'Cross-referenced with 5,346 Real-world FDA Violations',
-    
+
     // Hero Title: Nhấn mạnh tính tuân thủ và phòng ngừa rủi ro
     heroTitle: 'FDA Label Compliance Audit (21 CFR) -',
     heroTitleHighlight: 'Detect Errors Before Cargo Departure',
 
-    // Hero Description: Chặt chẽ, đánh vào chi phí và sự an toàn
+    // Hero Description: Chặt chẽ, đánh vào chi phí và s�� an toàn
     heroDesc1: 'Are you certain your product labels are clear of ',
     heroDesc2: 'FDA Warning Letters',
     heroDesc3: '? Vexim AI automates complex compliance audits by cross-referencing ',
@@ -914,14 +1018,9 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     footerPrivacy: 'Privacy Policy',
     footerDescFull: 'AI-powered FDA compliance platform for Vietnamese businesses exporting to the US market.',
     footerSupportLabel: 'Customer Support',
-    // Footer trust badges
-    badgeDataFrom: 'Data from',
-    badgePaymentVia: 'Payment via',
-    badgeDataProtection: 'Data Protection',
-    badgeCompliant: 'Compliant',
   },
 
-  // ─── PDF Report ──────────────────────────────────────
+  // ─���─ PDF Report ─────────────────────────────────────��
   pdf: {
     title: 'LABEL AUDIT REPORT',
     subtitle: 'FDA Label Compliance Audit Report',
@@ -947,7 +1046,7 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     infoLabel: 'INFO',
     disclaimer: 'This report is generated by Vexim Global AI system and is for reference only. It does not replace professional legal advice.',
     signatureTitle: 'Verified by',
-    signatureRole: 'Vexim Compliance AI System',
+    signatureRole: 'AI Label Pro – by Vexim Global',
     page: 'Page',
     riskLevel: 'Risk Level',
     fdaEnforcementRisk: 'FDA Enforcement Risk',
@@ -957,473 +1056,125 @@ submitFreeInPlan: 'Request consultation (Free in plan)',
     infoCount: 'Info',
   },
 
-  // ─── FSVP (Foreign Supplier Verification Program) ────
-  fsvp: {
-    title: 'FSVP Compliance Snapshot',
-    subtitle: 'Foreign Supplier Verification Program (21 CFR Part 1, Subpart L)',
-    
-    // Alert/Warnings
-    twentyFourHourTitle: '24-Hour Record Requirement',
-    twentyFourHourDesc: 'Per 21 CFR 1.510, you must provide FSVP records to FDA within 24 hours of a request. Use the "Export Dossier" button to generate a complete compliance package instantly.',
-    
-    // Stats Cards
-    totalSuppliers: 'Total Suppliers',
-    approved: 'Approved',
-    pendingReview: 'Pending Review',
-    overdue: 'Overdue',
-    sahcodhaRisk: 'SAHCODHA Risk',
-    
-    // Tabs
-    checklist: 'FSVP Checklist',
-    suppliers: 'Suppliers',
-    importerProfile: 'Importer Profile',
-    
-    // Checklist
-    complianceChecklist: 'FSVP Compliance Checklist',
-    complianceChecklistDesc: 'Foreign Supplier Verification Program requirements per 21 CFR Part 1, Subpart L',
-    complete: 'Complete',
-    
-    // Requirements
-    dunsNumber: 'DUNS Number Registration',
-    dunsNumberDesc: '21 CFR 1.512 - Required for customs declaration',
-    
-    qualifiedIndividual: 'Qualified Individual',
-    qualifiedIndividualDesc: '21 CFR 1.502 - Technical food safety expert',
-    
-    hazardAnalysis: 'Hazard Analysis',
-    hazardAnalysisDesc: '21 CFR 1.504 - Known or reasonably foreseeable hazards',
-    
-    supplierEvaluation: 'Supplier Evaluation',
-    supplierEvaluationDesc: '21 CFR 1.505 - Supplier verification activities',
-    
-    verificationActivities: 'Verification Activities',
-    verificationActivitiesDesc: '21 CFR 1.506 - Audits, sampling, testing, or certification',
-    
-    correctiveActions: 'Corrective Actions',
-    correctiveActionsDesc: '21 CFR 1.508 - Response to supplier deficiencies',
-    
-    recordkeeping: 'Recordkeeping',
-    recordkeepingDesc: '21 CFR 1.510 - Documentation and retention requirements',
-    
-    fsvpRequirements: 'FSVP Requirements',
-    fsvpRequirementsDesc: '21 CFR 1.500-1.514',
-    
-    // Status
-    required: 'Required',
-    approved: 'Approved',
-    pending: 'Pending',
-    overdue: 'Overdue',
-    
-    // Buttons
-    exportDossier: 'Export Dossier',
-    addSupplier: 'Add Supplier',
-    editSupplier: 'Edit Supplier',
-    deleteSupplier: 'Delete Supplier',
-    refresh: 'Refresh',
-    
-    // Messages
-    noSuppliers: 'No suppliers added yet. Start by adding your foreign suppliers.',
-    supplierAdded: 'Supplier added successfully',
-    supplierUpdated: 'Supplier updated successfully',
-    supplierDeleted: 'Supplier deleted successfully',
-    dossierExporting: 'Generating FSVP dossier...',
-    dossierExported: 'Dossier exported successfully',
-    
-    // SAHCODHA
-    sahcodhaTitle: 'SAHCODHA Risk Assessment',
-    sahcodhaDesc: 'Serious Adverse Health Consequences or Death',
-    sahcodhaHighRisk: 'High Risk',
-    sahcodhaRequiresAnnualAudit: 'Requires annual onsite audit per 21 CFR 1.506(d)',
-    sahcodhaHazards: 'Known hazards:',
-    
-    // Hazard types
-    biologicalHazards: 'Biological Hazards',
-    chemicalHazards: 'Chemical Hazards',
-    physicalHazards: 'Physical Hazards',
-    radiologicalHazards: 'Radiological Hazards',
-    
-    // Product categories (high-risk for SAHCODHA)
-    seafood: 'Seafood',
-    leafyGreens: 'Leafy Greens',
-    sprouts: 'Sprouts',
-    unpasteurizedJuice: 'Unpasteurized Juice',
-  },
-
-  // ─── FSVP Supplier Portal ─────────────────────────────
-  fsvpSupplier: {
-    // Dashboard
-    portalTitle: 'FSVP Supplier Portal',
-    portalSubtitle: 'Demonstrate FDA Compliance to US Importers',
-    complianceScore: 'Compliance Score',
-    auditReadiness: 'Audit Readiness',
-    sahcodhaProducts: 'SAHCODHA Products',
-    usImporters: 'US Importers',
-    
-    // Tabs
-    tabOverview: 'Overview',
-    tabHazardAnalysis: 'Hazard Analysis',
-    tabDocuments: 'Documents',
-    tabAuditReadiness: 'Audit Readiness',
-    tabSahcodha: 'SAHCODHA Assessment',
-    
-    // Overview
-    welcomeTitle: 'Welcome to FSVP Supplier Portal',
-    welcomeDesc: 'This portal helps you demonstrate compliance with FDA regulations to US importers per 21 CFR Part 1, Subpart L.',
-    quickActions: 'Quick Actions',
-    startHazardAnalysis: 'Start Hazard Analysis',
-    uploadDocuments: 'Upload Documents',
-    runSelfAssessment: 'Run Self-Assessment',
-    viewAuditChecklist: 'View Audit Checklist',
-    fdaResources: 'FDA Resources',
-    fsvpGuidance: 'FSVP Guidance',
-    cfr21Part1: '21 CFR Part 1',
-    fsvpFaq: 'FSVP FAQ',
-    
-    // Stats
-    products: 'Products',
-    certifications: 'Certifications',
-    documents: 'Documents',
-    correctiveActions: 'Corrective Actions',
-    
-    // Hazard Analysis
-    hazardAnalysisTitle: 'Hazard Analysis Tool',
-    hazardAnalysisDesc: 'Create hazard analysis per 21 CFR 1.504',
-    productName: 'Product Name',
-    productCategory: 'Product Category',
-    hazardType: 'Hazard Type',
-    hazardDescription: 'Hazard Description',
-    likelihood: 'Likelihood',
-    severity: 'Severity',
-    controlMeasures: 'Control Measures',
-    addHazard: 'Add Hazard',
-    removeHazard: 'Remove Hazard',
-    saveAnalysis: 'Save Analysis',
-    exportAnalysis: 'Export Analysis',
-    
-    // Hazard Types
-    biological: 'Biological',
-    chemical: 'Chemical',
-    physical: 'Physical',
-    radiological: 'Radiological',
-    allergen: 'Allergen',
-    
-    // Common Hazards
-    commonHazards: 'Common Hazards',
-    salmonella: 'Salmonella',
-    listeria: 'Listeria monocytogenes',
-    ecoli: 'E. coli O157:H7',
-    pesticides: 'Pesticide Residues',
-    heavyMetals: 'Heavy Metals',
-    foreignObjects: 'Foreign Objects',
-    undeclaredAllergens: 'Undeclared Allergens',
-    
-    // Severity Levels
-    severityLow: 'Low',
-    severityMedium: 'Medium',
-    severityHigh: 'High',
-    severityCritical: 'Critical',
-    
-    // Likelihood
-    likelihoodRare: 'Rare',
-    likelihoodUnlikely: 'Unlikely',
-    likelihoodPossible: 'Possible',
-    likelihoodLikely: 'Likely',
-    likelihoodAlmostCertain: 'Almost Certain',
-    
-    // Documents
-    documentsTitle: 'Document Management',
-    documentsDesc: 'Upload and manage FDA compliance documents',
-    uploadDocument: 'Upload Document',
-    documentType: 'Document Type',
-    documentName: 'Document Name',
-    expiryDate: 'Expiry Date',
-    uploadDate: 'Upload Date',
-    status: 'Status',
-    actions: 'Actions',
-    download: 'Download',
-    delete: 'Delete',
-    view: 'View',
-    
-    // Document Types
-    certificate: 'Certificate',
-    testReport: 'Test Report',
-    auditReport: 'Audit Report',
-    sop: 'Standard Operating Procedure (SOP)',
-    haccp: 'HACCP Plan',
-    gmpCertificate: 'GMP Certificate',
-    fssc22000: 'FSSC 22000 Certificate',
-    iso22000: 'ISO 22000 Certificate',
-    brcCertificate: 'BRC Certificate',
-    sqfCertificate: 'SQF Certificate',
-    coaTemplate: 'Certificate of Analysis (COA) Template',
-    specSheet: 'Specification Sheet',
-    
-    // Document Status
-    valid: 'Valid',
-    expiring: 'Expiring Soon',
-    expired: 'Expired',
-    pending: 'Pending',
-    
-    // Templates
-    templatesTitle: 'FDA Document Templates',
-    templatesDesc: 'Download FDA compliance document templates',
-    downloadTemplate: 'Download Template',
-    hazardAnalysisTemplate: 'Hazard Analysis Template',
-    supplierVerificationTemplate: 'Supplier Verification Template',
-    correctiveActionTemplate: 'Corrective Action Template',
-    
-    // Self Assessment
-    selfAssessmentTitle: 'Self-Assessment',
-    selfAssessmentDesc: 'Evaluate your FSVP compliance readiness',
-    startAssessment: 'Start Assessment',
-    assessmentComplete: 'Assessment Complete',
-    assessmentScore: 'Assessment Score',
-    assessmentDate: 'Assessment Date',
-    viewResults: 'View Results',
-    retakeAssessment: 'Retake Assessment',
-    
-    // Assessment Sections
-    companyInfo: 'Company Information',
-    foodSafetySystem: 'Food Safety System',
-    hazardAnalysisSection: 'Hazard Analysis',
-    allergenControl: 'Allergen Control',
-    documentationSection: 'Documentation',
-    sanitationSection: 'Sanitation',
-    
-    // Audit Readiness
-    auditReadinessTitle: 'Audit Readiness Checklist',
-    auditReadinessDesc: 'Prepare for FSVP audits from importers or FDA',
-    daysUntilAudit: 'Days Until Audit',
-    checklistProgress: 'Checklist Progress',
-    priorityHigh: 'High Priority',
-    priorityMedium: 'Medium Priority',
-    priorityLow: 'Low Priority',
-    complete: 'Complete',
-    incomplete: 'Incomplete',
-    
-    // Audit Categories
-    categoryDocumentation: 'Documentation & Records',
-    categoryFoodSafety: 'Food Safety System',
-    categoryTraceability: 'Traceability',
-    categorySupplierManagement: 'Supplier Management',
-    categoryCompliance: 'Regulatory Compliance',
-    categoryTraining: 'Training',
-    categoryFacility: 'Facility',
-    categoryLaboratory: 'Laboratory',
-    
-    // SAHCODHA
-    sahcodhaTitle: 'SAHCODHA Risk Assessment',
-    sahcodhaDesc: 'Identify products with potential for Serious Adverse Health Consequences or Death',
-    sahcodhaFullName: 'Serious Adverse Health Consequences or Death to Humans or Animals (SAHCODHA)',
-    riskAssessment: 'Risk Assessment',
-    riskScore: 'Risk Score',
-    riskLevel: 'Risk Level',
-    verificationRequired: 'Verification Required',
-    annualOnsiteAudit: 'Annual Onsite Audit',
-    samplingTesting: 'Sampling & Testing',
-    reviewRecords: 'Review Records',
-    
-    // Product Characteristics
-    productCharacteristics: 'Product Characteristics',
-    readyToEat: 'Ready-to-Eat (RTE)',
-    requiresCooking: 'Requires Cooking',
-    rawProduct: 'Raw Product',
-    processedProduct: 'Processed Product',
-    highMoisture: 'High Moisture',
-    lowAcid: 'Low Acid',
-    
-    // SAHCODHA Categories
-    sahcodhaCategory1: 'Category 1 - Highest Risk',
-    sahcodhaCategory2: 'Category 2 - High Risk',
-    sahcodhaCategory3: 'Category 3 - Medium Risk',
-    sahcodhaCategory4: 'Category 4 - Low Risk',
-    
-    // Verification Requirements
-    verificationRequirementsTitle: 'Verification Requirements',
-    verificationRequirementsDesc: 'Based on 21 CFR 1.506(d)(1)',
-    annualOnsiteAuditRequired: 'Annual Onsite Audit Required',
-    periodicSampling: 'Periodic Sampling & Testing',
-    documentReview: 'Periodic Document Review',
-    
-    // Common actions
-    save: 'Save',
-    cancel: 'Cancel',
-    edit: 'Edit',
-    add: 'Add',
-    remove: 'Remove',
-    export: 'Export',
-    import: 'Import',
-    print: 'Print',
-    refresh: 'Refresh',
-    search: 'Search',
-    filter: 'Filter',
-    clear: 'Clear',
-    submit: 'Submit',
-    confirm: 'Confirm',
-    back: 'Back',
-    next: 'Next',
-    previous: 'Previous',
-    finish: 'Finish',
-    
-    // Messages
-    saveSuccess: 'Saved successfully',
-    saveError: 'Error saving',
-    deleteConfirm: 'Are you sure you want to delete?',
-    deleteSuccess: 'Deleted successfully',
-    uploadSuccess: 'Uploaded successfully',
-    uploadError: 'Error uploading',
-    noData: 'No data',
-    loading: 'Loading...',
-    
-    // Overview Cards
-    productsHazardAnalysis: 'Products & Hazard Analysis',
-    totalProducts: 'Total Products',
-    withHazardAnalysis: 'With Hazard Analysis',
-    pendingAnalysis: 'Pending Analysis',
-    manageHazardAnalysis: 'Manage Hazard Analysis',
-    activeCertifications: 'Active Certifications',
-    expiringSoon: 'Expiring Soon',
-    expiresInDays: 'Expires in {days}d',
-    documentationStatus: 'Documentation Status',
-    upToDate: 'Up to Date',
-    needsUpdate: 'Needs Update',
-    manageDocuments: 'Manage Documents',
-    openActions: 'Open Actions',
-    overdue: 'Overdue',
-    dueOverdue: 'Due: {days} days overdue',
-    nextAudit: 'Next Audit',
-    scheduledDate: 'Scheduled Date',
-    daysRemaining: 'Days Remaining',
-    days: 'days',
-    readinessStatus: 'Readiness Status',
-    ready: 'Ready',
-    almostReady: 'Almost Ready',
-    needsWork: 'Needs Work',
-    notReady: 'Not Ready',
-    commonTasks: 'Common tasks to maintain your FSVP compliance',
-    createHazardAnalysis: 'Create Hazard Analysis',
-    sahcodhaAssessment: 'SAHCODHA Assessment',
-    active: 'Active',
-    
-    // Alerts
-    overdueCorrectiveActions: 'Overdue Corrective Actions',
-    overdueCorrectiveActionsDesc: 'You have {count} overdue corrective action(s) that require immediate attention.',
-    upcomingAudit: 'Upcoming Audit',
-    upcomingAuditDesc: 'Your next audit is scheduled in {days} days. Ensure all documentation is ready.',
-    
-    // Create Hazard Analysis Dialog
-    createHazardAnalysisTitle: 'Create Hazard Analysis',
-    createHazardAnalysisDesc: 'Document hazard analysis for a product. This is required per 21 CFR 1.504.',
-    qualifiedIndividualName: 'Qualified Individual Name',
-    credentials: 'Credentials',
-    hazardIdentification: 'Hazard Identification',
-    commonBiologicalHazards: 'Common biological hazards:',
-    commonChemicalHazards: 'Common chemical hazards:',
-    commonPhysicalHazards: 'Common physical hazards:',
-    commonRadiologicalHazards: 'Common radiological hazards:',
-    commonAllergenHazards: 'Common allergen hazards:',
-    addBiologicalHazard: 'Add biological hazard',
-    addChemicalHazard: 'Add chemical hazard',
-    addPhysicalHazard: 'Add physical hazard',
-    hazardName: 'Hazard Name',
-    source: 'Source',
-    description: 'Description',
-    reasonablyForeseeable: 'Reasonably Foreseeable',
-    yes: 'Yes',
-    no: 'No',
-    selectCategory: 'Select category',
-    fullName: 'Full name',
-    
-    // SAHCODHA specific
-    whatIsSahcodha: 'What is SAHCODHA?',
-    sahcodhaExplanation: 'SAHCODHA stands for "Serious Adverse Health Consequences or Death to Humans or Animals." Per 21 CFR 1.500, products that could cause SAHCODHA require enhanced supplier verification activities.',
-    learnMoreFsvp: 'Learn more about FSVP requirements',
-    identifyProducts: 'Identify products requiring enhanced supplier verification',
-    productsAssessed: 'Products assessed for SAHCODHA classification',
-    product: 'Product',
-    category: 'Category',
-    assessmentDateCol: 'Assessment Date',
-    newAssessment: 'New Assessment',
-    commonSahcodhaCategories: 'Common SAHCODHA Product Categories',
-    fdaRecognizedCategories: 'FDA-recognized product categories commonly associated with serious health risks',
-    seafoodFishShellfish: 'Seafood (Fish & Shellfish)',
-    leafyGreensSalads: 'Leafy Greens & Salads',
-    sprouts: 'Sprouts',
-    softCheese: 'Soft Cheese',
-    rawMilk: 'Raw Milk',
-    deliMeats: 'Deli Meats',
-    vibrio: 'Vibrio species',
-    norovirus: 'Norovirus',
-    parasites: 'Parasites',
-    cyclospora: 'Cyclospora',
-    annual: 'Annual',
-    periodic: 'Periodic',
-    quarterly: 'Quarterly',
-    moreHazards: 'more',
-    
-    // About sections
-    aboutSelfAssessment: 'About Self-Assessment',
-    aboutSelfAssessmentDesc: 'This self-assessment helps you evaluate your facility\'s readiness for FSVP compliance. Answer each question honestly and attach supporting documentation where required. Your answers will generate a gap analysis with recommended corrective actions.',
-    aboutHazardAnalysis: 'About Hazard Analysis',
-    aboutHazardAnalysisDesc: 'Per 21 CFR 1.504, you must identify and evaluate known or reasonably foreseeable hazards for each product. This includes biological, chemical, physical, radiological hazards, and allergens.',
-    aboutSahcodhaDesc: 'SAHCODHA stands for "Serious Adverse Health Consequences or Death to Humans or Animals." Per 21 CFR 1.500, products that could cause SAHCODHA require enhanced supplier verification activities.',
-    
-    // Self-Assessment specific
-    required: 'Required',
-    evidenceRequired: 'Evidence Required',
-    answered: 'answered',
-    reference: 'Reference',
-    basicCompanyInformation: 'Company Information & Registration',
-    basicCompanyInformationDesc: 'Basic company information and FDA registration status',
-    currentAndUpToDate: 'Current and up-to-date',
-    
-    // Document Manager
-    expiredDocuments: 'Expired Documents',
-    expiredDocumentsDesc: 'You have {count} expired document(s) that need to be renewed. This may affect your FSVP compliance status.',
-    myDocuments: 'My Documents',
-    templates: 'Templates',
-    searchDocuments: 'Search documents...',
-    allStatus: 'All Status',
-    allTypes: 'All Types',
-    document: 'Document',
-    type: 'Type',
-    uploaded: 'Uploaded',
-    expiry: 'Expiry',
-    pendingReview: 'Pending Review',
-    
-    // Hazard Analysis
-    documentedHazardAnalyses: 'Documented Hazard Analyses',
-    documentedHazardAnalysesDesc: 'Documented hazard analyses for your products',
-    totalHazards: 'Total Hazards',
-    status: 'Status',
-    lastUpdated: 'Last Updated',
-    approved: 'Approved',
-    version: 'Version',
-    
-    // Tab labels
-    myDocumentsTab: 'My Documents',
-    
-    // Alert messages
-    willGenerateGapAnalysis: 'will generate a gap analysis with recommended corrective actions.',
-    attachSupportingDocumentation: 'attach supporting documentation where required.',
-    
-    // Verification requirements
-    verificationAnnualOnsite: 'Annual onsite audit required per 21 CFR 1.506(d)(1)',
-    verificationEnhanced: 'Enhanced verification activities recommended (annual audit suggested)',
-    verificationPeriodic: 'Periodic verification activities per 21 CFR 1.506',
-    verificationStandard: 'Standard verification activities per 21 CFR 1.506',
-    
-    // Additional missing translations
-    category: 'Category',
-    product: 'Product',
-    total: 'total',
-    no: 'No',
-  },
-
   // ─── Language ────────────────────────────────────────
   language: {
     vi: 'Tiếng Việt',
     en: 'English',
     switchLanguage: 'Switch language',
   },
-} as const
+
+  // ─── Pricing Page ────────────────────────────────────
+  pricing: {
+    marketBadge: 'Vietnam Market',
+    title: 'FDA Compliance Service Pricing',
+    subtitle: 'Simple payment via bank QR — no international card required. Upgrade or cancel anytime.',
+    billingMonthly: 'Pay monthly',
+    billingAnnual: 'Pay annually',
+    saveUpTo: 'Save up to 20%',
+    popularBadge: 'Most Popular',
+    currentPlanBadge: 'Current Plan',
+    free: 'Free',
+    contact: 'Contact',
+    perMonth: '/month',
+    perYear: '/year',
+    perSignup: 'credits / signup',
+    aiCreditsPerMonth: 'AI credits / month',
+    unlimitedCredits: 'Unlimited credits',
+    payAnnually: (price: string) => `Pay ${price}/year`,
+    currentPlanBtn: 'Current Plan',
+    contactSales: 'Contact Sales',
+    freePlanBtn: 'Free Plan',
+    tryFreeBtn: 'Try Free',
+    upgradeBtn: (price: string, period: string) => `Upgrade — ${price}/${period}`,
+    // Header
+    login: 'Log in',
+    backToDashboard: 'Back to Dashboard',
+    // Expert Review Section
+    expertServiceBadge: 'Expert Consultation Service',
+    expertTitle: 'Expert Review by FDA Compliance Specialists',
+    expertSubtitle: 'Get in-depth analysis, specific wording guidance, and expert verification. Unlike AI reports, Expert Review is performed by real specialists.',
+    expertIncludes: 'Expert Review includes',
+    expertFeatures: [
+      'Product-specific context analysis',
+      'Detailed fix guidance + precise wording',
+      'Individual violation fix recommendations',
+      'Signed & stamped compliance confirmation',
+      'SLA: 48 business hours response time',
+      'FDA compliance expert team',
+    ],
+    noExpertReview: 'Expert Review not included',
+    upgradeToAccess: 'Upgrade to Starter or higher to access.',
+    buyPerUse: 'Pay per use',
+    perUse: '/request',
+    payPerRequest: 'Pay separately for each Expert Review request.',
+    includedInPlan: 'Included in plan',
+    creditsPerMonth: 'credits/month',
+    freeCreditsPerMonth: (count: number) => `${count} free Expert Review credits per month.`,
+    unlimited: 'Unlimited',
+    unlimitedExpert: 'Unlimited Expert Review + dedicated SLA.',
+    notAvailable: 'Not available',
+    upgradePro: 'Upgrade to Pro',
+    upgradePlan: (name: string) => `Upgrade to ${name}`,
+    // Payment Section
+    securePaymentTitle: 'Secure payment via Vietnam bank QR',
+    securePaymentDesc: 'Supports all domestic banks (Vietcombank, BIDV, Techcombank, MB, VPBank, ...) via VietQR standard. No card information stored.',
+    activateInstantly: 'Activate instantly after payment',
+    cancelAnytime: 'Cancel anytime',
+    emailSupport: '24/7 email support',
+  },
+  // ─── ANALYSIS PROGRESS PAGE ─────���─────────��─────────────────────
+  analysisProgress: {
+    title: 'Analysis Progress',
+    step: 'Step',
+    of: '/',
+    labelImages: 'Label Images',
+    labelPreview: 'Label Preview',
+    images: 'images',
+    noNutritionData: 'No nutrition data available',
+    fdaProcessTitle: 'FDA Analysis Process',
+    completed: 'Completed',
+    analysisConfig: 'Analysis Configuration',
+    // Step 1: Vision
+    visionTitle: 'Image Analysis with Vexim Vision',
+    visionDesc: 'Scanning and extracting text, colors, font sizes, and layout from label...',
+    visionDetail1: 'Optical Character Recognition (OCR)',
+    visionDetail2: 'Nutrition Facts panel detection',
+    visionDetail3: 'Font size measurement',
+    visionDetail4: 'Color and contrast analysis',
+    // Step 2: FDA Search
+    fdaSearchTitle: 'FDA Regulations Lookup (Knowledge Base)',
+    fdaSearchDesc: 'Searching FDA regulations in Knowledge Base',
+    fdaSearchDetail1: '21 CFR Part 101 - Nutrition Labeling',
+    fdaSearchDetail2: 'FALCPA - Allergen Labeling Law',
+    fdaSearchDetail3: 'Health Claims Regulations',
+    fdaSearchDetail4: 'Ingredient Listing Requirements',
+    // Step 3: Geometry
+    geometryTitle: 'Geometry and Size Verification',
+    geometryDesc: 'Verifying panel dimensions, font size, and spacing per FDA requirements...',
+    geometryDetail1: 'Principal Display Panel area calculation',
+    geometryDetail2: 'Minimum font size check',
+    geometryDetail3: 'Spacing and margins verification',
+    geometryDetail4: 'Hairline measurement',
+    // Step 4: Allergen
+    allergenTitle: 'Allergen Analysis',
+    allergenDesc: 'Checking allergen declarations per FALCPA Section 203...',
+    allergenDetail1: 'Milk, Eggs, Fish, Shellfish',
+    allergenDetail2: 'Tree nuts, Peanuts, Wheat, Soybeans',
+    allergenDetail3: '"Contains:" statement check',
+    allergenDetail4: 'Bold formatting verification',
+    // Step 5: Nutrition
+    nutritionTitle: 'Nutrition Facts Validation',
+    nutritionDesc: 'Checking format, rounding, and nutrient order...',
+    nutritionDetail1: 'Serving size compliance',
+    nutritionDetail2: 'Calorie declaration',
+    nutritionDetail3: 'Nutrient rounding rules',
+    nutritionDetail4: 'Daily Value percentage (% DV)',
+    // Step 6: Mapping
+    mappingTitle: 'CFR Citation Mapping',
+    mappingDesc: 'Generating commercial report with precise FDA citations...',
+    mappingDetail1: 'Smart citation formatting',
+    mappingDetail2: 'Violation → CFR mapping',
+    mappingDetail3: 'Commercial report generation',
+    mappingDetail4: 'Expert recommendations',
+  },
+  } as const
