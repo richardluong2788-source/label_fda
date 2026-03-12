@@ -483,9 +483,7 @@ export function RecallSection({ violations }: RecallSectionProps) {
             </p>
           </div>
           <a
-            href="https://calendly.com/vexim-consulting/fda-consultation"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="mailto:support@veximglobal.com?subject=Yêu cầu tư vấn FDA - Báo cáo đầy đủ&body=Xin chào Vexim,%0D%0A%0D%0ATôi muốn nhận báo cáo đầy đủ và tư vấn phòng ngừa cho sản phẩm của mình.%0D%0A%0D%0AThông tin liên hệ:%0D%0A- Tên:%0D%0A- Công ty:%0D%0A- Sản phẩm:%0D%0A%0D%0AXin cảm ơn!"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors shrink-0"
           >
             {t.report.contactExpert || 'Contact Vexim Expert'}
