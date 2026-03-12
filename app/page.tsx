@@ -45,7 +45,7 @@ const PORT_STEP_STYLES = [
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function Page() {
-  const { t, locale } = useTranslation()
+  const { t } = useTranslation()
   const l = t.landing
 
   return (
@@ -593,7 +593,7 @@ export default function Page() {
                 <line x1="10" y1="9" x2="8" y2="9"/>
               </svg>
               <div className="flex flex-col">
-                <span className="text-[10px] text-muted-foreground">{locale === 'vi' ? 'Dữ liệu từ' : 'Data from'}</span>
+                <span className="text-[10px] text-muted-foreground">{l.badgeDataFrom}</span>
                 <span className="text-xs text-blue-600 font-bold">eCFR.gov</span>
               </div>
             </div>
@@ -605,7 +605,7 @@ export default function Page() {
                 <line x1="1" y1="10" x2="23" y2="10"/>
               </svg>
               <div className="flex flex-col">
-                <span className="text-[10px] text-muted-foreground">{locale === 'vi' ? 'Thanh toán qua' : 'Payment via'}</span>
+                <span className="text-[10px] text-muted-foreground">{l.badgePaymentVia}</span>
                 <span className="text-xs text-red-500 font-bold">VNPay</span>
               </div>
             </div>
@@ -629,8 +629,8 @@ export default function Page() {
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
               <div className="flex flex-col">
-                <span className="text-[10px] text-muted-foreground">{locale === 'vi' ? 'Bảo mật dữ liệu' : 'Data Protection'}</span>
-                <span className="text-xs text-purple-600 font-bold">{locale === 'vi' ? 'Đạt chuẩn' : 'Compliant'}</span>
+                <span className="text-[10px] text-muted-foreground">{l.badgeDataProtection}</span>
+                <span className="text-xs text-purple-600 font-bold">{l.badgeCompliant}</span>
               </div>
             </div>
           </div>
