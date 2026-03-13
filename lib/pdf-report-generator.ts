@@ -343,7 +343,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
     <div class="cover-logo">
       <div class="cover-logo-icon">V</div>
       <div>
-        <div class="cover-logo-text">VEXIM</div>
+        <div class="cover-logo-text">VEXIM GLOBAL</div>
         <div class="cover-logo-sub">Compliance AI</div>
       </div>
     </div>
@@ -925,7 +925,7 @@ ${(() => {
     if (lang === 'vi') {
       summaryContent = `**Nhãn sản phẩm tuân thủ tất cả các quy định FDA được kiểm tra.**
 
-Vexim AI không phát hiện vi phạm nghi��m trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR. Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA. Sản phẩm có thể được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.`
+Vexim AI không phát hiện vi phạm nghiêm trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR. Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA. Sản phẩm có thể được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.`
     } else {
       summaryContent = `**Your label complies with all FDA regulations checked.**
 
@@ -1196,7 +1196,7 @@ ${expertReview && expertReview.status === 'completed' ? `
         <tr>
           <td colspan="5" style="text-align:center;padding:20px;color:#16a34a;font-size:9px;font-weight:600;">
             <span style="display:inline-block;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 24px;">
-              ✓ ${lang === 'vi' ? 'Không có hành động nào cần thực hiện. Duy trì ti��u chuẩn ghi nhãn hiện tại.' : 'No actions required. Maintain current labeling standards.'}
+              ✓ ${lang === 'vi' ? 'Không có hành động nào cần thực hiện. Duy trì tiêu chuẩn ghi nhãn hiện tại.' : 'No actions required. Maintain current labeling standards.'}
             </span>
           </td>
         </tr>` : ''}
@@ -1256,7 +1256,7 @@ ${expertReview && expertReview.status === 'completed' ? `
   </div>
 </div>
 
-<div class="watermark">VEXIM</div>
+<div class="watermark">VEXIM GLOBAL</div>
 
 </div><!-- End page-content-wrapper -->
 
