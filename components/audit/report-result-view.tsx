@@ -586,13 +586,16 @@ export function ReportResultView({
                       <div className="space-y-2">
                         {/* Structure/Function Claims - Need DSHEA */}
                         {structureFunctionClaimsFiltered.length > 0 && (
-                          <div className="p-2.5 rounded-lg bg-red-50 border border-red-200">
-                            <p className="text-[11px] text-red-700 uppercase tracking-wider font-bold mb-1.5">
+                          <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
+                            <p className="text-[11px] text-amber-700 uppercase tracking-wider font-bold mb-1">
                               {t.report.structureFunctionClaimsTitle || 'STRUCTURE/FUNCTION CLAIMS (NEED DSHEA)'}
+                            </p>
+                            <p className="text-[10px] text-amber-600 mb-2 leading-relaxed">
+                              {t.report.structureFunctionClaimsHint || 'These claims require a DSHEA disclaimer. Ensure the label includes: "These statements have not been evaluated by the FDA..."'}
                             </p>
                             <div className="space-y-1">
                               {structureFunctionClaimsFiltered.map((claim, idx) => (
-                                <p key={idx} className="text-xs text-red-800 flex items-start gap-1.5">
+                                <p key={idx} className="text-xs text-amber-800 flex items-start gap-1.5">
                                   <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
                                   {claim}
                                 </p>
@@ -671,8 +674,11 @@ export function ReportResultView({
                               {/* Claims needing review */}
                               {(needsReview.length > 0 || unverifiableClaims.length > 0) && (
                                 <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
-                                  <p className="text-[11px] text-amber-700 uppercase tracking-wider font-bold mb-1.5">
+                                  <p className="text-[11px] text-amber-700 uppercase tracking-wider font-bold mb-1">
                                     {t.report.otherClaimsTitle || 'OTHER CLAIMS (REVIEW NEEDED)'}
+                                  </p>
+                                  <p className="text-[10px] text-amber-600 mb-2 leading-relaxed">
+                                    {t.report.otherClaimsHint || 'These claims need to be verified against Nutrition Facts data for accuracy.'}
                                   </p>
                                   <div className="space-y-1">
                                     {needsReview.map((v, idx) => (
@@ -748,16 +754,19 @@ export function ReportResultView({
                           </div>
                         )}
                         
-                        {/* Factual/Negative Claims - Compliant with tooltips */}
-                        {factualClaimsFiltered.length > 0 && (() => {
-                          const claimTooltips = getClaimTooltips(locale)
-                          
-                          return (
-                            <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                              <p className="text-[11px] text-slate-600 uppercase tracking-wider font-bold mb-1.5">
-                                {t.report.factualClaimsTitle || 'FACTUAL/NEGATIVE CLAIMS (COMPLIANT)'}
-                              </p>
-                              <div className="space-y-1">
+{/* Factual/Negative Claims - Compliant with tooltips */}
+  {factualClaimsFiltered.length > 0 && (() => {
+  const claimTooltips = getClaimTooltips(locale)
+  
+  return (
+  <div className="p-2.5 rounded-lg bg-green-50 border border-green-200">
+  <p className="text-[11px] text-green-700 uppercase tracking-wider font-bold mb-1">
+  {t.report.factualClaimsTitle || 'FACTUAL/NEGATIVE CLAIMS (COMPLIANT)'}
+  </p>
+  <p className="text-[10px] text-green-600 mb-2 leading-relaxed">
+  {t.report.factualClaimsHint || 'These claims describe product facts (no X, without Y) and comply with FDA regulations.'}
+  </p>
+  <div className="space-y-1">
                                 {factualClaimsFiltered.map((claim, idx) => {
                                   const claimLower = claim.toLowerCase().trim()
                                   const tooltipInfo = claimTooltips[claimLower]
@@ -767,7 +776,7 @@ export function ReportResultView({
                                       <TooltipProvider key={idx}>
                                         <Tooltip>
                                           <TooltipTrigger asChild>
-                                            <p className="text-xs text-slate-700 flex items-start gap-1.5 cursor-help hover:text-slate-900 transition-colors">
+                                            <p className="text-xs text-green-800 flex items-start gap-1.5 cursor-help hover:text-green-900 transition-colors">
                                               <CheckCircle className="h-3 w-3 shrink-0 mt-0.5 text-green-600" />
                                               <span className="underline decoration-dotted underline-offset-2">{claim}</span>
                                             </p>
@@ -789,7 +798,7 @@ export function ReportResultView({
                                   }
                                   
                                   return (
-                                    <p key={idx} className="text-xs text-slate-700 flex items-start gap-1.5">
+                                    <p key={idx} className="text-xs text-green-800 flex items-start gap-1.5">
                                       <CheckCircle className="h-3 w-3 shrink-0 mt-0.5 text-green-600" />
                                       {claim}
                                     </p>

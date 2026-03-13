@@ -370,9 +370,12 @@ export const vi = {
     netQuantity: 'KHỐI LƯỢNG TỊNH',
     allergenDeclaration: 'CHẤT GÂY DỊ ỨNG',
     healthClaimsTitle: 'CÔNG BỐ SỨC KHỎE (CẢNH BÁO)',
-    structureFunctionClaimsTitle: 'CÔNG BỐ CẤU TRÚC/CHỨC NĂNG (CẦN DSHEA)',
-    factualClaimsTitle: 'CÔNG BỐ THỰC TẾ/PHỦ ĐỊNH (TUÂN THỦ)',
-    otherClaimsTitle: 'CÔNG BỐ KHÁC (CẦN XEM XÉT)',
+structureFunctionClaimsTitle: 'CÔNG BỐ CẤU TRÚC/CHỨC NĂNG (CẦN DSHEA)',
+  structureFunctionClaimsHint: 'Các claim này cần có disclaimer theo quy định DSHEA. Đảm bảo nhãn có dòng: "These statements have not been evaluated by the FDA..."',
+  factualClaimsTitle: 'CÔNG BỐ THỰC TẾ/PHỦ ĐỊNH (TUÂN THỦ)',
+  factualClaimsHint: 'Các claim này mô tả thực tế sản phẩm (không chứa X, không thêm Y) và tuân thủ quy định FDA.',
+  otherClaimsTitle: 'CÔNG BỐ KHÁC (CẦN XEM XÉT)',
+  otherClaimsHint: 'Các claim này cần được xác minh với dữ liệu Nutrition Facts để đảm bảo chính xác.',
     specialClaimsTitle: 'CÔNG BỐ ĐẶC BIỆT',
     packagingFormatLabel: 'DẠNG BAO BÌ',
     detectedLanguagesTitle: 'NGÔN NGỮ PHÁT HIỆN',
@@ -522,7 +525,7 @@ export const vi = {
     labelTypeOther: 'Khác',
   },
 
-  // ─── Expert Request Panel ────────────────────────────
+  // ─── Expert Request Panel ───────────���────────────────
   expert: {
     title: 'Tư vấn chuyên gia Vexim',
     requestSentAt: (date: string) => `Yêu cầu gửi lúc ${date}`,
@@ -766,7 +769,7 @@ export const vi = {
     pending: 'Đang xử lý',
     currentPlan: 'Gói hiện tại',
     quotaTitle: 'Lượt phân tích của bạn',
-    quotaMonthly: 'Lư��t phân tích tháng này',
+    quotaMonthly: 'Lượt phân tích tháng này',
     unlimited: 'Không giới hạn',
     unlimitedDesc: (planName: string) => `Tài khoản của bạn có quyền truy cập không giới hạn — không có hạn mức hàng tháng.`,
     usedOf: (used: number, limit: number) => `Đã dùng ${used} / ${limit} lượt`,
