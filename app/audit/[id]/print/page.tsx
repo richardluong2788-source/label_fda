@@ -263,21 +263,39 @@ export default function PrintReportPage() {
             </p>
           </div>
 
-          {/* Regulations Checked */}
+          {/* Regulations Checked - display based on product type */}
           <div className="mt-6">
             <h3 className="font-semibold text-slate-900 mb-3">Quy định đã kiểm tra</h3>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">
-                21 CFR 101 - Food Labeling
-              </span>
-              {report.product_type === 'dietary_supplement' && (
-                <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">
-                  21 CFR 101.36 - Supplement Facts
-                </span>
+              {(report.product_category === 'cosmetic' || 
+                report.product_type === 'cosmetic' || 
+                report.product_category?.toLowerCase()?.includes('cosmetic')) ? (
+                <>
+                  <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">
+                    21 CFR 701 - Cosmetic Labeling
+                  </span>
+                  <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">
+                    21 CFR 700-740 - Cosmetics
+                  </span>
+                  <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">
+                    FD&C Act Section 602
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">
+                    21 CFR 101 - Food Labeling
+                  </span>
+                  {(report.product_type === 'dietary_supplement' || report.product_category?.includes('supplement')) && (
+                    <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">
+                      21 CFR 101.36 - Supplement Facts / DSHEA
+                    </span>
+                  )}
+                  <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">
+                    FD&C Act Section 403
+                  </span>
+                </>
               )}
-              <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">
-                FD&C Act Section 403
-              </span>
             </div>
           </div>
 
@@ -349,7 +367,7 @@ export default function PrintReportPage() {
           {/* Page Break */}
           <div className="page-break" />
 
-          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* ══════���════════════════════════════════════════════════════════ */}
           {/* FINAL PAGE: Signature & Disclaimer */}
           {/* ═══════════════════════════════════════════════════════════════ */}
 

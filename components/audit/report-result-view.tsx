@@ -1278,29 +1278,38 @@ export function ReportResultView({
                       {t.report.regulationsChecked}
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
-                        {t.report.cfr101}
-                      </span>
-                      
-                      {report.product_category === 'cosmetic' && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
-                          {t.report.cfr701}
-                        </span>
-                      )}
-                      
-                      {(report.product_type === 'dietary_supplement' || report.product_category?.includes('supplement')) && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
-                          {'DSHEA 1994'}
-                        </span>
-                      )}
-                      
-                      <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
-                        {'FD&C Act Section 403'}
-                      </span>
-                      {report.product_category === 'cosmetic' && (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
-                          {t.report.cfr700}
-                        </span>
+                      {/* Cosmetic products: 21 CFR 700-740 and FD&C Act Section 602 */}
+                      {(report.product_category === 'cosmetic' || 
+                        report.product_type === 'cosmetic' || 
+                        report.product_category?.toLowerCase()?.includes('cosmetic')) ? (
+                        <>
+                          <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                            {t.report.cfr701}
+                          </span>
+                          <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                            {t.report.cfr700}
+                          </span>
+                          <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                            {'FD&C Act Section 602'}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          {/* Food products: 21 CFR 101 and FD&C Act Section 403 */}
+                          <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                            {t.report.cfr101}
+                          </span>
+                          
+                          {(report.product_type === 'dietary_supplement' || report.product_category?.includes('supplement')) && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                              {'DSHEA 1994'}
+                            </span>
+                          )}
+                          
+                          <span className="inline-flex items-center px-2.5 py-1 rounded text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                            {'FD&C Act Section 403'}
+                          </span>
+                        </>
                       )}
                     </div>
                   </div>
