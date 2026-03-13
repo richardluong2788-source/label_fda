@@ -84,7 +84,7 @@ export const vi = {
     ctaDescNoKb: 'AI sẽ kiểm tra nhãn của bạn với 21 CFR Regulations. ',
     ctaDescSuffix: 'Nhận báo cáo chi tiết với trích dẫn quy định và hướng dẫn sửa lỗi trong vài phút.',
     analyzing: 'Đang phân tích...',
-    scanNow: 'Quét Vi phạm FDA ngay (Miễn phí xem trước)',
+    scanNow: 'Quét Vi phạm FDA ngay',
     freePreviewNote: 'Miễn phí xem trước vi phạm nghiêm trọng. Mở khóa báo cáo đầy đủ để xuất PDF và nhận tư vấn chi tiết.',
     warningTitle: 'Cảnh báo quan trọng về chi phí vi phạm FDA',
     warningItems: [
@@ -1009,7 +1009,7 @@ export const vi = {
       { title: 'Tải nhãn lên hệ thống', desc: 'Chụp ảnh hoặc tải file nhãn sản phẩm. AI Vision OCR trích xuất toàn bộ nội dung, bố cục và cấu trúc hình ảnh với độ chính xác cao.', detail: 'Hỗ trợ JPG, PNG, PDF - tối đa 4 mặt nhãn cùng lúc.' },
       { title: 'Đối chiếu dữ liệu thực tế', desc: 'Từng yếu tố trên nhãn được đối chiếu trực tiếp với 5.346 Warning Letters, Recall, Alerts và toàn bộ 21 CFR liên quan.', detail: 'Cơ sở dữ liệu cập nhật hàng tuần từ FDA.gov.' },
       { title: 'Phân tích chuyên sâu', desc: 'Mô hình AI chuyên biệt xác định từng điểm vi phạm, trích dẫn mã CFR cụ thể và đánh giá mức độ nghiêm trọng.', detail: 'Phân loại: Critical / Major / Minor - Hoàn thành trong ~2 phút.' },
-      { title: 'Chuyên gia rà soát', desc: 'FDA Compliance Specialist rà soát báo cáo AI và bổ sung nhận định chuyên s��u dựa trên kinh nghiệm thực tế.', detail: 'Thời gian rà soát: 4–24 giờ làm việc.' },
+      { title: 'Chuyên gia rà soát', desc: 'FDA Compliance Specialist rà soát báo cáo AI và bổ sung nhận định chuyên sâu dựa trên kinh nghiệm thực tế.', detail: 'Thời gian rà soát: 4–24 giờ làm việc.' },
       { title: 'Báo cáo & Chứng nhận', desc: 'Báo cáo đầy đủ kèm trích dẫn CFR, hướng dẫn khắc phục từng lỗi, Risk Score tổng thể và xác nhận tuân thủ.', detail: 'Xuất PDF chuyên nghiệp - dùng để đàm phán với buyer và importer.' },
     ],
     // Sample result
@@ -1102,7 +1102,7 @@ export const vi = {
     technicalCheck: 'Kiểm Tra Kỹ Thuật & Hình ảnh',
     commercialSummary: 'Tóm Tắt Phân Tích Thương Mại',
     expertRecommendations: 'Khuyến Nghị Chuyên Gia',
-    actionItems: 'Danh S��ch Hành Động',
+    actionItems: 'Danh Sách Hành Động',
     legalBasis: 'CƠ SỞ PHÁP LÝ',
     remediation: 'HƯỚNG DẪN KHẮC PHỤC',
     enforcementHistory: 'LỊCH SỬ XỬ PHẠT',

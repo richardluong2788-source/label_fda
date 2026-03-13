@@ -85,7 +85,7 @@ export const en: TranslationKeys = {
     ctaDescNoKb: 'AI will check your label against 21 CFR Regulations. ',
     ctaDescSuffix: 'Get a detailed report with citations and fix guidance in minutes.',
     analyzing: 'Analyzing...',
-    scanNow: 'Scan for FDA Violations (Free Preview)',
+    scanNow: 'Scan for FDA Violations',
     freePreviewNote: 'Free preview of critical violations. Unlock full report for PDF export and detailed consultation.',
     warningTitle: 'Important Warning: FDA Violation Costs',
     warningItems: [

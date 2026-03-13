@@ -1056,7 +1056,7 @@ export class ClaimsValidator {
     ],
     sugar: [
       {
-        patterns: [/\bsugar[\s-]?free\b/i, /\bno[\s-]?sugar\b/i, /\bzero[\s-]?sugar\b/i],
+        patterns: [/\bsugar[\s-]?free\b/i, /\bno[\s-]?sugar(?![\s-]?added)\b/i, /\bzero[\s-]?sugar(?![\s-]?added)\b/i],
         nutrientKey: 'total sugars',
         limit: 0.5,
         unit: 'g',
