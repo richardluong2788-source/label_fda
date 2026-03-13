@@ -580,7 +580,62 @@ export default function Page() {
               </ul>
             </div>
           </div>
-          <div className="text-center text-sm text-muted-foreground border-t pt-6">
+          
+          {/* Trust Badges Section */}
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 py-6 border-t border-b">
+            {/* eCFR.gov Badge */}
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-background rounded-lg border shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <line x1="10" y1="9" x2="8" y2="9"/>
+              </svg>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-muted-foreground">{l.badgeDataFrom}</span>
+                <span className="text-xs text-blue-600 font-bold">eCFR.gov</span>
+              </div>
+            </div>
+
+            {/* VNPay Badge */}
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-background rounded-lg border shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                <line x1="1" y1="10" x2="23" y2="10"/>
+              </svg>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-muted-foreground">{l.badgePaymentVia}</span>
+                <span className="text-xs text-red-500 font-bold">VNPay</span>
+              </div>
+            </div>
+
+            {/* SSL Security Badge */}
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-background rounded-lg border shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-muted-foreground">SSL Secured</span>
+                <span className="text-xs text-green-600 font-bold">256-bit</span>
+              </div>
+            </div>
+
+            {/* Data Protection Badge */}
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-background rounded-lg border shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-600">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-muted-foreground">{l.badgeDataProtection}</span>
+                <span className="text-xs text-purple-600 font-bold">{l.badgeCompliant}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center text-sm text-muted-foreground pt-6">
             &copy; 2026 {l.footerCompany}. {l.footerRights}
           </div>
         </div>
