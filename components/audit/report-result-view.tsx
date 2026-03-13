@@ -173,36 +173,7 @@ export function ReportResultView({
     return !commercialTextLower.includes(tipKey)
   })
   const enforcementInsights = report.enforcement_insights || []
-  
-  // Convert nutrition_facts object to array format for display
-  const nutritionFacts = (() => {
-    if (!report.nutrition_facts) return []
-    if (Array.isArray(report.nutrition_facts)) return report.nutrition_facts
-    
-    // If it's an object, convert properties to array format
-    const nf = report.nutrition_facts as any
-    const items: any[] = []
-    
-    if (nf.servingSize) items.push({ nutrient: 'Serving Size', name: 'servingSize', value: nf.servingSize })
-    if (nf.servingsPerContainer) items.push({ nutrient: 'Servings per Container', name: 'servingsPerContainer', value: nf.servingsPerContainer })
-    if (nf.calories !== undefined) items.push({ nutrient: 'Calories', name: 'calories', value: nf.calories })
-    if (nf.totalFat) items.push({ nutrient: 'Total Fat', name: 'totalFat', ...nf.totalFat })
-    if (nf.saturatedFat) items.push({ nutrient: 'Saturated Fat', name: 'saturatedFat', ...nf.saturatedFat })
-    if (nf.transFat) items.push({ nutrient: 'Trans Fat', name: 'transFat', ...nf.transFat })
-    if (nf.cholesterol) items.push({ nutrient: 'Cholesterol', name: 'cholesterol', ...nf.cholesterol })
-    if (nf.sodium) items.push({ nutrient: 'Sodium', name: 'sodium', ...nf.sodium })
-    if (nf.totalCarbohydrate) items.push({ nutrient: 'Total Carbohydrate', name: 'totalCarbohydrate', ...nf.totalCarbohydrate })
-    if (nf.dietaryFiber) items.push({ nutrient: 'Dietary Fiber', name: 'dietaryFiber', ...nf.dietaryFiber })
-    if (nf.totalSugars) items.push({ nutrient: 'Total Sugars', name: 'totalSugars', ...nf.totalSugars })
-    if (nf.addedSugars) items.push({ nutrient: 'Added Sugars', name: 'addedSugars', ...nf.addedSugars })
-    if (nf.protein) items.push({ nutrient: 'Protein', name: 'protein', ...nf.protein })
-    if (nf.vitaminD) items.push({ nutrient: 'Vitamin D', name: 'vitaminD', ...nf.vitaminD })
-    if (nf.calcium) items.push({ nutrient: 'Calcium', name: 'calcium', ...nf.calcium })
-    if (nf.iron) items.push({ nutrient: 'Iron', name: 'iron', ...nf.iron })
-    if (nf.potassium) items.push({ nutrient: 'Potassium', name: 'potassium', ...nf.potassium })
-    
-    return items
-  })()
+  const nutritionFacts = report.nutrition_facts || []
   const allergenDeclaration = report.allergen_declaration
   const healthClaims = (report as any).health_claims as string[] | undefined
   const detectedLanguages = (report as any).detected_languages as string[] | undefined

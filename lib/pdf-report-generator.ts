@@ -672,34 +672,23 @@ export function generatePDFReportHTML(data: PDFReportData): string {
   </div>`
     } else {
       // Single-column NF or fallback
+      // Debug: Log nutrition facts data
+      console.log('[PDF Generator] nutrition_facts:', report.nutrition_facts, 'count:', report.nutrition_facts?.length)
+      
       return `
   <div class="section">
     <div style="font-size:10px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.nutritionInfo}</div>
     <div class="data-box">
       <div class="data-box-label">${L.nutritionDetected}</div>
-      ${report.nutrition_facts ? `
+      ${report.nutrition_facts && report.nutrition_facts.length > 0 ? `
       <table class="info-table" style="margin: 0;">
-        ${report.nutrition_facts.servingSize ? '<tr><td>' + L.servingSize + '</td><td>' + escapeHtml(report.nutrition_facts.servingSize) + '</td></tr>' : ''}
-        ${report.nutrition_facts.servingsPerContainer ? '<tr><td>' + L.servingsPerContainer + '</td><td>' + escapeHtml(String(report.nutrition_facts.servingsPerContainer)) + '</td></tr>' : ''}
-        ${report.nutrition_facts.calories !== undefined ? '<tr><td>' + L.calories + '</td><td>' + formatNutrientValue(report.nutrition_facts.calories) + '</td></tr>' : ''}
-        ${report.nutrition_facts.totalFat ? '<tr><td>' + L.totalFat + '</td><td>' + formatNutrientValue(report.nutrition_facts.totalFat) + '</td></tr>' : ''}
-        ${report.nutrition_facts.saturatedFat ? '<tr><td>' + L.saturatedFat + '</td><td>' + formatNutrientValue(report.nutrition_facts.saturatedFat) + '</td></tr>' : ''}
-        ${report.nutrition_facts.transFat ? '<tr><td>' + L.transFat + '</td><td>' + formatNutrientValue(report.nutrition_facts.transFat) + '</td></tr>' : ''}
-        ${report.nutrition_facts.cholesterol ? '<tr><td>' + L.cholesterol + '</td><td>' + formatNutrientValue(report.nutrition_facts.cholesterol) + '</td></tr>' : ''}
-        ${report.nutrition_facts.sodium ? '<tr><td>' + L.sodium + '</td><td>' + formatNutrientValue(report.nutrition_facts.sodium) + '</td></tr>' : ''}
-        ${report.nutrition_facts.totalCarbohydrate ? '<tr><td>' + L.totalCarb + '</td><td>' + formatNutrientValue(report.nutrition_facts.totalCarbohydrate) + '</td></tr>' : ''}
-        ${report.nutrition_facts.dietaryFiber ? '<tr><td>' + L.dietaryFiber + '</td><td>' + formatNutrientValue(report.nutrition_facts.dietaryFiber) + '</td></tr>' : ''}
-        ${report.nutrition_facts.totalSugars ? '<tr><td>' + L.totalSugars + '</td><td>' + formatNutrientValue(report.nutrition_facts.totalSugars) + '</td></tr>' : ''}
-        ${report.nutrition_facts.addedSugars ? '<tr><td>' + L.addedSugars + '</td><td>' + formatNutrientValue(report.nutrition_facts.addedSugars) + '</td></tr>' : ''}
-        ${report.nutrition_facts.protein ? '<tr><td>' + L.protein + '</td><td>' + formatNutrientValue(report.nutrition_facts.protein) + '</td></tr>' : ''}
-        ${report.nutrition_facts.vitaminD ? '<tr><td>' + L.vitaminD + '</td><td>' + formatNutrientValue(report.nutrition_facts.vitaminD) + '</td></tr>' : ''}
-        ${report.nutrition_facts.calcium ? '<tr><td>' + L.calcium + '</td><td>' + formatNutrientValue(report.nutrition_facts.calcium) + '</td></tr>' : ''}
-        ${report.nutrition_facts.iron ? '<tr><td>' + L.iron + '</td><td>' + formatNutrientValue(report.nutrition_facts.iron) + '</td></tr>' : ''}
-        ${report.nutrition_facts.potassium ? '<tr><td>' + L.potassium + '</td><td>' + formatNutrientValue(report.nutrition_facts.potassium) + '</td></tr>' : ''}
+        ${report.nutrition_facts.map((item: any) => {
+          return `<tr><td>${escapeHtml(item.nutrient || item.name || '')}</td><td>${item.value !== undefined && item.value !== null ? formatNutrientValue(item.value) : ''} ${item.unit || ''}</td></tr>`
+        }).join('')}
       </table>` : `
       <div style="padding:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#92400e;font-size:8.5px;text-align:center;">
         ${lang === 'vi'
-          ? 'Không thể đọc bảng dinh d��ỡng từ hình ảnh. Vui lòng upload ảnh Nutrition Facts rõ hơn.'
+          ? 'Không thể đọc bảng dinh dưỡng từ hình ảnh. Vui lòng upload ảnh Nutrition Facts rõ hơn.'
           : 'Could not extract nutrition facts from the provided image. Please upload a clearer Nutrition Facts panel image.'}
       </div>`}
     </div>
@@ -918,7 +907,7 @@ ${hasTech ? `
   </div>
 </div>` : ''}
 
-<!-- ═══════════════════════ COMMERCIAL SUMMARY PAGE ═══════════════════════ -->
+<!-- ═════���═════════════════ COMMERCIAL SUMMARY PAGE ═══════════════════════ -->
 <div class="page content-page page-break">
   ${pageHeader(L, shortId, dateFormatted)}
 
@@ -1207,7 +1196,7 @@ ${expertReview && expertReview.status === 'completed' ? `
         <tr>
           <td colspan="5" style="text-align:center;padding:20px;color:#16a34a;font-size:9px;font-weight:600;">
             <span style="display:inline-block;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 24px;">
-              ✓ ${lang === 'vi' ? 'Không có hành động nào cần thực hiện. Duy trì tiêu chuẩn ghi nhãn hiện tại.' : 'No actions required. Maintain current labeling standards.'}
+              ✓ ${lang === 'vi' ? 'Không có hành động nào cần thực hiện. Duy trì ti��u chuẩn ghi nhãn hiện tại.' : 'No actions required. Maintain current labeling standards.'}
             </span>
           </td>
         </tr>` : ''}
