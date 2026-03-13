@@ -28,6 +28,7 @@ export const vi = {
     history: 'Lịch sử',
     settings: 'Cài đặt',
     guide: 'Hướng dẫn',
+    fsvp: 'FSVP',
     riskMethodology: 'Phương pháp tính điểm',
     knowledgeBase: 'Knowledge Base',
     revenue: 'Doanh thu',
@@ -514,7 +515,7 @@ export const vi = {
     marketAU: 'Úc',
     additionalInfo: 'Thông tin bổ sung',
     additionalInfoOptional: '(tùy chọn)',
-    additionalInfoPlaceholder: 'Ví dụ: Sản phẩm của tôi là thực phẩm chức năng cho người cao tuổi, dự kiến bán trên Amazon US...',
+    additionalInfoPlaceholder: 'Ví dụ: Sản phẩm của tôi là thực phẩm chức năng cho người cao tuổi, dự kiến bán tr��n Amazon US...',
     errorNoSubscription: 'Bạn cần đăng ký gói để sử dụng dịch vụ tư vấn chuyên gia.',
     errorQuotaExhausted: (used: number, limit: number) => `Bạn đã dùng hết ${used}/${limit} lượt tư vấn trong tháng. Nâng cấp gói để tiếp tục.`,
     errorSubmitFailed: 'Gửi yêu cầu thất bại',
@@ -856,18 +857,18 @@ export const vi = {
     heroBadge: 'Đối soát trực tiếp dữ liệu từ 5.346 vi phạm thực tế của FDA',
 
     // Tiêu đề chính: Ngắn gọn, đánh thẳng vào thời gian và tiền bạc
-    heroTitle: 'Kiểm tra tuân thủ nhãn FDA theo 21 CFR -',
-    heroTitleHighlight: 'Phát hiện lỗi trước khi hàng rời cảng',
+    heroTitle: 'Phát Hiện Lỗi Nhãn FDA Trước Khi Xuất Cảng',
+    heroTitleHighlight: 'Tránh rủi ro khi xuất khẩu vào Mỹ',
 
     // Phần mô tả: Logic, chặt chẽ và đánh trúng nỗi đau tài chính
-    heroDesc1: 'Bạn có chắc nhãn sản phẩm không nằm trong danh sách ',
-    heroDesc2: 'Warning Letters của FDA',
-    heroDesc3: '? Vexim AI tự động hóa quy trình thẩm định phức tạp bằng cách đối soát với ',
-    heroDesc4: '5.346 vi phạm thực tế',
-    heroDesc5: '. Chúng tôi phát hiện những ',
-    heroDesc6: 'lỗi mà mắt thường dễ dàng bỏ sót',
-    heroDesc7: ', giúp doanh nghiệp loại bỏ rủi ro lưu kho bãi và chi phí thu hồi hàng tỷ đồng.',
-    heroDesc8: '.',
+    heroDesc1: 'Vexim AI tự động đối soát nhãn với 5.346 lỗi vi phạm thực tế ',
+    heroDesc2: 'giúp bạn loại bỏ rủi ro ',
+    heroDesc3: 'Warning Letters và chi phí thu hồi hàng tỷ đồng. ',
+    heroDesc4: 'Chính xác hơn thủ công, an toàn hơn khi xuất khẩu.',
+    heroDesc5: '',
+    heroDesc6: '',
+    heroDesc7: '',
+    heroDesc8: '',
     ctaCheckLabel: 'Kiểm tra nhãn của bạn ngay',
     ctaViewCases: 'Xem các trường hợp vi phạm thực tế',
     trustStats: [
@@ -958,7 +959,7 @@ export const vi = {
       { title: 'Tải nhãn lên hệ thống', desc: 'Chụp ảnh hoặc tải file nhãn sản phẩm. AI Vision OCR trích xuất toàn bộ nội dung, bố cục và cấu trúc hình ảnh với độ chính xác cao.', detail: 'Hỗ trợ JPG, PNG, PDF - tối đa 4 mặt nhãn cùng lúc.' },
       { title: 'Đối chiếu dữ liệu thực tế', desc: 'Từng yếu tố trên nhãn được đối chiếu trực tiếp với 5.346 Warning Letters, Recall, Alerts và toàn bộ 21 CFR liên quan.', detail: 'Cơ sở dữ liệu cập nhật hàng tuần từ FDA.gov.' },
       { title: 'Phân tích chuyên sâu', desc: 'Mô hình AI chuyên biệt xác định từng điểm vi phạm, trích dẫn mã CFR cụ thể và đánh giá mức độ nghiêm trọng.', detail: 'Phân loại: Critical / Major / Minor - Hoàn thành trong ~2 phút.' },
-      { title: 'Chuyên gia rà soát', desc: 'FDA Compliance Specialist rà soát báo cáo AI và bổ sung nhận định chuyên sâu dựa trên kinh nghiệm thực tế.', detail: 'Thời gian rà soát: 4–24 giờ làm việc.' },
+      { title: 'Chuyên gia rà soát', desc: 'FDA Compliance Specialist rà soát báo cáo AI và bổ sung nhận định chuyên s��u dựa trên kinh nghiệm thực tế.', detail: 'Thời gian rà soát: 4–24 giờ làm việc.' },
       { title: 'Báo cáo & Chứng nhận', desc: 'Báo cáo đầy đủ kèm trích dẫn CFR, hướng dẫn khắc phục từng lỗi, Risk Score tổng thể và xác nhận tuân thủ.', detail: 'Xuất PDF chuyên nghiệp - dùng để đàm phán với buyer và importer.' },
     ],
     // Sample result
@@ -1029,6 +1030,11 @@ export const vi = {
     footerPrivacy: 'Chính sách bảo mật',
     footerDescFull: 'Nền tảng kiểm tra tuân thủ FDA bằng AI dành cho doanh nghiệp Việt Nam xuất khẩu sang thị trường Mỹ.',
     footerSupportLabel: 'Hỗ trợ khách hàng',
+    // Footer trust badges
+    badgeDataFrom: 'Dữ liệu từ',
+    badgePaymentVia: 'Thanh toán qua',
+    badgeDataProtection: 'Bảo mật dữ liệu',
+    badgeCompliant: 'Đạt chuẩn',
   },
 
   // ─── PDF Report ────────────────────────────────────��─
@@ -1046,7 +1052,7 @@ export const vi = {
     technicalCheck: 'Kiểm Tra Kỹ Thuật & Hình ảnh',
     commercialSummary: 'Tóm Tắt Phân Tích Thương Mại',
     expertRecommendations: 'Khuyến Nghị Chuyên Gia',
-    actionItems: 'Danh Sách Hành Động',
+    actionItems: 'Danh S��ch Hành Động',
     legalBasis: 'CƠ SỞ PHÁP LÝ',
     remediation: 'HƯỚNG DẪN KHẮC PHỤC',
     enforcementHistory: 'LỊCH SỬ XỬ PHẠT',
@@ -1067,126 +1073,473 @@ export const vi = {
     infoCount: 'Thông tin',
   },
 
-  // ─── Language ───────────────────────��────────────────
+  // ─── FSVP (Foreign Supplier Verification Program) ────
+  fsvp: {
+    title: 'Tổng Quan Tuân Thủ FSVP',
+    subtitle: 'Chương Trình Xác Minh Nhà Cung Cấp Nước Ngoài (21 CFR Part 1, Subpart L)',
+    
+    // Cảnh báo
+    twentyFourHourTitle: 'Yêu Cầu Hồ Sơ 24 Giờ',
+    twentyFourHourDesc: 'Theo 21 CFR 1.510, bạn phải cung cấp hồ sơ FSVP cho FDA trong vòng 24 giờ kể từ khi có yêu cầu. Sử dụng nút "Export Dossier" để tạo gói tuân thủ hoàn chỉnh ngay lập tức.',
+    
+    // Thẻ thống kê
+    totalSuppliers: 'Tổng Nhà Cung Cấp',
+    approved: 'Được Phê Duyệt',
+    pendingReview: 'Đang Xem Xét',
+    overdue: 'Quá Hạn',
+    sahcodhaRisk: 'Rủi Ro SAHCODHA',
+    
+    // Tab
+    checklist: 'Danh Sách Kiểm Tra FSVP',
+    suppliers: 'Nhà Cung Cấp',
+    importerProfile: 'Hồ Sơ Nhà Nhập Khẩu',
+    
+    // Danh sách kiểm tra
+    complianceChecklist: 'Danh Sách Kiểm Tra Tuân Thủ FSVP',
+    complianceChecklistDesc: 'Yêu cầu Chương Trình Xác Minh Nhà Cung Cấp Nước Ngoài theo 21 CFR Part 1, Subpart L',
+    complete: 'Hoàn Thành',
+    
+    // Yêu cầu
+    dunsNumber: 'Đăng Ký Số DUNS',
+    dunsNumberDesc: '21 CFR 1.512 - Bắt buộc cho khai báo hải quan',
+    
+    qualifiedIndividual: 'Cá Nhân Có Đủ Tiêu Chuẩn',
+    qualifiedIndividualDesc: '21 CFR 1.502 - Chuyên gia an toàn thực phẩm kỹ thuật',
+    
+    hazardAnalysis: 'Phân Tích Mối Nguy',
+    hazardAnalysisDesc: '21 CFR 1.504 - Các mối nguy đã biết hoặc có khả năng xảy ra',
+    
+    supplierEvaluation: 'Đánh Giá Nhà Cung Cấp',
+    supplierEvaluationDesc: '21 CFR 1.505 - Hoạt động xác minh nhà cung cấp',
+    
+    verificationActivities: 'Hoạt Động Xác Minh',
+    verificationActivitiesDesc: '21 CFR 1.506 - Kiểm tra, lấy mẫu, thử nghiệm hoặc chứng nhận',
+    
+    correctiveActions: 'Hành Động Khắc Phục',
+    correctiveActionsDesc: '21 CFR 1.508 - Phản ứng với các sự thiếu hụt của nhà cung cấp',
+    
+    recordkeeping: 'Lưu Giữ Hồ Sơ',
+    recordkeepingDesc: '21 CFR 1.510 - Yêu cầu tài liệu và lưu giữ',
+    
+    fsvpRequirements: 'Yêu Cầu FSVP',
+    fsvpRequirementsDesc: '21 CFR 1.500-1.514',
+    
+    // Trạng thái
+    required: 'Bắt Buộc',
+    pending: 'Đang Xử Lý',
+    overdue: 'Quá Hạn',
+    
+    // Nút
+    exportDossier: 'Xuất Hồ Sơ',
+    addSupplier: 'Thêm Nhà Cung Cấp',
+    editSupplier: 'Chỉnh Sửa Nhà Cung Cấp',
+    deleteSupplier: 'Xóa Nhà Cung Cấp',
+    refresh: 'Làm Mới',
+    
+    // Thông báo
+    noSuppliers: 'Chưa thêm nhà cung cấp nào. Hãy bắt đầu bằng cách thêm các nhà cung cấp nước ngoài của bạn.',
+    supplierAdded: 'Nhà cung cấp được thêm thành công',
+    supplierUpdated: 'Nhà cung cấp được cập nhật thành công',
+    supplierDeleted: 'Nhà cung cấp được xóa thành công',
+    dossierExporting: 'Đang tạo hồ sơ FSVP...',
+    dossierExported: 'Hồ sơ được xuất thành công',
+    
+    // SAHCODHA
+    sahcodhaTitle: 'Đánh Giá Rủi Ro SAHCODHA',
+    sahcodhaDesc: 'Hậu Quả Sức Khỏe Nghiêm Trọng Hoặc Tử Vong',
+    sahcodhaHighRisk: 'Rủi Ro Cao',
+    sahcodhaRequiresAnnualAudit: 'Yêu cầu kiểm tra tại chỗ hàng năm theo 21 CFR 1.506(d)',
+    sahcodhaHazards: 'Các mối nguy đã biết:',
+    
+    // Loại mối nguy
+    biologicalHazards: 'Mối Nguy Sinh Học',
+    chemicalHazards: 'Mối Nguy Hóa Học',
+    physicalHazards: 'Mối Nguy Vật Lý',
+    radiologicalHazards: 'Mối Nguy Bức Xạ',
+    
+    // Danh mục sản phẩm (rủi ro cao cho SAHCODHA)
+    seafood: 'Hải Sản',
+    leafyGreens: 'Rau Lá Xanh',
+    sprouts: 'Mầm',
+    unpasteurizedJuice: 'Nước Ép Chưa Tiệt Trùng',
+  },
+
+  // ─── FSVP Supplier Portal ─────────────────────────────
+  fsvpSupplier: {
+    // Dashboard
+    portalTitle: 'Cổng Thông Tin FSVP cho Nhà Cung Cấp',
+    portalSubtitle: 'Chứng minh tuân thủ FDA cho Nhà nhập khẩu Hoa Kỳ',
+    complianceScore: 'Điểm Tuân Thủ',
+    auditReadiness: 'Sẵn Sàng Kiểm Tra',
+    sahcodhaProducts: 'Sản Phẩm SAHCODHA',
+    usImporters: 'Nhà Nhập Khẩu Hoa Kỳ',
+    
+    // Tabs
+    tabOverview: 'Tổng Quan',
+    tabHazardAnalysis: 'Phân Tích Mối Nguy',
+    tabDocuments: 'Tài Liệu',
+    tabAuditReadiness: 'Sẵn Sàng Kiểm Tra',
+    tabSahcodha: 'Đánh Giá SAHCODHA',
+    
+    // Overview
+    welcomeTitle: 'Chào mừng đến Cổng Thông Tin FSVP',
+    welcomeDesc: 'Cổng thông tin này giúp bạn chứng minh tuân thủ quy định FDA với các nhà nhập khẩu Hoa Kỳ theo 21 CFR Part 1, Subpart L.',
+    quickActions: 'Hành Động Nhanh',
+    startHazardAnalysis: 'Bắt Đầu Phân Tích Mối Nguy',
+    uploadDocuments: 'Tải Lên Tài Liệu',
+    runSelfAssessment: 'Chạy Tự Đánh Giá',
+    viewAuditChecklist: 'Xem Checklist Kiểm Tra',
+    fdaResources: 'Tài Liệu FDA',
+    fsvpGuidance: 'Hướng Dẫn FSVP',
+    cfr21Part1: '21 CFR Part 1',
+    fsvpFaq: 'FAQ FSVP',
+    
+    // Stats
+    products: 'Sản Phẩm',
+    certifications: 'Chứng Nhận',
+    documents: 'Tài Liệu',
+    correctiveActions: 'Hành Động Khắc Phục',
+    
+    // Hazard Analysis
+    hazardAnalysisTitle: 'Công Cụ Phân Tích Mối Nguy',
+    hazardAnalysisDesc: 'Tạo phân tích mối nguy theo 21 CFR 1.504',
+    productName: 'Tên Sản Phẩm',
+    productCategory: 'Danh Mục Sản Phẩm',
+    hazardType: 'Loại Mối Nguy',
+    hazardDescription: 'Mô Tả Mối Nguy',
+    likelihood: 'Khả Năng Xảy Ra',
+    severity: 'Mức Độ Nghiêm Trọng',
+    controlMeasures: 'Biện Pháp Kiểm Soát',
+    addHazard: 'Thêm Mối Nguy',
+    removeHazard: 'Xóa Mối Nguy',
+    saveAnalysis: 'Lưu Phân Tích',
+    exportAnalysis: 'Xuất Phân Tích',
+    
+    // Hazard Types
+    biological: 'Sinh Học',
+    chemical: 'Hóa Học',
+    physical: 'Vật Lý',
+    radiological: 'Bức Xạ',
+    allergen: 'Dị Ứng',
+    
+    // Common Hazards
+    commonHazards: 'Mối Nguy Phổ Biến',
+    salmonella: 'Salmonella',
+    listeria: 'Listeria monocytogenes',
+    ecoli: 'E. coli O157:H7',
+    pesticides: 'Dư Lượng Thuốc Trừ Sâu',
+    heavyMetals: 'Kim Loại Nặng',
+    foreignObjects: 'Vật Thể Lạ',
+    undeclaredAllergens: 'Chất Dị Ứng Không Khai Báo',
+    
+    // Severity Levels
+    severityLow: 'Thấp',
+    severityMedium: 'Trung Bình',
+    severityHigh: 'Cao',
+    severityCritical: 'Nghiêm Trọng',
+    
+    // Likelihood
+    likelihoodRare: 'Hiếm',
+    likelihoodUnlikely: 'Không Chắc',
+    likelihoodPossible: 'Có Thể',
+    likelihoodLikely: 'Có Khả Năng',
+    likelihoodAlmostCertain: 'Gần Như Chắc Chắn',
+    
+    // Documents
+    documentsTitle: 'Quản Lý Tài Liệu',
+    documentsDesc: 'Tải lên và quản lý tài liệu tuân thủ FDA',
+    uploadDocument: 'Tải Lên Tài Liệu',
+    documentType: 'Loại Tài Liệu',
+    documentName: 'Tên Tài Liệu',
+    expiryDate: 'Ngày Hết Hạn',
+    uploadDate: 'Ngày Tải Lên',
+    status: 'Trạng Thái',
+    actions: 'Hành Động',
+    download: 'Tải Xuống',
+    delete: 'Xóa',
+    view: 'Xem',
+    
+    // Document Types
+    certificate: 'Chứng Nhận',
+    testReport: 'Báo Cáo Kiểm Tra',
+    auditReport: 'Báo Cáo Kiểm Toán',
+    sop: 'Quy Trình Vận Hành Chuẩn (SOP)',
+    haccp: 'Kế Hoạch HACCP',
+    gmpCertificate: 'Chứng Nhận GMP',
+    fssc22000: 'Chứng Nhận FSSC 22000',
+    iso22000: 'Chứng Nhận ISO 22000',
+    brcCertificate: 'Chứng Nhận BRC',
+    sqfCertificate: 'Chứng Nhận SQF',
+    coaTemplate: 'Mẫu Giấy Chứng Nhận Phân Tích (COA)',
+    specSheet: 'Bảng Thông Số Kỹ Thuật',
+    
+    // Document Status
+    valid: 'Hợp Lệ',
+    expiring: 'Sắp Hết Hạn',
+    expired: 'Đã Hết Hạn',
+    pending: 'Đang Chờ',
+    
+    // Templates
+    templatesTitle: 'Mẫu Tài Liệu FDA',
+    templatesDesc: 'Tải xuống các mẫu tài liệu tuân thủ FDA',
+    downloadTemplate: 'Tải Xuống Mẫu',
+    hazardAnalysisTemplate: 'Mẫu Phân Tích Mối Nguy',
+    supplierVerificationTemplate: 'Mẫu Xác Minh Nhà Cung Cấp',
+    correctiveActionTemplate: 'Mẫu Hành Động Khắc Phục',
+    
+    // Self Assessment
+    selfAssessmentTitle: 'Tự Đánh Giá',
+    selfAssessmentDesc: 'Đánh giá mức độ sẵn sàng tuân thủ FSVP của bạn',
+    startAssessment: 'Bắt Đầu Đánh Giá',
+    assessmentComplete: 'Hoàn Thành Đánh Giá',
+    assessmentScore: 'Điểm Đánh Giá',
+    assessmentDate: 'Ngày Đánh Giá',
+    viewResults: 'Xem Kết Quả',
+    retakeAssessment: 'Đánh Giá Lại',
+    
+    // Assessment Sections
+    companyInfo: 'Thông Tin Công Ty',
+    foodSafetySystem: 'Hệ Thống An Toàn Thực Phẩm',
+    hazardAnalysisSection: 'Phân Tích Mối Nguy',
+    allergenControl: 'Kiểm Soát Dị Ứng',
+    documentationSection: 'Tài Liệu',
+    sanitationSection: 'Vệ Sinh',
+    
+    // Audit Readiness
+    auditReadinessTitle: 'Checklist Sẵn Sàng Kiểm Tra',
+    auditReadinessDesc: 'Chuẩn bị cho kiểm tra FSVP từ nhà nhập khẩu hoặc FDA',
+    daysUntilAudit: 'Ngày Đến Kiểm Tra',
+    checklistProgress: 'Tiến Độ Checklist',
+    priorityHigh: 'Ưu Tiên Cao',
+    priorityMedium: 'Ưu Tiên Trung Bình',
+    priorityLow: 'Ưu Tiên Thấp',
+    complete: 'Hoàn Thành',
+    incomplete: 'Chưa Hoàn Thành',
+    
+    // Audit Categories
+    categoryDocumentation: 'Tài Liệu & Hồ Sơ',
+    categoryFoodSafety: 'Hệ Thống An Toàn Thực Phẩm',
+    categoryTraceability: 'Truy Xuất Nguồn Gốc',
+    categorySupplierManagement: 'Quản Lý Nhà Cung Cấp',
+    categoryCompliance: 'Tuân Thủ Quy Định',
+    categoryTraining: 'Đào Tạo',
+    categoryFacility: 'Cơ Sở Vật Chất',
+    categoryLaboratory: 'Phòng Thí Nghiệm',
+    
+    // SAHCODHA
+    sahcodhaTitle: 'Đánh Giá Rủi Ro SAHCODHA',
+    sahcodhaDesc: 'Xác định sản phẩm có khả năng gây Hậu Quả Sức Khỏe Nghiêm Trọng hoặc Tử Vong',
+    sahcodhaFullName: 'Hậu Quả Sức Khỏe Nghiêm Trọng hoặc Tử Vong (SAHCODHA)',
+    riskAssessment: 'Đánh Giá Rủi Ro',
+    riskScore: 'Điểm Rủi Ro',
+    riskLevel: 'Mức Độ Rủi Ro',
+    verificationRequired: 'Xác Minh Bắt Buộc',
+    annualOnsiteAudit: 'Kiểm Tra Tại Chỗ Hàng Năm',
+    samplingTesting: 'Lấy Mẫu & Kiểm Tra',
+    reviewRecords: 'Xem Xét Hồ Sơ',
+    
+    // Product Characteristics
+    productCharacteristics: 'Đặc Điểm Sản Phẩm',
+    readyToEat: 'Ăn Liền (RTE)',
+    requiresCooking: 'Yêu Cầu Nấu Chín',
+    rawProduct: 'Sản Phẩm Thô',
+    processedProduct: 'Sản Phẩm Đã Chế Biến',
+    highMoisture: 'Độ Ẩm Cao',
+    lowAcid: 'Độ Axit Thấp',
+    
+    // SAHCODHA Categories
+    sahcodhaCategory1: 'Loại 1 - Rủi Ro Cao Nhất',
+    sahcodhaCategory2: 'Loại 2 - Rủi Ro Cao',
+    sahcodhaCategory3: 'Loại 3 - Rủi Ro Trung Bình',
+    sahcodhaCategory4: 'Loại 4 - Rủi Ro Thấp',
+    
+    // Verification Requirements
+    verificationRequirementsTitle: 'Yêu Cầu Xác Minh',
+    verificationRequirementsDesc: 'Dựa trên 21 CFR 1.506(d)(1)',
+    annualOnsiteAuditRequired: 'Yêu Cầu Kiểm Tra Tại Chỗ Hàng Năm',
+    periodicSampling: 'Lấy Mẫu & Kiểm Tra Định Kỳ',
+    documentReview: 'Xem Xét Tài Liệu Định Kỳ',
+    
+    // Common actions
+    save: 'Lưu',
+    cancel: 'Hủy',
+    edit: 'Chỉnh Sửa',
+    add: 'Thêm',
+    remove: 'Xóa',
+    export: 'Xuất',
+    import: 'Nhập',
+    print: 'In',
+    refresh: 'Làm Mới',
+    search: 'Tìm Kiếm',
+    filter: 'Lọc',
+    clear: 'Xóa',
+    submit: 'Gửi',
+    confirm: 'Xác Nhận',
+    back: 'Quay Lại',
+    next: 'Tiếp Theo',
+    previous: 'Trước Đó',
+    finish: 'Hoàn Thành',
+    
+    // Messages
+    saveSuccess: 'Đã lưu thành công',
+    saveError: 'Lỗi khi lưu',
+    deleteConfirm: 'Bạn có chắc muốn xóa?',
+    deleteSuccess: 'Đã xóa thành công',
+    uploadSuccess: 'Tải lên thành công',
+    uploadError: 'Lỗi khi tải lên',
+    noData: 'Không có dữ liệu',
+    loading: 'Đang tải...',
+    
+    // Overview Cards
+    productsHazardAnalysis: 'Sản Phẩm & Phân Tích Mối Nguy',
+    totalProducts: 'Tổng Số Sản Phẩm',
+    withHazardAnalysis: 'Có Phân Tích Mối Nguy',
+    pendingAnalysis: 'Đang Chờ Phân Tích',
+    manageHazardAnalysis: 'Quản Lý Phân Tích Mối Nguy',
+    activeCertifications: 'Chứng Nhận Đang Hoạt Động',
+    expiringSoon: 'Sắp Hết Hạn',
+    expiresInDays: 'Hết hạn trong {days} ngày',
+    documentationStatus: 'Trạng Thái Tài Liệu',
+    upToDate: 'Đã Cập Nhật',
+    needsUpdate: 'Cần Cập Nhật',
+    manageDocuments: 'Quản Lý Tài Liệu',
+    openActions: 'Hành Động Đang Mở',
+    overdue: 'Quá Hạn',
+    dueOverdue: 'Hạn: quá {days} ngày',
+    nextAudit: 'Kiểm Tra Tiếp Theo',
+    scheduledDate: 'Ngày Dự Kiến',
+    daysRemaining: 'Số Ngày Còn Lại',
+    days: 'ngày',
+    readinessStatus: 'Trạng Thái Sẵn Sàng',
+    ready: 'Sẵn Sàng',
+    almostReady: 'Gần Sẵn Sàng',
+    needsWork: 'Cần Hoàn Thiện',
+    notReady: 'Chưa Sẵn Sàng',
+    commonTasks: 'Các tác vụ thường dùng để duy trì tuân thủ FSVP',
+    createHazardAnalysis: 'Tạo Phân Tích Mối Nguy',
+    sahcodhaAssessment: 'Đánh Giá SAHCODHA',
+    active: 'Đang Hoạt Động',
+    
+    // Alerts
+    overdueCorrectiveActions: 'Hành Động Khắc Phục Quá Hạn',
+    overdueCorrectiveActionsDesc: 'Bạn có {count} hành động khắc phục quá hạn cần xử lý ngay.',
+    upcomingAudit: 'Kiểm Tra Sắp Tới',
+    upcomingAuditDesc: 'Kiểm tra tiếp theo được lên lịch trong {days} ngày. Đảm bảo tất cả tài liệu đã sẵn sàng.',
+    
+    // Create Hazard Analysis Dialog
+    createHazardAnalysisTitle: 'Tạo Phân Tích Mối Nguy',
+    createHazardAnalysisDesc: 'Lập tài liệu phân tích mối nguy cho sản phẩm. Điều này bắt buộc theo 21 CFR 1.504.',
+    qualifiedIndividualName: 'Tên Người Có Trình Độ',
+    credentials: 'Chứng Chỉ',
+    hazardIdentification: 'Xác Định Mối Nguy',
+    commonBiologicalHazards: 'Mối nguy sinh học phổ biến:',
+    commonChemicalHazards: 'Mối nguy hóa học phổ biến:',
+    commonPhysicalHazards: 'Mối nguy vật lý phổ biến:',
+    commonRadiologicalHazards: 'Mối nguy bức xạ phổ biến:',
+    commonAllergenHazards: 'Mối nguy dị ứng phổ biến:',
+    addBiologicalHazard: 'Thêm mối nguy sinh học',
+    addChemicalHazard: 'Thêm mối nguy hóa học',
+    addPhysicalHazard: 'Thêm mối nguy vật lý',
+    hazardName: 'Tên Mối Nguy',
+    source: 'Nguồn',
+    description: 'Mô Tả',
+    reasonablyForeseeable: 'Có Thể Dự Đoán Được',
+    yes: 'Có',
+    no: 'Không',
+    selectCategory: 'Chọn danh mục',
+    fullName: 'Họ và tên',
+    
+    // SAHCODHA specific
+    whatIsSahcodha: 'SAHCODHA là gì?',
+    sahcodhaExplanation: 'SAHCODHA là viết tắt của "Serious Adverse Health Consequences or Death to Humans or Animals" (Hậu Quả Sức Khỏe Nghiêm Trọng hoặc Tử Vong cho Con Người hoặc Động Vật). Theo 21 CFR 1.500, các sản phẩm có thể gây ra SAHCODHA yêu cầu hoạt động xác minh nhà cung cấp nâng cao.',
+    learnMoreFsvp: 'Tìm hiểu thêm về yêu cầu FSVP',
+    identifyProducts: 'Xác định sản phẩm yêu cầu xác minh nhà cung cấp nâng cao',
+    productsAssessed: 'Các sản phẩm đã đánh giá phân loại SAHCODHA',
+    product: 'Sản Phẩm',
+    category: 'Danh Mục',
+    assessmentDateCol: 'Ngày Đánh Giá',
+    newAssessment: 'Đánh Giá Mới',
+    commonSahcodhaCategories: 'Danh Mục Sản Phẩm SAHCODHA Phổ Biến',
+    fdaRecognizedCategories: 'Các danh mục sản phẩm được FDA công nhận thường liên quan đến rủi ro sức khỏe nghiêm trọng',
+    seafoodFishShellfish: 'Hải Sản (Cá & Động Vật Có Vỏ)',
+    leafyGreensSalads: 'Rau Lá Xanh & Salad',
+    sprouts: 'Rau Mầm',
+    softCheese: 'Phô Mai Mềm',
+    rawMilk: 'Sữa Tươi',
+    deliMeats: 'Thịt Nguội',
+    vibrio: 'Vi khuẩn Vibrio',
+    norovirus: 'Norovirus',
+    parasites: 'Ký Sinh Trùng',
+    cyclospora: 'Cyclospora',
+    annual: 'Hàng Năm',
+    periodic: 'Định Kỳ',
+    quarterly: 'Hàng Quý',
+    moreHazards: 'mối nguy khác',
+    
+    // About sections
+    aboutSelfAssessment: 'Về Tự Đánh Giá',
+    aboutSelfAssessmentDesc: 'Tự đánh giá này giúp bạn đánh giá mức độ sẵn sàng của cơ sở để tuân thủ FSVP. Hãy trả lời mỗi câu hỏi một cách trung thực và đính kèm các tài liệu hỗ trợ khi cần thiết. Câu trả lời của bạn sẽ tạo ra phân tích khoảng trống với các hành động khắc phục được khuyến nghị.',
+    aboutHazardAnalysis: 'Về Phân Tích Mối Nguy',
+    aboutHazardAnalysisDesc: 'Theo 21 CFR 1.504, bạn phải xác định và đánh giá các mối nguy đã biết hoặc có thể dự đoán được cho mỗi sản phẩm. Điều này bao gồm các mối nguy sinh học, hóa học, vật lý, bức xạ và dị ứng.',
+    aboutSahcodhaDesc: 'SAHCODHA là viết tắt của "Hậu Quả Sức Khỏe Nghiêm Trọng hoặc Tử Vong cho Con Người hoặc Động Vật". Theo 21 CFR 1.500, các sản phẩm có thể gây ra SAHCODHA yêu cầu hoạt động xác minh nhà cung cấp nâng cao.',
+    
+    // Self-Assessment specific
+    required: 'Bắt Buộc',
+    evidenceRequired: 'Cần Bằng Chứng',
+    answered: 'được trả lời',
+    reference: 'Tham khảo',
+    basicCompanyInformation: 'Thông Tin Cơ Bản Của Công Ty',
+    basicCompanyInformationDesc: 'Thông tin cơ bản của công ty và trạng thái đăng ký FDA',
+    currentAndUpToDate: 'Hiện tại và đã cập nhật',
+    
+    // Document Manager
+    expiredDocuments: 'Tài Liệu Đã Hết Hạn',
+    expiredDocumentsDesc: 'Bạn có {count} tài liệu đã hết hạn cần được gia hạn. Điều này có thể ảnh hưởng đến trạng thái tuân thủ FSVP của bạn.',
+    myDocuments: 'Tài Liệu Của Tôi',
+    templates: 'Mẫu',
+    searchDocuments: 'Tìm kiếm tài liệu...',
+    allStatus: 'Tất Cả Trạng Thái',
+    allTypes: 'Tất Cả Loại',
+    document: 'Tài Liệu',
+    type: 'Loại',
+    uploaded: 'Tải Lên',
+    expiry: 'Hết Hạn',
+    pendingReview: 'Đang Xem Xét',
+    
+    // Hazard Analysis
+    documentedHazardAnalyses: 'Phân Tích Mối Nguy Được Ghi Chép',
+    documentedHazardAnalysesDesc: 'Phân tích mối nguy được ghi chép cho các sản phẩm của bạn',
+    totalHazards: 'Tổng Số Mối Nguy',
+    status: 'Trạng Thái',
+    lastUpdated: 'Cập Nhật Lần Cuối',
+    approved: 'Phê Duyệt',
+    version: 'Phiên Bản',
+    
+    // Tab labels
+    myDocumentsTab: 'Tài Liệu Của Tôi',
+    
+    // Alert messages
+    willGenerateGapAnalysis: 'sẽ tạo ra phân tích khoảng trống với các hành động khắc phục được khuyến nghị.',
+    attachSupportingDocumentation: 'đính kèm các tài liệu hỗ trợ khi cần thiết.',
+    
+    // Verification requirements
+    verificationAnnualOnsite: 'Kiểm tra tại chỗ hàng năm theo 21 CFR 1.506(d)(1)',
+    verificationEnhanced: 'Hoạt động xác minh nâng cao được khuyến nghị (kiểm tra hàng năm được đề xuất)',
+    verificationPeriodic: 'Hoạt động xác minh định kỳ theo 21 CFR 1.506',
+    verificationStandard: 'Hoạt động xác minh tiêu chuẩn theo 21 CFR 1.506',
+    
+    // Additional missing translations
+    category: 'Danh Mục',
+    product: 'Sản Phẩm',
+    total: 'Tổng Cộng',
+    no: 'Không',
+  },
+
+  // ─── Language ────────────────────────────────────────
   language: {
     vi: 'Tiếng Việt',
     en: 'English',
     switchLanguage: 'Chuyển ngôn ngữ',
-  },
-
-  // ─── Pricing Page ────────────────────────────────────
-  pricing: {
-    marketBadge: 'Thị trường Việt Nam',
-    title: 'Bảng giá dịch vụ FDA Compliance',
-    subtitle: 'Thanh toán đơn giản qua QR ngân hàng — không cần thẻ quốc tế. Nâng cấp hoặc huỷ bất cứ lúc nào.',
-    billingMonthly: 'Thanh toán tháng',
-    billingAnnual: 'Thanh toán năm',
-    saveUpTo: 'Tiết kiệm đến 20%',
-    popularBadge: 'Phổ biến nhất',
-    currentPlanBadge: 'Gói hiện tại',
-    free: 'Miễn phí',
-    contact: 'Liên hệ',
-    perMonth: '₫/tháng',
-    perYear: '₫/năm',
-    perSignup: 'lượt / đăng ký',
-    aiCreditsPerMonth: 'lượt AI / tháng',
-    unlimitedCredits: 'Không giới hạn lượt',
-    payAnnually: (price: string) => `Thanh toán ${price}₫/năm`,
-    currentPlanBtn: 'Gói hiện tại',
-    contactSales: 'Liên hệ Sales',
-    freePlanBtn: 'Gói miễn phí',
-    tryFreeBtn: 'Dùng thử miễn phí',
-    upgradeBtn: (price: string, period: string) => `Nâng cấp — ${price}₫/${period}`,
-    // Header
-    login: 'Đăng nhập',
-    backToDashboard: 'Quay lại Dashboard',
-    // Expert Review Section
-    expertServiceBadge: 'Dịch vụ Tư vấn Chuyên gia',
-    expertTitle: 'Expert Review bởi chuyên gia FDA Compliance',
-    expertSubtitle: 'Nhận phân tích chuyên sâu, hướng dẫn sửa wording cụ thể, và xác nhận từ chuyên gia. Khác với AI report, Expert Review được thực hiện bởi người thật.',
-    expertIncludes: 'Expert Review bao gồm',
-    expertFeatures: [
-      'Phân tích bối cảnh sản phẩm cụ thể',
-      'Hướng dẫn sửa chi tiết + wording chính xác',
-      'Đề xuất sửa từng vi phạm riêng biệt',
-      'Ký xác nhận & đóng dấu compliance',
-      'SLA: phản hồi trong 48 giờ làm việc',
-      'Đội ngũ chuyên gia tuân thủ FDA',
-    ],
-    noExpertReview: 'Không bao gồm Expert Review',
-    upgradeToAccess: 'Nâng cấp lên Starter trở lên để sử dụng.',
-    buyPerUse: 'Mua thêm theo lần',
-    perUse: '/lần',
-    payPerRequest: 'Thanh toán riêng mỗi lần yêu cầu Expert Review.',
-    includedInPlan: 'Đã bao gồm trong gói',
-    creditsPerMonth: 'lượt/tháng',
-    freeCreditsPerMonth: (count: number) => `Miễn phí ${count} lượt Expert Review mỗi tháng.`,
-    unlimited: 'Không giới hạn',
-    unlimitedExpert: 'Expert Review không giới hạn + SLA riêng.',
-    notAvailable: 'Không khả dụng',
-    upgradePro: 'Nâng cấp Pro',
-    upgradePlan: (name: string) => `Nâng cấp ${name}`,
-    // Payment Section
-    securePaymentTitle: 'Thanh toán an toàn qua QR ngân hàng Việt Nam',
-    securePaymentDesc: 'Hỗ trợ tất cả ngân hàng nội địa (Vietcombank, BIDV, Techcombank, MB, VPBank, ...) qua chuẩn VietQR. Không lưu thông tin thẻ.',
-    activateInstantly: 'Kích hoạt ngay sau thanh toán',
-    cancelAnytime: 'Huỷ bất cứ lúc nào',
-    emailSupport: 'Hỗ trợ qua email 24/7',
-  },
-  // ─── ANALYSIS PROGRESS PAGE ─────────────────────────────────────
-  analysisProgress: {
-    title: 'Tiến trình phân tích',
-    step: 'Bước',
-    of: '/',
-    labelImages: 'Hình ảnh Nhãn',
-    labelPreview: 'Xem trước Nhãn',
-    images: 'hình ảnh',
-    noNutritionData: 'Không có dữ liệu dinh dưỡng',
-    fdaProcessTitle: 'Quy trình phân tích FDA',
-    completed: 'Hoàn thành',
-    analysisConfig: 'Cấu hình phân tích',
-    // Step 1: Vision
-    visionTitle: 'Phân tích hình ảnh',
-    visionDesc: 'Đang quét và trích xuất văn bản, màu sắc, kích thước chữ, và layout từ nhãn...',
-    visionDetail1: 'Optical Character Recognition (OCR)',
-    visionDetail2: 'Phát hiện Nutrition Facts panel',
-    visionDetail3: 'Đo lường kích thước chữ',
-    visionDetail4: 'Phân tích màu sắc và contrast',
-    // Step 2: FDA Search
-    fdaSearchTitle: 'Tra cứu FDA Regulations (Knowledge Base)',
-    fdaSearchDesc: 'Đang tìm kiếm quy định FDA trong Knowledge Base',
-    fdaSearchDetail1: '21 CFR Phần 101 - Nhãn dinh dưỡng',
-    fdaSearchDetail2: 'FALCPA - Luật chất gây dị ứng',
-    fdaSearchDetail3: 'Quy định về Health Claims',
-    fdaSearchDetail4: 'Yêu cầu liệt kê thành phần',
-    // Step 3: Geometry
-    geometryTitle: 'Kiểm tra hình học và kích thước',
-    geometryDesc: 'Đang xác minh kích thước panel, font size, và spacing theo quy định FDA...',
-    geometryDetail1: 'Tính diện tích Principal Display Panel',
-    geometryDetail2: 'Kiểm tra minimum font size',
-    geometryDetail3: 'Xác minh spacing và margins',
-    geometryDetail4: 'Đo lường hairlines',
-    // Step 4: Allergen
-    allergenTitle: 'Phân tích chất gây dị ứng (Allergens)',
-    allergenDesc: 'Đang kiểm tra khai báo allergen theo FALCPA Section 203...',
-    allergenDetail1: 'Milk, Eggs, Fish, Shellfish',
-    allergenDetail2: 'Tree nuts, Peanuts, Wheat, Soybeans',
-    allergenDetail3: 'Kiểm tra "Contains:" statement',
-    allergenDetail4: 'Xác minh bold formatting',
-    // Step 5: Nutrition
-    nutritionTitle: 'Xác thực Nutrition Facts',
-    nutritionDesc: 'Đang kiểm tra format, rounding, và thứ tự nutrients...',
-    nutritionDetail1: 'Tuân thủ khẩu phần (Serving size)',
-    nutritionDetail2: 'Khai báo Calorie',
-    nutritionDetail3: 'Quy tắc làm tròn chất dinh dưỡng',
-    nutritionDetail4: 'Tỷ lệ Giá trị Hàng ngày (% DV)',
-    // Step 6: Mapping
-    mappingTitle: 'Ánh xạ vi phạm với trích dẫn CFR',
-    mappingDesc: 'Đang tạo báo cáo thương mại với trích dẫn chính xác từ FDA...',
-    mappingDetail1: 'Định dạng trích dẫn thông minh',
-    mappingDetail2: 'Ánh xạ vi phạm → CFR',
-    mappingDetail3: 'Tạo báo cáo thương mại',
-    mappingDetail4: 'Khuyến nghị từ chuyên gia',
   },
 } as const
 

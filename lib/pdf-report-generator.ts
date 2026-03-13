@@ -1,765 +1,61 @@
 import type { AuditReport, Violation, Citation } from './types'
+import type { PDFReportData, SupportedLang, PDFLabels } from './pdf/types'
+import { getPDFLabels } from './pdf/i18n'
+import { pdfStyles } from './pdf/styles'
+import {
+  escapeHtml,
+  formatNutrientValue,
+  markdownToHtml,
+  formatDate,
+  getSeverityColor,
+  getRiskColor,
+  getRiskLabel,
+  getSeverityLabel,
+  translateCategory,
+  confidenceBar,
+  translateImageType,
+  pageHeader,
+} from './pdf/utils'
 
-// PDF generation using pure server-side HTML template
-// This generates a professional FDA compliance report HTML that is converted to PDF
-
-type SupportedLang = 'vi' | 'en'
-
-interface ExpertReviewData {
-  id: string
-  status: string
-  created_at: string
-  expert_summary?: string
-  violation_reviews?: Array<{
-    violation_index: number
-    confirmed: boolean
-    wording_fix?: string
-    legal_note?: string
-  }>
-  recommended_actions?: Array<{
-    action: string
-    priority: string
-    cfr_reference?: string
-  }>
-  sign_off_name?: string
-  sign_off_at?: string
-}
-
-interface PDFReportData {
-  report: AuditReport
-  violations: Violation[]
-  generatedAt: string
-  generatedBy: string // 'Vexim Compliance AI' or expert name
-  companyInfo: {
-    name: string
-    address: string
-    phone: string
-    email: string
-    website: string
-    certificationId: string
-  }
-  lang?: SupportedLang
-  expertReview?: ExpertReviewData | null
-}
-
-// ── i18n label map ────────────────────────────────────────────────────
-const PDF_LABELS: Record<SupportedLang, Record<string, string>> = {
-  vi: {
-    downloadTitle: 'Báo cáo kiểm tra tuân thủ FDA',
-    downloadBtn: 'Tải xuống PDF',
-    coverTitle: 'Báo Cáo Kiểm Tra Tuân Thủ FDA',
-    defaultProduct: 'Phân Tích Nhãn Sản Phẩm',
-    reportId: 'Mã Báo Cáo',
-    dateCreated: 'Ngày Tạo',
-    result: 'Kết Quả',
-    riskScore: 'Điểm Rủi Ro',
-    pass: 'ĐẠT',
-    fail: 'KHÔNG ĐẠT',
-    pending: 'CHỜ XÁC MINH',
-    quickSummary: 'Tóm Tắt Nhanh',
-    critical: 'Nghiêm trọng',
-    warning: 'Cảnh báo',
-    info: 'Thông tin',
-    cfrCitations: 'Trích dẫn CFR',
-    mainReasons: 'Lý do chính:',
-    generatedBy: 'Thực hiện bởi',
-    overview: 'Tổng Quan',
-    riskLevel: 'Mức rủi ro',
-    overallAssessment: 'Đánh Giá Tổng Thể Từ Vexim Global AI',
-    currentRisk: 'Rủi ro hiện tại',
-    afterFix: 'Sau khi sửa',
-    productInfo: 'Thông Tin Sản Phẩm',
-    productName: 'Tên sản phẩm',
-    brandName: 'Thương hiệu',
-    category: 'Danh mục',
-    productType: 'Loại sản phẩm',
-    packageFormat: 'Định dạng bao bì',
-    netContent: 'Khối lượng tịnh',
-    pdpArea: 'Diện tích PDP',
-    manufacturer: 'Nhà sản xuất',
-    origin: 'Xuất xứ',
-    targetMarket: 'Thị trường mục tiêu',
-    detectedLangs: 'Ngôn ngữ phát hiện',
-    analysisDate: 'Ngày phân tích',
-    aiConfidence: 'Độ tin cậy AI',
-    allergenDeclaration: 'Khai Báo Dị Ứng',
-    allergens: 'Chất gây dị ứng',
-    ingredientList: 'Danh Sách Thành Phần',
-    ingredientDetected: 'Thành phần được phát hiện bởi AI Vision',
-    nutritionInfo: 'Thông Tin Dinh Dưỡng',
-    nutritionDetected: 'Bảng dinh dưỡng được phát hiện bởi AI Vision',
-    servingSize: 'Khẩu phần',
-    servingsPerContainer: 'Số khẩu phần/hộp',
-    calories: 'Năng lượng',
-    totalFat: 'Chất béo tổng',
-    saturatedFat: 'Chất béo bão hòa',
-    transFat: 'Chất béo trans',
-    cholesterol: 'Cholesterol',
-    sodium: 'Natri',
-    totalCarb: 'Carbohydrate tổng',
-    dietaryFiber: 'Chất xơ',
-    totalSugars: 'Đường tổng',
-    addedSugars: 'Đường bổ sung',
-    protein: 'Protein',
-    vitaminD: 'Vitamin D',
-    calcium: 'Canxi',
-    iron: 'Sắt',
-    potassium: 'Kali',
-    findingsDetail: 'Chi Tiết Phát Hiện',
-    noViolations: 'Không phát hiện vi phạm',
-    noViolationsDesc: 'Nhãn sản phẩm đáp ứng tất cả yêu cầu tuân thủ FDA đã kiểm tra.',
-    legalBasis: 'Cơ sở pháp lý',
-    fixGuidance: 'Hướng dẫn khắc phục',
-    enforcementHistory: 'Lịch sử xử phạt',
-    aiConfidenceLabel: 'Độ tin cậy AI',
-    riskScoreLabel: 'Điểm rủi ro',
-    enforcementFreq: 'Tần suất xử phạt',
-    citationsLabel: 'Trích dẫn',
-    cfrSection: 'Mục CFR',
-    citationContent: 'Nội dung trích dẫn',
-    source: 'Nguồn',
-    relevance: 'Độ liên quan',
-    importAlerts: 'Cảnh Báo Nhập Khẩu FDA',
-    portRiskLabel: 'RỦI RO TẠI CẢNG NHẬP KHẨU (Chỉ mang tính tham khảo)',
-    portRiskDesc: 'Các Cảnh báo Nhập khẩu FDA sau đây đã được khớp với sản phẩm hoặc danh mục này. Import Alerts cho phép FDA giữ hàng tại các cảng Hoa Kỳ KHÔNG cần kiểm tra vật lý (DWPE). Đây là các tín hiệu rủi ro - không phải vi phạm pháp lý - và không thay thế các yêu cầu tuân thủ quy định. Sản phẩm từ các công ty trong Danh sách Đỏ sẽ bị giữ tự động tại tất cả các cảng nhập cảnh Hoa Kỳ.',
-    importAlertRef: 'Tham chiếu Import Alert',
-    viewOnFda: 'Xem trên FDA.gov',
-    remediationSteps: 'Các bước khắc phục',
-    matchConfidence: 'Độ tin cậy khớp',
-    referenceOnly: 'Chỉ mang tính tham khảo — không phải vi phạm pháp lý',
-    dwpeRedList: 'DWPE — Danh sách Đỏ',
-    categoryRisk: 'Rủi ro danh mục',
-    technicalChecks: 'Kiểm Tra Kỹ Thuật & Hình Ảnh',
-    geometryLayout: 'Hình học & Bố cục',
-    issueCount: 'vấn đề',
-    expected: 'Yêu cầu',
-    actual: 'Thực tế',
-colorContrast: 'Độ tương phản màu',
-  contrastDesignNote: 'Đây là gợi ý thiết kế để cải thiện khả năng đọc. FDA chỉ yêu cầu văn bản "dễ nhận biết" (§101.2), không quy định tỷ lệ tương phản cụ thể.',
-  contrastRatio: 'Tỷ lệ tương phản',
-    minimum: 'tối thiểu',
-    on: 'trên',
-    multiLangCompliance: 'Tuân thủ đa ngôn ngữ',
-    checks: 'kiểm tra',
-    detected: 'Đã phát hiện',
-    missingTranslations: 'Thiếu bản dịch',
-    commercialSummary: 'Tóm Tắt Phân Tích Thương Mại',
-    expertRecommendations: 'Khuyến Nghị Chuyên Gia',
-    recommendation: 'Khuyến nghị',
-    veximAdvice: 'Lời khuyên từ Vexim',
-    portWarning: 'Cảnh báo cảng nhập khẩu',
-    portWarningDesc: 'Sản phẩm có vi phạm nhãn thường bị giữ tại các cảng nhập cảnh Hoa Kỳ (đặc biệt Long Beach, Los Angeles và Newark). Cục Hải quan và Bảo vệ Biên giới (CBP) phối hợp với FDA trong kiểm tra nhập khẩu. Khắc phục tất cả các vấn đề nghiêm trọng trước khi vận chuyển là rất cần thiết.',
-    expertReviewNotes: 'Ghi chú đánh giá chuyên gia',
-    actionItems: 'Danh Sách Hành Động',
-    actionSeverity: 'Mức độ',
-    actionIssue: 'Vấn đề',
-    actionRequired: 'Hành động cần thực hiện',
-    actionPriority: 'Ưu tiên',
-    seeDetails: 'Xem chi tiết',
-    reportVerified: 'Báo cáo đã xác minh bởi chuyên gia',
-    pendingVerification: 'Chờ xác minh chuyên gia',
-    upgradeTitle: 'Nâng cao độ tin cậy của báo cáo',
-    upgradeDesc: 'Để chuyên gia tuân thủ FDA có năng lực đánh giá và xác minh báo cáo này.',
-    upgradeDesc2: 'Xác minh chuyên gia tăng độ tin cậy và cung cấp khuyến nghị chi tiết hơn.',
-    requestVerification: 'Yêu cầu xác minh chuyên gia',
-    contactConsulting: 'Liên hệ tư vấn',
-    certification: 'Chứng nhận',
-    certificationDesc: 'Báo cáo này được tạo bởi AI Label Pro (Vexim Global) và',
-    verifiedByExpert: 'đã được xác minh bởi chuyên gia tuân thủ FDA',
-    pendingExpertVerification: 'đang chờ xác minh chuyên gia',
-    certificationDesc2: 'Các phát hiện dựa trên phân tích tự động nhãn đã gửi so với các quy định FDA hiện hành (21 CFR) và tiền lệ xử phạt.',
-    fdaComplianceExpert: 'Chuyên gia tuân thủ FDA',
-    veximAiSystem: 'Hệ thống AI Label Pro — Chờ xác minh chuyên gia',
-    certId: 'Mã chứng nhận',
-    disclaimer: 'Tuyên bố miễn trừ trách nhiệm',
-    disclaimerText: 'Báo cáo này được tạo theo 21 CFR đã sửa đổi ngày 1 tháng 4, 2025. Báo cáo có hiệu lực trong 12 tháng kể từ ngày phát hành; cần xem xét lại nếu quy định thay đổi. Báo cáo này chỉ bao gồm nhãn sản phẩm và KHÔNG cấu thành đánh giá về công thức sản phẩm, thực hành sản xuất (GMP), hay tuyên bố lâm sàng. Không nên sử dụng thay thế cho tư vấn với chuyên gia quản lý quy định FDA có trình độ. Các phát hiện Import Alert chỉ là tín hiệu rủi ro và không cấu thành vi phạm quy định hoặc trích dẫn pháp lý. Vexim Global không chịu trách nhiệm pháp lý cho bất kỳ quyết định nào được đưa ra dựa trên báo cáo này.',
-    defaultRiskHigh: (score: string, critical: number) => `Nhãn sản phẩm có điểm rủi ro ${score}/10. Các vấn đề nghiêm trọng cần được khắc phục trước khi phân phối.`,
-    defaultRiskLow: (score: string) => `Nhãn sản phẩm có điểm rủi ro ${score}/10. Không phát hiện vấn đề nghiêm trọng, nhưng cần cải thiện một số điểm.`,
-    expertTipCritical: 'Nhãn sản phẩm này có các vấn đề tuân thủ FDA nghiêm trọng cần được khắc phục trước khi phân phối tại thị trường Hoa Kỳ. Không tuân thủ có thể dẫn đến Import Alert, hàng bị giữ tại cảng, hoặc Thư cảnh báo FDA.',
-    expertTipWarning: 'Nhãn sản phẩm này đáp ứng yêu cầu FDA tối thiểu nhưng có các điểm cần cải thiện. Khắc phục các cảnh báo sẽ giảm rủi ro bị xử phạt và tăng niềm tin của người tiêu dùng.',
-    expertTipPass: `<strong>Nhãn sản phẩm này thể hiện sự tuân thủ FDA tốt.</strong>
-
-<p style="margin-top:8px;"><strong>Các bước tiếp theo được khuyến nghị:</strong></p>
-<ul style="margin:6px 0 0 16px;padding:0;list-style:disc;">
-  <li>Lưu trữ báo cáo này như tài liệu tuân thủ cho đợt xuất khẩu</li>
-  <li>Kiểm tra lại nhãn sau 12 tháng hoặc khi có cập nhật 21 CFR</li>
-  <li>Theo dõi FDA Warning Letters và Recalls trong ngành để cập nhật xu hướng thực thi</li>
-  <li>Lưu ý: Nếu thay đổi công thức hoặc nội dung nhãn, cần kiểm tra lại tuân thủ</li>
-</ul>`,
-    riskHigh: 'Cao',
-    riskMedHigh: 'Trung bình - Cao',
-    riskMed: 'Trung bình',
-    riskLow: 'Thấp',
-    sevCritical: 'NGHIÊM TRỌNG',
-    sevWarning: 'CẢNH BÁO',
-    sevInfo: 'THÔNG TIN',
-    // New labels
-    tableOfContents: 'Mục Lục',
-    confidenceMetrics: 'Độ Tin Cậy Phân Tích',
-    ocrConfidence: 'OCR (Đọc văn bản)',
-    extractionConfidence: 'Trích xuất dữ liệu',
-    legalConfidence: 'Phân tích pháp lý',
-    healthClaims: 'Tuyên Bố Sức Khỏe',
-    healthClaimsWarning: 'Tuyên bố bệnh bị cấm theo 21 CFR 101.93',
-    verifiedNutrientClaims: 'Công Bố Hàm Lượng Dinh Dưỡng (Tuân Thủ)',
-    verifiedCompliant: 'Đã Xác Minh - Tuân Thủ',
-    specialClaims: 'Tuyên Bố Đặc Biệt',
-    enforcementInsights: 'Xu Hướng Xử Phạt FDA',
-    consequencesTitle: 'HẬU QUẢ NẾU KHÔNG KHẮC PHỤC',
-    consequenceDetention: 'Giữ hàng tại cảng (DWPE)',
-    consequenceDetentionDesc: 'Phí lưu container $150-500/ngày, phí trễ tàu',
-    consequenceRelabeling: 'Chi phí dán nhãn lại',
-    consequenceRelabelingDesc: 'In nhãn mới, dán lại tại Mỹ: $2,000-15,000',
-    consequenceRecall: 'Thu hồi bắt buộc (Recall)',
-    consequenceRecallDesc: 'Thu hồi toàn bộ sản phẩm: $10,000-500,000+',
-    pageFooter: 'Tài liệu mật',
-    priorityImmediate: 'NGAY LẬP TỨC',
-    priorityHigh: 'CAO',
-    priorityMedium: 'TRUNG BÌNH',
-    catHealthClaims: 'Tuyên bố sức khỏe',
-    catIngredientOrder: 'Thứ tự nguyên liệu',
-    catIngredientListing: 'Danh sách thành phần',
-    catNutritionFacts: 'Thông tin dinh dưỡng',
-    catAllergenDeclaration: 'Khai báo chất gây dị ứng',
-    catNetContent: 'Khối lượng tịnh',
-    catCountryOfOrigin: 'Xuất xứ',
-    catManufacturerInfo: 'Thông tin nhà sản xuất',
-    catFontSize: 'Cỡ chữ',
-    catLabelProminence: 'Độ nổi bật nhãn',
-    catColorContrast: 'Độ tương phản màu',
-    catLangRequirements: 'Yêu cầu ngôn ngữ',
-    catMissingStatement: 'Thiếu tuyên bố bắt buộc',
-    catProhibitedClaims: 'Tuyên bố bị cấm',
-    catDrugClaims: 'Tuyên bố thuốc',
-    catDiseaseClaims: 'Tuyên bố bệnh',
-    catStructureClaims: 'Tuyên bố cấu trúc/chức năng',
-    catNutrientClaims: 'Tuyên bố hàm lượng dinh dưỡng',
-    catServingSize: 'Khẩu phần ăn',
-    catDailyValue: 'Giá trị hàng ngày',
-    catBarcodeIssues: 'Vấn đề mã vạch',
-    catPackagingCompliance: 'Tuân thủ bao bì',
-    catImportAlertMatch: 'Khớp cảnh báo nhập khẩu',
-    catWarningLetterCitation: 'Trích dẫn thư cảnh báo',
-    catRecallAssociation: 'Liên quan thu hồi',
-    productImages: 'Hình Ảnh Sản Phẩm',
-    imageTypePdp: 'Mặt trước (PDP)',
-    imageTypeNutrition: 'Bảng dinh dưỡng',
-    imageTypeIngredients: 'Thành phần',
-    imageTypeOther: 'Khác',
-    // Expert Consultation Section
-    expertConsultation: 'Tư Vấn Chuyên Gia Vexim',
-    expertConsultationSubtitle: 'Đánh giá và hướng dẫn từ chuyên gia tuân thủ FDA',
-    expertOverview: 'Tổng quan đánh giá chuyên gia',
-    violationFixGuide: 'Hướng dẫn khắc phục từng vi phạm',
-    violationConfirmed: 'Xác nhận - cần sửa',
-    violationNotConfirmed: 'Không nghiêm trọng',
-    suggestedWording: 'Văn bản đề xuất:',
-    expertPriorityActions: 'Hành động ưu tiên',
-    priorityUrgent: 'Khẩn cấp',
-    signedOffBy: 'Ký xác nhận bởi',
-    requestSentAt: 'Yêu cầu gửi lúc',
-    resultsAvailable: 'Kết quả sẵn sàng',
-    // Audit Scope
-    auditScope: 'Phạm Vi Kiểm Tra',
-    auditScopeRegulations: 'Quy định đã kiểm tra',
-    auditScopePanels: 'Mặt nhãn đã xem xét',
-    auditScopeImages: 'Hình ảnh đã phân tích',
-    auditScopeOcrMethod: 'Phương pháp OCR',
-    auditScopeReviewDate: 'Ngày kiểm tra',
-    auditScopeCfrVersion: 'Phiên bản CFR',
-    auditScopeCfrVersionValue: '21 CFR sửa đổi ngày 1 tháng 4, 2025',
-    auditScopeOcrMethodValue: 'GPT-4o Vision (AI Vision Analysis)',
-    auditScopePanelsValue: 'PDP (Principal Display Panel), Information Panel, Nutrition Facts Panel',
-    // Multi-column NF
-    multiColumnNF: 'Bảng Dinh Dưỡng Đa Cột',
-    multiColumnNFDesc: 'Sản phẩm có nhiều biến thể — mỗi cột tương ứng một sản phẩm riêng biệt.',
-    multiColumnVariant: 'Biến thể',
-    multiColumnServingSize: 'Khẩu phần',
-    // FDA Enforcement History
-    fdaEnforcementHistory: 'Lịch Sử Xử Phạt FDA',
-    warningLetters: 'Thư Cảnh Báo',
-    recalls: 'Thu Hồi Sản Phẩm',
-    importAlertsLabel: 'Cảnh Báo Nhập Khẩu',
-    none: 'Không có',
-    regulationsChecked: 'Quy Định Đã Kiểm Tra',
-    overallAssessmentVexim: 'Đánh Giá Tổng Thể Từ Vexim Global',
-    conclusionLabel: 'Kết Luận',
-  },
-  en: {
-    downloadTitle: 'FDA Compliance Audit Report',
-    downloadBtn: 'Download PDF',
-    coverTitle: 'FDA Compliance Audit Report',
-    defaultProduct: 'Product Label Analysis',
-    reportId: 'Report ID',
-    dateCreated: 'Date Created',
-    result: 'Result',
-    riskScore: 'Risk Score',
-    pass: 'PASS',
-    fail: 'FAIL',
-    pending: 'PENDING VERIFICATION',
-    quickSummary: 'Quick Summary',
-    critical: 'Critical',
-    warning: 'Warning',
-    info: 'Info',
-    cfrCitations: 'CFR Citations',
-    mainReasons: 'Main reasons:',
-    generatedBy: 'Generated by',
-    overview: 'Overview',
-    riskLevel: 'Risk level',
-    overallAssessment: 'Overall Assessment by Vexim Global AI',
-    currentRisk: 'Current risk',
-    afterFix: 'After fixes',
-    productInfo: 'Product Information',
-    productName: 'Product name',
-    brandName: 'Brand',
-    category: 'Category',
-    productType: 'Product type',
-    packageFormat: 'Package format',
-    netContent: 'Net content',
-    pdpArea: 'PDP area',
-    manufacturer: 'Manufacturer',
-    origin: 'Country of origin',
-    targetMarket: 'Target market',
-    detectedLangs: 'Detected languages',
-    analysisDate: 'Analysis date',
-    aiConfidence: 'AI confidence',
-    allergenDeclaration: 'Allergen Declaration',
-    allergens: 'Allergens',
-    ingredientList: 'Ingredient List',
-    ingredientDetected: 'Ingredients detected by AI Vision',
-    nutritionInfo: 'Nutrition Information',
-    nutritionDetected: 'Nutrition facts detected by AI Vision',
-    servingSize: 'Serving size',
-    servingsPerContainer: 'Servings per container',
-    calories: 'Calories',
-    totalFat: 'Total fat',
-    saturatedFat: 'Saturated fat',
-    transFat: 'Trans fat',
-    cholesterol: 'Cholesterol',
-    sodium: 'Sodium',
-    totalCarb: 'Total carbohydrate',
-    dietaryFiber: 'Dietary fiber',
-    totalSugars: 'Total sugars',
-    addedSugars: 'Added sugars',
-    protein: 'Protein',
-    vitaminD: 'Vitamin D',
-    calcium: 'Calcium',
-    iron: 'Iron',
-    potassium: 'Potassium',
-    findingsDetail: 'Detailed Findings',
-    noViolations: 'No violations found',
-    noViolationsDesc: 'Product label meets all checked FDA compliance requirements.',
-    legalBasis: 'Legal basis',
-    fixGuidance: 'Fix guidance',
-    enforcementHistory: 'Enforcement history',
-    aiConfidenceLabel: 'AI confidence',
-    riskScoreLabel: 'Risk score',
-    enforcementFreq: 'Enforcement frequency',
-    citationsLabel: 'Citations',
-    cfrSection: 'CFR Section',
-    citationContent: 'Citation content',
-    source: 'Source',
-    relevance: 'Relevance',
-    importAlerts: 'FDA Import Alerts',
-    portRiskLabel: 'PORT OF ENTRY RISK (Reference only)',
-    portRiskDesc: 'The following FDA Import Alerts have been matched to this product or category. Import Alerts allow FDA to detain goods at US ports WITHOUT physical examination (DWPE). These are risk signals - not legal violations - and do not replace regulatory compliance requirements. Products from companies on the Red List will be automatically detained at all US ports of entry.',
-    importAlertRef: 'Import Alert reference',
-    viewOnFda: 'View on FDA.gov',
-    remediationSteps: 'Remediation steps',
-    matchConfidence: 'Match confidence',
-    referenceOnly: 'Reference only \u2014 not a legal violation',
-    dwpeRedList: 'DWPE \u2014 Red List',
-    categoryRisk: 'Category risk',
-    technicalChecks: 'Technical & Visual Checks',
-    geometryLayout: 'Geometry & Layout',
-    issueCount: 'issues',
-    expected: 'Required',
-    actual: 'Actual',
-colorContrast: 'Color Contrast',
-  contrastDesignNote: 'This is a design suggestion to improve readability. FDA only requires text be "conspicuous" (§101.2) — no specific contrast ratio is mandated.',
-  contrastRatio: 'Contrast ratio',
-    minimum: 'minimum',
-    on: 'on',
-    multiLangCompliance: 'Multi-language Compliance',
-    checks: 'checks',
-    detected: 'Detected',
-    missingTranslations: 'Missing translations',
-    commercialSummary: 'Commercial Analysis Summary',
-    expertRecommendations: 'Expert Recommendations',
-    recommendation: 'Recommendation',
-    veximAdvice: 'Vexim advice',
-    portWarning: 'Port of entry warning',
-    portWarningDesc: 'Products with label violations are commonly detained at US ports of entry (especially Long Beach, Los Angeles and Newark). US Customs and Border Protection (CBP) coordinates with FDA on import inspections. Addressing all critical issues before shipping is essential.',
-    expertReviewNotes: 'Expert review notes',
-    actionItems: 'Action Items',
-    actionSeverity: 'Severity',
-    actionIssue: 'Issue',
-    actionRequired: 'Action required',
-    actionPriority: 'Priority',
-    seeDetails: 'See details',
-    reportVerified: 'Report verified by expert',
-    pendingVerification: 'Pending expert verification',
-    upgradeTitle: 'Enhance report confidence',
-    upgradeDesc: 'Have a qualified FDA compliance expert review and verify this report.',
-    upgradeDesc2: 'Expert verification increases confidence and provides more detailed recommendations.',
-    requestVerification: 'Request expert verification',
-    contactConsulting: 'Contact consulting',
-    certification: 'Certification',
-    certificationDesc: 'This report was generated by AI Label Pro (Vexim Global) and',
-    verifiedByExpert: 'has been verified by an FDA compliance expert',
-    pendingExpertVerification: 'is pending expert verification',
-    certificationDesc2: 'Findings are based on automated analysis of the submitted label against current FDA regulations (21 CFR) and enforcement precedent.',
-    fdaComplianceExpert: 'FDA Compliance Expert',
-    veximAiSystem: 'AI Label Pro System — Pending Expert Verification',
-    certId: 'Certification ID',
-    disclaimer: 'Disclaimer',
-    disclaimerText: 'Report generated against 21 CFR revised April 1, 2025. This report is valid for 12 months from issue date; re-review if regulations change. This report covers label artwork only and does NOT constitute review of product formulation, manufacturing practices (GMP), or clinical claims. It should not be used as a substitute for consultation with qualified FDA regulatory professionals. Import Alert findings are risk signals only and do not constitute regulatory violations or legal citations. Vexim Global bears no legal liability for any decisions made based on this report.',
-    defaultRiskHigh: (score: string, critical: number) => `Product label has a risk score of ${score}/10. Critical issues must be addressed before distribution.`,
-    defaultRiskLow: (score: string) => `Product label has a risk score of ${score}/10. No critical issues found, but some areas need improvement.`,
-    expertTipCritical: 'This product label has critical FDA compliance issues that must be addressed before distribution in the US market. Non-compliance could lead to Import Alerts, port detention, or FDA Warning Letters.',
-    expertTipWarning: 'This product label meets minimum FDA requirements but has areas for improvement. Addressing warnings will reduce enforcement risk and increase consumer confidence.',
-    expertTipPass: `<strong>This product label demonstrates good FDA compliance.</strong>
-
-<p style="margin-top:8px;"><strong>Recommended next steps:</strong></p>
-<ul style="margin:6px 0 0 16px;padding:0;list-style:disc;">
-  <li>Archive this report as compliance documentation for your export shipment</li>
-  <li>Re-audit the label after 12 months or when 21 CFR updates occur</li>
-  <li>Monitor FDA Warning Letters and Recalls in your category for enforcement trends</li>
-  <li>Note: If formulation or label content changes, re-audit is required</li>
-</ul>`,
-    riskHigh: 'High',
-    riskMedHigh: 'Medium-High',
-    riskMed: 'Medium',
-    riskLow: 'Low',
-    sevCritical: 'CRITICAL',
-    sevWarning: 'WARNING',
-    sevInfo: 'INFO',
-    // New labels
-    tableOfContents: 'Table of Contents',
-    confidenceMetrics: 'Analysis Confidence',
-    ocrConfidence: 'OCR (Text reading)',
-    extractionConfidence: 'Data extraction',
-    legalConfidence: 'Legal analysis',
-    healthClaims: 'Health Claims',
-    healthClaimsWarning: 'Prohibited disease claims under 21 CFR 101.93',
-    verifiedNutrientClaims: 'Verified Nutrient Claims (Compliant)',
-    verifiedCompliant: 'Verified - Compliant',
-    specialClaims: 'Special Claims',
-    enforcementInsights: 'FDA Enforcement Trends',
-    consequencesTitle: 'CONSEQUENCES OF NON-COMPLIANCE',
-    consequenceDetention: 'Port Detention (DWPE)',
-    consequenceDetentionDesc: 'Container storage $150-500/day, demurrage fees',
-    consequenceRelabeling: 'Relabeling Cost',
-    consequenceRelabelingDesc: 'New labels, re-application in US: $2,000-15,000',
-    consequenceRecall: 'Mandatory Recall',
-    consequenceRecallDesc: 'Full product recall: $10,000-500,000+',
-    pageFooter: 'Confidential',
-    priorityImmediate: 'IMMEDIATE',
-    priorityHigh: 'HIGH',
-    priorityMedium: 'MEDIUM',
-    catHealthClaims: 'Health Claims',
-    catIngredientOrder: 'Ingredient Order',
-    catIngredientListing: 'Ingredient Listing',
-    catNutritionFacts: 'Nutrition Facts',
-    catAllergenDeclaration: 'Allergen Declaration',
-    catNetContent: 'Net Content',
-    catCountryOfOrigin: 'Country of Origin',
-    catManufacturerInfo: 'Manufacturer Info',
-    catFontSize: 'Font Size',
-    catLabelProminence: 'Label Prominence',
-    catColorContrast: 'Color Contrast',
-    catLangRequirements: 'Language Requirements',
-    catMissingStatement: 'Missing Required Statement',
-    catProhibitedClaims: 'Prohibited Claims',
-    catDrugClaims: 'Drug Claims',
-    catDiseaseClaims: 'Disease Claims',
-    catStructureClaims: 'Structure/Function Claims',
-    catNutrientClaims: 'Nutrient Content Claims',
-    catServingSize: 'Serving Size',
-    catDailyValue: 'Daily Value',
-    catBarcodeIssues: 'Barcode Issues',
-    catPackagingCompliance: 'Packaging Compliance',
-    catImportAlertMatch: 'Import Alert Match',
-    catWarningLetterCitation: 'Warning Letter Citation',
-    catRecallAssociation: 'Recall Association',
-    productImages: 'Product Images',
-    imageTypePdp: 'Front (PDP)',
-    imageTypeNutrition: 'Nutrition Facts',
-    imageTypeIngredients: 'Ingredients',
-    imageTypeOther: 'Other',
-    // Expert Consultation Section
-    expertConsultation: 'Vexim Expert Consultation',
-    expertConsultationSubtitle: 'Review and guidance from FDA compliance experts',
-    expertOverview: 'Expert overview assessment',
-    violationFixGuide: 'Fix guidance per violation',
-    violationConfirmed: 'Confirmed - needs fix',
-    violationNotConfirmed: 'Not serious',
-    suggestedWording: 'Suggested wording:',
-    expertPriorityActions: 'Priority actions',
-    priorityUrgent: 'Urgent',
-    signedOffBy: 'Signed off by',
-    requestSentAt: 'Request sent at',
-    resultsAvailable: 'Results available',
-    // Audit Scope
-    auditScope: 'Audit Scope',
-    auditScopeRegulations: 'Regulations checked',
-    auditScopePanels: 'Label panels reviewed',
-    auditScopeImages: 'Images analyzed',
-    auditScopeOcrMethod: 'OCR method',
-    auditScopeReviewDate: 'Review date',
-    auditScopeCfrVersion: 'CFR version',
-    auditScopeCfrVersionValue: '21 CFR revised April 1, 2025',
-    auditScopeOcrMethodValue: 'GPT-4o Vision (AI Vision Analysis)',
-    auditScopePanelsValue: 'PDP (Principal Display Panel), Information Panel, Nutrition Facts Panel',
-    // Multi-column NF
-    multiColumnNF: 'Multi-Column Nutrition Facts',
-    multiColumnNFDesc: 'Product contains multiple variants — each column represents a separate product.',
-    multiColumnVariant: 'Variant',
-    multiColumnServingSize: 'Serving Size',
-    // FDA Enforcement History
-    fdaEnforcementHistory: 'FDA Enforcement History',
-    warningLetters: 'Warning Letters',
-    recalls: 'Recalls',
-    importAlertsLabel: 'Import Alerts',
-    none: 'None',
-    regulationsChecked: 'Regulations Checked',
-    overallAssessmentVexim: 'Overall Assessment by Vexim Global',
-    conclusionLabel: 'Conclusion',
-  },
-}
-
-// ── Utilities ─────────────────────────────────────────────────────────
-
-function escapeHtml(text: string): string {
-  return String(text || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
-/**
- * Formats a nutrition field value for display in the PDF.
- * Handles merged OCR strings like "0mg0", "11g14", "0.1mcg0"
- * Returns clean HTML like "11g <span>(14%)</span>"
- */
-function formatNutrientValue(rawValue: any): string {
-  if (rawValue == null) return '—'
-  const str = String(rawValue)
-  // Pattern: number + unit + number (merged DV) e.g. "0g0", "11g14", "630mg27"
-  const mergedMatch = str.match(/^(\d+(?:\.\d+)?)\s*(mg|g|mcg|kcal|cal)\s*(\d+)$/i)
-  if (mergedMatch) {
-    const [, val, unit, dv] = mergedMatch
-    return dv === '0'
-      ? `${val}${unit} <span style="color:#94a3b8;font-size:8px;">(0%)</span>`
-      : `${val}${unit} <span style="color:#94a3b8;font-size:8px;">(${dv}%)</span>`
-  }
-  return escapeHtml(str)
-}
-
-/** Convert markdown text to styled HTML. Handles ## / ### headings, **bold**, *italic*, - bullets, 1. numbered lists. */
-function markdownToHtml(md: string | undefined | null): string {
-  if (!md) return ''
-  const lines = md.split('\n')
-  const out: string[] = []
-  let inUl = false
-  let inOl = false
-
-  const closeList = () => {
-    if (inUl) { out.push('</ul>'); inUl = false }
-    if (inOl) { out.push('</ol>'); inOl = false }
-  }
-
-  const inlineFmt = (t: string): string => {
-    let s = escapeHtml(t)
-    // **bold**
-    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // *italic*
-    s = s.replace(/\*(.+?)\*/g, '<em>$1</em>')
-    return s
-  }
-
-  for (const raw of lines) {
-    const line = raw.trim()
-    if (!line) { closeList(); continue }
-
-    // ### subheading
-    const h3 = line.match(/^###\s+(.+)/)
-    if (h3) {
-      closeList()
-      const txt = h3[1].replace(/#+$/, '').trim()
-      // Detect severity for color coding
-      let style = 'color:#334155;'
-      if (/NGHIÊM TRỌNG|CRITICAL|LỖI NGHIÊM TRỌNG/i.test(txt)) style = 'color:#991B1B;background:#FEE2E2;border:1px solid #F87171;border-radius:6px;padding:6px 10px;'
-      else if (/CẢNH BÁO|WARNING/i.test(txt)) style = 'color:#92400E;background:#FEF3C7;border:1px solid #FBBF24;border-radius:6px;padding:6px 10px;'
-      else if (/THÔNG TIN|INFO/i.test(txt)) style = 'color:#1E40AF;background:#DBEAFE;border:1px solid #60A5FA;border-radius:6px;padding:6px 10px;'
-      else if (/LỜI KHUYÊN|ADVICE|KHUYẾN NGHỊ|RECOMMENDATION/i.test(txt)) style = 'color:#065F46;background:#D1FAE5;border:1px solid #34D399;border-radius:6px;padding:6px 10px;'
-      out.push(`<div style="font-size:11px;font-weight:600;margin:12px 0 6px;${style}">${inlineFmt(txt)}</div>`)
-      continue
-    }
-
-    // ## heading
-    const h2 = line.match(/^##\s+(.+)/)
-    if (h2) {
-      closeList()
-      out.push(`<div style="font-size:12px;font-weight:700;color:#0f172a;margin:14px 0 6px;">${inlineFmt(h2[1].replace(/#+$/, '').trim())}</div>`)
-      continue
-    }
-
-    // # heading
-    const h1 = line.match(/^#\s+(.+)/)
-    if (h1) {
-      closeList()
-      out.push(`<div style="font-size:13px;font-weight:700;color:#0f172a;margin:14px 0 6px;">${inlineFmt(h1[1].replace(/#+$/, '').trim())}</div>`)
-      continue
-    }
-
-    // - bullet
-    const ul = line.match(/^[-*]\s+(.+)/)
-    if (ul) {
-      if (inOl) { out.push('</ol>'); inOl = false }
-      if (!inUl) { out.push('<ul style="margin:4px 0 4px 16px;padding:0;list-style:disc;">'); inUl = true }
-      out.push(`<li style="font-size:10px;color:#475569;line-height:1.6;margin-bottom:2px;">${inlineFmt(ul[1])}</li>`)
-      continue
-    }
-
-    // 1. numbered
-    const ol = line.match(/^\d+[.)]\s+(.+)/)
-    if (ol) {
-      if (inUl) { out.push('</ul>'); inUl = false }
-      if (!inOl) { out.push('<ol style="margin:4px 0 4px 16px;padding:0;list-style:decimal;">'); inOl = true }
-      out.push(`<li style="font-size:10px;color:#475569;line-height:1.6;margin-bottom:2px;">${inlineFmt(ol[1])}</li>`)
-      continue
-    }
-
-    // Regular paragraph
-    closeList()
-    out.push(`<div style="font-size:10px;color:#475569;line-height:1.6;margin-bottom:4px;">${inlineFmt(line)}</div>`)
-  }
-  closeList()
-  return out.join('\n')
-}
-
-function formatDate(dateStr: string, lang: SupportedLang): string {
-  try {
-    return new Date(dateStr).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  } catch {
-    return dateStr
-  }
-}
-
-function getSeverityColor(severity: string): { bg: string; text: string; border: string } {
-  switch (severity) {
-    case 'critical':
-      return { bg: '#FEE2E2', text: '#991B1B', border: '#F87171' }
-    case 'warning':
-      return { bg: '#FEF3C7', text: '#92400E', border: '#FBBF24' }
-    case 'info':
-      return { bg: '#DBEAFE', text: '#1E40AF', border: '#60A5FA' }
-    default:
-      return { bg: '#F3F4F6', text: '#374151', border: '#D1D5DB' }
-  }
-}
-
-function getRiskColor(score: number): string {
-  if (score >= 7) return '#DC2626'
-  if (score >= 4) return '#F59E0B'
-  return '#16A34A'
-}
-
-function getRiskLabel(score: number, L: Record<string, string>): string {
-  if (score >= 8) return L.riskHigh
-  if (score >= 6) return L.riskMedHigh
-  if (score >= 4) return L.riskMed
-  return L.riskLow
-}
-
-function getSeverityLabel(severity: string, L: Record<string, string>): string {
-  switch (severity) {
-    case 'critical': return L.sevCritical
-    case 'warning': return L.sevWarning
-    case 'info': return L.sevInfo
-    default: return severity.toUpperCase()
-  }
-}
-
-function translateCategory(category: string, L: Record<string, string>): string {
-  const map: Record<string, string> = {
-    'Health Claims': L.catHealthClaims,
-    'Ingredient Order': L.catIngredientOrder,
-    'Ingredient Listing': L.catIngredientListing,
-    'Nutrition Facts': L.catNutritionFacts,
-    'Allergen Declaration': L.catAllergenDeclaration,
-    'Net Content': L.catNetContent,
-    'Country of Origin': L.catCountryOfOrigin,
-    'Manufacturer Info': L.catManufacturerInfo,
-    'Font Size': L.catFontSize,
-    'Label Prominence': L.catLabelProminence,
-    'Color Contrast': L.catColorContrast,
-    'Language Requirements': L.catLangRequirements,
-    'Missing Required Statement': L.catMissingStatement,
-    'Prohibited Claims': L.catProhibitedClaims,
-    'Drug Claims': L.catDrugClaims,
-    'Disease Claims': L.catDiseaseClaims,
-    'Structure/Function Claims': L.catStructureClaims,
-    'Nutrient Content Claims': L.catNutrientClaims,
-    'Serving Size': L.catServingSize,
-    'Daily Value': L.catDailyValue,
-    'Barcode Issues': L.catBarcodeIssues,
-    'Packaging Compliance': L.catPackagingCompliance,
-    'Import Alert Match': L.catImportAlertMatch,
-    'Warning Letter Citation': L.catWarningLetterCitation,
-    'Recall Association': L.catRecallAssociation,
-  }
-  return map[category] || category
-}
-
-function confidenceBar(label: string, value: number | undefined | null): string {
-  if (value === undefined || value === null) return ''
-  const pct = Math.round(value * 100)
-  const color = pct >= 80 ? '#16a34a' : pct >= 60 ? '#f59e0b' : '#dc2626'
-  return `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-      <div style="font-size:9px;color:#64748b;min-width:120px;">${label}</div>
-      <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;">
-        <div style="height:100%;width:${pct}%;background:${color};border-radius:4px;"></div>
-      </div>
-      <div style="font-size:9px;font-weight:600;min-width:32px;text-align:right;color:${color};">${pct}%</div>
-    </div>`
-}
-
-function translateImageType(type: string, L: Record<string, string>): string {
-  const map: Record<string, string> = {
-    pdp: L.imageTypePdp,
-    nutrition: L.imageTypeNutrition,
-    ingredients: L.imageTypeIngredients,
-    other: L.imageTypeOther,
-  }
-  return map[type] || L.imageTypeOther
-}
-
-function pageHeader(L: Record<string, string>, reportId: string, dateStr: string): string {
-  return `
-  <div class="page-header">
-    <div class="page-header-left">
-      <div class="page-header-logo">V</div>
-      <div class="page-header-brand">VEXIM Compliance AI</div>
-    </div>
-    <div class="page-header-right">
-      ${L.reportId} ${escapeHtml(reportId)}<br/>${dateStr}
-    </div>
-  </div>`
-}
+// Re-export types for backward compatibility
+export type { PDFReportData, SupportedLang, PDFLabels, ExpertReviewData } from './pdf/types'
 
 // ── Main Generator ────────────────────────────────────────────────────
+// Note: i18n labels have been moved to ./pdf/i18n/
+// Note: Utility functions have been moved to ./pdf/utils.ts
+// Note: CSS styles have been moved to ./pdf/styles.ts
+
+// Legacy reference for PDF_LABELS (now imported from ./pdf/i18n)
+// const PDF_LABELS = ... is now getPDFLabels(lang)
+
+// ════════════════════════════════════════════════════════════════════════
+// IMPORTANT: The following ~500 lines of PDF_LABELS have been extracted to:
+//   - lib/pdf/i18n/vi.ts (Vietnamese labels)
+//   - lib/pdf/i18n/en.ts (English labels)
+//   - lib/pdf/i18n/index.ts (exports)
+// ════════════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════════
+// LEGACY CODE REMOVED - The following sections have been extracted:
+// - i18n labels (~500 lines) -> lib/pdf/i18n/vi.ts, lib/pdf/i18n/en.ts
+// - Utility functions (~200 lines) -> lib/pdf/utils.ts  
+// - CSS styles (~170 lines) -> lib/pdf/styles.ts
+// - Types (~50 lines) -> lib/pdf/types.ts
+// 
+// Total reduction: ~920 lines removed from this file
+// ════════════════════════════════════════════════════════════════════════
+
+// The main generatePDFReportHTML function starts below
+// Labels are now imported from './pdf/i18n' via getPDFLabels()
+
+// ── Main Generator ────────────────────────────────────────────────────
+// Labels: imported from './pdf/i18n' via getPDFLabels()
+// Utilities: imported from './pdf/utils'
+// Styles: imported from './pdf/styles'
 
 export function generatePDFReportHTML(data: PDFReportData): string {
   const { report, violations, generatedAt, generatedBy, companyInfo, lang = 'vi', expertReview } = data
-  const L = PDF_LABELS[lang] || PDF_LABELS.vi
+  const L = getPDFLabels(lang)
 
   const importAlertViolations = violations.filter(v => v.source_type === 'import_alert')
   // IMPORTANT: Exclude recall items from standard violations - they are "market intelligence" only.
@@ -1403,7 +699,7 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       </table>` : `
       <div style="padding:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#92400e;font-size:8.5px;text-align:center;">
         ${lang === 'vi'
-          ? 'Không thể đọc bảng dinh dưỡng từ hình ảnh. Vui lòng upload ảnh Nutrition Facts rõ hơn.'
+          ? 'Không thể đọc bảng dinh d��ỡng từ hình ảnh. Vui lòng upload ảnh Nutrition Facts rõ hơn.'
           : 'Could not extract nutrition facts from the provided image. Please upload a clearer Nutrition Facts panel image.'}
       </div>`}
     </div>
@@ -1446,8 +742,12 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       </ul>
     </div>
   </div>
+</div>
 
-
+<!-- ═══════════════════════ FINDINGS PAGE ═══════════════════════ -->
+<div class="page content-page page-break">
+  ${pageHeader(L, shortId, dateFormatted)}
+  
   <!-- ═══════════════ FINDINGS DETAIL (inline section) ═══════════════ -->
   <div class="section">
     <div class="section-title"><span class="section-number">${secFindings}</span>${L.findingsDetail}</div>
@@ -1510,8 +810,12 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       </div>`
     }).join('')}
   </div>
+</div>
 
-  ${importAlertViolations.length > 0 ? `
+<!-- ═══════════════════════ IMPORT ALERTS PAGE ═══════════════════════ -->
+${importAlertViolations.length > 0 ? `
+<div class="page content-page page-break">
+  ${pageHeader(L, shortId, dateFormatted)}
   <!-- ═══════════════ IMPORT ALERTS (inline section) ═══════════════ -->
   <div class="section">
     <div class="section-title"><span class="section-number">${secImportAlerts}</span>${L.importAlerts}</div>
@@ -1545,9 +849,14 @@ export function generatePDFReportHTML(data: PDFReportData): string {
       </div>
     </div>`
     }).join('')}
-  </div>` : ''}
+  </div>
+</div>` : ''}
 
-  ${hasTech ? `
+${hasTech ? `
+<!-- ═══════════════════════ TECHNICAL CHECKS PAGE ═══════════════════════ -->
+<div class="page content-page page-break">
+  ${pageHeader(L, shortId, dateFormatted)}
+  
   <!-- ═══════════════ TECHNICAL CHECKS (inline section) ═══════════════ -->
   <div class="section">
     <div class="section-title"><span class="section-number">${secTechnical}</span>${L.technicalChecks}</div>
@@ -1606,7 +915,12 @@ export function generatePDFReportHTML(data: PDFReportData): string {
         <div style="margin-top: 4px; font-size: 8px; color: #dc2626;">${L.missingTranslations}: ${ml.missingFields.map((f: string) => escapeHtml(f)).join(', ')}</div>` : ''}
       </div>`).join('')}
     </div>` : ''}
-  </div>` : ''}
+  </div>
+</div>` : ''}
+
+<!-- ═══════════════════════ COMMERCIAL SUMMARY PAGE ═══════════════════════ -->
+<div class="page content-page page-break">
+  ${pageHeader(L, shortId, dateFormatted)}
 
 ${(() => {
   // Always generate localized commercial summary - never use raw English boilerplate
@@ -1622,7 +936,7 @@ ${(() => {
     if (lang === 'vi') {
       summaryContent = `**Nhãn sản phẩm tuân thủ tất cả các quy định FDA được kiểm tra.**
 
-Vexim AI không phát hiện vi phạm nghiêm trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR. Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA. Sản phẩm có thể được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.`
+Vexim AI không phát hiện vi phạm nghi��m trọng nào trong quá trình kiểm tra. Nhãn tuân thủ các quy định về ghi nhãn theo 21 CFR. Không tìm thấy Warning Letter, Recall hoặc Import Alert liên quan trong cơ sở dữ liệu FDA. Sản phẩm có thể được phân phối tại thị trường Hoa Kỳ với rủi ro pháp lý thấp.`
     } else {
       summaryContent = `**Your label complies with all FDA regulations checked.**
 
@@ -1696,8 +1010,9 @@ No critical violations found, but some warnings should be addressed to reduce ri
     </div>
   </div>`
 })()} 
+</div>
 
-  ${expertReview && expertReview.status === 'completed' ? `
+${expertReview && expertReview.status === 'completed' ? `
   <!-- ═══════════════════════ EXPERT CONSULTATION (flows from previous) ════════════���══════════ -->
 <div class="page content-page"><!-- No page-break: flows naturally -->
   ${pageHeader(L, shortId, dateFormatted)}
