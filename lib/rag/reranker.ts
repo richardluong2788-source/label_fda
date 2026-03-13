@@ -24,6 +24,7 @@ export interface RerankableResult {
   rerank_score?: number
   final_score?: number
   intent_boost?: number
+  temporal_boost?: number   // Boost for recent enforcement data
   metadata_penalty?: number
   relevance_tier?: 'primary' | 'supporting' | 'related'
 }
@@ -47,6 +48,10 @@ export interface RerankConfig {
   enableIntentBoost: boolean
   /** Enable metadata validation penalty (default: true) */
   enableMetadataValidation: boolean
+  /** Enable temporal weighting for time-sensitive documents (default: true) */
+  enableTemporalWeighting: boolean
+  /** Maximum temporal boost for recent documents (default: 0.15) */
+  temporalBoostMax: number
 }
 
 export interface RerankOutput {
@@ -73,6 +78,7 @@ export interface RerankOutput {
 const DEFAULT_CONFIG: RerankConfig = {
   // vector(0.55) + keyword(0.20) + rerank(0.10) + intent(0.15) = 1.00
   // Intent gets more weight because when confidence is high (90%) it's a very strong signal.
+  // Temporal boost is additive (up to 0.15) for recent enforcement data.
   vectorWeight: 0.55,
   keywordWeight: 0.20,
   rerankWeight: 0.10,
@@ -82,6 +88,8 @@ const DEFAULT_CONFIG: RerankConfig = {
   enableCrossEncoder: true,
   enableIntentBoost: true,
   enableMetadataValidation: true,
+  enableTemporalWeighting: true,
+  temporalBoostMax: 0.15,
 }
 
 // ==================== CROSS-ENCODER SCORING ====================
@@ -301,6 +309,111 @@ function calculateIntentScore(
   return Math.min(1.0, score)
 }
 
+// ==================== TEMPORAL WEIGHTING ====================
+
+/**
+ * Document types that should receive temporal weighting.
+ * CFR regulations are permanent and should NOT be affected.
+ */
+const TEMPORAL_DOCUMENT_TYPES = [
+  'warning_letter',
+  'recall',
+  'import_alert',
+  'enforcement',
+  'guidance',  // FDA guidance documents can be updated
+]
+
+/**
+ * Calculate temporal boost for time-sensitive documents.
+ * 
+ * - CFR regulations (21 CFR Part XXX): NO boost (permanent law)
+ * - Warning Letters, Recalls, Import Alerts: Boost based on recency
+ * 
+ * Decay formula: boost = maxBoost * e^(-decay * yearsOld)
+ * - Documents < 1 year old: ~90-100% of max boost
+ * - Documents 2 years old: ~55% of max boost
+ * - Documents 5 years old: ~8% of max boost
+ * - Documents > 7 years old: ~0% boost
+ */
+function calculateTemporalBoost(
+  result: RerankableResult,
+  maxBoost: number
+): number {
+  const meta = result.metadata || {}
+  const content = result.content || ''
+  
+  // --- Step 1: Determine if this is a time-sensitive document ---
+  const documentType = (meta.document_type || meta.type || '').toLowerCase()
+  const source = (meta.source || '').toLowerCase()
+  
+  // Check if document type indicates temporal relevance
+  const isTemporalDocument = TEMPORAL_DOCUMENT_TYPES.some(t => 
+    documentType.includes(t) || source.includes(t)
+  )
+  
+  // Also detect by content patterns
+  const isWarningLetter = /warning letter|wl-\d+/i.test(content) || 
+                          /issued.*letter.*\d{4}/i.test(content)
+  const isRecall = /recall|class\s+[iI]{1,3}\s+recall/i.test(content)
+  const isImportAlert = /import alert|dwpe|detention without/i.test(content)
+  const isGuidance = /guidance.*industry|draft guidance/i.test(content)
+  
+  // CFR regulations should NOT get temporal boost
+  const isCFR = /21\s*cfr\s*part\s*\d+/i.test(source) || 
+                /^21 CFR/i.test(content) ||
+                meta.regulation_type === 'cfr'
+  
+  // Skip temporal boost for CFR or non-temporal documents
+  if (isCFR || (!isTemporalDocument && !isWarningLetter && !isRecall && !isImportAlert && !isGuidance)) {
+    return 0
+  }
+  
+  // --- Step 2: Extract document date ---
+  let documentDate: Date | null = null
+  
+  // Try metadata fields first
+  const dateFields = ['issue_date', 'effective_date', 'posted_date', 'created_at', 'date', 'recall_initiation_date']
+  for (const field of dateFields) {
+    if (meta[field]) {
+      const parsed = new Date(meta[field])
+      if (!isNaN(parsed.getTime())) {
+        documentDate = parsed
+        break
+      }
+    }
+  }
+  
+  // Fallback: extract year from content (e.g., "January 15, 2023" or "2023-01-15")
+  if (!documentDate) {
+    const yearMatch = content.match(/\b(20[12][0-9])\b/)
+    if (yearMatch) {
+      // Use July 1 of that year as approximate date
+      documentDate = new Date(`${yearMatch[1]}-07-01`)
+    }
+  }
+  
+  // If no date found, assume it's old (no boost)
+  if (!documentDate) {
+    return 0
+  }
+  
+  // --- Step 3: Calculate decay-based boost ---
+  const now = new Date()
+  const ageInYears = (now.getTime() - documentDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+  
+  // Exponential decay with half-life of ~2 years
+  // decay = 0.35 means: at 2 years, boost = maxBoost * e^(-0.35*2) ≈ 0.50 * maxBoost
+  const decayRate = 0.35
+  const boost = maxBoost * Math.exp(-decayRate * ageInYears)
+  
+  // Documents older than 7 years get negligible boost
+  if (ageInYears > 7) {
+    return 0
+  }
+  
+  return Math.max(0, boost)
+}
+
 // ==================== METADATA VALIDATION ====================
 
 /**
@@ -412,18 +525,26 @@ export function rerankResults(
       ? calculateMetadataPenalty(result)
       : 0
 
+    // Temporal boost for recent enforcement data (Warning Letters, Recalls, Import Alerts)
+    // CFR regulations are NOT boosted - they are permanent law
+    const temporalBoost = cfg.enableTemporalWeighting
+      ? calculateTemporalBoost(result, cfg.temporalBoostMax)
+      : 0
+
     // Weighted fusion using decomposed scores.
     // metaPenalty is already capped at 0.15 by calculateMetadataPenalty —
     // apply it directly without a multiplier to prevent over-penalization.
+    // temporalBoost is additive to reward recent enforcement data.
     const finalScore = Math.max(0, Math.min(1.0,
       (rawVectorScore * cfg.vectorWeight) +
       (keywordScore * cfg.keywordWeight) +
       (rerankScore * cfg.rerankWeight) +
-      (intentScore * cfg.intentWeight) -
+      (intentScore * cfg.intentWeight) +
+      temporalBoost -
       metaPenalty
     ))
 
-    console.log(`[v0] Reranker scoring [${(result.section_name || result.id)}]: raw_vector=${rawVectorScore.toFixed(3)} kw_boost=${keywordBoost.toFixed(3)} kw_score=${keywordScore.toFixed(3)} rerank=${rerankScore.toFixed(3)} intent=${intentScore.toFixed(3)} penalty=${metaPenalty.toFixed(3)} -> final=${finalScore.toFixed(3)}`)
+    console.log(`[v0] Reranker scoring [${(result.section_name || result.id)}]: raw_vector=${rawVectorScore.toFixed(3)} kw_boost=${keywordBoost.toFixed(3)} kw_score=${keywordScore.toFixed(3)} rerank=${rerankScore.toFixed(3)} intent=${intentScore.toFixed(3)} temporal=${temporalBoost.toFixed(3)} penalty=${metaPenalty.toFixed(3)} -> final=${finalScore.toFixed(3)}`)
 
     // Determine relevance tier based on final weighted score.
     // "primary"   >= 0.50 : high-confidence, directly relevant
@@ -444,6 +565,7 @@ export function rerankResults(
       rerank_score: rerankScore,
       final_score: finalScore,
       intent_boost: intentScore,
+      temporal_boost: temporalBoost,
       metadata_penalty: metaPenalty,
       relevance_tier: relevanceTier,
     }
