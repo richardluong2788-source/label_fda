@@ -322,7 +322,7 @@ export function AnalysisProgressView({
                     <div
                       key={step.id}
                       ref={isCurrent ? activeStepRef : null}
-                      className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                      className={`flex items-start gap-3 p-3 rounded-lg transition-colors overflow-hidden ${
                         isCurrent
                           ? 'bg-primary/10 border border-primary/20'
                           : isCompleted
@@ -349,7 +349,7 @@ export function AnalysisProgressView({
                       </div>
                       <div className="flex-1 min-w-0">
                         <p
-                          className={`text-sm font-medium ${
+                          className={`text-sm font-medium break-words line-clamp-2 ${
                             isPending ? 'text-muted-foreground' : ''
                           }`}
                         >
