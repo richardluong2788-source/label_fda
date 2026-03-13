@@ -1102,7 +1102,10 @@ ${expertReview && expertReview.status === 'completed' ? `
   </div>
 </div>` : ''}
 
-  <!-- ═══════════════ EXPERT RECOMMENDATIONS (inline section) ═══════════════ -->
+<!-- ═══════════════════════ EXPERT RECOMMENDATIONS PAGE ═══════════════════════ -->
+<div class="page content-page page-break">
+  ${pageHeader(L, shortId, dateFormatted)}
+
   <div class="section">
     <div class="section-title"><span class="section-number">${secExpert}</span>${L.expertRecommendations}</div>
     <!-- Only show default expert tip if no tips already exist in commercial_summary -->
@@ -1118,7 +1121,8 @@ ${expertReview && expertReview.status === 'completed' ? `
         ${defaultExpertTip}
       </div>
     ` : `
-      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:9px;color:#166534;">
+      <div class="expert-tip">
+        <div class="expert-tip-label">${lang === 'vi' ? 'Thông tin' : 'Info'}</div>
         ${lang === 'vi' ? 'Xem khuyến nghị chuyên gia trong phần Tóm Tắt Phân Tích Thương Mại ở trên.' : 'See expert recommendations in the Commercial Analysis Summary section above.'}
       </div>
     `}
