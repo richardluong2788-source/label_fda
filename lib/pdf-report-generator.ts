@@ -999,11 +999,61 @@ No critical violations found, but some warnings should be addressed to reduce ri
     </div>
   </div>`
 })()} 
+
+  <!-- ═══════════════ EXPERT RECOMMENDATIONS (inline section) ═══════════════ -->
+  <div class="section">
+    <div class="section-title"><span class="section-number">${secExpert}</span>${L.expertRecommendations}</div>
+    <!-- Only show default expert tip if no tips already exist in commercial_summary -->
+    ${report.expert_tips && report.expert_tips.length > 0 && !report.commercial_summary?.includes('Vexim Tip') ? `
+      ${report.expert_tips.map((tip: string, idx: number) => `
+      <div class="expert-tip">
+        <div class="expert-tip-label">${L.recommendation} ${idx + 1}</div>
+        ${markdownToHtml(tip)}
+      </div>`).join('')}
+    ` : !report.commercial_summary?.includes('Vexim Tip') ? `
+      <div class="expert-tip">
+        <div class="expert-tip-label">${L.veximAdvice}</div>
+        ${defaultExpertTip}
+      </div>
+    ` : `
+      <div class="expert-tip">
+        <div class="expert-tip-label">${lang === 'vi' ? 'Thông tin' : 'Info'}</div>
+        ${lang === 'vi' ? 'Xem khuyến nghị chuyên gia trong phần Tóm Tắt Phân Tích Thương Mại ở trên.' : 'See expert recommendations in the Commercial Analysis Summary section above.'}
+      </div>
+    `}
+
+    <!-- Enforcement Insights -->
+    ${enforcementInsights.length > 0 ? `
+    <div style="margin-top:12px;">
+      <div style="font-size:9px;font-weight:700;color:#b45309;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.enforcementInsights}</div>
+      ${enforcementInsights.map((insight: string) => `
+      <div class="port-warning" style="margin-bottom:6px;">
+        ${markdownToHtml(insight)}
+      </div>`).join('')}
+    </div>` : ''}
+
+    ${criticalCount > 0 ? `
+    <div class="port-warning">
+      <div class="port-warning-label">${L.portWarning}</div>
+      ${L.portWarningDesc}
+    </div>` : ''}
+
+    ${report.review_notes ? `
+    <div class="expert-tip">
+      <div class="expert-tip-label">${L.expertReviewNotes}</div>
+      ${markdownToHtml(report.review_notes)}
+    </div>` : ''}
+  </div>
+
+  <div class="page-footer">
+    <div>${L.pageFooter} | ${companyInfo.name}</div>
+    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
+  </div>
 </div>
 
 ${expertReview && expertReview.status === 'completed' ? `
-  <!-- ═══════════════════════ EXPERT CONSULTATION (flows from previous) ════════════���══════════ -->
-<div class="page content-page"><!-- No page-break: flows naturally -->
+  <!-- ═══════════════════════ EXPERT CONSULTATION PAGE ═══════════════════════ -->
+<div class="page content-page page-break">
   ${pageHeader(L, shortId, dateFormatted)}
 
   <!-- Expert Consultation Header -->
@@ -1101,60 +1151,6 @@ ${expertReview && expertReview.status === 'completed' ? `
     <div>${L.reportId}: ${escapeHtml(shortId)}</div>
   </div>
 </div>` : ''}
-
-<!-- ═══════════════════════ EXPERT RECOMMENDATIONS PAGE ═══════════════════════ -->
-<div class="page content-page page-break">
-  ${pageHeader(L, shortId, dateFormatted)}
-
-  <div class="section">
-    <div class="section-title"><span class="section-number">${secExpert}</span>${L.expertRecommendations}</div>
-    <!-- Only show default expert tip if no tips already exist in commercial_summary -->
-    ${report.expert_tips && report.expert_tips.length > 0 && !report.commercial_summary?.includes('Vexim Tip') ? `
-      ${report.expert_tips.map((tip: string, idx: number) => `
-      <div class="expert-tip">
-        <div class="expert-tip-label">${L.recommendation} ${idx + 1}</div>
-        ${markdownToHtml(tip)}
-      </div>`).join('')}
-    ` : !report.commercial_summary?.includes('Vexim Tip') ? `
-      <div class="expert-tip">
-        <div class="expert-tip-label">${L.veximAdvice}</div>
-        ${defaultExpertTip}
-      </div>
-    ` : `
-      <div class="expert-tip">
-        <div class="expert-tip-label">${lang === 'vi' ? 'Thông tin' : 'Info'}</div>
-        ${lang === 'vi' ? 'Xem khuyến nghị chuyên gia trong phần Tóm Tắt Phân Tích Thương Mại ở trên.' : 'See expert recommendations in the Commercial Analysis Summary section above.'}
-      </div>
-    `}
-
-    <!-- Enforcement Insights -->
-    ${enforcementInsights.length > 0 ? `
-    <div style="margin-top:12px;">
-      <div style="font-size:9px;font-weight:700;color:#b45309;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">${L.enforcementInsights}</div>
-      ${enforcementInsights.map((insight: string) => `
-      <div class="port-warning" style="margin-bottom:6px;">
-        ${markdownToHtml(insight)}
-      </div>`).join('')}
-    </div>` : ''}
-
-    ${criticalCount > 0 ? `
-    <div class="port-warning">
-      <div class="port-warning-label">${L.portWarning}</div>
-      ${L.portWarningDesc}
-    </div>` : ''}
-
-    ${report.review_notes ? `
-    <div class="expert-tip">
-      <div class="expert-tip-label">${L.expertReviewNotes}</div>
-      ${markdownToHtml(report.review_notes)}
-    </div>` : ''}
-  </div>
-
-  <div class="page-footer">
-    <div>${L.pageFooter} | ${companyInfo.name}</div>
-    <div>${L.reportId}: ${escapeHtml(shortId)}</div>
-  </div>
-</div>
 
 <!-- ═══════════════════════ ACTION ITEMS & SIGNATURE PAGE ═══════════════════════ -->
 <div class="page content-page page-break">
