@@ -485,12 +485,10 @@ export function ReportResultView({
                                   </div>
                                 </div>
                               ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })()}
+                                  </div>
+                                </div>
+                                )
+                              })()}
 
                   {/* Health Claims - Split into Structure/Function vs Factual vs Nutrient Content */}
                   {/* SKIP this section for dietary supplements - use new classified claims system instead */}
