@@ -1008,7 +1008,7 @@ export async function POST(request: Request) {
     // Map all variants (Vietnamese, English, abbreviations) to canonical display names
     const allergenCanonicalMap: Record<string, string> = {
       // Soybeans - all variants map to "Soybeans"
-      'hạt đậu nành': 'Soybeans', 'đậu nành': 'Soybeans', 'soy': 'Soybeans', 
+      'hạt đ��u nành': 'Soybeans', 'đậu nành': 'Soybeans', 'soy': 'Soybeans', 
       'soya': 'Soybeans', 'soybean': 'Soybeans', 'soybeans': 'Soybeans',
       // Milk
       'sữa': 'Milk', 'milk': 'Milk', 'dairy': 'Milk',
@@ -1226,7 +1226,7 @@ export async function POST(request: Request) {
           category: `Import Alert: Rủi ro ${ia.action_type} (${ia.alert_number})`,
           severity: isEntityMatch ? 'critical' as const : 'warning' as const,
           description: isEntityMatch
-            ? `CẢNH BÁO BIÊN GIỚI: Sản phẩm hoặc nhà sản xuất có thể thuộc diện FDA Import Alert ${ia.alert_number} (${ia.action_type}). Lý do: ${ia.reason_for_alert.slice(0, 300)}. ${activeEntities.length > 0 ? `${activeEntities.length} tổ chức hiện đang trong Danh sách Đỏ (Red List).` : ''} Hàng hóa từ các doanh nghiệp trong Danh sách Đỏ có thể bị giữ tại cảng Mỹ mà không cần kiểm tra thực tế (DWPE).`
+            ? `CẢNH BÁO BIÊN GIỚI: Sản phẩm hoặc nhà sản xuất có thể thuộc di��n FDA Import Alert ${ia.alert_number} (${ia.action_type}). Lý do: ${ia.reason_for_alert.slice(0, 300)}. ${activeEntities.length > 0 ? `${activeEntities.length} tổ chức hiện đang trong Danh sách Đỏ (Red List).` : ''} Hàng hóa từ các doanh nghiệp trong Danh sách Đỏ có thể bị giữ tại cảng Mỹ mà không cần kiểm tra thực tế (DWPE).`
             : `FDA Import Alert ${ia.alert_number} nhắm vào các sản phẩm trong ngành ${ia.industry_type} với lý do: ${ia.reason_for_alert.slice(0, 300)}. Mặc dù doanh nghiệp của bạn có thể chưa có trong Danh sách Đỏ, cảnh báo này cho thấy FDA đang tăng cường giám sát đối với loại sản phẩm này.`,
           regulation_reference: `FDA Import Alert ${ia.alert_number}`,
           suggested_fix: isEntityMatch
@@ -1596,8 +1596,8 @@ export async function POST(request: Request) {
       }))
     const allFindingsForSummary = [...professionalFindings, ...additionalFindings]
     console.log('[v0] Professional findings:', professionalFindings.length, '+ additional:', additionalFindings.length, '= total for summary:', allFindingsForSummary.length)
-    const commercialSummary = SmartCitationFormatter.createReportSummary(allFindingsForSummary, userLang)
-    const expertTips = SmartCitationFormatter.generateExpertTips(allFindingsForSummary, userLang)
+    const commercialSummary = SmartCitationFormatter.createReportSummary(allFindingsForSummary, userLang, productCategory)
+    const expertTips = SmartCitationFormatter.generateExpertTips(allFindingsForSummary, userLang, productCategory)
 
     // Deduplicate violations: merge violations about the same issue (e.g., two "Calories rounding" violations)
     // This can happen when both smart mapper AND nutrition validator detect the same rounding error

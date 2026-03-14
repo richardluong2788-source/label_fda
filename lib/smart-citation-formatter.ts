@@ -104,25 +104,41 @@ export class SmartCitationFormatter {
   }
 
   /**
-   * Generate expert tips based on common patterns
+   * Generate expert tips based on common patterns and product category
+   * Tips are now dynamic based on product type (food, cosmetic, supplement, etc.)
    */
-  static generateExpertTips(findings: MappedFinding[], lang: FormatterLang = 'en'): string[] {
+  static generateExpertTips(
+    findings: MappedFinding[], 
+    lang: FormatterLang = 'en',
+    productCategory?: string
+  ): string[] {
     const tips: string[] = []
-    const L = lang === 'vi' ? VI_TIPS : EN_TIPS
+    const isCosmetic = productCategory?.toLowerCase()?.includes('cosmetic')
+    const isSupplement = productCategory?.toLowerCase()?.includes('supplement')
+    
+    // Select appropriate tip set based on product category
+    const L = lang === 'vi' 
+      ? (isCosmetic ? VI_COSMETIC_TIPS : isSupplement ? VI_SUPPLEMENT_TIPS : VI_TIPS)
+      : (isCosmetic ? EN_COSMETIC_TIPS : isSupplement ? EN_SUPPLEMENT_TIPS : EN_TIPS)
 
-    const fontIssues = findings.filter(f => f.cfr_reference.includes('101.9') && (f.summary.includes('font') || f.summary.includes('chữ')))
+    const fontIssues = findings.filter(f => 
+      (f.cfr_reference.includes('101.9') || f.cfr_reference.includes('701')) && 
+      (f.summary.toLowerCase().includes('font') || f.summary.includes('chữ'))
+    )
     if (fontIssues.length > 0) tips.push(L.fontTip)
 
-    const allergenIssues = findings.filter(f => f.summary.includes('allergen') || f.summary.includes('dị ứng'))
+    const allergenIssues = findings.filter(f => f.summary.toLowerCase().includes('allergen') || f.summary.includes('dị ứng'))
     if (allergenIssues.length > 0) tips.push(L.allergenTip)
 
-    const roundingIssues = findings.filter(f => f.summary.includes('rounding') || f.summary.includes('làm tròn'))
+    const roundingIssues = findings.filter(f => f.summary.toLowerCase().includes('rounding') || f.summary.includes('làm tròn'))
     if (roundingIssues.length > 0) tips.push(L.roundingTip)
 
-    // Ingredient order/naming issues - check for 101.4 (ingredient list) violations
+    // Ingredient order/naming issues - check for ingredient list violations
     const ingredientIssues = findings.filter(f => 
       f.cfr_reference.includes('101.4') || 
+      f.cfr_reference.includes('701.3') ||
       f.summary.toLowerCase().includes('ingredient') || 
+      f.summary.toLowerCase().includes('inci') ||
       f.summary.includes('nguyên liệu') ||
       f.summary.includes('thành phần')
     )
@@ -134,10 +150,15 @@ export class SmartCitationFormatter {
   /**
    * Create a complete commercial report summary
    * Returns empty string if no findings, so client-side fallback can trigger
+   * Now accepts productCategory for dynamic tips
    */
-  static createReportSummary(findings: MappedFinding[], lang: FormatterLang = 'en'): string {
+  static createReportSummary(
+    findings: MappedFinding[], 
+    lang: FormatterLang = 'en',
+    productCategory?: string
+  ): string {
     const categorized = this.formatCommercialReport(findings)
-    const tips = this.generateExpertTips(findings, lang)
+    const tips = this.generateExpertTips(findings, lang, productCategory)
     const L = lang === 'vi' ? VI_REPORT : EN_REPORT
     const compliantMsg = lang === 'vi' ? VI_COMPLIANT : EN_COMPLIANT
 
@@ -423,6 +444,8 @@ const VI_TEMPLATES: AllTemplates = {
 
 // ─── EXPERT TIPS ─────────────────────────────────────────────────────────────
 
+// ─── FOOD TIPS (default) ─────────────────────────────────────────────────────
+
 const EN_TIPS = {
   fontTip: 'Vexim Tip: US port inspectors (especially at Long Beach, LA) frequently check font sizes. We recommend increasing to 18pt to be safe.',
   allergenTip: 'Vexim Tip: Products with undeclared allergens are subject to FDA detention. Bold all allergens to minimize risk.',
@@ -435,6 +458,38 @@ const VI_TIPS = {
   allergenTip: 'Lời khuyên từ Vexim: Với sản phẩm có allergen, FDA thường yêu cầu giữ hàng (detention) nếu không khai báo đúng. Hãy in đậm tất cả allergen để tránh rủi ro.',
   roundingTip: 'Lời khuyên từ Vexim: Lỗi làm tròn là lỗi phổ biến nhất của doanh nghiệp Việt Nam. Hãy sử dụng FDA Rounding Calculator trước khi in nhãn.',
   ingredientTip: 'Lời khuyên từ Vexim: Lỗi danh sách thành phần là nguyên nhân #1 gây ra Warning Letter của FDA cho thực phẩm nhập khẩu. Luôn sử dụng tên phổ thông FDA (tiếng Anh) và xác minh thứ tự khớp với % trọng lượng trong công thức sản xuất.',
+}
+
+// ─── COSMETIC TIPS ───────────────────────────────────────────────────────────
+
+const EN_COSMETIC_TIPS = {
+  fontTip: 'Vexim Tip: Cosmetic labels must have clear, readable text per 21 CFR 701. FDA inspectors check that required information is prominent and conspicuous.',
+  allergenTip: 'Vexim Tip: While FALCPA does not apply to cosmetics, fragrance allergens may require disclosure under EU regulations if exporting to Europe.',
+  roundingTip: 'Vexim Tip: Net content declarations must be accurate. FDA allows reasonable variations but consistent underweight can trigger enforcement.',
+  ingredientTip: 'Vexim Tip: INCI ingredient order issues are common in cosmetic Warning Letters. List ingredients by descending concentration, with those under 1% in any order at the end.',
+}
+
+const VI_COSMETIC_TIPS = {
+  fontTip: 'Lời khuyên từ Vexim: Nhãn mỹ phẩm phải có chữ rõ ràng, dễ đọc theo 21 CFR 701. FDA kiểm tra thông tin bắt buộc phải nổi bật và dễ thấy.',
+  allergenTip: 'Lời khuyên từ Vexim: FALCPA không áp dụng cho mỹ phẩm, nhưng nếu xuất khẩu sang EU, các chất gây dị ứng trong hương liệu có thể cần khai báo.',
+  roundingTip: 'Lời khuyên từ Vexim: Khai báo hàm lượng tịnh phải chính xác. FDA cho phép sai số hợp lý nhưng thiếu hụt liên tục có thể bị xử lý.',
+  ingredientTip: 'Lời khuyên từ Vexim: Lỗi thứ tự thành phần INCI phổ biến trong Warning Letter mỹ phẩm. Liệt kê theo nồng độ giảm dần, thành phần dưới 1% có thể để cuối theo bất kỳ thứ tự nào.',
+}
+
+// ─── SUPPLEMENT TIPS ─────────────────────────────────────────────────────────
+
+const EN_SUPPLEMENT_TIPS = {
+  fontTip: 'Vexim Tip: Supplement Facts panel must meet minimum type size requirements per 21 CFR 101.36. Font too small is a common violation.',
+  allergenTip: 'Vexim Tip: FALCPA applies to dietary supplements. All major allergens must be declared - this is a leading cause of supplement recalls.',
+  roundingTip: 'Vexim Tip: Supplement label values must match Certificate of Analysis (COA). Overstating active ingredients can trigger FDA enforcement.',
+  ingredientTip: 'Vexim Tip: "Other ingredients" must be listed in descending order per DSHEA. Active ingredients go in the Supplement Facts panel with accurate %DV.',
+}
+
+const VI_SUPPLEMENT_TIPS = {
+  fontTip: 'Lời khuyên từ Vexim: Panel Supplement Facts phải đạt kích thước chữ tối thiểu theo 21 CFR 101.36. Font quá nhỏ là vi phạm phổ biến.',
+  allergenTip: 'Lời khuyên từ Vexim: FALCPA áp dụng cho thực phẩm chức năng. Tất cả allergen chính phải được khai báo - đây là nguyên nhân hàng đầu gây thu hồi supplement.',
+  roundingTip: 'Lời khuyên từ Vexim: Giá trị trên nhãn supplement phải khớp với Certificate of Analysis (COA). Khai quá hàm lượng hoạt chất có thể bị FDA xử lý.',
+  ingredientTip: 'Lời khuyên từ Vexim: "Other ingredients" phải được liệt kê theo thứ tự giảm dần theo DSHEA. Hoạt chất để trong panel Supplement Facts với %DV chính xác.',
 }
 
 // ─── REPORT SUMMARY LABELS ───────────────────────────────────────────────────

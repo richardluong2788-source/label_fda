@@ -1064,8 +1064,8 @@ export async function POST(request: Request) {
       .filter((v: any) => !professionalFindings.some(pf => pf?.finding?.cfr_reference === v.regulation_reference || (pf?.finding?.summary && pf.finding.summary.includes(v.category || ''))))
       .map((v: any) => ({ summary: v.category, legal_basis: v.regulation_reference ? `Per ${v.regulation_reference}` : '', expert_logic: v.description, remediation: v.suggested_fix || 'See finding details', severity: v.severity, cfr_reference: v.regulation_reference || '', confidence_score: v.confidence_score ?? 0.8 }))
     const allFindingsForSummary = [...professionalFindings.map(pf => pf.finding), ...additionalFindings]
-    const commercialSummary = SmartCitationFormatter.createReportSummary(allFindingsForSummary, userLang)
-    const expertTips = SmartCitationFormatter.generateExpertTips(allFindingsForSummary, userLang)
+    const commercialSummary = SmartCitationFormatter.createReportSummary(allFindingsForSummary, userLang, productCategory)
+    const expertTips = SmartCitationFormatter.generateExpertTips(allFindingsForSummary, userLang, productCategory)
 
     // ── Save results ──────────────────��────────────────────────
     const { error: updateError } = await supabase
