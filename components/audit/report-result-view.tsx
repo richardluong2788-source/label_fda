@@ -672,13 +672,21 @@ export function ReportResultView({
                               )}
                               
                               {/* Claims needing review */}
-                              {(needsReview.length > 0 || unverifiableClaims.length > 0) && (
+                              {(needsReview.length > 0 || unverifiableClaims.length > 0) && (() => {
+                                const isCosmetic = report.product_category === 'cosmetic' || 
+                                  report.product_type === 'cosmetic' || 
+                                  report.product_category?.toLowerCase()?.includes('cosmetic');
+                                return (
                                 <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
                                   <p className="text-[11px] text-amber-700 uppercase tracking-wider font-bold mb-1">
-                                    {t.report.otherClaimsTitle || 'OTHER CLAIMS (REVIEW NEEDED)'}
+                                    {isCosmetic 
+                                      ? (t.report.cosmeticClaimsTitle || 'COSMETIC CLAIMS (REVIEW NEEDED)')
+                                      : (t.report.otherClaimsTitle || 'OTHER CLAIMS (REVIEW NEEDED)')}
                                   </p>
                                   <p className="text-[10px] text-amber-600 mb-2 leading-relaxed">
-                                    {t.report.otherClaimsHint || 'These claims need to be verified against Nutrition Facts data for accuracy.'}
+                                    {isCosmetic 
+                                      ? (t.report.cosmeticClaimsHint || 'These are cosmetic performance claims. Ensure they are substantiated and not misleading per FD&C Act Section 602.')
+                                      : (t.report.otherClaimsHint || 'These claims need to be verified against Nutrition Facts data for accuracy.')}
                                   </p>
                                   <div className="space-y-1">
                                     {needsReview.map((v, idx) => (
@@ -910,9 +918,9 @@ export function ReportResultView({
                             {lang.toUpperCase()}
                           </span>
                         ))}
-                      </div>
-                    </div>
-                  )}
+                                  </div>
+                                </div>
+                                )})()}
                 </div>
               </div>
             </Card>
