@@ -35,10 +35,12 @@ function detectSourceLanguage(texts: string[]): 'en' | 'vi' {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('[v0] Translation API called')
   try {
     const groq = getGroqClient()
     
     if (!groq) {
+      console.log('[v0] GROQ_API_KEY is missing!')
       return NextResponse.json(
         { error: 'Translation service not configured - GROQ_API_KEY is missing' },
         { status: 503 }
@@ -64,9 +66,17 @@ export async function POST(request: NextRequest) {
 
     // Detect source language
     const sourceLocale = body.sourceLocale || detectSourceLanguage(texts)
+    console.log('[v0] Translation request:', {
+      textsCount: texts.length,
+      sourceLocale,
+      targetLocale,
+      context,
+      firstText: texts[0]?.substring(0, 80)
+    })
 
     // Skip if same language
     if (sourceLocale === targetLocale) {
+      console.log('[v0] Skipping - same language')
       return NextResponse.json({
         translations: texts,
         cached: false,
@@ -104,6 +114,7 @@ ${JSON.stringify(texts, null, 2)}
 
 Output (JSON array only):`
 
+    console.log('[v0] Calling Groq for translation...')
     const completion = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages: [
@@ -114,6 +125,7 @@ Output (JSON array only):`
     })
 
     const response = completion.choices[0]?.message?.content || ''
+    console.log('[v0] Groq response length:', response.length, 'chars')
 
     // Parse the response
     let translations: string[]

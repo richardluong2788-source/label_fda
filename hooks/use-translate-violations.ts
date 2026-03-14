@@ -81,9 +81,16 @@ export function useTranslateViolations(
     // Detect source language
     const detectedSource = detectViolationsLanguage(violations)
     setSourceLanguage(detectedSource)
+    console.log('[v0] Translation language detection:', { 
+      detectedSource, 
+      targetLocale, 
+      sameLanguage: detectedSource === targetLocale,
+      sampleText: violations[0]?.category?.substring(0, 50)
+    })
 
     // Skip if same language
     if (detectedSource === targetLocale) {
+      console.log('[v0] Skipping translation - same language')
       setTranslatedViolations(violations)
       return
     }
@@ -142,6 +149,12 @@ export function useTranslateViolations(
       })
 
       // Call translation API
+      console.log('[v0] Calling translation API:', { 
+        textsCount: textsToTranslate.length, 
+        targetLocale,
+        sourceLocale: detectedSource,
+        firstText: textsToTranslate[0]?.substring(0, 50)
+      })
       const response = await fetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -208,14 +221,28 @@ export function useTranslateViolations(
 
   // Trigger translation when locale or violations change
   useEffect(() => {
+    console.log('[v0] useTranslateViolations triggered:', {
+      violationsCount: violations?.length,
+      targetLocale,
+      reportId,
+      isTranslating: translatingRef.current,
+    })
     translateViolations()
   }, [translateViolations])
 
-  // Retry function
+  // Retry function - also clears cache
   const retryTranslation = useCallback(() => {
+    console.log('[v0] Retrying translation - clearing cache')
     lastTranslationRef.current = '' // Reset to allow retry
+    // Clear cache for this report
+    try {
+      const cacheKey = getCacheKey(reportId, targetLocale)
+      sessionStorage.removeItem(cacheKey)
+    } catch {
+      // Ignore cache clear errors
+    }
     translateViolations()
-  }, [translateViolations])
+  }, [translateViolations, reportId, targetLocale])
 
   return {
     translatedViolations,
