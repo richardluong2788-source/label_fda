@@ -1,0 +1,714 @@
+'use client'
+
+import { useState, useCallback, useEffect, useMemo } from 'react'
+import { Upload, AlertCircle, CheckCircle2, ImagePlus, X, Shield, AlertTriangle, ChevronDown, Settings, BookOpen, ArrowRight, Package } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { AdvancedSettings } from '@/components/advanced-settings'
+import { useTranslation } from '@/lib/i18n'
+
+type ImageSlotKey = 'pdp' | 'nutrition' | 'supplementFacts' | 'drugFacts' | 'inciIngredients' | 'ingredients' | 'other'
+
+interface LabelImage {
+  id: string
+  file: File
+  preview: string
+  type: ImageSlotKey
+  label: string
+  status: 'uploading' | 'analyzing' | 'validated' | 'error'
+  validationResult?: {
+    quality: 'good' | 'acceptable' | 'poor'
+    blur: boolean
+    readable: boolean
+    message: string
+    isLabel?: boolean
+    detectedType?: string
+    confidence?: number
+    issues?: string[]
+  }
+}
+
+type ProductType = 'food' | 'beverage' | 'dietary_supplement' | 'infant_formula' | 'medical_food' | 'cosmetic' | 'drug_otc'
+
+interface ImageSlotConfig {
+  label: string
+  description: string
+  hint?: string
+  required: boolean
+  icon: string
+}
+
+/**
+ * Get the 4 upload card slots based on product type.
+ * Card #1: always PDP (required)
+ * Card #2: dynamic panel based on product type
+ * Card #3: Ingredients / Allergens (REQUIRED for food products for FSVP; not applicable for cosmetics)
+ * Card #4: Other panels (optional)
+ */
+function getImageSlotsForProduct(
+  productType: ProductType | '',
+  t: any
+): Record<string, ImageSlotConfig> {
+  const slots: Record<string, ImageSlotConfig> = {}
+
+  // Card 1: PDP is always required
+  slots.pdp = { ...t.analyze.imageTypes.pdp, required: true, icon: '📦' }
+
+  // Card 2: dynamic based on product type
+  switch (productType) {
+    case 'cosmetic':
+      slots.inciIngredients = { ...t.analyze.imageTypes.inciIngredients, required: false, icon: '🧴' }
+      break
+    case 'drug_otc':
+      slots.drugFacts = { ...t.analyze.imageTypes.drugFacts, required: true, icon: '💊' }
+      break
+    case 'dietary_supplement':
+      slots.supplementFacts = { ...t.analyze.imageTypes.supplementFacts, required: true, icon: '💎' }
+      break
+    // food, beverage, infant_formula, medical_food, or no selection => Nutrition Facts
+    default:
+      slots.nutrition = { ...t.analyze.imageTypes.nutrition, required: !productType ? true : true, icon: '📊' }
+      break
+  }
+
+  // Card 3: Ingredients & Allergens (not relevant for cosmetics since INCI replaces it)
+  // Required for food products to enable accurate FSVP hazard analysis
+  if (productType !== 'cosmetic') {
+    const isFoodProduct = ['food', 'beverage', 'dietary_supplement', 'infant_formula', 'medical_food'].includes(productType)
+    slots.ingredients = { 
+      ...t.analyze.imageTypes.ingredients, 
+      required: isFoodProduct, // Required for FSVP analysis
+      icon: '🧪' 
+    }
+  }
+
+  // Card 4: Other panels
+  slots.other = { ...t.analyze.imageTypes.other, required: false, icon: '📄' }
+
+  return slots
+}
+
+export function LabelAnalyzer() {
+  const router = useRouter()
+  const { t } = useTranslation()
+  const [images, setImages] = useState<LabelImage[]>([])
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [advancedSettings, setAdvancedSettings] = useState<any>({})
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [kbDocCount, setKbDocCount] = useState<number | null>(null)
+  const [productType, setProductType] = useState<ProductType | ''>('')
+
+  // Compute dynamic image slots based on selected product type
+  const IMAGE_SLOTS = useMemo(
+    () => getImageSlotsForProduct(productType, t),
+    [productType, t]
+  )
+
+  // When product type changes, remove images that no longer have a slot
+  useEffect(() => {
+    setImages(prev => {
+      const validKeys = Object.keys(IMAGE_SLOTS) as ImageSlotKey[]
+      return prev.filter(img => validKeys.includes(img.type))
+    })
+  }, [IMAGE_SLOTS])
+
+  // Fetch KB status on mount to display actual document counts
+  useEffect(() => {
+    fetch('/api/knowledge/status')
+      .then(res => res.json())
+      .then(data => setKbDocCount(data.totalDocuments ?? 0))
+      .catch(() => setKbDocCount(0))
+  }, [])
+
+  const hasPDP = images.some(img => img.type === 'pdp')
+  // Dynamic: check all required slots are filled
+  const requiredSlotKeys = Object.entries(IMAGE_SLOTS)
+    .filter(([, cfg]) => cfg.required)
+    .map(([key]) => key)
+  const allRequiredFilled = requiredSlotKeys.every(key =>
+    images.some(img => img.type === key)
+  )
+
+  const validateImageWithAI = async (image: LabelImage): Promise<void> => {
+    try {
+      const response = await fetch('/api/validate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrl: image.preview,
+          expectedType: image.type
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Validation failed')
+      }
+
+      const result = await response.json()
+      const newStatus = result.isValid ? 'validated' : 'error'
+      
+      setImages(prev => {
+        const updated = prev.map(img =>
+          img.id === image.id
+            ? {
+                ...img,
+                status: newStatus,
+                validationResult: {
+                  quality: result.quality,
+                  blur: result.isBlurry,
+                  readable: result.hasText && !result.isBlurry,
+                  message: result.message,
+                  isLabel: result.isLabel,
+                  detectedType: result.detectedType,
+                  confidence: result.confidence,
+                  issues: result.issues
+                }
+              }
+            : img
+        )
+        return updated
+      })
+
+      if (!result.isValid) {
+        setError(result.message)
+      }
+    } catch (error) {
+      setImages(prev => prev.map(img =>
+        img.id === image.id
+          ? {
+              ...img,
+              status: 'error',
+              validationResult: {
+                quality: 'poor',
+                blur: false,
+                readable: false,
+                message: t.analyze.cannotValidate,
+                issues: [t.analyze.systemError]
+              }
+            }
+          : img
+      ))
+    }
+  }
+
+  const addImage = useCallback(async (file: File, type: ImageSlotKey) => {
+    if (!file.type.startsWith('image/')) {
+      setError(t.analyze.selectImageFile)
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError(t.analyze.fileTooLarge)
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onloadend = async () => {
+      const newImage: LabelImage = {
+        id: `${Date.now()}-${Math.random()}`,
+        file,
+        preview: reader.result as string,
+        type,
+        label: IMAGE_SLOTS[type]?.label || type,
+        status: 'analyzing'
+      }
+      setImages(prev => [...prev, newImage])
+      setError(null)
+      await validateImageWithAI(newImage)
+    }
+    reader.readAsDataURL(file)
+  }, [])
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>, type: ImageSlotKey) => {
+    const selectedFiles = Array.from(e.target.files || [])
+    selectedFiles.forEach(file => addImage(file, type))
+  }, [addImage])
+
+  const handleDrop = useCallback((e: React.DragEvent, type: ImageSlotKey) => {
+    e.preventDefault()
+    const droppedFiles = Array.from(e.dataTransfer.files)
+    droppedFiles.forEach(file => addImage(file, type))
+  }, [addImage])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+  }, [])
+
+  const removeImage = useCallback((id: string) => {
+    setImages(prev => prev.filter(img => img.id !== id))
+  }, [])
+
+  const handleAnalyze = async () => {
+    if (!allRequiredFilled) {
+      setError(t.analyze.uploadRequired)
+      return
+    }
+
+    const hasErrorImages = images.some(img => img.status === 'error')
+    if (hasErrorImages) {
+      setError(t.analyze.invalidImages)
+      return
+    }
+
+    const hasAnalyzingImages = images.some(img => img.status === 'analyzing')
+    if (hasAnalyzingImages) {
+      setError(t.analyze.waitForAI)
+      return
+    }
+
+    setIsAnalyzing(true)
+    setError(null)
+
+    try {
+      const supabase = createClient()
+      
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) throw new Error(t.analyze.needLogin)
+
+      const uploadedUrls: { type: string; url: string }[] = []
+      
+      for (const image of images) {
+        const fileName = `${user.id}/${Date.now()}-${image.type}-${image.file.name}`
+        const { error: uploadError } = await supabase.storage
+          .from('label-images')
+          .upload(fileName, image.file)
+
+        if (uploadError) throw uploadError
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('label-images')
+          .getPublicUrl(fileName)
+
+        uploadedUrls.push({ type: image.type, url: publicUrl })
+      }
+
+      const pdpImage = uploadedUrls.find(u => u.type === 'pdp')
+      const mainImageUrl = pdpImage?.url || uploadedUrls[0].url
+
+      const { data: report, error: reportError } = await supabase
+        .from('audit_reports')
+        .insert({
+          user_id: user.id,
+          label_image_url: mainImageUrl,
+          label_images: uploadedUrls,
+          status: 'pending',
+          payment_status: 'free_preview',
+          report_unlocked: false,
+          label_language: advancedSettings.labelLanguage ? [advancedSettings.labelLanguage] : undefined,
+          target_market: advancedSettings.targetMarket,
+          pdp_dimensions: advancedSettings.pdpWidth && advancedSettings.pdpHeight ? {
+            width: parseFloat(advancedSettings.pdpWidth),
+            height: parseFloat(advancedSettings.pdpHeight),
+            unit: advancedSettings.dimensionUnit || 'in'
+          } : undefined,
+          package_type: advancedSettings.packageType,
+          packaging_format: advancedSettings.packaging_format || undefined,
+          net_content: advancedSettings.netContentValue ? {
+            value: parseFloat(advancedSettings.netContentValue),
+            unit: advancedSettings.netContentUnit
+          } : undefined,
+          product_type: productType || advancedSettings.productType,
+          target_audience: advancedSettings.targetAudience,
+          special_claims: advancedSettings.specialClaims ? advancedSettings.specialClaims.split(',').map((c: string) => c.trim()) : undefined,
+          manufacturer_info: advancedSettings.countryOfOrigin || advancedSettings.companyName ? {
+            country_of_origin: advancedSettings.countryOfOrigin,
+            is_importer: advancedSettings.isImporter,
+            company_name: advancedSettings.companyName,
+            facility_registration: advancedSettings.facilityRegistration
+          } : undefined,
+        })
+        .select()
+        .single()
+
+      if (reportError) throw reportError
+
+      router.push(`/audit/${report.id}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.analyze.analyzeFailed)
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="text-center space-y-3">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-full">
+          <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
+          <span className="text-xs font-medium text-red-900">
+            {kbDocCount && kbDocCount > 0
+              ? t.analyze.kbTrainedOn(kbDocCount)
+              : t.analyze.kbNoData}
+          </span>
+        </div>
+        
+        <h1 className="text-3xl font-bold tracking-tight">
+          {t.analyze.heroTitle}<br/>
+          <span className="text-primary">{t.analyze.heroTitleHighlight}</span>
+        </h1>
+        
+        <p className="text-base text-muted-foreground max-w-2xl mx-auto">
+          {kbDocCount && kbDocCount > 0
+            ? t.analyze.heroDescWithKb(kbDocCount)
+            : t.analyze.heroDescNoKb}
+          {t.analyze.heroDescSuffix} <strong className="text-foreground">{t.analyze.heroDescAmount}</strong> {t.analyze.heroDescPerShipment}
+        </p>
+      </div>
+
+      {/* Guide Banner */}
+      <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-lg bg-blue-50 border border-blue-200">
+        <div className="flex items-start gap-3">
+          <BookOpen className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-blue-900">{t.analyze.firstTimeUser}</p>
+            <p className="text-xs text-blue-700 mt-0.5 leading-relaxed">
+              {t.analyze.guideDescription}
+            </p>
+          </div>
+        </div>
+        <Link href="/guide" target="_blank" className="shrink-0">
+          <Button variant="outline" size="sm" className="border-blue-300 text-blue-700 hover:bg-blue-100 hover:border-blue-400 gap-1.5 whitespace-nowrap">
+            {t.analyze.viewGuide}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </Link>
+      </div>
+
+      {/* Product Type Selector */}
+      <Card className="p-5 border-2 border-primary/30 bg-primary/5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <Package className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+            <div>
+              <h3 className="font-bold text-foreground text-sm">{t.analyze.productTypeLabel}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">{t.analyze.productTypeDesc}</p>
+            </div>
+          </div>
+          <Select
+            value={productType}
+            onValueChange={(value) => setProductType(value as ProductType)}
+          >
+            <SelectTrigger className="w-full sm:w-64 bg-background">
+              <SelectValue placeholder={t.analyze.selectProductType} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="food">{t.analyze.productTypeFood}</SelectItem>
+              <SelectItem value="beverage">{t.analyze.productTypeBeverage}</SelectItem>
+              <SelectItem value="dietary_supplement">{t.analyze.productTypeSupplement}</SelectItem>
+              <SelectItem value="infant_formula">{t.analyze.productTypeInfant}</SelectItem>
+              <SelectItem value="medical_food">{t.analyze.productTypeMedical}</SelectItem>
+              <SelectItem value="cosmetic">{t.analyze.productTypeCosmetic}</SelectItem>
+              <SelectItem value="drug_otc">{t.analyze.productTypeDrugOTC}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </Card>
+
+      {/* Upload Grid - dynamic based on product type */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Object.entries(IMAGE_SLOTS).map(([key, info]) => {
+          const imageOfThisType = images.find(img => img.type === key)
+          const typeKey = key as ImageSlotKey
+          
+          return (
+            <Card 
+              key={key} 
+              className={`relative p-5 transition-all ${
+                imageOfThisType?.status === 'validated' 
+                  ? 'border-2 border-green-500' 
+                  : 'border-2 border-blue-200'
+              }`}
+            >
+              {/* Header with badge on right */}
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h3 className="font-bold text-foreground">{info.label}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{info.description}</p>
+                  <Link
+                    href={`/guide#${key}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 mt-1"
+                  >
+                    <BookOpen className="h-3 w-3" />
+                    {t.analyze.imageRequirements}
+                  </Link>
+                </div>
+                <div className="flex items-center gap-1 ml-2">
+                  {info.required && !imageOfThisType && (
+                    <Badge variant="destructive" className="text-[10px] px-2 py-0.5 h-5">{t.common.required}</Badge>
+                  )}
+                  {!info.required && !imageOfThisType && (
+                    <Badge variant="secondary" className="text-[10px] px-2 py-0.5 h-5">{t.analyze.recommended}</Badge>
+                  )}
+                  {imageOfThisType && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={() => removeImage(imageOfThisType.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Content Area */}
+              {!imageOfThisType ? (
+                <div
+                  onDrop={(e) => handleDrop(e, typeKey)}
+                  onDragOver={handleDragOver}
+                  className="h-40 border-2 border-dashed border-blue-300 rounded-xl flex items-center justify-center cursor-pointer transition-all hover:border-blue-500 hover:bg-blue-50/30"
+                >
+                  <label htmlFor={`${key}-upload`} className="cursor-pointer w-full h-full flex items-center justify-center">
+                    <div className="space-y-2 text-center">
+                      <Upload className="h-6 w-6 mx-auto text-blue-500" />
+                      <p className="text-sm font-medium text-blue-600">{t.analyze.dragOrClick}</p>
+                    </div>
+                    <input
+                      id={`${key}-upload`}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFileChange(e, typeKey)}
+                    />
+                  </label>
+                </div>
+              ) : imageOfThisType.status === 'analyzing' ? (
+                <div className="h-40 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                    <p className="text-sm font-medium text-blue-600">{t.analyze.aiScanning}</p>
+                  </div>
+                </div>
+              ) : imageOfThisType.status === 'error' ? (
+                <div className="relative h-40 rounded-xl overflow-hidden border-2 border-red-500">
+                  <img
+                    src={imageOfThisType.preview}
+                    alt={imageOfThisType.label}
+                    className="w-full h-full object-contain bg-gray-50 opacity-50"
+                  />
+                  <div className="absolute inset-0 bg-red-50/90 flex items-center justify-center p-4">
+                    <div className="text-center space-y-1">
+                      <AlertCircle className="h-6 w-6 mx-auto text-red-600" />
+                      <p className="text-xs font-medium text-red-900">
+                        {imageOfThisType.validationResult?.message || t.analyze.invalidImage}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute top-2 right-2 h-6 w-6 bg-white"
+                    onClick={() => removeImage(imageOfThisType.id)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className={`relative h-40 rounded-xl overflow-hidden border-2 ${
+                  imageOfThisType.validationResult?.detectedType && 
+                  imageOfThisType.validationResult.detectedType !== key 
+                    ? 'border-amber-500' 
+                    : 'border-green-500'
+                }`}>
+                  <img
+                    src={imageOfThisType.preview}
+                    alt={imageOfThisType.label}
+                    className="w-full h-full object-contain bg-gray-50"
+                  />
+                  <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t p-2 ${
+                    imageOfThisType.validationResult?.detectedType && 
+                    imageOfThisType.validationResult.detectedType !== key
+                      ? 'from-amber-900/80 to-transparent'
+                      : 'from-black/80 to-transparent'
+                  }`}>
+                    <div className="flex items-center gap-1.5 text-white">
+                      {imageOfThisType.validationResult?.detectedType && 
+                       imageOfThisType.validationResult.detectedType !== key ? (
+                        <>
+                          <AlertCircle className="h-3.5 w-3.5 text-amber-300" />
+                          <span className="text-xs font-medium">
+                            {t.analyze.detectedImage(IMAGE_SLOTS[imageOfThisType.validationResult.detectedType as ImageSlotKey]?.label || imageOfThisType.validationResult.detectedType)}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />
+                          <span className="text-xs font-medium">{t.analyze.aiRecognized}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute top-2 right-2 h-6 w-6 bg-white"
+                    onClick={() => removeImage(imageOfThisType.id)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+              
+              {/* Hint at bottom of card */}
+              {info.hint && !imageOfThisType && (
+                <p className="text-[11px] text-amber-600 bg-amber-50 px-2 py-1.5 rounded mt-3 border border-amber-200">
+                  {info.hint}
+                </p>
+              )}
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* Advanced Settings */}
+      <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+        <CollapsibleTrigger asChild>
+          <Button variant="outline" className="w-full justify-between p-4">
+            <div className="flex items-center gap-3">
+              <Settings className="h-4 w-4 text-primary" />
+              <div className="text-left">
+                <span className="font-medium">{t.analyze.advancedSettings}</span>
+                <p className="text-xs text-muted-foreground">{t.analyze.advancedSettingsDesc}</p>
+              </div>
+            </div>
+            <ChevronDown className={`h-4 w-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="mt-4">
+            <AdvancedSettings 
+              settings={advancedSettings}
+              onChange={setAdvancedSettings}
+              externalProductType={productType}
+            />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* CTA Section */}
+      <Card className="p-6 bg-blue-50/50 border-blue-200">
+        <div className="text-center space-y-4">
+          <h3 className="text-lg font-bold">{t.analyze.ctaTitle}</h3>
+          <p className="text-sm text-muted-foreground">
+            {kbDocCount && kbDocCount > 0
+              ? t.analyze.ctaDescWithKb(kbDocCount)
+              : t.analyze.ctaDescNoKb}
+            {t.analyze.ctaDescSuffix}
+          </p>
+          
+          <Button
+            size="lg"
+            onClick={handleAnalyze}
+            disabled={!allRequiredFilled || isAnalyzing}
+            className="px-8"
+          >
+            {isAnalyzing ? t.analyze.analyzing : t.analyze.scanNow}
+          </Button>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <p className="text-xs text-muted-foreground">
+            {t.analyze.freePreviewNote}
+          </p>
+        </div>
+      </Card>
+
+      {/* Warning Section */}
+      <Card className="border-2 border-red-200 bg-red-50/30">
+        <div className="p-5 space-y-3">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-bold text-red-900 mb-1">{t.analyze.top3Title}</h3>
+              <p className="text-xs text-red-700 mb-3">
+                {kbDocCount && kbDocCount > 0
+                  ? t.analyze.top3DescWithKb(kbDocCount)
+                  : t.analyze.top3DescNoKb}
+              </p>
+              
+              <div className="space-y-2">
+                {t.analyze.top3Items.map((item, idx) => (
+                  <div key={idx} className="text-sm">
+                    <strong className="text-red-900">{idx + 1}. {item.title}</strong>
+                    <span className="text-red-700"> - {item.cases}</span>
+                    <p className="text-xs text-red-600">{item.cfr}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-3 border-t border-red-200 mt-3">
+                <p className="text-xs font-medium text-red-900 flex items-center gap-1">
+                  <Shield className="h-3.5 w-3.5" />
+                  {kbDocCount && kbDocCount > 0
+                    ? t.analyze.top3FooterWithKb(kbDocCount)
+                    : t.analyze.top3FooterNoKb}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Cost Impact */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card className="p-4 border-l-4 border-l-red-500">
+          <div className="text-xs font-medium text-muted-foreground mb-1">{t.analyze.costDetention}</div>
+          <div className="text-xl font-bold text-red-600">$5,000-15,000</div>
+          <p className="text-xs text-muted-foreground">{t.analyze.costDetentionDesc}</p>
+        </Card>
+        
+        <Card className="p-4 border-l-4 border-l-orange-500">
+          <div className="text-xs font-medium text-muted-foreground mb-1">{t.analyze.costRelabeling}</div>
+          <div className="text-xl font-bold text-orange-600">$8,000-25,000</div>
+          <p className="text-xs text-muted-foreground">{t.analyze.costRelabelingDesc}</p>
+        </Card>
+        
+        <Card className="p-4 border-l-4 border-l-amber-500">
+          <div className="text-xs font-medium text-muted-foreground mb-1">{t.analyze.costReputation}</div>
+          <div className="text-xl font-bold text-amber-600">$50,000+</div>
+          <p className="text-xs text-muted-foreground">{t.analyze.costReputationDesc}</p>
+        </Card>
+      </div>
+
+      {/* Stats Bar */}
+      <div className="flex items-center justify-center gap-8 py-4 border-y">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-primary">{kbDocCount !== null ? kbDocCount.toLocaleString() : '...'}</div>
+          <div className="text-xs text-muted-foreground">{t.analyze.statFdaDocs}</div>
+        </div>
+        <div className="h-10 w-px bg-border"></div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-primary">21 CFR</div>
+          <div className="text-xs text-muted-foreground">{t.analyze.statRegulations}</div>
+        </div>
+        <div className="h-10 w-px bg-border"></div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-primary">95%+</div>
+          <div className="text-xs text-muted-foreground">{t.analyze.statAiAccuracy}</div>
+        </div>
+      </div>
+    </div>
+  )
+}

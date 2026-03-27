@@ -1,0 +1,185 @@
+/**
+ * Disposable / temporary email domain blacklist.
+ *
+ * Block sign-ups from throwaway email services to prevent
+ * mass fake account creation.
+ *
+ * This list covers the most common disposable email providers.
+ * Add more domains as needed.
+ */
+
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  // --- Popular disposable email services ---
+  'mailinator.com',
+  'guerrillamail.com',
+  'guerrillamail.de',
+  'guerrillamail.net',
+  'guerrillamail.org',
+  'tempmail.com',
+  'temp-mail.org',
+  'temp-mail.io',
+  'throwaway.email',
+  'throwaway.com',
+  'yopmail.com',
+  'yopmail.fr',
+  'sharklasers.com',
+  'guerrillamailblock.com',
+  'grr.la',
+  'dispostable.com',
+  'mailnesia.com',
+  'maildrop.cc',
+  'discard.email',
+  'fakeinbox.com',
+  'mailcatch.com',
+  'trashmail.com',
+  'trashmail.me',
+  'trashmail.net',
+  'trashmail.org',
+  'trashemail.de',
+  'harakirimail.com',
+  'mailexpire.com',
+  'tempinbox.com',
+  'tmpmail.org',
+  'tmpmail.net',
+  'binkmail.com',
+  'safetymail.info',
+  'filzmail.com',
+  'getnada.com',
+  'nada.email',
+  'emailondeck.com',
+  'mintemail.com',
+  'mohmal.com',
+  'tempail.com',
+
+  // --- 10 Minute Mail variants ---
+  '10minutemail.com',
+  '10minutemail.co.za',
+  '10minutemail.de',
+  '10minutemail.net',
+  '10minutemail.pl',
+  '10minute.email',
+  '10minmail.com',
+
+  // --- Burner mail ---
+  'burnermail.io',
+  'burnmail.ca',
+
+  // --- Inbox-style disposables ---
+  'mailnull.com',
+  'spamfree24.org',
+  'spamgourmet.com',
+  'spam4.me',
+  'getairmail.com',
+  'jetable.org',
+  'mytemp.email',
+
+  // --- Other common throwaway domains ---
+  'crazymailing.com',
+  'disposableemailaddresses.emailmiser.com',
+  'emailisvalid.com',
+  'emailtemporario.com.br',
+  'emailwarden.com',
+  'fakemail.fr',
+  'flyspam.com',
+  'imgof.com',
+  'instant-mail.de',
+  'kurzepost.de',
+  'lookugly.com',
+  'mailblocks.com',
+  'mailforspam.com',
+  'mailhero.io',
+  'mailimate.com',
+  'mailmoat.com',
+  'mailnator.com',
+  'mailscrap.com',
+  'mailshell.com',
+  'mailsiphon.com',
+  'mailtemp.info',
+  'mailtothis.com',
+  'mailzilla.com',
+  'nomail.xl.cx',
+  'nowmymail.com',
+  'ownmail.net',
+  'pookmail.com',
+  'proxymail.eu',
+  'rcpt.at',
+  'reallymymail.com',
+  'recode.me',
+  'regbypass.com',
+  'rhyta.com',
+  'safersignup.de',
+  'saynotospams.com',
+  'spamavert.com',
+  'spambob.com',
+  'spambob.net',
+  'spambob.org',
+  'spambox.us',
+  'spamcannon.com',
+  'spamcannon.net',
+  'spamcero.com',
+  'spamcon.org',
+  'spamcorptastic.com',
+  'spamcowboy.com',
+  'spamcowboy.net',
+  'spamcowboy.org',
+  'spamday.com',
+  'spamex.com',
+  'spamfighter.cf',
+  'spamfighter.ga',
+  'spamfighter.gq',
+  'spamfighter.ml',
+  'spamfighter.tk',
+  'spamfree.eu',
+  'spamhole.com',
+  'spaml.com',
+  'spammotel.com',
+  'spamobox.com',
+  'spamspot.com',
+  'spamstack.net',
+  'spamtrail.com',
+  'superrito.com',
+  'teleworm.us',
+  'tempemail.net',
+  'tempemails.io',
+  'tempinbox.co.uk',
+  'tempomail.fr',
+  'temporarily.de',
+  'temporarioemail.com.br',
+  'temporaryemail.net',
+  'temporaryforwarding.com',
+  'temporaryinbox.com',
+  'temporarymailaddress.com',
+  'thankyou2010.com',
+  'tmail.ws',
+  'tmails.net',
+  'trashymail.com',
+  'trashymail.net',
+  'trbvm.com',
+  'uggsrock.com',
+  'veryrealemail.com',
+  'wegwerfmail.de',
+  'wegwerfmail.net',
+  'wegwerfmail.org',
+  'wh4f.org',
+  'xagloo.com',
+  'xemaps.com',
+  'xents.com',
+  'xjoi.com',
+  'xoxy.net',
+  'zehnminutenmail.de',
+])
+
+/**
+ * Check if an email address uses a disposable / temporary email provider.
+ * Returns `true` if the domain is blacklisted.
+ */
+export function isDisposableEmail(email: string): boolean {
+  const domain = email.split('@')[1]?.toLowerCase().trim()
+  if (!domain) return false
+  return DISPOSABLE_EMAIL_DOMAINS.has(domain)
+}
+
+/**
+ * The full set (exported for admin / testing purposes).
+ */
+export { DISPOSABLE_EMAIL_DOMAINS }

@@ -1,0 +1,978 @@
+import { openai, retryWithBackoff } from './openai-client'
+import type { NutritionFact, TextElement } from './types'
+import { lookupVisionCache, setVisionCache } from './cache/vision-cache'
+import sharp from 'sharp'
+
+export interface ColorInfo {
+  foreground: string // Hex color code
+  background: string // Hex color code
+  /** True when colors are default fallback, not actually extracted by AI */
+  isFallback?: boolean
+}
+
+export interface TextElementWithColor extends TextElement {
+  colors?: ColorInfo
+}
+
+/** Represents a single column in multi-column Nutrition Facts (variety packs) */
+export interface NutritionFactsColumn {
+  columnName: string // e.g., "Cheddar", "Colors", "Pretzel"
+  servingSize: string
+  servingsPerContainer?: number
+  nutritionFacts: NutritionFact[]
+}
+
+/** Manufacturer information extracted from label */
+export interface ManufacturerInfo {
+  companyName?: string
+  address?: string
+  countryOfOrigin?: string
+}
+
+export interface VisionAnalysisResult {
+  nutritionFacts: NutritionFact[]
+  /** True if panel has 2+ columns (variety packs, dual-column format) */
+  isMultiColumnNutrition?: boolean
+  /** Array of columns for multi-column Nutrition Facts panels */
+  nutritionFactsColumns?: NutritionFactsColumn[]
+  textElements: {
+    brandName?: TextElementWithColor
+    productName?: TextElementWithColor
+    netQuantity?: TextElementWithColor
+    allText: string
+  }
+  /** Manufacturer/company info extracted from label (for Import Alert matching) */
+  manufacturerInfo?: ManufacturerInfo
+  detectedClaims: string[]
+  ingredients: string[]
+  allergens: string[]
+  warnings: string[]
+  detectedLanguages: string[]
+  tokensUsed: number
+  overallConfidence?: number
+  /**
+   * Product type detected directly from the image by Vision AI.
+   * Values: 'food' | 'beverage' | 'cosmetic' | 'drug_otc' |
+   *         'dietary_supplement' | 'medical_device' | 'infant_food' |
+   *         'toddler_food' | 'solid_food' | 'unknown'
+   * Used to auto-populate productDomain when user hasn't selected a category.
+   */
+  detectedProductType?: string
+  /** Validation warnings from the extraction pipeline (non-fatal) */
+  validationWarnings?: string[]
+}
+
+const VISION_SYSTEM_PROMPT = `You are an FDA compliance expert analyzing product labels. Your PRIMARY GOAL is to extract ONLY the EXACT information VISIBLE in the image. DO NOT use example values, DO NOT hallucinate, DO NOT fill in common values.
+
+STEP 1: IDENTIFY PRODUCT TYPE — THIS IS CRITICAL
+Before extracting data, identify what type of product this is from visual cues:
+- "food": Nutrition Facts panel visible, food/beverage product
+- "beverage": "ml", "fl oz", "12 oz can", "355ml" — liquid food/drink
+- "solid_food": "g" servings, "1 cup", "1 pack" — solid food product
+- "infant_food": "Infants", "0-12 months", baby bottle imagery
+- "toddler_food": "Toddlers", "12-36 months"
+- "dietary_supplement": "Supplement Facts" panel (NOT Nutrition Facts), capsules/tablets/powders
+- "cosmetic": INCI ingredient list, "Ingredients:" without Nutrition Facts, shampoo/lotion/cream/makeup/skincare/fragrance
+- "drug_otc": "Drug Facts" panel, "Active Ingredient(s)", "Uses:", "Warnings:", "Directions:"
+- "medical_device": CE mark, UDI barcode, "sterile", "single use", no nutrition/drug facts
+
+STEP 2: READ SERVING SIZE CAREFULLY (for food products)
+The serving size tells you the product type:
+- "1 pack (70g)" or "1 cup (228g)" = solid food
+- "8 fl oz (240ml)" or "1 can (355ml)" = beverage
+This MUST match the nutrition values scale.
+
+Return a JSON object with this structure:
+{
+  "productType": "infant_food" | "toddler_food" | "beverage" | "solid_food" | "food" | "dietary_supplement" | "cosmetic" | "drug_otc" | "medical_device" | "unknown",
+  "servingSize": "exact text from label",
+  "isMultiColumnNutrition": false, // TRUE if panel has 2+ columns (variety packs, dual-column format)
+  "nutritionFactsColumns": [
+    // ONLY include if isMultiColumnNutrition is true. One object per column.
+    {
+      "columnName": "Cheddar", // Header text for this column (product variant name)
+      "servingSize": "1 Pack (28g)",
+      "servingsPerContainer": 12,
+      "nutritionFacts": [
+        { "name": "Calories", "value": 130, "unit": "kcal", "dailyValue": null }
+        // ... all nutrients for THIS column
+      ]
+    }
+  ],
+  "nutritionFacts": [
+    // For single-column OR the FIRST column of multi-column panels
+    { "name": "Calories", "value": <READ_FROM_LABEL>, "unit": "kcal", "dailyValue": <READ_OR_NULL> },
+    <...include EVERY nutrient you see...>
+  ],
+  "textElements": {
+    "brandName": { 
+      "text": "exact brand text or empty string", 
+      "fontSize": 18, 
+      "x": 100, 
+      "y": 50, 
+      "width": 300, 
+      "height": 60,
+      "colors": { "foreground": "#000000", "background": "#FFFFFF" },
+      "boundingBox": { "x": 100, "y": 50, "width": 300, "height": 60, "confidence": 0.95 }
+    },
+    "productName": { 
+      "text": "exact product name or empty string", 
+      "fontSize": 14, 
+      "x": 100, 
+      "y": 120, 
+      "width": 200, 
+      "height": 30,
+      "colors": { "foreground": "#333333", "background": "#F5F5F5" },
+      "boundingBox": { "x": 100, "y": 120, "width": 200, "height": 30, "confidence": 0.95 }
+    },
+    "netQuantity": { 
+      "text": "FIND NET WEIGHT - look for 'Net Wt', 'Net Weight', or weight in serving size like '1 pack (70g)' or '2 oz (56g)'", 
+      "fontSize": 12, 
+      "x": 100, 
+      "y": 160, 
+      "width": 150, 
+      "height": 20,
+      "colors": { "foreground": "#000000", "background": "#FFFFFF" },
+      "boundingBox": { "x": 100, "y": 160, "width": 150, "height": 20, "confidence": 0.95 }
+    },
+    "allText": "complete text from label"
+  },
+  "manufacturerInfo": {
+    "companyName": "EXACT company/manufacturer name from label - look for 'Manufactured by', 'Distributed by', 'Produced by', 'Made by', company logo text",
+    "address": "full address if visible - street, city, state, zip, country",
+    "countryOfOrigin": "EXACT country from 'Made in [COUNTRY]', 'Product of [COUNTRY]', 'Country of Origin: [COUNTRY]', or address country"
+  },
+  "detectedClaims": ["exact claims found or empty array"],
+  "ingredients": ["exact ingredients list or empty array"],
+  "allergens": ["exact allergens found or empty array"],
+  "warnings": ["exact warnings or empty array"],
+  "detectedLanguages": ["English"],
+  "overallConfidence": 0.95
+}
+
+CRITICAL ANTI-HALLUCINATION RULES:
+1. ONLY extract text that is CLEARLY VISIBLE - DO NOT infer, guess, or assume
+2. MUST provide boundingBox coordinates for each text element you extract
+3. If you CANNOT determine exact location, set confidence to 0 and leave text empty
+4. If you CANNOT SEE ingredient list clearly, return empty array [] for ingredients
+5. If you CANNOT SEE allergen warnings, return empty array [] for allergens  
+6. If you CANNOT SEE health claims, return empty array [] for detectedClaims
+7. For nutrition facts, extract ALL visible nutrients with EXACT values from the label
+8. Set overallConfidence based on image quality and text clarity (0.0-1.0)
+9. Be DETERMINISTIC - same image should produce identical output every time
+10. CRITICAL: If only Nutrition Facts panel is visible, ingredients/allergens/claims MUST be EMPTY
+11. Never extract text from blurry, obstructed, or unclear areas
+
+CRITICAL NUTRITION FACTS RULES - READ EVERY WORD:
+1. READ the EXACT numbers you see - never use placeholder/example values
+2. If Calories shows "25", enter 25 (NOT 110, NOT 230, NOT any other number)
+3. If Sodium shows "75mg", enter 75 (NOT 0, NOT 140, NOT any beverage value)
+4. Extract EVERY nutrient visible on the label including:
+
+   MANDATORY (must extract):
+   Calories, Total Fat, Saturated Fat, Trans Fat,
+   Cholesterol, Sodium, Total Carbohydrate, 
+   Dietary Fiber, Total Sugars, Added Sugars,
+   Protein, Vitamin D, Calcium, Iron, Potassium
+
+   VOLUNTARY (extract if present - do NOT skip):
+   Thiamin (Vitamin B1), Riboflavin (Vitamin B2), 
+   Niacin (Vitamin B3), Vitamin B6, Folate,
+   Vitamin B12, Biotin, Pantothenic Acid,
+   Phosphorus, Iodine, Magnesium, Zinc, Selenium,
+   Copper, Manganese, Chromium, Molybdenum, Chloride,
+   Vitamin A, Vitamin C, Vitamin E, Vitamin K
+
+   CRITICAL: Voluntary nutrients often appear in small text
+   at the bottom of the panel. Do NOT skip them.
+   If a nutrient is listed on the label, extract it.
+
+5. For sub-nutrients (Saturated Fat, Trans Fat, Dietary Fiber, Added Sugars), include as separate entries
+6. If value is "0g" or "0mg", enter value: 0
+7. For % Daily Value, use exact % shown or null if missing
+8. NEVER skip nutrients that are present on the label
+9. Infants/toddlers often have LOWER values than adult foods - this is NORMAL
+10. Cross-check: Does your extracted data match the serving size type (70g vs 355ml)?
+
+MULTI-COLUMN NUTRITION FACTS (VARIETY PACKS) - CRITICAL - READ CAREFULLY:
+🚨 YOU MUST DETECT MULTI-COLUMN FORMAT - THIS IS A COMMON FAILURE POINT 🚨
+
+MULTI-COLUMN CAN APPEAR IN TWO FORMATS:
+
+FORMAT 1 — SINGLE PANEL WITH MULTIPLE COLUMNS:
+One Nutrition Facts panel with side-by-side columns for different variants.
+Example: A table with headers "Cheddar | Colors | Pretzel" showing different values per column.
+
+FORMAT 2 — MULTIPLE SEPARATE PANELS (ALSO COUNTS AS MULTI-COLUMN!):
+Multiple SEPARATE Nutrition Facts panels/boxes on the same image.
+Example: 3 separate "Nutrition Facts" boxes, each for a different product variant.
+🚨 THIS IS STILL isMultiColumnNutrition = true! Each separate panel = one column.
+
+HOW TO IDENTIFY MULTI-COLUMN — SET isMultiColumnNutrition = true IF YOU SEE:
+- 2+ separate "Nutrition Facts" headers/boxes in the image (even if they are separate panels!)
+- Variant/flavor headers like: "Cheddar | Colors | Pretzel" or "Original | BBQ | Sour Cream"
+- DIFFERENT calorie values (e.g., 130, 120, 120) for different variants
+- Variety packs with multiple product types
+
+Example: Goldfish Big Smiles Variety with 3 SEPARATE Nutrition Facts panels:
+→ isMultiColumnNutrition = true
+→ nutritionFactsColumns = [
+    {columnName: "Cheddar Goldfish Crackers", servingSize: "1 Pack (28g)", ...},
+    {columnName: "Colors Goldfish Crackers", servingSize: "1 Pack (26g)", ...},
+    {columnName: "Pretzel Goldfish Crackers", servingSize: "1 Pack (28g)", ...}
+  ]
+
+WHEN YOU DETECT MULTI-COLUMN:
+1. Count the number of columns/panels (typically 2-6)
+2. Identify each column's variant name from the panel header or nearby text
+3. EXTRACT EACH COLUMN/PANEL INDEPENDENTLY into nutritionFactsColumns array
+4. Each column MUST have its own: columnName, servingSize, servingsPerContainer, and full nutritionFacts array
+5. Use null for missing nutrients, NOT 0 (0 means "zero grams present", null means "not declared")
+6. Still populate the main "nutritionFacts" array with the FIRST column data for backwards compatibility
+
+COMMON MULTI-COLUMN EXAMPLES:
+- Goldfish Big Smiles Variety: 3 SEPARATE panels (Cheddar, Colors, Pretzel) — isMultiColumnNutrition = true
+- Lance Variety Pack crackers: 4 columns (Toast Chee, Captain's Wafers, Toasty, Nekot)
+- Frito-Lay variety snacks: 6 columns (Doritos, Cheetos, Lays, etc.)
+- Cereal with "As Packaged" / "With Milk": 2 columns
+
+IF UNSURE: Set isMultiColumnNutrition = true if you see ANY evidence of multiple nutrition panels or multiple sets of values
+
+NET QUANTITY / NET WEIGHT EXTRACTION:
+- Look for "Net Wt", "Net Weight", "NET WT" anywhere on the label
+- Check the serving size line - often contains net quantity like "Serving size: 1 pack (70g)" or "1 container (2 oz / 56g)"
+- If you see weight in grams (g) or ounces (oz), extract it as netQuantity
+- Format: Include both imperial and metric if both present, e.g. "2 oz (56g)" or "1 pack (70g)"
+- NEVER leave netQuantity empty if you see any weight measurement on the label`
+
+// Image compression settings for Vision API
+const MAX_IMAGE_DIMENSION = 1024 // Max width or height in pixels
+const JPEG_QUALITY = 85 // Quality percentage (85% is good balance)
+const MAX_FILE_SIZE_BYTES = 1024 * 1024 // 1MB max
+
+/**
+ * Compresses an image buffer to reduce size for Vision API.
+ * - Resizes to max 1024px on longest side (preserves aspect ratio)
+ * - Converts to JPEG at 85% quality
+ * - Ensures file size < 1MB
+ */
+async function compressImageForVision(inputBuffer: Buffer): Promise<Buffer> {
+  const image = sharp(inputBuffer)
+  const metadata = await image.metadata()
+  
+  const originalWidth = metadata.width || 0
+  const originalHeight = metadata.height || 0
+  const originalSize = inputBuffer.length
+  
+  console.log(`[v0] Original image: ${originalWidth}x${originalHeight}, ${(originalSize / 1024).toFixed(1)}KB`)
+  
+  // Calculate new dimensions (max 1024px on longest side)
+  let newWidth = originalWidth
+  let newHeight = originalHeight
+  
+  if (originalWidth > MAX_IMAGE_DIMENSION || originalHeight > MAX_IMAGE_DIMENSION) {
+    if (originalWidth > originalHeight) {
+      newWidth = MAX_IMAGE_DIMENSION
+      newHeight = Math.round((originalHeight / originalWidth) * MAX_IMAGE_DIMENSION)
+    } else {
+      newHeight = MAX_IMAGE_DIMENSION
+      newWidth = Math.round((originalWidth / originalHeight) * MAX_IMAGE_DIMENSION)
+    }
+  }
+  
+  // First pass: resize and convert to JPEG
+  let compressedBuffer = await image
+    .resize(newWidth, newHeight, { fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: JPEG_QUALITY })
+    .toBuffer()
+  
+  console.log(`[v0] Compressed image: ${newWidth}x${newHeight}, ${(compressedBuffer.length / 1024).toFixed(1)}KB`)
+  
+  // If still too large, progressively reduce quality
+  let quality = JPEG_QUALITY
+  while (compressedBuffer.length > MAX_FILE_SIZE_BYTES && quality > 50) {
+    quality -= 10
+    compressedBuffer = await sharp(inputBuffer)
+      .resize(newWidth, newHeight, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality })
+      .toBuffer()
+    console.log(`[v0] Re-compressed at quality ${quality}: ${(compressedBuffer.length / 1024).toFixed(1)}KB`)
+  }
+  
+  return compressedBuffer
+}
+
+/**
+ * Downloads an image from a URL, compresses it, and converts to base64 data URL.
+ * This is required because OpenAI Vision cannot reliably fetch images from
+ * Supabase Storage URLs (returns 400 "Timeout while downloading").
+ * 
+ * Compression ensures:
+ * - Max dimension: 1024px (prevents timeout on large PDP images)
+ * - Format: JPEG at 85% quality
+ * - Max size: < 1MB
+ */
+async function fetchImageAsBase64(imageUrl: string): Promise<string> {
+  const response = await fetch(imageUrl, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; Vexim/1.0)',
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to download image: HTTP ${response.status} for ${imageUrl}`)
+  }
+
+  const arrayBuffer = await response.arrayBuffer()
+  const inputBuffer = Buffer.from(arrayBuffer)
+  
+  // Compress image before sending to Vision API
+  const compressedBuffer = await compressImageForVision(inputBuffer)
+  
+  const base64 = compressedBuffer.toString('base64')
+  return `data:image/jpeg;base64,${base64}`
+}
+
+export async function analyzeLabel(imageUrl: string, packagingFormatContext?: string): Promise<VisionAnalysisResult> {
+  console.log('[v0] Analyzing label with GPT-4o Vision:', imageUrl)
+  if (packagingFormatContext) {
+    console.log('[v0] Packaging format context provided for AI analysis')
+  }
+
+  // ── Phase 3: Vision Cache lookup ─────────────────────────────────────────
+  // Hash the raw image bytes (content-addressable) so the same image
+  // uploaded under a different path still hits the cache.
+  // Note: we intentionally do NOT include packagingFormatContext in the key
+  // because the Vision prompt appends it as a minor context hint and the
+  // extracted facts should be identical regardless.
+  const { hit: cacheHit, hash: imageHash, result: cachedResult } = await lookupVisionCache(imageUrl)
+  if (cacheHit && cachedResult) {
+    console.log('[v0] Vision cache HIT — skipping GPT-4o call')
+    return cachedResult
+  }
+  console.log('[v0] Vision cache MISS — calling GPT-4o')
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // Download image server-side and convert to base64 to avoid OpenAI timeout
+  // when fetching from Supabase Storage URLs directly.
+  let imageDataUrl: string
+  try {
+    imageDataUrl = await fetchImageAsBase64(imageUrl)
+    console.log('[v0] Image downloaded and converted to base64 successfully')
+  } catch (downloadErr: any) {
+    console.error('[v0] Failed to download image for Vision analysis:', downloadErr.message)
+    throw new Error(`Vision analysis failed: could not download image — ${downloadErr.message}`)
+  }
+
+  try {
+    const response = await retryWithBackoff(() =>
+      openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: VISION_SYSTEM_PROMPT + (packagingFormatContext || ''),
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: {
+                  url: imageDataUrl, // base64 data URL — no external fetch needed by OpenAI
+                  detail: 'high',
+                },
+              },
+              {
+                type: 'text',
+                text: `🚨 CRITICAL INSTRUCTION: PERFORM OCR - READ THE ACTUAL TEXT IN THIS IMAGE 🚨
+
+You are performing OPTICAL CHARACTER RECOGNITION (OCR) on this food label image.
+Your job is to READ and TRANSCRIBE the EXACT text and numbers PRINTED on this label.
+
+DO NOT:
+❌ Use your knowledge of typical nutrition values
+❌ Guess based on product type
+❌ Fill in "reasonable" values
+❌ Use examples from your training data
+
+DO:
+✅ Read each number character-by-character from the image
+✅ Transcribe EXACTLY what is printed
+✅ If you see "25" write 25, not 250 or 260
+✅ If you see "75mg" write 75, not 750 or 660
+✅ Double-check each value against what's visually in the image
+
+VERIFICATION STEP BEFORE RETURNING DATA:
+1. Look at the image again
+2. Point to the "Calories" line - what NUMBER do you see?
+3. Point to "Sodium" - what NUMBER do you see?
+4. Verify these match what you're about to return
+
+Now extract all information in JSON format as specified. Be deterministic and consistent.
+
+⚠️ CRITICAL FONT SIZE REQUIREMENT - READ CAREFULLY:
+You MUST provide accurate fontSize estimates. Use this reference chart:
+
+FONT SIZE CHART (use these values):
+- Extra Large headings (brand names): 24-48pt
+- "Nutrition Facts" title: 16-18pt (YOUR BASELINE REFERENCE)
+- Serving size / Net Wt text: 12-14pt
+- Nutrient names (Calories, Total Fat): 10-12pt
+- Nutrient values and %DV: 10-12pt
+- Ingredient list text: 8-10pt
+- Small footnotes/disclaimers: 6-8pt
+
+🚫 NEVER USE fontSize: 0 FOR VISIBLE TEXT
+- If you see "Nutrition Facts" heading → fontSize MUST be 16-18pt minimum
+- If you see any text at all → fontSize MUST be > 0
+- fontSize: 0 means COMPLETELY EMPTY FIELD with NO TEXT
+- When in doubt, estimate conservatively (don't guess 0!)`,
+              },
+            ],
+          },
+        ],
+        max_tokens: 4000, // Increased back to 4000 for complex multi-column nutrition labels (variety packs)
+        temperature: 0, // Zero temperature for maximum consistency
+        seed: 12345, // Fixed seed for reproducible outputs
+        response_format: { type: 'json_object' },
+      })
+    )
+
+    const content = response.choices[0].message.content || '{}'
+    const tokensUsed = response.usage?.total_tokens || 0
+
+    console.log('[v0] Vision analysis complete. Tokens used:', tokensUsed)
+
+    // Safely parse JSON — long labels (complex ingredients) can sometimes produce
+    // truncated output even with response_format:'json_object'. We attempt a
+    // best-effort repair before falling back to an empty object.
+    let parsed: any = {}
+    try {
+      parsed = JSON.parse(content)
+    } catch (jsonErr: any) {
+      console.warn('[v0] JSON.parse failed, attempting truncation repair:', jsonErr.message)
+      console.log('[v0] Content length:', content.length, 'Last 100 chars:', content.slice(-100))
+      
+      // Strategy: Multiple repair methods to handle different truncation scenarios
+      let repaired = content.trimEnd()
+      
+      // Method 0: Try to find and fix the specific truncation point
+      // Common patterns: truncated in middle of string, array, or object
+      
+      // IMPROVED: Handle unterminated strings more robustly
+      // Find if we're in the middle of a string by checking quote parity
+      let inString = false
+      let escape = false
+      let lastValidPos = 0
+      let lastCompleteObjectPos = 0
+      let braceDepth = 0
+      
+      for (let i = 0; i < repaired.length; i++) {
+        const ch = repaired[i]
+        if (escape) { escape = false; continue }
+        if (ch === '\\' && inString) { escape = true; continue }
+        if (ch === '"') { 
+          inString = !inString
+          if (!inString) lastValidPos = i // Track last closed string position
+          continue 
+        }
+        if (!inString) {
+          if (ch === '{') braceDepth++
+          else if (ch === '}') {
+            braceDepth--
+            lastValidPos = i
+            if (braceDepth === 1) {
+              // We just closed a top-level array item or nested object
+              lastCompleteObjectPos = i
+            }
+          }
+          else if (ch === ']') lastValidPos = i
+        }
+      }
+      
+      console.log('[v0] JSON repair analysis:', {
+        inString,
+        lastValidPos,
+        lastCompleteObjectPos,
+        braceDepth,
+        contentLength: repaired.length
+      })
+      
+      // If we ended inside a string, try to close it properly
+      if (inString) {
+        // Option 1: Close the string and add proper closing
+        repaired += '"'
+        console.log('[v0] JSON repair: closed unterminated string')
+      }
+      
+      // Count unclosed braces/brackets AFTER string repair
+      let openBraces = 0
+      let openBrackets = 0
+      inString = false
+      escape = false
+      for (const ch of repaired) {
+        if (escape) { escape = false; continue }
+        if (ch === '\\' && inString) { escape = true; continue }
+        if (ch === '"') { inString = !inString; continue }
+        if (inString) continue
+        if (ch === '{') openBraces++
+        else if (ch === '}') openBraces--
+        else if (ch === '[') openBrackets++
+        else if (ch === ']') openBrackets--
+      }
+      
+      console.log('[v0] JSON repair: need to close', openBrackets, 'brackets and', openBraces, 'braces')
+      
+      while (openBrackets > 0) { repaired += ']'; openBrackets-- }
+      while (openBraces > 0) { repaired += '}'; openBraces-- }
+      
+      try {
+        parsed = JSON.parse(repaired)
+        console.log('[v0] JSON repair succeeded (method 1: close string + brackets)')
+      } catch (repairErr: any) {
+        console.log('[v0] Method 1 failed:', repairErr.message)
+        
+        // Method 2: Try truncating to last complete object position (better for arrays)
+        if (lastCompleteObjectPos > 100) {
+          console.log('[v0] Trying method 2: truncate to last complete object at position', lastCompleteObjectPos)
+          let truncated = content.slice(0, lastCompleteObjectPos + 1)
+          // Close any remaining brackets
+          let ob = 0, obrk = 0, ins = false, esc = false
+          for (const ch of truncated) {
+            if (esc) { esc = false; continue }
+            if (ch === '\\' && ins) { esc = true; continue }
+            if (ch === '"') { ins = !ins; continue }
+            if (ins) continue
+            if (ch === '{') ob++; else if (ch === '}') ob--
+            if (ch === '[') obrk++; else if (ch === ']') obrk--
+          }
+          while (obrk > 0) { truncated += ']'; obrk-- }
+          while (ob > 0) { truncated += '}'; ob-- }
+          try {
+            parsed = JSON.parse(truncated)
+            console.log('[v0] JSON repair succeeded (method 2: truncation to complete object)')
+          } catch (err2: any) {
+            console.log('[v0] Method 2 failed:', err2.message)
+            
+            // Method 3: Try truncating to last valid position
+            if (lastValidPos > 100 && lastValidPos !== lastCompleteObjectPos) {
+              console.log('[v0] Trying method 3: truncate to last valid position', lastValidPos)
+              let truncated2 = content.slice(0, lastValidPos + 1)
+              ob = 0; obrk = 0; ins = false; esc = false
+              for (const ch of truncated2) {
+                if (esc) { esc = false; continue }
+                if (ch === '\\' && ins) { esc = true; continue }
+                if (ch === '"') { ins = !ins; continue }
+                if (ins) continue
+                if (ch === '{') ob++; else if (ch === '}') ob--
+                if (ch === '[') obrk++; else if (ch === ']') obrk--
+              }
+              while (obrk > 0) { truncated2 += ']'; obrk-- }
+              while (ob > 0) { truncated2 += '}'; ob-- }
+              try {
+                parsed = JSON.parse(truncated2)
+                console.log('[v0] JSON repair succeeded (method 3: truncation to last valid pos)')
+              } catch (err3: any) {
+                console.log('[v0] Method 3 failed:', err3.message)
+                
+                // Method 4: Regex extraction fallback - extract key fields directly
+                console.log('[v0] Trying method 4: regex extraction fallback')
+                try {
+                  const nutritionFactsMatch = content.match(/"nutritionFacts"\s*:\s*\[([^\]]*)\]/s)
+                  const allTextMatch = content.match(/"allText"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/s)
+                  const brandNameMatch = content.match(/"brandName"\s*:\s*\{[^}]*"text"\s*:\s*"([^"]*)"/s)
+                  const productNameMatch = content.match(/"productName"\s*:\s*\{[^}]*"text"\s*:\s*"([^"]*)"/s)
+                  
+                  parsed = {
+                    nutritionFacts: [],
+                    textElements: {
+                      allText: allTextMatch?.[1] || '',
+                      brandName: { text: brandNameMatch?.[1] || '' },
+                      productName: { text: productNameMatch?.[1] || '' },
+                      netQuantity: { text: '' }
+                    }
+                  }
+                  
+                  // Try to parse nutrition facts array
+                  if (nutritionFactsMatch?.[1]) {
+                    try {
+                      // Try parsing individual objects from the array
+                      const factStrings = nutritionFactsMatch[1].match(/\{[^}]+\}/g) || []
+                      for (const fs of factStrings) {
+                        try {
+                          parsed.nutritionFacts.push(JSON.parse(fs))
+                        } catch { /* skip malformed item */ }
+                      }
+                    } catch { /* ignore parsing errors */ }
+                  }
+                  
+                  if (parsed.nutritionFacts.length > 0 || parsed.textElements.allText.length > 10) {
+                    console.log('[v0] JSON repair succeeded (method 4: regex extraction). Extracted:', {
+                      nutritionFactsCount: parsed.nutritionFacts.length,
+                      allTextLength: parsed.textElements.allText.length
+                    })
+                  } else {
+                    console.error('[v0] JSON repair failed completely, falling back to empty result')
+                    parsed = {}
+                  }
+                } catch {
+                  console.error('[v0] JSON repair failed completely, falling back to empty result')
+                  parsed = {}
+                }
+              }
+            } else {
+              console.error('[v0] JSON repair failed, falling back to empty result:', repairErr.message)
+              parsed = {}
+            }
+          }
+        } else {
+          console.error('[v0] JSON repair failed, falling back to empty result:', repairErr.message)
+          parsed = {}
+        }
+      }
+    }
+
+    const normalized: VisionAnalysisResult = {
+      nutritionFacts: Array.isArray(parsed.nutritionFacts) ? parsed.nutritionFacts : [],
+      // Multi-column Nutrition Facts support (variety packs)
+      isMultiColumnNutrition: parsed.isMultiColumnNutrition === true,
+      nutritionFactsColumns: Array.isArray(parsed.nutritionFactsColumns) ? parsed.nutritionFactsColumns : undefined,
+      textElements: {
+        brandName: parsed.textElements?.brandName || { text: '', fontSize: 0, x: 0, y: 0, width: 0, height: 0, colors: { foreground: '#000000', background: '#FFFFFF', isFallback: true }, boundingBox: { x: 0, y: 0, width: 0, height: 0, confidence: 0 } },
+        productName: parsed.textElements?.productName || { text: '', fontSize: 0, x: 0, y: 0, width: 0, height: 0, colors: { foreground: '#000000', background: '#FFFFFF', isFallback: true }, boundingBox: { x: 0, y: 0, width: 0, height: 0, confidence: 0 } },
+        netQuantity: parsed.textElements?.netQuantity || { text: '', fontSize: 0, x: 0, y: 0, width: 0, height: 0, colors: { foreground: '#000000', background: '#FFFFFF', isFallback: true }, boundingBox: { x: 0, y: 0, width: 0, height: 0, confidence: 0 } },
+        allText: parsed.textElements?.allText || ''
+      },
+      // Deduplicate claims case-insensitively (AI often extracts "USDA ORGANIC" and "USDA Organic" separately)
+      detectedClaims: Array.isArray(parsed.detectedClaims) 
+        ? [...new Map(parsed.detectedClaims.map((c: string) => [c.toLowerCase().trim(), c])).values()]
+        : [],
+      ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : [],
+      allergens: Array.isArray(parsed.allergens) ? parsed.allergens : [],
+      warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
+detectedLanguages: Array.isArray(parsed.detectedLanguages) ? parsed.detectedLanguages : ['English'],
+  overallConfidence: typeof parsed.overallConfidence === 'number' ? parsed.overallConfidence : 0.8,
+  detectedProductType: parsed.productType || 'unknown',  // expose for auto-domain detection
+  // Manufacturer info for Import Alert matching
+  manufacturerInfo: parsed.manufacturerInfo ? {
+    companyName: parsed.manufacturerInfo.companyName || undefined,
+    address: parsed.manufacturerInfo.address || undefined,
+    countryOfOrigin: parsed.manufacturerInfo.countryOfOrigin || undefined
+  } : undefined,
+  tokensUsed
+  }
+
+    // Add area calculation and ensure colors are valid hex
+    Object.keys(normalized.textElements).forEach(key => {
+      const element = normalized.textElements[key as keyof typeof normalized.textElements]
+      if (element && typeof element === 'object' && 'width' in element && 'height' in element) {
+        element.area = element.width * element.height
+        element.fontWeight = element.fontWeight || 'normal'
+        
+        // Ensure colors are valid hex codes
+        if (element.colors) {
+          if (!/^#[0-9A-F]{6}$/i.test(element.colors.foreground)) {
+            element.colors.foreground = '#000000'
+          }
+          if (!/^#[0-9A-F]{6}$/i.test(element.colors.background)) {
+            element.colors.background = '#FFFFFF'
+          }
+        }
+      }
+    })
+
+    // CRITICAL: Validate that AI actually extracted meaningful data
+    const validationErrors = []
+    const validationWarnings = []
+    
+    // Check 1: Must have some text extracted
+    if (!normalized.textElements.allText || normalized.textElements.allText.trim().length < 10) {
+      validationErrors.push('No substantial text extracted from image - AI may not be able to see the label')
+    }
+    
+    // Check 2: If it's a nutrition label, must have nutrition facts
+    // Only treat as error when there's a strong indicator of an actual Nutrition Facts panel
+    // (not just a mention of "nutrition" in marketing text on PDP images).
+    const allTextLower = normalized.textElements.allText.toLowerCase()
+    const hasStrongNutritionPanel = allTextLower.includes('nutrition facts') ||
+                                     allTextLower.includes('supplement facts') ||
+                                     allTextLower.includes('drug facts')
+    const hasWeakNutritionIndicator = allTextLower.includes('nutrition') ||
+                                      allTextLower.includes('calories')
+    if (hasStrongNutritionPanel && normalized.nutritionFacts.length === 0) {
+      // Strong indicator: "Nutrition Facts" title visible but no data extracted -> error
+      validationErrors.push('Nutrition Facts panel detected in text but no nutrition data extracted')
+    } else if (hasWeakNutritionIndicator && !hasStrongNutritionPanel && normalized.nutritionFacts.length === 0) {
+      // Weak indicator: just the word "nutrition" or "calories" mentioned -> warning only
+      validationWarnings.push('Text mentions nutrition/calories but no Nutrition Facts panel found - this may be a PDP or marketing image')
+    }
+    
+    // Check 3: Must have EITHER text elements OR sufficient allText OR nutrition facts
+    // (Allow nutrition-only labels without brand/product names)
+    const hasTextElement = normalized.textElements.brandName.text.length > 0 ||
+                          normalized.textElements.productName.text.length > 0 ||
+                          normalized.textElements.netQuantity.text.length > 0
+    const hasNutritionData = normalized.nutritionFacts.length > 0
+    const hasSufficientText = normalized.textElements.allText.length >= 50
+    
+    if (!hasTextElement && !hasSufficientText && !hasNutritionData) {
+      validationErrors.push('Insufficient data extracted - image may be unclear or AI cannot process it')
+    }
+    
+    // Check 4: Validate nutrition facts structure if present
+    for (const fact of normalized.nutritionFacts) {
+      if (!fact.name || fact.value === undefined) {
+        validationErrors.push(`Invalid nutrition fact structure: ${JSON.stringify(fact)}`)
+        break
+      }
+    }
+    
+    // NEW CHECK 5: Bounding Box validation - Critical for anti-hallucination
+    const elementsWithText = [
+      { name: 'brandName', element: normalized.textElements.brandName },
+      { name: 'productName', element: normalized.textElements.productName },
+      { name: 'netQuantity', element: normalized.textElements.netQuantity }
+    ]
+    
+    for (const { name, element } of elementsWithText) {
+      if (element.text && element.text.length > 0) {
+        // If text is present, bounding box MUST exist with high confidence
+        if (!element.boundingBox || element.boundingBox.confidence < 0.7) {
+          validationWarnings.push(`${name} text extracted but low location confidence (${element.boundingBox?.confidence || 0}) - may be hallucinated`)
+          // If confidence is extremely low, reject the text
+          if (!element.boundingBox || element.boundingBox.confidence < 0.3) {
+            element.text = '' // Clear potentially hallucinated text
+            console.log(`[v0] ANTI-HALLUCINATION: Rejected ${name} due to low bounding box confidence`)
+          }
+        }
+      }
+    }
+    
+    // NEW CHECK 6: Overall confidence threshold
+    if (normalized.overallConfidence < 0.6) {
+      validationWarnings.push(`Low overall extraction confidence (${normalized.overallConfidence}) - double-pass OCR recommended`)
+    }
+    
+    // NEW CHECK 7: Ingredient hallucination detection
+    if (normalized.ingredients.length > 0 && !normalized.textElements.allText.toLowerCase().includes('ingredient')) {
+      validationWarnings.push('Ingredients extracted but no "Ingredients:" label found - possible hallucination')
+      // Clear potentially hallucinated ingredients
+      normalized.ingredients = []
+      console.log('[v0] ANTI-HALLUCINATION: Cleared ingredients without label')
+    }
+    
+    // NEW CHECK 8: Font size sanity check - Fix fontSize: 0 for visible text
+    const hasNutritionFactsText = normalized.textElements.allText.toLowerCase().includes('nutrition facts')
+    if (hasNutritionFactsText) {
+      // If we detected "Nutrition Facts" text, ensure we have reasonable font sizes
+      // The title "Nutrition Facts" should never be 0pt
+      for (const key of ['brandName', 'productName', 'netQuantity'] as const) {
+        const element = normalized.textElements[key]
+        if (element && element.text && element.text.length > 0 && element.fontSize === 0) {
+          // AI incorrectly returned fontSize: 0 for visible text - estimate based on text
+          const textLength = element.text.length
+          if (textLength < 20) {
+            element.fontSize = 16 // Likely a heading or brand name
+          } else if (textLength < 50) {
+            element.fontSize = 12 // Medium text
+          } else {
+            element.fontSize = 10 // Body text
+          }
+          validationWarnings.push(`${key} had fontSize: 0 but contains text - auto-corrected to ${element.fontSize}pt`)
+          console.log(`[v0] AUTO-FIX: Corrected ${key} fontSize from 0 to ${element.fontSize}pt`)
+        }
+      }
+    }
+    
+    // NEW CHECK 9: Data consistency - Product type vs nutrition values
+    const productType = (parsed as any).productType || 'unknown'
+    const servingSize = (parsed as any).servingSize || normalized.textElements.netQuantity?.text || ''
+    const allText = normalized.textElements.allText || ''
+    
+    // CRITICAL: Detect infant/toddler products from text
+    const isInfantProduct = allText.toLowerCase().includes('infant') || 
+                           allText.toLowerCase().includes('0-12 month') ||
+                           allText.toLowerCase().includes('under 12 month') ||
+                           allText.toLowerCase().includes('through 12 month') ||
+                           allText.toLowerCase().includes('babies')
+    
+    // Check for data inconsistencies that suggest hallucination
+    const inconsistencies = []
+    const criticalErrors = []
+    
+    // Check 9a: Serving size unit mismatch
+    const hasGramServingSize = /\d+\s*g\b/i.test(servingSize) || /pack.*g/i.test(servingSize)
+    const hasMlServingSize = /\d+\s*ml\b/i.test(servingSize) || /fl\s*oz/i.test(servingSize)
+    
+    // Check 9b: Calories consistency with product type
+    const caloriesEntry = normalized.nutritionFacts.find(n => n.name.toLowerCase().includes('calorie'))
+    if (caloriesEntry) {
+      // CRITICAL: Infant products have VERY LOW calorie values per serving (typically 10-60 calories)
+      if (isInfantProduct && caloriesEntry.value > 100) {
+        criticalErrors.push(`HALLUCINATION DETECTED: Infant product but Calories=${caloriesEntry.value}. Infant foods typically have 10-60 cal per serving (1 pack ~70g). AI is using adult food values!`)
+      }
+      
+      // Infant/toddler foods typically have lower calories per serving than beverages
+      if (hasGramServingSize && caloriesEntry.value > 200 && !isInfantProduct) {
+        inconsistencies.push(`High calories (${caloriesEntry.value}) for gram-based serving - verify this is correct`)
+      }
+      
+      // Beverages with ml serving should have different calorie ranges
+      if (hasMlServingSize && caloriesEntry.value < 50 && caloriesEntry.value > 0) {
+        inconsistencies.push(`Unusually low calories (${caloriesEntry.value}) for ml-based beverage - verify this is correct`)
+      }
+      
+      // Common hallucination: 110 calories for 355ml (soft drink template)
+      if (caloriesEntry.value === 110 && hasMlServingSize) {
+        validationWarnings.push('WARNING: Calories=110 with ml serving detected - common hallucination pattern, verify carefully')
+      }
+      
+      // Common hallucination: 260 calories for infant food
+      if (caloriesEntry.value === 260 && isInfantProduct) {
+        criticalErrors.push('HALLUCINATION DETECTED: Calories=260 is adult food value, not infant food!')
+      }
+    }
+    
+    // Check 9c: Sodium consistency checks
+    const sodiumEntry = normalized.nutritionFacts.find(n => n.name.toLowerCase().includes('sodium'))
+    if (sodiumEntry) {
+      // CRITICAL: Infant products have VERY LOW sodium (typically 20-100mg per serving)
+      if (isInfantProduct && sodiumEntry.value > 200) {
+        criticalErrors.push(`HALLUCINATION DETECTED: Infant product but Sodium=${sodiumEntry.value}mg. Infant foods typically have 20-100mg sodium per serving. AI is using adult food values!`)
+      }
+      
+      // Common hallucination: 660mg sodium for infant food
+      if (sodiumEntry.value === 660 && isInfantProduct) {
+        criticalErrors.push('HALLUCINATION DETECTED: Sodium=660mg is adult food value, not infant food!')
+      }
+      
+      // Sodium 0mg is suspicious unless confirmed
+      if (sodiumEntry.value === 0 && normalized.nutritionFacts.length > 3 && !isInfantProduct) {
+        inconsistencies.push('Sodium shows 0mg - verify this is actually printed on label (not missing)')
+      }
+    }
+    
+    // Check 9d: Product type mismatch
+    if (productType && productType !== 'unknown') {
+      if (productType.includes('beverage') && hasGramServingSize) {
+        validationWarnings.push('CRITICAL: Product type detected as beverage but serving in grams - data inconsistency!')
+      }
+      if (productType.includes('food') && hasMlServingSize) {
+        validationWarnings.push('CRITICAL: Product type detected as food but serving in ml - data inconsistency!')
+      }
+    }
+    
+    if (inconsistencies.length > 0) {
+      console.log('[v0] Data consistency warnings:', inconsistencies)
+      validationWarnings.push(...inconsistencies)
+    }
+    
+    // Store product type and serving size in normalized result
+    normalized.productType = productType
+    normalized.servingSize = servingSize
+    
+    // CRITICAL: If hallucination detected (infant product with adult values), FAIL HARD
+    if (criticalErrors.length > 0) {
+      console.error('[v0] CRITICAL HALLUCINATION DETECTED:', criticalErrors)
+      validationErrors.push(...criticalErrors)
+      validationErrors.push('AI Vision is hallucinating nutrition values. This is a CRITICAL failure.')
+      validationErrors.push('Possible causes: (1) AI using knowledge base instead of reading image, (2) Poor image quality, (3) Model limitation')
+      validationErrors.push('Recommendation: Try re-uploading image with higher resolution or better lighting')
+    }
+    
+    // If critical validation fails, throw error with structured info
+    if (validationErrors.length > 0) {
+      console.error('[v0] Vision validation FAILED:', validationErrors)
+      const err = new Error(`Vision analysis validation failed: ${validationErrors.join('; ')}. The AI may not be able to properly read this image. Please ensure the image is clear, properly oriented, and contains a readable nutrition label.`)
+      ;(err as any).validationErrors = validationErrors
+      ;(err as any).validationWarnings = validationWarnings
+      ;(err as any).isValidationError = true
+      throw err
+    }
+    
+    // Attach warnings to result so callers can surface them to users
+    if (validationWarnings.length > 0) {
+      console.warn('[v0] Vision validation WARNINGS:', validationWarnings)
+      normalized.validationWarnings = validationWarnings
+    }
+    
+    // ── Multi-Column Detection Logging & Auto-Detection ─────────────────────���
+    console.log('[v0] Multi-column detection result:', {
+      isMultiColumnNutrition: normalized.isMultiColumnNutrition,
+      nutritionFactsColumnsCount: normalized.nutritionFactsColumns?.length || 0,
+      rawParsedIsMultiColumn: parsed.isMultiColumnNutrition,
+      rawParsedColumnsLength: parsed.nutritionFactsColumns?.length || 0,
+    })
+    
+    // AUTO-DETECTION HEURISTIC: If AI missed multi-column but allText suggests it
+    // Look for patterns like "Calories 220 ... Calories 190 ... Calories 180" which indicate multiple panels
+    if (!normalized.isMultiColumnNutrition && normalized.textElements.allText) {
+      const allTextLower = normalized.textElements.allText.toLowerCase()
+      
+  // Improved regex patterns for calories detection:
+  // Pattern 1: "calories 240" or "calories  240" (number AFTER calories, with 0+ spaces/special chars)
+  // Pattern 2: "240 calories" (number BEFORE calories)
+  // Pattern 3: "calories: 240" or "calories - 240" (with punctuation)
+  // Pattern 4: "calories 0" (single digit, including 0 for zero-calorie products)
+  // We capture the FULL number by using \d{1,4} to match 1-4 digit numbers (including 0)
+  const caloriesAfterMatches = allTextLower.match(/calories[\s:.\-]*(\d{1,4})/g) || []
+  const caloriesBeforeMatches = allTextLower.match(/(\d{1,4})[\s]*calories/g) || []
+      const caloriesMatches = [...caloriesAfterMatches, ...caloriesBeforeMatches]
+      
+      const servingSizeMatches = allTextLower.match(/serving\s*size/gi) || []
+      const nutritionFactsMatches = allTextLower.match(/nutrition\s*facts/gi) || []
+      
+      console.log('[v0] Multi-column auto-detection heuristics:', {
+        caloriesOccurrences: caloriesMatches.length,
+        servingSizeOccurrences: servingSizeMatches.length,
+        nutritionFactsOccurrences: nutritionFactsMatches.length,
+        caloriesMatches: caloriesMatches.slice(0, 5),
+        rawTextSample: allTextLower.slice(0, 200), // Debug: show raw text sample
+      })
+      
+      // If we see 2+ different Calories values or 2+ "Nutrition Facts" headers, it's likely multi-column
+      if (caloriesMatches.length >= 2 || nutritionFactsMatches.length >= 2) {
+        console.warn('[v0] AUTO-DETECTION: Multi-column format suspected but AI did not report isMultiColumnNutrition=true')
+        console.warn('[v0] This is a known issue - the AI should have extracted separate columns')
+        
+        // Add warning for user
+        if (!normalized.validationWarnings) normalized.validationWarnings = []
+        normalized.validationWarnings.push(
+          `Multi-column Nutrition Facts format detected (${caloriesMatches.length} Calories values found) but AI extraction may be incomplete. ` +
+          `For variety packs with multiple Nutrition Facts panels, the system should show all columns. Please check if all variants are displayed.`
+        )
+        
+        // Force set the flag so UI knows to look for it
+        normalized.isMultiColumnNutrition = true
+        // If AI provided columns, use them; if not, add a placeholder warning
+        if (!normalized.nutritionFactsColumns || normalized.nutritionFactsColumns.length === 0) {
+          console.error('[v0] CRITICAL: Multi-column detected but nutritionFactsColumns is empty!')
+          console.error('[v0] The AI failed to extract individual columns. Nutrition data shown is only from the first panel.')
+        }
+      }
+    }
+    
+    console.log('[v0] Vision analysis validated successfully. Sample:', {
+      nutritionFactsCount: normalized.nutritionFacts.length,
+      isMultiColumnNutrition: normalized.isMultiColumnNutrition,
+      nutritionFactsColumnsCount: normalized.nutritionFactsColumns?.length || 0,
+      brandName: normalized.textElements.brandName.text.substring(0, 30),
+      detectedLanguages: normalized.detectedLanguages,
+      totalTextLength: normalized.textElements.allText.length
+    })
+
+    // ── Phase 3: Write result to Vision Cache (fire-and-forget) ─────────────
+    if (imageHash) {
+      setVisionCache(imageHash, normalized).catch(() => {})
+    }
+    // ───────────────────────────────────────────────────────────────────���────
+
+    return normalized
+  } catch (error: any) {
+    console.error('[v0] Vision analysis error:', error)
+    // Preserve structured validation info if present
+    if (error.isValidationError) throw error
+    throw new Error(`Vision analysis failed: ${error.message}`)
+  }
+}

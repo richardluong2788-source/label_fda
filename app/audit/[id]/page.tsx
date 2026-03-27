@@ -1,0 +1,562 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowLeft,
+  Loader2,
+  Database,
+} from 'lucide-react'
+import type { AuditReport } from '@/lib/types'
+import { ExpertRequestPanel } from '@/components/expert-request-panel'
+import { AnalysisProgressView, ANALYSIS_STEPS } from '@/components/audit/analysis-progress'
+import { ReportResultView } from '@/components/audit/report-result-view'
+import { useTranslation } from '@/lib/i18n'
+
+// ────────────────────────────────────────────────────────────
+// Main Audit Page
+// ────────────────────────────────────────────────────────────
+
+export default function AuditPage() {
+  const params = useParams()
+  const router = useRouter()
+  const { t, locale } = useTranslation()
+  const a = t.audit
+
+  const [report, setReport] = useState<AuditReport | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const [scanPosition, setScanPosition] = useState(0)
+  const [scanDirection, setScanDirection] = useState<'down' | 'up'>('down')
+  const [pdfLoading, setPdfLoading] = useState(false)
+  const [quotaError, setQuotaError] = useState<{
+    message: string
+    plan_name: string
+    reports_used: number
+    reports_limit: number
+  } | null>(null)
+  const [kbError, setKbError] = useState<{
+    message: string
+    totalDocuments: number
+  } | null>(null)
+  const [visionError, setVisionError] = useState<{
+    message: string
+    errorCode: string
+    details?: string[]
+  } | null>(null)
+
+  // ── PDF Download ──────────────────────────────────────────
+  const handleDownloadPdf = async () => {
+    if (!params.id) return
+    setPdfLoading(true)
+    try {
+      const res = await fetch(`/api/audit/${params.id}/pdf?lang=${locale}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || a.cannotCreateReport)
+      }
+      const html = await res.text()
+      
+      const blob = new Blob([html], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      const win = window.open(url, '_blank')
+      if (win) win.focus()
+      setTimeout(() => URL.revokeObjectURL(url), 120000)
+    } catch (err: any) {
+      console.error('[v0] PDF download error:', err)
+      alert(err.message || a.pdfDownloadError)
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
+  // ── Load Report on Mount ──────────────────────────────────
+  useEffect(() => {
+    loadReport()
+  }, [params.id])
+
+  // ── Scanning animation ────────────────────────────────────
+  useEffect(() => {
+    if (!analyzing) return
+    const interval = setInterval(() => {
+      setScanPosition((prev) => {
+        if (scanDirection === 'down') {
+          if (prev >= 100) {
+            setScanDirection('up')
+            return 100
+          }
+          return prev + 1.5
+        } else {
+          if (prev <= 0) {
+            setScanDirection('down')
+            return 0
+          }
+          return prev - 1.5
+        }
+      })
+    }, 25)
+    return () => clearInterval(interval)
+  }, [analyzing, scanDirection])
+
+  // ── Smooth fake progress while queued/processing ──────────
+  // Fake progress runs through ALL 6 steps evenly distributed over ~90s.
+  // This gives users visual feedback that work is progressing through each phase.
+  // Step thresholds: 0%, 20%, 40%, 55%, 70%, 85%
+  // Server will push to 100% when analysis actually completes.
+  useEffect(() => {
+    if (!analyzing) return
+    const ticker = setInterval(() => {
+      setProgress(prev => {
+        const next = (() => {
+          // Steady progress through all steps, slowing down slightly as we go
+          // Total time to reach 95%: ~90 seconds (300ms interval)
+          if (prev < 20) return prev + 0.22   // 0-20% in ~27s (Step 1)
+          if (prev < 40) return prev + 0.20   // 20-40% in ~30s (Step 2)
+          if (prev < 55) return prev + 0.18   // 40-55% in ~25s (Step 3)
+          if (prev < 70) return prev + 0.15   // 55-70% in ~30s (Step 4)
+          if (prev < 85) return prev + 0.12   // 70-85% in ~38s (Step 5)
+          if (prev < 95) return prev + 0.08   // 85-95% in ~38s (Step 6)
+          
+          // Never exceed 95% with fake progress - wait for server completion
+          return prev
+        })()
+
+        // Sync stepIndex with fake progress
+        // Steps start at: 0%, 20%, 40%, 55%, 70%, 85%
+        let bestIdx = 0
+        for (let i = 0; i < ANALYSIS_STEPS.length; i++) {
+          if (ANALYSIS_STEPS[i].progress <= next) bestIdx = i
+        }
+        setCurrentStepIndex(ci => Math.max(ci, bestIdx))
+
+        return next
+      })
+    }, 300)
+    return () => clearInterval(ticker)
+  }, [analyzing])
+
+  // ── Load Report ───────────────────────────────────────────
+  const loadReport = async () => {
+    try {
+      const res = await fetch(`/api/audit/${params.id}`)
+      if (!res.ok) throw new Error('Failed to load report')
+      const data = await res.json()
+      const rpt = data.report || data
+
+      if (rpt && rpt.status !== 'pending' && rpt.status !== 'kb_unavailable') {
+        const isUnlocked = rpt.report_unlocked === true || rpt.payment_status === 'paid'
+        if (!isUnlocked) {
+          router.push(`/audit/${params.id}/preview`)
+          return
+        }
+      }
+
+      setReport(data)
+
+      if (data.status === 'kb_unavailable') {
+        setKbError({
+          message: a.kbWhyItems[0],
+          totalDocuments: 0,
+        })
+        return
+      }
+
+      if (data.status === 'error') {
+        // Report previously failed - show error to user
+        setVisionError({
+          message: data.error_message || rpt?.error_message || a.visionValidationFailed,
+          errorCode: 'vision_validation_failed',
+        })
+        return
+      }
+
+      if (data.status === 'pending' || data.status === 'queued') {
+        startAnalysis()
+      }
+    } catch (error) {
+      console.error('[v0] Load report error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Start Analysis (async queue + polling) ───────────────
+  const startAnalysis = async () => {
+    setAnalyzing(true)
+    setCurrentStepIndex(0)
+    setProgress(5)
+
+    try {
+      // Step 1: Submit the job to the async queue (fast — returns immediately)
+      const submitRes = await fetch('/api/analyze/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reportId: params.id }),
+      })
+
+      // Handle submit-time errors (quota, rate limit, etc.)
+      if (submitRes.status === 402) {
+        const errData = await submitRes.json().catch(() => ({}))
+        setAnalyzing(false)
+        setLoading(false)
+        setQuotaError({
+          message: errData.message || a.quotaExhausted,
+          plan_name: errData.quota?.plan_name || 'Free',
+          reports_used: errData.quota?.reports_used ?? 0,
+          reports_limit: errData.quota?.reports_limit ?? 0,
+        })
+        return
+      }
+
+      if (submitRes.status === 429) {
+        const errData = await submitRes.json().catch(() => ({}))
+        setAnalyzing(false)
+        setLoading(false)
+        setVisionError({
+          message: errData.message || 'Too many requests. Please wait a moment and try again.',
+          errorCode: 'rate_limited',
+        })
+        return
+      }
+
+      if (!submitRes.ok) {
+        const errData = await submitRes.json().catch(() => ({}))
+        throw new Error(errData.message || 'Failed to submit analysis')
+      }
+
+      // Step 2: Poll /api/analyze/status every 2 s until completed/failed
+      const POLL_INTERVAL_MS = 2000
+      const MAX_POLLS = 180 // 6 min max (180 × 2s)
+      // After this many polls with status still 'queued', re-trigger the process
+      // endpoint in case the fire-and-forget was killed (no Cron safety net)
+      const STALE_QUEUED_RETRIGGER_POLLS = 5 // ~10 s
+      let pollCount = 0
+      let retriggered = false
+
+      await new Promise<void>((resolve, reject) => {
+        const pollInterval = setInterval(async () => {
+          pollCount++
+
+          if (pollCount > MAX_POLLS) {
+            clearInterval(pollInterval)
+            reject(new Error('Analysis timed out. Please try again.'))
+            return
+          }
+
+          try {
+            const statusRes = await fetch(`/api/analyze/status?id=${params.id}`)
+            if (!statusRes.ok) return // transient error — keep polling
+
+            const statusData = await statusRes.json()
+
+            // Re-trigger process if job is stuck in 'queued' after ~10 s
+            // (fire-and-forget may have been killed before the process route ran)
+            // We ask the status endpoint to do this server-side because
+            // the process secret token is not available in the browser.
+            if (
+              !retriggered &&
+              statusData.status === 'queued' &&
+              pollCount >= STALE_QUEUED_RETRIGGER_POLLS
+            ) {
+              retriggered = true
+              fetch(`/api/analyze/status?id=${params.id}&retrigger=1`)
+                .catch(() => {}) // fire-and-forget
+            }
+
+            // Update UI progress from server-driven step.
+            // - Server sends real progress when steps complete (e.g., 70% after Vision)
+            // - Never decrease progress (only increase)
+            // - If server hasn't reported yet, let the ticker handle fake progress
+            const serverProgress = statusData.progress ?? 0
+            setProgress(prev => {
+              if (serverProgress > 0) return Math.max(prev, serverProgress)
+              // While queued, let the useEffect ticker handle fake progress
+              return prev
+            })
+            // Map progress → stepIndex: tìm step CÓ progress nhỏ nhất nhưng >= serverProgress
+            // Khi server chưa có progress (0), giữ step hiện tại (không reset về 0)
+            if (serverProgress > 0) {
+              // Tìm step CUỐI CÙNG mà progress của nó <= serverProgress → đang ở bước đó
+              let bestIdx = 0
+              for (let i = 0; i < ANALYSIS_STEPS.length; i++) {
+                if (ANALYSIS_STEPS[i].progress <= serverProgress) bestIdx = i
+              }
+              setCurrentStepIndex(prev => Math.max(prev, bestIdx))
+            }
+
+            // Terminal states
+            if (statusData.status === 'completed' || ['verified', 'ai_completed'].includes(statusData.reportStatus)) {
+              clearInterval(pollInterval)
+              setProgress(100)
+              setCurrentStepIndex(ANALYSIS_STEPS.length - 1)
+              resolve()
+              return
+            }
+
+            if (statusData.status === 'failed') {
+              clearInterval(pollInterval)
+              const errMsg = statusData.error || 'Analysis failed'
+
+              // Map known error codes to the right UI state
+              if (errMsg.includes('knowledge_base_empty')) {
+                setKbError({ message: a.kbNotReady, totalDocuments: 0 })
+              } else if (errMsg.includes('vision_validation_failed') || errMsg.includes('422')) {
+                setVisionError({ message: errMsg, errorCode: 'vision_validation_failed' })
+              } else {
+                setVisionError({ message: errMsg, errorCode: 'vision_system_error' })
+              }
+              reject(new Error(errMsg))
+              return
+            }
+
+            // If report directly has terminal status (legacy direct analyze fallback)
+            if (['error', 'kb_unavailable'].includes(statusData.reportStatus)) {
+              clearInterval(pollInterval)
+              reject(new Error(statusData.reportStatus))
+            }
+          } catch {
+            // Network error on poll — keep retrying
+          }
+        }, POLL_INTERVAL_MS)
+      })
+
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      await loadReport()
+    } catch (error: any) {
+      console.error('[v0] Analysis error:', error)
+      // Only set generic vision error if no specific error was already set
+      if (!quotaError && !kbError && !visionError) {
+        setVisionError({
+          message: error?.message || a.visionSystemError || 'Analysis failed. Please try again.',
+          errorCode: 'vision_system_error',
+        })
+      }
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  // ── Error States ──────────────────────────────────────────
+
+  if (quotaError) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4">
+        <Card className="p-8 max-w-md w-full text-center">
+          <AlertCircle className="h-12 w-12 text-warning mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">{a.quotaExhausted}</h2>
+          <p className="text-muted-foreground mb-4">{quotaError.message}</p>
+          <div className="bg-muted rounded-lg p-4 mb-6 text-sm space-y-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{a.quotaCurrentPlan}</span>
+              <span className="font-semibold">{quotaError.plan_name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{a.quotaUsedThisMonth}</span>
+              <span className="font-semibold">
+                {a.quotaUsedOf(quotaError.reports_used, quotaError.reports_limit)}
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Button asChild>
+              <a href="/pricing">{a.upgradePlan}</a>
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/dashboard')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              {a.backToDashboard}
+            </Button>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
+  if (kbError) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4">
+        <Card className="p-8 max-w-lg w-full text-center">
+          <Database className="h-12 w-12 text-warning mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">{a.kbNotReady}</h2>
+          <p className="text-muted-foreground mb-4">{kbError.message}</p>
+          <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 mb-6 text-sm text-left space-y-2">
+            <p className="font-medium">{a.kbWhyTitle}</p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-1">
+              {a.kbWhyItems.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+              <li>{a.kbDocsCount(kbError.totalDocuments)}</li>
+            </ul>
+          </div>
+          <div className="bg-muted rounded-lg p-4 mb-6 text-sm text-left space-y-2">
+            <p className="font-medium">{a.kbFixTitle}</p>
+            <ol className="list-decimal list-inside text-muted-foreground space-y-1">
+              {a.kbFixItems.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ol>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={async () => {
+                setKbError(null)
+                try {
+                  await fetch(`/api/audit/${params.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'pending' }),
+                  })
+                } catch {}
+                startAnalysis()
+              }}
+            >
+              {a.retryAnalysis}
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/dashboard')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              {a.backToDashboard}
+            </Button>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
+  if (visionError) {
+    const isValidation = visionError.errorCode === 'vision_validation_failed'
+    return (
+      <div className="flex-1 flex items-center justify-center p-4">
+        <Card className="p-8 max-w-lg w-full text-center">
+          <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">
+            {isValidation ? a.visionValidationTitle : a.visionSystemTitle}
+          </h2>
+          <p className="text-muted-foreground mb-4">{visionError.message}</p>
+          {isValidation && visionError.details && visionError.details.length > 0 && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 mb-6 text-sm text-left space-y-2">
+              <p className="font-medium">{a.visionErrorDetailsTitle}</p>
+              <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                {visionError.details.map((detail, i) => (
+                  <li key={i}>{detail}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="bg-muted rounded-lg p-4 mb-6 text-sm text-left space-y-2">
+            <p className="font-medium">{a.visionFixTitle}</p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-1">
+              {a.visionFixItems.map((item: string, i: number) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={async () => {
+                setVisionError(null)
+                try {
+                  await fetch(`/api/audit/${params.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'pending' }),
+                  })
+                } catch {}
+                startAnalysis()
+              }}
+            >
+              {a.retryAnalysis}
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/analyze')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              {a.reuploadImages}
+            </Button>
+            <Button variant="ghost" onClick={() => router.push('/dashboard')}>
+              {a.backToDashboard}
+            </Button>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
+  // ── Loading State ─────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">{a.loadingReport}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!report) {
+    return (
+      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">{a.error}</h2>
+          <p className="text-muted-foreground mb-4">{a.errorDeleted}</p>
+          <Button onClick={() => router.push('/dashboard')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {a.backToDashboard}
+          </Button>
+        </Card>
+      </div>
+    )
+  }
+
+  // ── Analysis in Progress ──────────────────────────────────
+
+  if (analyzing || ['pending', 'queued', 'processing'].includes(report.status)) {
+    return (
+      <AnalysisProgressView
+        report={report}
+        progress={progress}
+        currentStepIndex={currentStepIndex}
+        scanPosition={scanPosition}
+        analyzing={analyzing}
+        onBack={() => router.push('/dashboard')}
+      />
+    )
+  }
+
+  // ── Results View ──────────────────────────────────────────
+
+  return (
+    <div>
+      <ReportResultView
+        report={report}
+        onDownloadPdf={handleDownloadPdf}
+        pdfLoading={pdfLoading}
+      />
+
+      {/* Expert Request Panel */}
+      <div className="bg-slate-50">
+        <div className="container mx-auto px-4 pb-12 max-w-7xl">
+          <div className="grid lg:grid-cols-[320px_1fr] gap-6">
+            <div className="hidden lg:block" />
+            <div id="expert-request-panel">
+              <ExpertRequestPanel
+                reportId={String(params.id)}
+                productName={report.product_name}
+                productCategory={report.product_category}
+                overallResult={report.overall_result}
+                needsExpertReview={report.needs_expert_review}
+                planName={(report as any).plan_name}
+                expertReviewsIncluded={(report as any).expert_reviews_included}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

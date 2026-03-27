@@ -1,0 +1,28 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/cleanup-bulk-imports",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-expired-reports",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/fsvp-expiry-alerts",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/fetch-warning-letters",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/fetch-recalls",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/fetch-import-alerts",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}
